@@ -7,11 +7,11 @@
 <link rel="icon" href="data:," />
 <style>
 :root{
-  --bg:#000;
-  --card:#111;
-  --muted:#aaa;
-  --accent:#FF1493;
-  --glass: rgba(255,255,255,0.03);
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
+  --accent:#FF1493;
+  --glass: rgba(255,255,255,0.03);
 }
 /* overall layout */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
@@ -25,15 +25,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 /* 🔥 1. Sticky video frame */
 #videoContainer{
-  width:100%;
-  aspect-ratio:16/9;
-  background:#111;
-  border-radius:10px;
-  overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,0.6);
-  position:sticky;
-  top:0;
-  z-index:100;
+  width:100%;
+  aspect-ratio:16/9;
+  background:#111;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,0.6);
+  position:sticky;
+  top:0;
+  z-index:100;
 }
 #videoContainer iframe{width:100%;height:100%;border:0;border-radius:10px;}
 
@@ -75,103 +75,103 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* Google Sign In button */
 #authBox{display:flex;justify-content:center;margin:12px 0;}
 .google-btn{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:12px 20px;
-  border-radius:999px;
-  background:linear-gradient(135deg,#FF69B4,#FF1493);
-  color:#fff;
-  font-weight:600;
-  font-size:14px;
-  border:none;
-  cursor:pointer;
-  box-shadow:0 4px 10px rgba(255,20,147,0.4);
-  transition:transform .2s, box-shadow .2s;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 20px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#FF69B4,#FF1493);
+  color:#fff;
+  font-weight:600;
+  font-size:14px;
+  border:none;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(255,20,147,0.4);
+  transition:transform .2s, box-shadow .2s;
 }
 .google-btn:hover{
-  transform:translateY(-2px);
-  box-shadow:0 6px 14px rgba(255,20,147,0.6);
+  transform:translateY(-2px);
+  box-shadow:0 6px 14px rgba(255,20,147,0.6);
 }
 .google-btn img{
-  width:18px;
-  height:18px;
-  background:#fff;
-  border-radius:4px;
-  padding:2px;
+  width:18px;
+  height:18px;
+  background:#fff;
+  border-radius:4px;
+  padding:2px;
 }
 @media (max-width:420px){
-  .send-area input{padding:10px;font-size:13px;}
-  .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
+  .send-area input{padding:10px;font-size:13px;}
+  .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
 }
 </style>
 </head>
 <body>
-  <div id="appWrapper">
-    <div class="app">
-      <div class="brand">乂丨乂丨</div>
-      <div id="greeting">Welcome to Room 1 ✨</div>
+  <div id="appWrapper">
+    <div class="app">
+      <div class="brand">乂丨乂丨</div>
+      <div id="greeting">Welcome to Room 1 ✨</div>
 
-      <div id="center">
-        <div id="videoContainer">
-          <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
-        </div>
+      <div id="center">
+        <div id="videoContainer">
+          <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+        </div>
 
-        <!-- HELLO -->
-        <div id="helloText" aria-live="polite">HELLO</div>
+        <!-- HELLO -->
+        <div id="helloText" aria-live="polite">HELLO</div>
 
-        <div class="room-desc">Live Stream 💸 — Chat. Own your vibe.
-          <span id="onlineCount" class="onlineCount"></span>
-        </div>
+        <div class="room-desc">Live Stream 💸 — Chat. Own your vibe.
+          <span id="onlineCount" class="onlineCount"></span>
+        </div>
 
-        <div id="guestMsg"></div>
+        <div id="guestMsg"></div>
 
-        <!-- 🔥 Google Sign-In Button -->
-        <div id="authBox">
-          <button id="googleSignInBtn" class="google-btn">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
-            Sign in with Google
-          </button>
-        </div>
+        <!-- 🔥 Google Sign-In Button -->
+        <div id="authBox">
+          <button id="googleSignInBtn" class="google-btn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+            Sign in with Google
+          </button>
+        </div>
 
-        <div id="messages"></div>
+        <div id="messages"></div>
 
-        <div class="send-area" id="sendArea" style="display:none;">
-          <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
-          <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
-          <button id="sendBtn" class="send-btn">Send</button>
-        </div>
+        <div class="send-area" id="sendArea" style="display:none;">
+          <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+          <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+          <button id="sendBtn" class="send-btn">Send</button>
+        </div>
 
-      </div>
+      </div>
 
-      <div class="profile" id="profileBox">
-        <div class="profile-card">
-          <div class="profile-top">
-            <div class="profile-left">
-              <div id="profileName" class="profile-name">GUEST 0000</div>
-              <div>
-                <span class="profile-label">STARS COLLECTED:</span>
-                <span class="profile-value"><span id="starCount">0</span>⭐️</span>
-              </div>
-            </div>
-            <div class="profile-actions">
-              <a id="redeemBtn" class="small-btn" href="https://xixi.live" target="_blank">Redeem</a>
-              <button id="tipBtn" class="small-btn">💵</button>
-            </div>
-          </div>
-          <div>
-            <span class="profile-label">CASH EARNED:</span>
-            <span class="profile-value">₦<span id="cashCount">0</span></span>
-          </div>
-        </div>
-      </div>
+      <div class="profile" id="profileBox">
+        <div class="profile-card">
+          <div class="profile-top">
+            <div class="profile-left">
+              <div id="profileName" class="profile-name">GUEST 0000</div>
+              <div>
+                <span class="profile-label">STARS COLLECTED:</span>
+                <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+              </div>
+            </div>
+            <div class="profile-actions">
+              <a id="redeemBtn" class="small-btn" href="https://xixi.live" target="_blank">Redeem</a>
+              <button id="tipBtn" class="small-btn">💵</button>
+            </div>
+          </div>
+          <div>
+            <span class="profile-label">CASH EARNED:</span>
+            <span class="profile-value">₦<span id="cashCount">0</span></span>
+          </div>
+        </div>
+      </div>
 
-    </div>
-  </div>
+    </div>
+  </div>
 
-  <div class="star-popup" id="starPopup">
-    <div id="starText">You've just earned +1 star! ⭐</div>
-  </div>
+  <div class="star-popup" id="starPopup">
+    <div id="starText">You've just earned +1 star! ⭐</div>
+  </div>
 </body>
 </html>
 <script type="module">
