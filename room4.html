@@ -183,6 +183,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     ></iframe>
   </div>
 </div>
+  <div id="videoNavButtons" style="display:none; position:absolute; top:45%; width:100%; display:flex; justify-content:space-between; pointer-events:none;">
+  <button id="prevVideoBtn" style="pointer-events:auto; background:rgba(0,0,0,0.4); color:#fff; border:none; border-radius:50%; width:36px; height:36px; font-size:18px; cursor:pointer;">‹</button>
+  <button id="nextVideoBtn" style="pointer-events:auto; background:rgba(0,0,0,0.4); color:#fff; border:none; border-radius:50%; width:36px; height:36px; font-size:18px; cursor:pointer;">›</button>
+</div>
         <!-- HELLO -->
         <div id="helloText" aria-live="polite">HELLO</div>
 
@@ -678,6 +682,42 @@ adminClearMessagesBtn.addEventListener("click", async () => {
     if(userDocUnsub){ userDocUnsub(); userDocUnsub = null; }
     if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
   }
+});
+// --- VIDEO NAVIGATION PATCH ---
+const videos = [
+  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false",
+  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=ANOTHER_VIDEO_ID&profile=cld-default&autoplay=true&muted=true&controls=false"
+];
+
+const iframe = document.querySelector("#videoContainer iframe");
+iframe.dataset.videoIndex = "0";
+
+const nextVideoBtn = document.getElementById("nextVideoBtn");
+const prevVideoBtn = document.getElementById("prevVideoBtn");
+const navButtonsWrapper = document.getElementById("videoNavButtons");
+
+// Show nav buttons only when user is signed in
+onAuthStateChanged(auth, (user) => {
+  if(user){
+    navButtonsWrapper.style.display = "flex";
+  } else {
+    navButtonsWrapper.style.display = "none";
+  }
+});
+
+// Button events
+nextVideoBtn.addEventListener("click", () => {
+  let currentIndex = parseInt(iframe.dataset.videoIndex);
+  currentIndex = (currentIndex + 1) % videos.length;
+  iframe.src = videos[currentIndex];
+  iframe.dataset.videoIndex = currentIndex;
+});
+
+prevVideoBtn.addEventListener("click", () => {
+  let currentIndex = parseInt(iframe.dataset.videoIndex);
+  currentIndex = (currentIndex - 1 + videos.length) % videos.length;
+  iframe.src = videos[currentIndex];
+  iframe.dataset.videoIndex = currentIndex;
 });
 </script>
 </body>
