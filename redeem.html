@@ -101,17 +101,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -151,11 +152,20 @@ const perks = [
   {name:"Golden Crown", cost:300}
 ];
 
-// Google Sign-In
-googleBtn.addEventListener("click",async()=>{
+// Google Sign-In for mobile-friendly
+googleBtn.addEventListener("click", async () => {
   const provider = new GoogleAuthProvider();
-  try{ await signInWithPopup(auth,provider); }catch(err){ await signInWithRedirect(auth,provider); }
+  try {
+    await signInWithRedirect(auth, provider);
+  } catch(err){
+    console.error("Redirect failed:", err);
+  }
 });
+
+// Handle redirect result
+getRedirectResult(auth).then((result)=>{
+  if(result && result.user){ console.log("Redirect sign-in success", result.user.displayName); }
+}).catch(err=>{console.error(err);});
 
 onAuthStateChanged(auth,async(user)=>{
   if(user){
@@ -200,14 +210,12 @@ onAuthStateChanged(auth,async(user)=>{
 redeemCancelBtn.addEventListener("click",()=>{ redeemPopupEl.style.display="none"; });
 redeemYesBtn.addEventListener("click",async()=>{
   if(selectedPerk){
-    // Deduct stars and update
     const userRef = doc(db,"users",currentUser.uid);
     await updateDoc(userRef,{stars:increment(-selectedPerk.cost)});
     currentUser.stars -= selectedPerk.cost;
     starsBalanceEl.innerText=`${currentUser.stars} ⭐️`;
     redeemPopupEl.style.display="none";
 
-    // Notify admin
     await addDoc(collection(db,"adminMessages"),{
       message:`${currentUser.chatId} redeemed ${selectedPerk.name}, please gift ${currentUser.chatId}`,
       timestamp:serverTimestamp()
