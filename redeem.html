@@ -3,240 +3,193 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Xixi Redeem</title>
+<title>Xixi Chat 💸</title>
 <link rel="icon" href="data:," />
 <style>
 :root{
-  --bg:#0c0c0f;
-  --card:#1a1a1d;
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
   --accent:#FF1493;
-  --glass: rgba(255,255,255,0.05);
-  --highlight:#ff69b4;
+  --glass:rgba(255,255,255,0.08);
 }
-html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;background:var(--bg);}
-#appWrapper{display:flex;justify-content:center;align-items:center;height:100%;padding:10px;}
-.app{width:100%;max-width:480px;display:flex;flex-direction:column;gap:15px;}
-
-/* Brand */
-.brand{text-align:center;font-weight:700;font-size:32px;color:var(--accent);letter-spacing:3px;margin-bottom:10px;}
-
-/* Google button */
-#authBox{display:flex;justify-content:center;margin-top:50px;}
-.google-btn{
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  padding:14px 28px;border-radius:999px;
-  background:linear-gradient(135deg,#FF69B4,#FF1493);
-  font-weight:700;color:#fff;font-size:16px;
-  border:none;cursor:pointer;box-shadow:0 6px 16px rgba(255,20,147,0.4);
-  transition:transform 0.2s,box-shadow 0.2s;
+body{
+  margin:0;
+  font-family:sans-serif;
+  background:var(--bg);
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
-.google-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(255,20,147,0.6);}
-.google-btn img{width:20px;height:20px;border-radius:4px;padding:2px;}
-
-/* Profile Card */
-.profile{display:none;flex-direction:column;gap:12px;margin-top:20px;}
-.profile-card{
-  background:var(--glass);
-  backdrop-filter:blur(16px);
-  padding:15px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,0.1);
-  box-shadow:0 8px 30px rgba(0,0,0,0.6);
+#center{
+  width:100%;
+  max-width:480px;
+  height:100%;
   display:flex;
   flex-direction:column;
-  gap:12px;
-}
-
-/* Picture Frame */
-.picture-frame{width:100%;height:200px;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 6px 20px rgba(255,20,147,0.3);}
-.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity 1s ease;}
-.picture-frame img.active{opacity:1;}
-
-/* Stats */
-.profile-row{display:flex;justify-content:flex-start;gap:8px;font-size:15px;align-items:center;}
-.profile-label{font-weight:800;color:var(--accent);min-width:110px;}
-.profile-value{font-family:monospace;font-weight:300;color:#fff;}
-
-/* Redeem Shop */
-.redeem-shop{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px;justify-content:center;}
-.item-card{
-  flex:1 1 40%;
-  background:var(--glass);
+  background:rgba(255,255,255,0.03);
   backdrop-filter:blur(12px);
-  border-radius:14px;
-  padding:12px;
-  text-align:center;
-  cursor:pointer;
-  border:1px solid rgba(255,20,147,0.2);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius:16px;
+  overflow:hidden;
+  position:relative;
 }
-.item-card:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(255,20,147,0.5);}
-.item-name{font-weight:700;color:var(--accent);}
-.item-cost{font-family:monospace;font-size:14px;margin-top:4px;color:#fff;}
-.item-stock{font-family:monospace;font-size:12px;margin-top:2px;color:#aaa;}
+#messages{
+  flex:1;
+  overflow-y:auto;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  border-radius:8px;
+  background:#000;
+  margin-bottom:4px;
+  box-sizing:border-box;
+  scroll-behavior:smooth;
+}
+.msg{
+  background:var(--card);
+  padding:8px 12px;
+  border-radius:12px;
+  max-width:80%;
+}
+.send-area{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--card);
+  padding:10px;
+  position:sticky;   /* anchored inside glass container */
+  bottom:0;
+  z-index:10;
+  border-top:1px solid rgba(255,255,255,0.04);
+  border-radius:999px;
+  width:100%;
+  box-sizing:border-box;
+}
+#msgInput{
+  flex:1;
+  padding:8px;
+  border:none;
+  outline:none;
+  background:var(--glass);
+  border-radius:999px;
+  color:#fff;
+}
+button{
+  background:var(--accent);
+  border:none;
+  color:#fff;
+  padding:8px 14px;
+  border-radius:999px;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
-<div id="appWrapper">
-  <div class="app">
-    <div class="brand">乂丨乂丨</div>
-
-    <!-- Google Sign-In -->
-    <div id="authBox">
-      <button id="googleSignInBtn" class="google-btn">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
-        Sign in with Google
-      </button>
+  <div id="center">
+    <div id="messages"></div>
+    <div class="send-area">
+      <input id="msgInput" placeholder="Type a message..." />
+      <button id="sendBtn">Send</button>
+      <button id="buzzBtn">Buzz</button>
     </div>
-
-    <!-- Profile -->
-    <div class="profile" id="profileBox">
-      <div class="profile-card">
-        <div class="picture-frame" id="pictureFrame">
-          <img src="https://placekitten.com/480/200" class="active">
-          <img src="https://placekitten.com/481/200">
-          <img src="https://placekitten.com/482/200">
-        </div>
-        <div class="profile-row"><span class="profile-label">Name:</span><span class="profile-value" id="profileName">GUEST</span></div>
-        <div class="profile-row"><span class="profile-label">Stars Collected:</span><span class="profile-value" id="starsCollected">0</span></div>
-        <div class="profile-row"><span class="profile-label">Stars Balance:</span><span class="profile-value" id="starsBalance">0 ⭐️</span></div>
-        <div class="profile-row"><span class="profile-label">Cash Collected:</span><span class="profile-value" id="cashCollected">₦0</span></div>
-        <div class="profile-row"><span class="profile-label">Cash Balance:</span><span class="profile-value" id="cashBalance">₦0</span></div>
-      </div>
-    </div>
-
-    <!-- Redeem shop -->
-    <div class="redeem-shop" id="redeemShop" style="display:none;"></div>
   </div>
-</div>
 
+<!-- Firebase -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Firebase config
+// Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
   projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
+  storageBucket: "metaverse-1010.firebasestorage.app",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth,browserLocalPersistence);
 const db = getFirestore(app);
 
-// UI refs
-const googleBtn = document.getElementById("googleSignInBtn");
-const authBox = document.getElementById("authBox");
-const profileBox = document.getElementById("profileBox");
-const profileNameEl = document.getElementById("profileName");
-const starsCollectedEl = document.getElementById("starsCollected");
-const starsBalanceEl = document.getElementById("starsBalance");
-const cashCollectedEl = document.getElementById("cashCollected");
-const cashBalanceEl = document.getElementById("cashBalance");
-const redeemShopEl = document.getElementById("redeemShop");
+// Sign in with Google
+const provider = new GoogleAuthProvider();
+signInWithPopup(auth, provider).catch(err => console.error(err));
 
-let currentUser = null;
-const REDEEM_ITEMS = [
-  {id:'item1',name:'Cool Sticker',cost:50,stock:10},
-  {id:'item2',name:'VIP Badge',cost:200,stock:5},
-  {id:'item3',name:'Exclusive Hat',cost:500,stock:3}
-];
+// Messages
+const messagesRef = collection(db, "messages_livestreaming");
 
-function formatNumber(num){ return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g,","); }
-
-function populateRedeemShop(){
-  redeemShopEl.innerHTML = '';
-  REDEEM_ITEMS.forEach(item=>{
-    const div = document.createElement('div');
-    div.className = 'item-card';
-    div.dataset.cost = item.cost;
-    div.dataset.stock = item.stock;
-    div.innerHTML = `<div class="item-name">${item.name}</div>
-                     <div class="item-cost">${formatNumber(item.cost)} ⭐️</div>
-                     <div class="item-stock">${item.stock} left today</div>`;
-    redeemShopEl.appendChild(div);
-
-    div.addEventListener('click', async ()=>{
-      if(!currentUser) return alert("Sign in first!");
-      const userRef = doc(db,'users',currentUser.uid);
-      const snap = await getDoc(userRef);
-      const stars = snap.data()?.stars || 0;
-      let stock = parseInt(div.dataset.stock);
-
-      if(stars >= item.cost && stock > 0){
-        await updateDoc(userRef,{stars: increment(-item.cost)});
-        div.dataset.stock = stock-1;
-        div.querySelector('.item-stock').innerText = `${stock-1} left today`;
-        starsBalanceEl.innerText = `${formatNumber(stars-item.cost)} ⭐️`;
-
-        // Admin notification
-        await addDoc(collection(db,'admin_notifications'),{
-          message:`${currentUser.displayName || currentUser.uid} redeemed ${item.name}. Please gift them.`,
-          timestamp: serverTimestamp(),
-          userId: currentUser.uid
-        });
-        alert(`Redeemed ${item.name}!`);
-      } else if(stars < item.cost){
-        alert("Not enough stars!");
-      } else {
-        alert("Item out of stock!");
-      }
-    });
+// Send message
+async function sendMessage(text) {
+  if (!text.trim()) return;
+  await addDoc(messagesRef, {
+    text,
+    uid: auth.currentUser ? auth.currentUser.uid : "anon",
+    createdAt: serverTimestamp()
   });
+  document.getElementById("msgInput").value = "";
 }
 
-// Google Sign-In
-googleBtn.addEventListener('click', async ()=>{
-  const provider = new GoogleAuthProvider();
-  try{ await signInWithPopup(auth,provider); }
-  catch(err){
-    if(err.code==='auth/popup-blocked' || err.code==='auth/popup-closed-by-user'){
-      await signInWithRedirect(auth,provider);
-    } else alert(err.message||err);
-  }
+// Display messages
+const q = query(messagesRef, orderBy("createdAt"));
+onSnapshot(q, snapshot => {
+  const msgs = document.getElementById("messages");
+  msgs.innerHTML = "";
+  snapshot.forEach(doc => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.textContent = doc.data().text;
+    msgs.appendChild(div);
+  });
+  msgs.scrollTop = msgs.scrollHeight;
 });
 
-// Auth state
-onAuthStateChanged(auth,async user=>{
-  if(user){
-    currentUser = user;
-    authBox.style.display='none';
-    profileBox.style.display='flex';
-    redeemShopEl.style.display='flex';
+// Event listeners
+document.getElementById("sendBtn").onclick = () => {
+  sendMessage(document.getElementById("msgInput").value);
+};
+document.getElementById("msgInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendMessage(e.target.value);
+});
+document.getElementById("buzzBtn").onclick = () => {
+  sendMessage("BUZZ!!! 🔔");
+  fireConfetti();
+};
+</script>
 
-    const userRef = doc(db,'users',user.uid);
-    const snap = await getDoc(userRef);
-    if(!snap.exists()){
-      await setDoc(userRef,{chatId:user.displayName||user.email||"GUEST",stars:100,cash:0});
+<!-- Confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script>
+function fireConfetti() {
+  var duration = 2 * 1000; // 2 seconds
+  var end = Date.now() + duration;
+
+  (function frame() {
+    confetti({
+      particleCount: 5,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 }
+    });
+    confetti({
+      particleCount: 5,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 }
+    });
+
+    if (Date.now() < end) {
+      requestAnimationFrame(frame);
     }
-    const data = (await getDoc(userRef)).data();
-    profileNameEl.innerText = data.chatId;
-    starsCollectedEl.innerText = formatNumber(data.stars);
-    starsBalanceEl.innerText = `${formatNumber(data.stars)} ⭐️`;
-    cashCollectedEl.innerText = `₦${formatNumber(data.cash)}`;
-    cashBalanceEl.innerText = `₦${formatNumber(data.cash)}`;
-    populateRedeemShop();
-  } else {
-    currentUser = null;
-    authBox.style.display='flex';
-    profileBox.style.display='none';
-    redeemShopEl.style.display='none';
-  }
-});
-
-// Picture slideshow
-const pics = document.querySelectorAll("#pictureFrame img");
-let picIndex = 0;
-setInterval(()=>{
-  pics[picIndex].classList.remove("active");
-  picIndex = (picIndex+1)%pics.length;
-  pics[picIndex].classList.add("active");
-},4000);
+  })();
+}
 </script>
 </body>
 </html>
