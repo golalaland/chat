@@ -20,18 +20,28 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #authBox{display:flex;justify-content:center;margin:20px 0;}
 .google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);}
 .google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
-.profile{display:none;flex-direction:column;gap:12px;}
-.profile-card{background:var(--glass);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:10px;}
+.profile{display:none;flex-direction:column;gap:12px;width:100%;}
+.profile-card{
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
 .picture-frame{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;display:flex;justify-content:center;align-items:center;position:relative;}
 .picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s;}
 .picture-frame img.active{opacity:1;}
-.profile-row{display:flex;justify-content:space-between;align-items:center;}
-.profile-label{font-weight:700;color:var(--accent);}
-.profile-value{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:#fff;}
+.profile-stats{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:10px;}
+.profile-label{font-weight:600;color:var(--accent);font-size:14px;}
+.profile-value{font-family:ui-monospace, Menlo, Monaco,"Roboto Mono",monospace;color:#fff;font-size:16px;}
 .exit-btn{padding:10px 0;border-radius:999px;background:var(--accent);border:0;color:#000;font-weight:700;font-size:16px;cursor:pointer;margin-top:10px;transition:transform .2s;}
 .exit-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,20,147,0.3);}
-.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
-.perk-card{background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,20,147,0.2);cursor:pointer;transition:transform .2s;}
+.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;width:100%;}
+.perk-card{background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,20,147,0.2);cursor:pointer;transition:transform .2s;text-align:center;}
 .perk-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,20,147,0.3);}
 .perk-card .perk-name{font-weight:700;color:#fff;margin-bottom:4px;}
 .perk-card .perk-cost{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:var(--accent);}
@@ -61,24 +71,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           <img src="https://placekitten.com/401/400">
           <img src="https://placekitten.com/402/400">
         </div>
-        <div class="profile-row">
-          <span class="profile-label" id="profileName"></span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-label">Stars Collected:</span>
-          <span class="profile-value" id="starsCollected">0 ⭐️</span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-label">Stars Balance:</span>
-          <span class="profile-value" id="starsBalance">0 ⭐️</span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-label">Cash Collected:</span>
-          <span class="profile-value" id="cashCollected">₦0</span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-label">Cash Balance:</span>
-          <span class="profile-value" id="cashBalance">₦0</span>
+
+        <!-- Centered Profile Stats -->
+        <div class="profile-stats">
+          <div id="profileName" style="font-size:28px;font-weight:700;"></div>
+          <div class="profile-row">
+            <span class="profile-label">Stars Collected:</span>
+            <span class="profile-value" id="starsCollected">0 ⭐️</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Stars Balance:</span>
+            <span class="profile-value" id="starsBalance">0 ⭐️</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Cash Collected:</span>
+            <span class="profile-value" id="cashCollected">₦0</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-label">Cash Balance:</span>
+            <span class="profile-value" id="cashBalance">₦0</span>
+          </div>
         </div>
 
         <!-- Redeem Grid -->
@@ -101,18 +113,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
   projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
+  storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -136,7 +146,6 @@ const redeemCancelBtn = document.getElementById("redeemCancel");
 let currentUser = null;
 let selectedPerk = null;
 
-// Sample perks
 const perks = [
   {name:"VIP Badge", cost:50},
   {name:"Sticker Pack", cost:30},
@@ -152,20 +161,11 @@ const perks = [
   {name:"Golden Crown", cost:300}
 ];
 
-// Google Sign-In for mobile-friendly
-googleBtn.addEventListener("click", async () => {
+// Google Sign-In
+googleBtn.addEventListener("click",async()=>{
   const provider = new GoogleAuthProvider();
-  try {
-    await signInWithRedirect(auth, provider);
-  } catch(err){
-    console.error("Redirect failed:", err);
-  }
+  try{ await signInWithPopup(auth,provider); }catch(err){ await signInWithRedirect(auth,provider); }
 });
-
-// Handle redirect result
-getRedirectResult(auth).then((result)=>{
-  if(result && result.user){ console.log("Redirect sign-in success", result.user.displayName); }
-}).catch(err=>{console.error(err);});
 
 onAuthStateChanged(auth,async(user)=>{
   if(user){
@@ -188,7 +188,6 @@ onAuthStateChanged(auth,async(user)=>{
     cashCollectedEl.innerText = `₦${data.cash.toLocaleString()}`;
     cashBalanceEl.innerText = `₦${data.cash.toLocaleString()}`;
 
-    // Populate perks
     redeemGridEl.innerHTML="";
     perks.forEach(p=>{
       const div = document.createElement("div");
