@@ -6,6 +6,25 @@
 <title>Xixi</title>
 <link rel="icon" href="data:," />
 <style>
+#videoNavButtons {
+  display: none;      /* hidden by default */
+  margin: 6px 0;      /* spacing above/below video */
+  width: 100%;
+  display: flex;
+  justify-content: space-between; /* left/right alignment */
+}
+
+#videoNavButtons button {
+  pointer-events: auto;  /* allow clicks */
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+}
 :root{
   --bg:#000;
   --card:#111;
@@ -175,17 +194,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
   <div id="center">
 <div id="videoWrapper">
-  <div id="videoContainer">
-    <iframe
-      src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
-      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-      allowfullscreen
-    ></iframe>
-  </div>
+  <div id="videoContainer">
+    <iframe
+      src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
+      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+  </div>
 </div>
-  <div id="videoNavButtons" style="display:none; position:absolute; top:45%; width:100%; display:flex; justify-content:space-between; pointer-events:none;">
-  <button id="prevVideoBtn" style="pointer-events:auto; background:rgba(0,0,0,0.4); color:#fff; border:none; border-radius:50%; width:36px; height:36px; font-size:18px; cursor:pointer;">‹</button>
-  <button id="nextVideoBtn" style="pointer-events:auto; background:rgba(0,0,0,0.4); color:#fff; border:none; border-radius:50%; width:36px; height:36px; font-size:18px; cursor:pointer;">›</button>
+    
+<!-- VIDEO NAV BUTTONS ABOVE CHAT -->
+<div id="videoNavButtons">
+  <button id="prevVideoBtn" class="small-btn">‹</button>
+  <button id="nextVideoBtn" class="small-btn">›</button>
 </div>
         <!-- HELLO -->
         <div id="helloText" aria-live="polite">HELLO</div>
