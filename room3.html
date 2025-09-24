@@ -71,7 +71,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .msg .content{font-size:13px;color:#fff;white-space:pre-wrap;word-break:break-word;display:inline-block;}
 /* highlighted buzz content but keep username+content on same line */
-.buzz-content{font-weight:800;font-size:14px;color:#000;padding:6px 8px;border-radius:8px;display:inline-block;}
+.buzz-content {
+ font-weight: 800;          /* bold text */
+ font-size: 14px;           
+ color: #000;               /* text color */
+ padding: 6px 8px;          /* full backdrop padding */
+ border-radius: 8px;
+ display: inline-block;
+ width: fit-content;        /* shrink to content but preserve padding */
+ background-color: var(--accent); /* fallback pink if JS doesn't set color */
+}
 /* chat input area */
 .send-area{display:flex;align-items:center;gap:8px;background:var(--card);padding:10px;position:sticky;bottom:10px;z-index:20;border-top:1px solid rgba(255,255,255,0.04);border-radius:999px;}
 .send-area input{flex:1;padding:12px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);background:#0e0e0e;color:#fff;font-size:14px;outline:none;}
@@ -538,12 +547,12 @@ function renderMessagesFromArray(arr){
     meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
     meta.style.marginRight = "4px"; // optional spacing
 
-  const content = document.createElement("span");
-content.className = "content";
+const content = document.createElement("span");
 content.textContent = " " + (m.content || "");
 
-// Apply BUZZ styling
+// Determine class for normal vs buzz messages
 if(m.buzzColor){
+  content.classList.add("buzz-content");  // <-- keeps bold + padding
   content.style.background = m.buzzColor;
   content.style.color = "#000";
 
@@ -555,6 +564,8 @@ if(m.buzzColor){
     }, 39000); // 39 seconds glow
     m.hasGlowed = true; // mark as glowed
   }
+} else {
+  content.classList.add("content"); // regular messages
 }
 
     wrapper.appendChild(meta);
