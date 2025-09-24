@@ -320,6 +320,7 @@ import {
   onDisconnect,
   onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- Firebase config (existing project you provided) ---------- */
 const firebaseConfig = {
@@ -374,24 +375,29 @@ function glowBuzzMessage(contentEl, message) {
   }, 10000);
 }
 /* ---------- HELLO rotation (runs immediately, non-blocking) ---------- */
-const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
-let helloIndex = 0;
-const helloEl = document.getElementById("helloText");
-function rotateHello() {
-  if(!helloEl || helloEl.style.display === "none") return;
+document.addEventListener("DOMContentLoaded", () => {
+  const helloEl = document.getElementById("helloText");
+  if(!helloEl) return;
 
-  helloEl.style.transition = "opacity 0.3s ease, color 0.3s ease";
-  helloEl.style.opacity = 0;
+  const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
+  let helloIndex = 0;
 
-  setTimeout(() => {
-    helloEl.innerText = greetings[helloIndex++ % greetings.length];
-    helloEl.style.color = randomColor();
-    helloEl.style.opacity = 1;
-  }, 300);
-}
-rotateHello();
-let helloInterval = setInterval(rotateHello, 1500);  // keep a reference
+  function rotateHello() {
+    if(!helloEl || helloEl.style.display === "none") return;
 
+    helloEl.style.transition = "opacity 0.3s ease, color 0.3s ease";
+    helloEl.style.opacity = 0;
+
+    setTimeout(() => {
+      helloEl.innerText = greetings[helloIndex++ % greetings.length];
+      helloEl.style.color = randomColor();
+      helloEl.style.opacity = 1;
+    }, 300);
+  }
+
+  rotateHello();  // initial display
+  window.helloInterval = setInterval(rotateHello, 1500); // global for later clearing
+});
 /* ---------- UI refs ---------- */
 const googleBtn = document.getElementById("googleSignInBtn");
 const authBox = document.getElementById("authBox");
@@ -462,6 +468,15 @@ googleBtn.addEventListener("click", async () => {
     console.log("Signed in:", result.user.uid);
   } catch (err) {
     console.error("Sign-in failed:", err);
+
+    if(err.code === "auth/operation-not-allowed"){
+      alert("Google sign-in is disabled in Firebase. Enable it in Firebase Console -> Authentication -> Sign-in method.");
+      return;
+    }
+    if(err.code === "auth/unauthorized-domain"){
+      alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
+      return;
+    }
     alert("Sign-in failed: " + (err.message || err));
   }
 });
@@ -551,8 +566,6 @@ setInterval(async () => {
 }, 60000);
 
 /* ---------- Message rendering ---------- */
-let lastMessagesArray = []; // must be declared at top-level
-
 async function renderMessagesFromArray(arr){
   messagesEl.innerHTML = "";
 
@@ -684,8 +697,19 @@ adminClearMessagesBtn.addEventListener("click", async () => {
 // 💙 ADD ADMIN CONTROL LOGIC HERE: END   
     
     // set currentUser
-    currentUser = { uid: user.uid, chatId: userData.chatId || user.displayName || generateGuestName(), stars: userData.stars || 0, cash: userData.cash || 0, usernameColor: userData.usernameColor || randomColor(), isAdmin: userData.isAdmin || false };
-
+currentUser = { 
+  uid: user.uid,
+  chatId: userData.chatId || user.displayName || generateGuestName(),
+  stars: userData.stars || 0,
+  cash: userData.cash || 0,
+  usernameColor: userData.usernameColor || randomColor(),
+  isAdmin: userData.isAdmin || false 
+};
+    
+// now show admin controls
+if(currentUser.isAdmin){
+  adminControlsEl.style.display = "flex";
+}
     // UI: hide hello + auth, show chat & profile
     if(helloEl) helloEl.style.display = "none";
     const greetingEl = document.getElementById("greeting"); if(greetingEl) greetingEl.style.display = "none";
@@ -712,7 +736,7 @@ adminClearMessagesBtn.addEventListener("click", async () => {
         userColors[userRef.id] = d.usernameColor; // keep map in sync
       }
     });
-
+    
     // messages listener (room-scoped)
     if(messagesUnsub) messagesUnsub();
     const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
