@@ -176,13 +176,30 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 /* BUZZ glow animation */
 @keyframes buzzGlow {
-  0%, 100% { box-shadow: 0 0 0px var(--buzzGlowColor, #FF1493); }
-  50% { box-shadow: 0 0 20px var(--buzzGlowColor, #FF1493); }
+  0% {
+    box-shadow:
+      0 0 4px var(--buzzGlowColor, #FF1493),
+      0 0 10px var(--buzzGlowColor, #FF1493),
+      0 0 20px var(--buzzGlowColor, #FF1493);
+  }
+  50% {
+    box-shadow:
+      0 0 8px var(--buzzGlowColor, #FF1493),
+      0 0 20px var(--buzzGlowColor, #FF1493),
+      0 0 40px var(--buzzGlowColor, #FF1493);
+  }
+  100% {
+    box-shadow:
+      0 0 4px var(--buzzGlowColor, #FF1493),
+      0 0 10px var(--buzzGlowColor, #FF1493),
+      0 0 20px var(--buzzGlowColor, #FF1493);
+  }
 }
 
 .buzz-glow {
-  animation: buzzGlow 1.5s infinite;
+  animation: buzzGlow 1.5s infinite alternate;
   border-radius: 8px;
+  transition: box-shadow 0.2s ease;
 }
 </style>
 </head>
@@ -553,17 +570,19 @@ content.textContent = " " + (m.content || "");
 
 // Determine class for normal vs buzz messages
 if(m.buzzColor){
-  content.classList.add("buzz-content");  // keeps bold + padding
+  content.classList.add("buzz-content");  // ensures bold & padding
   content.style.background = m.buzzColor;
   content.style.color = "#000";
 
-  // dramatic random glow
-  if(!m.hasGlowed){ 
-    content.style.setProperty('--buzzGlowColor', randomColor()); // assign random color
+  if(!m.hasGlowed){
+    content.style.setProperty('--buzzGlowColor', randomColor()); // dramatic random neon color
     content.classList.add("buzz-glow");
+    
+    // auto remove glow after 39s
     setTimeout(() => {
       content.classList.remove("buzz-glow");
-    }, 39000); // 39s glow
+    }, 39000);
+    
     m.hasGlowed = true;
   }
 }
