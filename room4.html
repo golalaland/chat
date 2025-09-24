@@ -59,18 +59,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 #messages {
-  flex: 1;                           /* fill remaining vertical space */
-  overflow-y: auto;                  /* scrollable */
-  padding: 8px;                      /* internal spacing */
-  padding-bottom: 80px;              /* space for fixed keyboard */
+  flex: 1;                           
+  overflow-y: auto;                  
+  padding: 8px;                      
   display: flex;                     
   flex-direction: column;            
   gap: 6px;                          
   border-radius: 8px;                
   background: #000;                  
   margin-bottom: 4px;                
-  box-sizing: border-box;            /* include padding in height */
-  scroll-behavior: smooth;           /* smooth scroll when new messages arrive */
+  box-sizing: border-box;            
+  scroll-behavior: smooth;           
 }
 /* compact message layout: username + message on same line */
 .msg{padding:8px 10px;border-radius:8px;background:var(--glass);max-width:100%;display:flex;gap:8px;align-items:center;}
@@ -86,23 +85,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* highlighted buzz content but keep username+content on same line */
 .buzz-content{font-weight:800;font-size:14px;color:#000;padding:6px 8px;border-radius:8px;display:inline-block;}
 /* chat input area */
-.send-area{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:var(--card);
-  padding:10px;
-  /* position:sticky; bottom:10px; */ /* REMOVE THIS */
-  position: fixed; /* <-- new */
-  bottom: 10px;     /* 10px from bottom */
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  border-top:1px solid rgba(255,255,255,0.04);
-  border-radius:999px;
-  width: calc(100% - 20px);
-  max-width:480px;
-  box-sizing:border-box;
+.send-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  padding: 10px;
+  position: sticky;   /* stays inside parent, not floating */
+  bottom: 0;          /* stick to bottom of chat container */
+  z-index: 10;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  border-radius: 999px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .send-area input{flex:1;padding:12px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);background:#0e0e0e;color:#fff;font-size:14px;outline:none;}
 .send-area input::placeholder{color:var(--muted);}
