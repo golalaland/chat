@@ -15,7 +15,7 @@
 }
 html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;background:var(--bg);}
 #appWrapper{display:flex;justify-content:center;align-items:center;height:100%;padding:10px;}
-.app{width:100%;max-width:480px;display:flex;flex-direction:column;gap:15px;}
+.app{width:100%;max-width:480px;display:flex;flex-direction:column;gap:15px;position:relative;}
 
 /* Brand */
 .brand{text-align:center;font-weight:700;font-size:32px;color:var(--accent);letter-spacing:3px;margin-bottom:10px;}
@@ -33,6 +33,12 @@ html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;backgro
 .google-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(255,20,147,0.6);}
 .google-btn img{width:20px;height:20px;border-radius:4px;padding:2px;}
 
+/* Exit button */
+.exit-btn{
+  position:absolute;top:10px;right:10px;
+  padding:8px 12px;background:var(--accent);color:#fff;font-weight:700;border:none;border-radius:8px;cursor:pointer;
+}
+
 /* Profile Card */
 .profile{display:none;flex-direction:column;gap:12px;margin-top:20px;}
 .profile-card{
@@ -48,19 +54,18 @@ html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;backgro
 }
 
 /* Picture Frame */
-.picture-frame{width:100%;height:200px;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 6px 20px rgba(255,20,147,0.3);}
+.picture-frame{width:100%;padding-top:100%;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 6px 20px rgba(255,20,147,0.3);}
 .picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity 1s ease;}
 .picture-frame img.active{opacity:1;}
 
 /* Stats */
-.profile-row{display:flex;justify-content:flex-start;gap:8px;font-size:15px;align-items:center;}
+.profile-row{display:flex;justify-content:flex-start;gap:6px;font-size:15px;align-items:center;flex-wrap:wrap;}
 .profile-label{font-weight:800;color:var(--accent);min-width:110px;}
 .profile-value{font-family:monospace;font-weight:300;color:#fff;}
 
 /* Redeem Shop */
-.redeem-shop{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px;justify-content:center;}
+.redeem-shop{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:15px;}
 .item-card{
-  flex:1 1 40%;
   background:var(--glass);
   backdrop-filter:blur(12px);
   border-radius:14px;
@@ -74,11 +79,26 @@ html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;backgro
 .item-name{font-weight:700;color:var(--accent);}
 .item-cost{font-family:monospace;font-size:14px;margin-top:4px;color:#fff;}
 .item-stock{font-family:monospace;font-size:12px;margin-top:2px;color:#aaa;}
+
+/* Confirmation Popup */
+#confirmPopup{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  display:none;justify-content:center;align-items:center;
+  background:rgba(0,0,0,0.8);z-index:99;
+}
+#confirmPopup .popup-content{
+  background:var(--card);padding:20px;border-radius:14px;text-align:center;
+  max-width:280px;
+}
+.popup-btn{margin:5px;padding:8px 12px;border:none;border-radius:8px;font-weight:700;cursor:pointer;}
+.yes-btn{background:var(--accent);color:#fff;}
+.cancel-btn{background:#555;color:#fff;}
 </style>
 </head>
 <body>
 <div id="appWrapper">
   <div class="app">
+    <button class="exit-btn" onclick="window.location.href='#'">Exit</button>
     <div class="brand">乂丨乂丨</div>
 
     <!-- Google Sign-In -->
@@ -93,9 +113,9 @@ html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;backgro
     <div class="profile" id="profileBox">
       <div class="profile-card">
         <div class="picture-frame" id="pictureFrame">
-          <img src="https://placekitten.com/480/200" class="active">
-          <img src="https://placekitten.com/481/200">
-          <img src="https://placekitten.com/482/200">
+          <img src="https://placekitten.com/400/400" class="active">
+          <img src="https://placekitten.com/401/400">
+          <img src="https://placekitten.com/402/400">
         </div>
         <div class="profile-row"><span class="profile-label">Name:</span><span class="profile-value" id="profileName">GUEST</span></div>
         <div class="profile-row"><span class="profile-label">Stars Collected:</span><span class="profile-value" id="starsCollected">0</span></div>
@@ -107,6 +127,15 @@ html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;backgro
 
     <!-- Redeem shop -->
     <div class="redeem-shop" id="redeemShop" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- Confirmation Popup -->
+<div id="confirmPopup">
+  <div class="popup-content">
+    <p id="confirmText">Are you sure you want to redeem?</p>
+    <button class="popup-btn yes-btn" id="confirmYes">Yes</button>
+    <button class="popup-btn cancel-btn" id="confirmCancel">Cancel</button>
   </div>
 </div>
 
@@ -140,12 +169,20 @@ const cashCollectedEl = document.getElementById("cashCollected");
 const cashBalanceEl = document.getElementById("cashBalance");
 const redeemShopEl = document.getElementById("redeemShop");
 
+const confirmPopup = document.getElementById("confirmPopup");
+const confirmText = document.getElementById("confirmText");
+const confirmYes = document.getElementById("confirmYes");
+const confirmCancel = document.getElementById("confirmCancel");
+
 let currentUser = null;
-const REDEEM_ITEMS = [
-  {id:'item1',name:'Cool Sticker',cost:50,stock:10},
-  {id:'item2',name:'VIP Badge',cost:200,stock:5},
-  {id:'item3',name:'Exclusive Hat',cost:500,stock:3}
-];
+let selectedItem = null;
+
+const REDEEM_ITEMS = Array.from({length:12},(_,i)=>({
+  id:`item${i+1}`,
+  name:`Perk ${i+1}`,
+  cost:50*(i+1),
+  stock:5 + i%3
+}));
 
 function formatNumber(num){ return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g,","); }
 
@@ -169,18 +206,9 @@ function populateRedeemShop(){
       let stock = parseInt(div.dataset.stock);
 
       if(stars >= item.cost && stock > 0){
-        await updateDoc(userRef,{stars: increment(-item.cost)});
-        div.dataset.stock = stock-1;
-        div.querySelector('.item-stock').innerText = `${stock-1} left today`;
-        starsBalanceEl.innerText = `${formatNumber(stars-item.cost)} ⭐️`;
-
-        // Admin notification
-        await addDoc(collection(db,'admin_notifications'),{
-          message:`${currentUser.displayName || currentUser.uid} redeemed ${item.name}. Please gift them.`,
-          timestamp: serverTimestamp(),
-          userId: currentUser.uid
-        });
-        alert(`Redeemed ${item.name}!`);
+        selectedItem = {item, div};
+        confirmText.innerText = `Are you sure you want to redeem ${item.name} for ${formatNumber(item.cost)} ⭐️?`;
+        confirmPopup.style.display='flex';
       } else if(stars < item.cost){
         alert("Not enough stars!");
       } else {
@@ -189,6 +217,33 @@ function populateRedeemShop(){
     });
   });
 }
+
+// Confirmation popup handlers
+confirmYes.addEventListener('click', async ()=>{
+  if(!selectedItem) return;
+  const {item, div} = selectedItem;
+  const userRef = doc(db,'users',currentUser.uid);
+  const snap = await getDoc(userRef);
+  const stars = snap.data()?.stars || 0;
+
+  if(stars >= item.cost){
+    await updateDoc(userRef,{stars: increment(-item.cost)});
+    div.dataset.stock = parseInt(div.dataset.stock)-1;
+    div.querySelector('.item-stock').innerText = `${div.dataset.stock} left today`;
+    starsBalanceEl.innerText = `${formatNumber(stars-item.cost)} ⭐️`;
+
+    // Admin notification
+    await addDoc(collection(db,'admin_notifications'),{
+      message:`${currentUser.displayName || currentUser.uid} redeemed ${item.name}. Please gift them.`,
+      timestamp: serverTimestamp(),
+      userId: currentUser.uid
+    });
+    alert(`Redeemed ${item.name}!`);
+  }
+  confirmPopup.style.display='none';
+  selectedItem=null;
+});
+confirmCancel.addEventListener('click',()=>{confirmPopup.style.display='none';selectedItem=null;});
 
 // Google Sign-In
 googleBtn.addEventListener('click', async ()=>{
@@ -207,12 +262,12 @@ onAuthStateChanged(auth,async user=>{
     currentUser = user;
     authBox.style.display='none';
     profileBox.style.display='flex';
-    redeemShopEl.style.display='flex';
+    redeemShopEl.style.display='grid';
 
     const userRef = doc(db,'users',user.uid);
     const snap = await getDoc(userRef);
     if(!snap.exists()){
-      await setDoc(userRef,{chatId:user.displayName||user.email||"GUEST",stars:100,cash:0});
+      await setDoc(userRef,{chatId:user.displayName||user.email||"GUEST",stars:1000,cash:0});
     }
     const data = (await getDoc(userRef)).data();
     profileNameEl.innerText = data.chatId;
