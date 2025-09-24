@@ -2,145 +2,47 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Redeem | Xixi</title>
 <style>
 :root{
-  --bg:#000;
-  --card:rgba(17,17,17,0.8);
-  --muted:#aaa;
-  --accent:#FF1493;
-  --glass: rgba(255,255,255,0.05);
+  --bg:#000; --card:rgba(17,17,17,0.8); --muted:#aaa; --accent:#FF1493; --glass:rgba(255,255,255,0.05);
 }
-body{
-  margin:0;
-  font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
-  color:#fff;
-  background:var(--bg);
-  display:flex;
-  justify-content:center;
-  padding:12px;
-}
-#appWrapper{
-  width:100%;
-  max-width:420px;
-}
-.brand{
-  font-weight:700;
-  font-size:24px;
-  color:var(--accent);
-  text-align:center;
-  margin:12px 0;
-}
-/* Glass Card */
+body{margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{display:flex;flex-direction:column;align-items:center;padding:10px;}
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;margin:12px 0;}
 .profile-card{
   backdrop-filter: blur(12px);
-  background: var(--card);
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,0.1);
-  overflow:hidden;
-  margin-bottom:16px;
+  -webkit-backdrop-filter: blur(12px);
+  background: var(--glass);
+  padding: 20px; border-radius:15px; border:1px solid rgba(255,255,255,0.06);
+  width:100%; max-width:400px; margin-bottom:16px;
 }
-.glass-bar{
-  background: var(--accent);
-  padding:12px;
-  font-weight:700;
-  font-size:16px;
-  display:flex;
-  justify-content:space-between;
-}
-.stats{
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.stats div span.label{
-  color:var(--accent);
-  font-weight:600;
-}
-.stats div span.count{
-  color:#fff;
-  font-weight:300;
-}
-
-/* Google button */
-.google-btn{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:12px 20px;
-  border-radius:999px;
-  background:linear-gradient(135deg,#FF69B4,#FF1493);
-  color:#000;
-  font-weight:700;
-  font-size:14px;
-  border:none;
-  cursor:pointer;
-  margin:20px 0;
-}
-.google-btn img{
-  width:18px;
-  height:18px;
-  border-radius:4px;
-  padding:2px;
-}
-
-/* Redeem items */
-.items-grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:12px;
-  justify-content:center;
-}
-.item-card{
-  background:var(--card);
-  padding:12px;
-  border-radius:10px;
-  width:140px;
-  text-align:center;
-  cursor:pointer;
-  transition:transform .15s, box-shadow .15s;
-}
-.item-card:hover{
-  transform:translateY(-2px);
-  box-shadow:0 4px 10px rgba(255,20,147,0.3);
-}
+.profile-row{display:flex;justify-content:space-between;margin-bottom:8px;}
+.profile-label{font-weight:800;color:var(--accent);}
+.profile-value{font-weight:300;color:#fff;}
+.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer;margin:20px 0;}
+.google-btn img{width:18px;height:18px;border-radius:4px;padding:2px;}
+.items-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
+.item-card{background:var(--card);padding:12px;border-radius:10px;width:140px;text-align:center;cursor:pointer;transition:transform .15s, box-shadow .15s;}
+.item-card:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(255,20,147,0.3);}
 .item-name{font-weight:600;margin-bottom:4px;}
 .item-cost{color:var(--accent);font-weight:700;}
-
-/* Popup */
-.star-popup{
-  position:fixed;
-  left:50%;
-  top:18%;
-  transform:translateX(-50%);
-  background:var(--card);
-  padding:8px 12px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,0.05);
-  display:none;
-  z-index:1000;
-  color:var(--accent);
-  font-size:13px;
-  text-align:center;
-}
+.item-stock{font-weight:300;font-size:12px;color:#fff;}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
 <div id="appWrapper">
   <div class="brand">乂丨乂丨 Redeem</div>
 
-  <!-- Profile info -->
+  <!-- Profile card -->
   <div id="profileCard" class="profile-card" style="display:none;">
-    <div class="glass-bar">User Info</div>
-    <div class="stats">
-      <div>Name: <span class="count" id="profileName">Guest</span></div>
-      <div>Stars Collected: <span class="count" id="totalStars">0</span></div>
-      <div>Stars Balance: <span class="count" id="starCount">0 ⭐️</span></div>
-      <div>Cash Collected: <span class="count" id="totalCash">0</span></div>
-      <div>Cash Balance: <span class="count" id="cashBalance">₦0</span></div>
-    </div>
+    <div class="profile-row"><span class="profile-label">Name:</span><span class="profile-value" id="profileName">Guest</span></div>
+    <div class="profile-row"><span class="profile-label">Stars Collected:</span><span class="profile-value" id="starsCollected">0</span></div>
+    <div class="profile-row"><span class="profile-label">Stars Balance:</span><span class="profile-value" id="starBalance">0 ⭐️</span></div>
+    <div class="profile-row"><span class="profile-label">Cash Collected:</span><span class="profile-value" id="cashCollected">₦0</span></div>
+    <div class="profile-row"><span class="profile-label">Cash Balance:</span><span class="profile-value" id="cashBalance">₦0</span></div>
   </div>
 
   <!-- Sign in -->
@@ -151,9 +53,9 @@ body{
 
   <!-- Redeem items -->
   <div id="itemsGrid" class="items-grid" style="display:none;">
-    <div class="item-card" data-cost="50"><div class="item-name">Pink Badge</div><div class="item-cost">50 ⭐</div></div>
-    <div class="item-card" data-cost="100"><div class="item-name">VIP Access</div><div class="item-cost">100 ⭐</div></div>
-    <div class="item-card" data-cost="200"><div class="item-name">Gift Pack</div><div class="item-cost">200 ⭐</div></div>
+    <div class="item-card" data-cost="50" data-stock="10"><div class="item-name">Pink Badge</div><div class="item-cost">50 ⭐</div><div class="item-stock">10 left today</div></div>
+    <div class="item-card" data-cost="100" data-stock="5"><div class="item-name">VIP Access</div><div class="item-cost">100 ⭐</div><div class="item-stock">5 left today</div></div>
+    <div class="item-card" data-cost="200" data-stock="2"><div class="item-name">Gift Pack</div><div class="item-cost">200 ⭐</div><div class="item-stock">2 left today</div></div>
   </div>
 </div>
 
@@ -161,7 +63,7 @@ body{
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -176,7 +78,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const db = getFirestore(app);
 
 let currentUser = null;
@@ -185,9 +86,9 @@ let currentUser = null;
 const googleBtn = document.getElementById("googleSignInBtn");
 const profileCard = document.getElementById("profileCard");
 const profileNameEl = document.getElementById("profileName");
-const starCountEl = document.getElementById("starCount");
-const totalStarsEl = document.getElementById("totalStars");
-const totalCashEl = document.getElementById("totalCash");
+const starsCollectedEl = document.getElementById("starsCollected");
+const starBalanceEl = document.getElementById("starBalance");
+const cashCollectedEl = document.getElementById("cashCollected");
 const cashBalanceEl = document.getElementById("cashBalance");
 const itemsGrid = document.getElementById("itemsGrid");
 const starPopup = document.getElementById("starPopup");
@@ -198,14 +99,19 @@ function showStarPopup(text){
   setTimeout(()=>{ starPopup.style.display="none"; }, 1500);
 }
 
-// Login
+// Mobile-friendly Google login
 googleBtn.addEventListener("click", async ()=>{
   const provider = new GoogleAuthProvider();
-  try {
+  try{
     await setPersistence(auth, browserLocalPersistence);
-    await signInWithPopup(auth, provider);
-  } catch(e){ console.error("Login failed", e); alert("Sign-in failed. Allow popups."); }
+    await signInWithRedirect(auth, provider);
+  } catch(e){ console.error(e); alert("Sign-in failed. Check popup settings."); }
 });
+
+// Handle redirect result for mobile
+getRedirectResult(auth).then(async (result)=>{
+  if(result?.user){ currentUser = result.user; }
+}).catch(console.error);
 
 // After login
 onAuthStateChanged(auth, async user=>{
@@ -215,41 +121,35 @@ onAuthStateChanged(auth, async user=>{
     profileCard.style.display = "block";
     itemsGrid.style.display = "flex";
 
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(db,"users",user.uid);
     const snap = await getDoc(userRef);
     if(!snap.exists()){
-      await setDoc(userRef, { chatId:user.displayName||"Guest", stars:100, totalStars:100, cash:0, totalCash:0 });
+      await setDoc(userRef,{chatId:user.displayName||"Guest", stars:100, totalStars:100, cash:0, totalCash:0});
     }
+
     const userData = (await getDoc(userRef)).data();
-
-    profileNameEl.innerText = userData.chatId || user.displayName;
-    starCountEl.innerText = `${userData.stars || 0} ⭐️`;
-    totalStarsEl.innerText = userData.totalStars || 0;
+    profileNameEl.innerText = userData.chatId || "Guest";
+    starsCollectedEl.innerText = userData.totalStars || 0;
+    starBalanceEl.innerText = `${userData.stars || 0} ⭐️`;
+    cashCollectedEl.innerText = `₦${userData.totalCash || 0}`;
     cashBalanceEl.innerText = `₦${userData.cash || 0}`;
-    totalCashEl.innerText = userData.totalCash || 0;
 
-    // Redeem
+    // Redeem logic
     document.querySelectorAll(".item-card").forEach(card=>{
       card.addEventListener("click", async ()=>{
         const cost = parseInt(card.dataset.cost);
         const snap2 = await getDoc(userRef);
         const stars = snap2.data()?.stars || 0;
-        const totalStars = snap2.data()?.totalStars || 0;
         if(stars >= cost){
-          await updateDoc(userRef, {
-            stars: increment(-cost),
-            totalStars: totalStars,
-          });
-          starCountEl.innerText = `${stars - cost} ⭐️`;
+          await updateDoc(userRef,{stars: increment(-cost)});
+          starBalanceEl.innerText = `${stars - cost} ⭐️`;
           showStarPopup(`Redeemed ${card.querySelector(".item-name").innerText}!`);
         } else {
           showStarPopup("Not enough stars!");
         }
       });
     });
-
   } else {
-    currentUser = null;
     googleBtn.style.display = "block";
     profileCard.style.display = "none";
     itemsGrid.style.display = "none";
