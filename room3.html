@@ -488,32 +488,23 @@ function renderMessagesFromArray(arr){
 
     const meta = document.createElement("span");
     meta.className = "meta";
- meta.textContent = (m.chatId || "Guest") + ":";
-    const nameColor = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+    const nameText = (m.chatId || "Guest") + ":";  // <-- colon added here
     meta.textContent = nameText;
-    meta.style.color = nameColor;
+    meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+    meta.style.marginRight = "4px"; // optional spacing
 
     const content = document.createElement("span");
+    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    content.textContent = " " + (m.content || "");
+    if(m.buzzColor) content.style.background = m.buzzColor;
+    if(m.highlight) content.style.color = "#000";
 
-    if(m.highlight || m.buzzColor){
-      content.className = "buzz-content content";
-      content.style.background = m.buzzColor || randomColor();
-      content.textContent = " " + (m.content || "");
-      content.style.color = "#000";
-      wrapper.appendChild(meta);
-      wrapper.appendChild(content);
-    } else {
-      content.className = "content";
-      content.textContent = " " + (m.content || "");
-      wrapper.appendChild(meta);
-      wrapper.appendChild(content);
-    }
-
+    wrapper.appendChild(meta);
+    wrapper.appendChild(content);
     messagesEl.appendChild(wrapper);
   });
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
-
 /* ---------- Auth watcher (core) ---------- */
 onAuthStateChanged(auth, async (user) => {
   if(user){
