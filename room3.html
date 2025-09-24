@@ -488,7 +488,7 @@ function renderMessagesFromArray(arr){
 
     const meta = document.createElement("span");
     meta.className = "meta";
-    const nameText = m.chatId || "Guest";
+ meta.textContent = (m.chatId || "Guest") + ":";
     const nameColor = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
     meta.textContent = nameText;
     meta.style.color = nameColor;
