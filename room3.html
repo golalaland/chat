@@ -65,9 +65,29 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .profile-label{color:var(--accent);font-weight:800;font-size:12px;}
 .profile-value{color:#fff;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight:400;}
 .profile-value span,.profile-value .icon{margin-left:2px;}
-.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
-.small-btn{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.06);border:0;color:#fff;cursor:pointer;font-weight:700;}
+.profile-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+}
 
+.small-btn{
+  padding:6px 8px;
+  border-radius:999px; /* make it fully rounded like send button */
+  background: var(--accent); /* same pink as send button */
+  border: 0; /* remove border */
+  color: #000; /* black text like send button */
+  cursor: pointer;
+  font-weight:700;
+  text-decoration: none; /* removes underline for links */
+  transition: transform .2s, box-shadow .2s;
+}
+
+.small-btn:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(255,20,147,0.3);
+}
 /* star popup */
 .star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
 .onlineCount{font-size:11px;color:var(--muted);}
