@@ -482,17 +482,15 @@ googleBtn.addEventListener("click", async () => {
   }
 });
     // helpful admin messages
-    if (err.code === "auth/operation-not-allowed") {
-      alert("Google sign-in is disabled in Firebase. Enable it in Firebase Console -> Authentication -> Sign-in method.");
-      return;
-    }
-    if (err.code === "auth/unauthorized-domain") {
-      alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
-      return;
-    }
-    alert("Sign-in failed: " + (err.message || err));
-  }
-});
+  try {
+  await setPersistence(auth, browserLocalPersistence);
+  await signInWithPopup(auth, provider);
+} catch(err){
+  let msg = "Sign-in failed: " + (err.message || err);
+  if(err.code === "auth/operation-not-allowed") msg = "Google sign-in is disabled in Firebase.";
+  if(err.code === "auth/unauthorized-domain") msg = "This domain is not authorized for OAuth.";
+  alert(msg);
+}
 
 /* ---------- Send + Buzz ---------- */
 sendBtn.addEventListener("click", async () => {
@@ -650,8 +648,11 @@ const adminResetCashBtn = document.getElementById("adminResetCashBtn");
 const adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
 
 // show admin controls if user is admin
-if(currentUser?.isAdmin){
-  adminControlsEl.style.display = "flex";
+currentUser = { uid: user.uid, chatId: ..., isAdmin: userData.isAdmin || false, ... };
+if(currentUser.isAdmin){
+  adminControlsEl.style.display = "flex";
+} else {
+  adminControlsEl.style.display = "none";
 }
 
 // button event handlers
