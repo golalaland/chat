@@ -354,13 +354,28 @@ let usersUnsub = null;
 const BUZZ_COST = 10;
 const AUTO_STAR_ADD = 5;
 const DAILY_STAR_CAP = 500;
-
+// ✅ Track which BUZZ messages already glowed
+const glowedMessages = new Set();
 /* ---------- Helpers ---------- */
 function generateGuestName(){ return "GUEST " + Math.floor(1000 + Math.random()*9000); }
 function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format(n || 0); }
 function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
 function showStarPopup(text){ const popup = document.getElementById("starPopup"); document.getElementById("starText").innerText = text; popup.style.display = "block"; setTimeout(()=>{ popup.style.display = "none"; }, 1700); }
+function glowBuzzMessage(contentEl, messageId) {
+  if(glowedMessages.has(messageId)) return; // Already glowed
 
+  // Assign dramatic random neon color
+  contentEl.style.setProperty('--buzzGlowColor', randomColor());
+  contentEl.classList.add("buzz-glow");
+
+  // Auto remove glow after 39s
+  setTimeout(() => {
+    contentEl.classList.remove("buzz-glow");
+  }, 39000);
+
+  // Mark as glowed in memory
+  glowedMessages.add(messageId);
+}
 /* ---------- HELLO rotation (runs immediately, non-blocking) ---------- */
 const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
 let helloIndex = 0;
@@ -570,21 +585,12 @@ content.textContent = " " + (m.content || "");
 
 // Determine class for normal vs buzz messages
 if(m.buzzColor){
-  content.classList.add("buzz-content");  // ensures bold & padding
+  content.classList.add("buzz-content");       // bold + padding
   content.style.background = m.buzzColor;
   content.style.color = "#000";
 
-  if(!m.hasGlowed){
-    content.style.setProperty('--buzzGlowColor', randomColor()); // dramatic random neon color
-    content.classList.add("buzz-glow");
-    
-    // auto remove glow after 39s
-    setTimeout(() => {
-      content.classList.remove("buzz-glow");
-    }, 39000);
-    
-    m.hasGlowed = true;
-  }
+  // Glow immediately, once, without flicker
+  glowBuzzMessage(content, item.id);
 }
 
     wrapper.appendChild(meta);
