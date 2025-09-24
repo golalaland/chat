@@ -556,6 +556,30 @@ const nextVideoBtn = document.getElementById("nextVideoBtn");
  if(prevVideoBtn) prevVideoBtn.style.display = "none";
  if(nextVideoBtn) nextVideoBtn.style.display = "none";
 }
+const prevVideoBtn = document.getElementById("prevVideoBtn");
+const nextVideoBtn = document.getElementById("nextVideoBtn");
+
+const videos = [
+  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false",
+  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=ANOTHER_VIDEO_ID&profile=cld-default&autoplay=true&muted=true&controls=false"
+];
+
+const iframe = document.querySelector("#videoContainer iframe");
+iframe.dataset.videoIndex = "0"; // initialize
+
+nextVideoBtn.addEventListener("click", () => {
+  let currentIndex = parseInt(iframe.dataset.videoIndex);
+  currentIndex = (currentIndex + 1) % videos.length;
+  iframe.src = videos[currentIndex];
+  iframe.dataset.videoIndex = currentIndex;
+});
+
+prevVideoBtn.addEventListener("click", () => {
+  let currentIndex = parseInt(iframe.dataset.videoIndex);
+  currentIndex = (currentIndex - 1 + videos.length) % videos.length;
+  iframe.src = videos[currentIndex];
+  iframe.dataset.videoIndex = currentIndex;
+});
     // presence
     try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
