@@ -12,7 +12,6 @@
   --muted:#aaa;
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
-  --gradient: linear-gradient(90deg,#FF1493,#FF69B4);
 }
 /* overall layout */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
@@ -21,11 +20,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
 .room-desc{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
 #greeting{font-size:13px;text-align:center;font-weight:600;margin-bottom:6px;color:var(--accent);}
-#helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;animation:helloFade 3s infinite;}
-@keyframes helloFade{0%,100%{color:#fff;}50%{color:var(--accent);}}
+#helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
 #center{flex:1;display:flex;flex-direction:column;gap:6px;}
 
-/* Sticky video frame */
+/* 🔥 1. Sticky video frame */
 #videoContainer{
   width:100%;
   aspect-ratio:16/9;
@@ -41,11 +39,14 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 #messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;border-radius:8px;background:#000;margin-bottom:4px;}
+/* compact message layout: username + message on same line */
 .msg{padding:8px 10px;border-radius:8px;background:var(--glass);max-width:100%;display:flex;gap:8px;align-items:center;}
 .msg.me{background:rgba(255,20,147,0.06);}
 .msg .meta{font-weight:700;font-size:13px;white-space:nowrap;}
 .msg .content{font-size:13px;color:#fff;white-space:pre-wrap;word-break:break-word;display:inline-block;}
+/* highlighted buzz content but keep username+content on same line */
 .buzz-content{font-weight:800;font-size:14px;color:#000;padding:6px 8px;border-radius:8px;display:inline-block;}
+/* chat input area */
 .send-area{display:flex;align-items:center;gap:8px;background:var(--card);padding:10px;position:sticky;bottom:10px;z-index:20;border-top:1px solid rgba(255,255,255,0.04);border-radius:999px;}
 .send-area input{flex:1;padding:12px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);background:#0e0e0e;color:#fff;font-size:14px;outline:none;}
 .send-area input::placeholder{color:var(--muted);}
@@ -55,23 +56,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
 @keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
-/* Google button style */
-#googleSignInBtn{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:10px 14px;
-  border-radius:999px;
-  font-weight:700;
-  font-size:14px;
-  border:0;
-  cursor:pointer;
-  background:var(--gradient);
-  color:#fff;
-}
-#googleSignInBtn img{height:18px;width:18px;}
-
 /* profile glass bar */
 .profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
 .profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
@@ -79,17 +63,43 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .profile-left{display:flex;flex-direction:column;gap:4px;}
 .profile-name{font-weight:800;}
 .profile-label{color:var(--accent);font-weight:800;font-size:12px;}
-.profile-value{
-  color:#fff;
-  font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
-  font-weight:400;
-}
+.profile-value{color:#fff;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight:400;}
 .profile-value span,.profile-value .icon{margin-left:2px;}
 .profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
 .small-btn{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.06);border:0;color:#fff;cursor:pointer;font-weight:700;}
+
+/* star popup */
 .star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
 .onlineCount{font-size:11px;color:var(--muted);}
 
+/* Google Sign In button */
+#authBox{display:flex;justify-content:center;margin:12px 0;}
+.google-btn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 20px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#FF69B4,#FF1493);
+  color:#fff;
+  font-weight:600;
+  font-size:14px;
+  border:none;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(255,20,147,0.4);
+  transition:transform .2s, box-shadow .2s;
+}
+.google-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 14px rgba(255,20,147,0.6);
+}
+.google-btn img{
+  width:18px;
+  height:18px;
+  background:#fff;
+  border-radius:4px;
+  padding:2px;
+}
 @media (max-width:420px){
   .send-area input{padding:10px;font-size:13px;}
   .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
@@ -97,67 +107,73 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 </style>
 </head>
 <body>
-<div id="appWrapper">
-  <div class="app">
-    <div class="brand">乂丨乂丨</div>
-    <div id="greeting">Welcome to Room 1 ✨</div>
+  <div id="appWrapper">
+    <div class="app">
+      <div class="brand">乂丨乂丨</div>
+      <div id="greeting">Welcome to Room 1 ✨</div>
 
-    <div id="center">
-      <div id="videoContainer">
-        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+      <div id="center">
+        <div id="videoContainer">
+          <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+        </div>
+
+        <!-- HELLO -->
+        <div id="helloText" aria-live="polite">HELLO</div>
+
+        <div class="room-desc">Live Stream 💸 — Chat. Own your vibe.
+          <span id="onlineCount" class="onlineCount"></span>
+        </div>
+
+        <div id="guestMsg"></div>
+
+        <!-- 🔥 Google Sign-In Button -->
+        <div id="authBox">
+          <button id="googleSignInBtn" class="google-btn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+            Sign in with Google
+          </button>
+        </div>
+
+        <div id="messages"></div>
+
+        <div class="send-area" id="sendArea" style="display:none;">
+          <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+          <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+          <button id="sendBtn" class="send-btn">Send</button>
+        </div>
+
       </div>
 
-      <div id="helloText" aria-live="polite">HELLO</div>
-
-      <div class="room-desc">Live Stream 💸 — Chat. Own your vibe.
-        <span id="onlineCount" class="onlineCount"></span>
-      </div>
-
-      <div id="guestMsg"></div>
-
-      <div id="authBox" style="display:flex;justify-content:center;margin:10px 0;">
-        <button id="googleSignInBtn">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Logo"> Sign in with Google
-        </button>
-      </div>
-
-      <div id="messages"></div>
-
-      <div class="send-area" id="sendArea" style="display:none;">
-        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
-        <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
-        <button id="sendBtn" class="send-btn">Send</button>
-      </div>
-    </div>
-
-    <div class="profile" id="profileBox">
-      <div class="profile-card">
-        <div class="profile-top">
-          <div class="profile-left">
-            <div id="profileName" class="profile-name">GUEST 0000</div>
-            <div>
-              <span class="profile-label">STARS COLLECTED:</span>
-              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+      <div class="profile" id="profileBox">
+        <div class="profile-card">
+          <div class="profile-top">
+            <div class="profile-left">
+              <div id="profileName" class="profile-name">GUEST 0000</div>
+              <div>
+                <span class="profile-label">STARS COLLECTED:</span>
+                <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+              </div>
+            </div>
+            <div class="profile-actions">
+              <a id="redeemBtn" class="small-btn" href="https://xixi.live" target="_blank">Redeem</a>
+              <button id="tipBtn" class="small-btn">💵</button>
             </div>
           </div>
-          <div class="profile-actions">
-            <a id="redeemBtn" class="small-btn" href="https://xixi.live" target="_blank">Redeem</a>
-            <button id="tipBtn" class="small-btn">💵</button>
+          <div>
+            <span class="profile-label">CASH EARNED:</span>
+            <span class="profile-value">₦<span id="cashCount">0</span></span>
           </div>
         </div>
-        <div>
-          <span class="profile-label">CASH EARNED:</span>
-          <span class="profile-value">₦<span id="cashCount">0</span></span>
-        </div>
       </div>
+
     </div>
   </div>
-</div>
 
-<div class="star-popup" id="starPopup">
-  <div id="starText">You've just earned +1 star! ⭐</div>
-</div>
-
+  <div class="star-popup" id="starPopup">
+    <div id="starText">You've just earned +1 star! ⭐</div>
+  </div>
+</body>
+</html>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
