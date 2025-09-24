@@ -41,6 +41,21 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border: 0;
   border-radius: 10px;
 }
+/* 🔥 Video wrapper for chatroom */
+#videoWrapper {
+  flex-shrink: 0;
+  width: 100%;
+  height: 240px;  /* adjust height if needed */
+  border-radius: 10px;
+  overflow: hidden;
+  background:#111;
+}
+
+#videoWrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 #messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;border-radius:8px;background:#000;margin-bottom:4px;}
