@@ -358,20 +358,18 @@ function generateGuestName(){ return "GUEST " + Math.floor(1000 + Math.random()*
 function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format(n || 0); }
 function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
 function showStarPopup(text){ const popup = document.getElementById("starPopup"); document.getElementById("starText").innerText = text; popup.style.display = "block"; setTimeout(()=>{ popup.style.display = "none"; }, 1700); }
-function glowBuzzMessage(contentEl, messageId) {
-  if(glowedMessages.has(messageId)) return; // Already glowed
+function glowBuzzMessage(contentEl, message) {
+  if(!message.highlight) return; // Only glow if highlight is true
 
   // Assign dramatic random neon color
-  contentEl.style.setProperty('--buzzGlowColor', randomColor());
+  const color = message.buzzColor || randomColor();
+  contentEl.style.setProperty('--buzzGlowColor', color);
   contentEl.classList.add("buzz-glow");
 
-  // Auto remove glow after 39s
+  // Auto remove glow after 10s (match Firestore update)
   setTimeout(() => {
     contentEl.classList.remove("buzz-glow");
-  }, 39000);
-
-  // Mark as glowed in memory
-  glowedMessages.add(messageId);
+  }, 10000);
 }
 /* ---------- HELLO rotation (runs immediately, non-blocking) ---------- */
 const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
@@ -582,12 +580,12 @@ content.textContent = " " + (m.content || "");
 
 // Determine class for normal vs buzz messages
 if(m.buzzColor){
-  content.classList.add("buzz-content");       // bold + padding
-  content.style.background = m.buzzColor;
-  content.style.color = "#000";
+  content.classList.add("buzz-content");       // bold + padding
+  content.style.background = m.buzzColor;
+  content.style.color = "#000";
 
-  // Glow immediately, once, without flicker
-  glowBuzzMessage(content, item.id);
+  // Glow only if highlight is true
+  glowBuzzMessage(content, m);
 }
 
     wrapper.appendChild(meta);
