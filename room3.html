@@ -376,9 +376,10 @@ function glowBuzzMessage(contentEl, message) {
 }
 /* ---------- HELLO rotation (runs immediately, non-blocking) ---------- */
 document.addEventListener("DOMContentLoaded", () => {
-  const helloEl = document.getElementById("helloText");
-  if(!helloEl) return;
+ const helloEl = document.getElementById("helloText"); // top of script, global
 
+document.addEventListener("DOMContentLoaded", () => {
+  if(!helloEl) return;
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
   let helloIndex = 0;
 
@@ -611,8 +612,8 @@ async function renderMessagesFromArray(arr){
 onAuthStateChanged(auth, async (user) => {
   if(user){ 
     // stop hello rotation when signed in
-clearInterval(helloInterval);
-helloEl.style.display = "none";  // hide HELLO
+clearInterval(window.helloInterval);
+helloEl.style.display = "none";
     // presence
     try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
