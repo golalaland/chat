@@ -17,15 +17,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
 .app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
 .brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
-#helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
-#center{flex:1;display:flex;flex-direction:column;gap:6px;overflow-y:auto;}
 
 /* Profile glass card */
 .profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
-.profile-card{background:var(--glass);backdrop-filter:blur(12px);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:6px;}
-.profile-row{display:flex;justify-content:space-between;font-size:14px;}
+.profile-card{background:var(--glass);backdrop-filter:blur(12px);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:10px;}
+.picture-frame{width:100%;height:180px;background:#222;border-radius:10px;overflow:hidden;position:relative;}
+.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.8s;}
+.picture-frame img.active{opacity:1;}
+
+/* Stats close together */
+.profile-row{display:flex;gap:6px;align-items:center;font-size:14px;}
 .profile-label{font-weight:800;color:var(--accent);}
-.profile-value{font-family:monospace;font-weight:300;color:#fff;margin-left:6px;}
+.profile-value{font-family:monospace;font-weight:300;color:#fff;}
 
 /* Redeem shop */
 .redeem-shop{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
@@ -59,7 +62,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="appWrapper">
   <div class="app">
     <div class="brand">乂丨乂丨</div>
-    <div id="helloText">HELLO</div>
 
     <!-- Google Sign-In -->
     <div id="authBox">
@@ -72,6 +74,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <!-- Profile -->
     <div class="profile" id="profileBox">
       <div class="profile-card">
+        <div class="picture-frame" id="pictureFrame">
+          <img src="https://placekitten.com/480/180" class="active">
+          <img src="https://placekitten.com/481/180">
+          <img src="https://placekitten.com/482/180">
+        </div>
         <div class="profile-row"><span class="profile-label">Name:</span><span class="profile-value" id="profileName">GUEST</span></div>
         <div class="profile-row"><span class="profile-label">Stars Collected:</span><span class="profile-value" id="starsCollected">0</span></div>
         <div class="profile-row"><span class="profile-label">Stars Balance:</span><span class="profile-value" id="starsBalance">0 ⭐️</span></div>
@@ -97,7 +104,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
   projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
+  storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
   measurementId: "G-S77BMC266C"
@@ -127,6 +134,9 @@ const REDEEM_ITEMS = [
   {id:'item3',name:'Exclusive Hat',cost:500,stock:3}
 ];
 
+// Helper to format numbers with commas
+function formatNumber(num){ return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g,","); }
+
 // Populate redeem shop
 function populateRedeemShop(){
   redeemShopEl.innerHTML = '';
@@ -136,7 +146,7 @@ function populateRedeemShop(){
     div.dataset.cost = item.cost;
     div.dataset.stock = item.stock;
     div.innerHTML = `<div class="item-name">${item.name}</div>
-                     <div class="item-cost">${item.cost} ⭐️</div>
+                     <div class="item-cost">${formatNumber(item.cost)} ⭐️</div>
                      <div class="item-stock">${item.stock} left today</div>`;
     redeemShopEl.appendChild(div);
 
@@ -151,7 +161,7 @@ function populateRedeemShop(){
         await updateDoc(userRef,{stars: increment(-item.cost)});
         div.dataset.stock = stock-1;
         div.querySelector('.item-stock').innerText = `${stock-1} left today`;
-        starsBalanceEl.innerText = `${stars-item.cost} ⭐️`;
+        starsBalanceEl.innerText = `${formatNumber(stars-item.cost)} ⭐️`;
 
         // Admin notification
         await addDoc(collection(db,'admin_notifications'),{
@@ -200,10 +210,10 @@ onAuthStateChanged(auth,async user=>{
     }
     const data = (await getDoc(userRef)).data();
     profileNameEl.innerText = data.chatId;
-    starsCollectedEl.innerText = data.stars;
-    starsBalanceEl.innerText = `${data.stars} ⭐️`;
-    cashCollectedEl.innerText = data.cash;
-    cashBalanceEl.innerText = `₦${data.cash}`;
+    starsCollectedEl.innerText = formatNumber(data.stars);
+    starsBalanceEl.innerText = `${formatNumber(data.stars)} ⭐️`;
+    cashCollectedEl.innerText = `₦${formatNumber(data.cash)}`;
+    cashBalanceEl.innerText = `₦${formatNumber(data.cash)}`;
 
     populateRedeemShop();
   } else {
@@ -213,6 +223,16 @@ onAuthStateChanged(auth,async user=>{
     redeemShopEl.style.display='none';
   }
 });
+
+// Picture slideshow
+const pics = document.querySelectorAll("#pictureFrame img");
+let picIndex = 0;
+setInterval(()=>{
+  pics[picIndex].classList.remove("active");
+  picIndex = (picIndex+1)%pics.length;
+  pics[picIndex].classList.add("active");
+},4000);
+
 </script>
 </body>
 </html>
