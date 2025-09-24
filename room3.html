@@ -377,18 +377,20 @@ function glowBuzzMessage(contentEl, message) {
 const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
 let helloIndex = 0;
 const helloEl = document.getElementById("helloText");
-function rotateHello(){
+function rotateHello() {
   if(!helloEl || helloEl.style.display === "none") return;
-  // fade-like swap
-  helloEl.style.opacity = '0';
-  setTimeout(()=> {
+
+  helloEl.style.transition = "opacity 0.3s ease, color 0.3s ease";
+  helloEl.style.opacity = 0;
+
+  setTimeout(() => {
     helloEl.innerText = greetings[helloIndex++ % greetings.length];
     helloEl.style.color = randomColor();
-    helloEl.style.opacity = '1';
-  }, 220);
+    helloEl.style.opacity = 1;
+  }, 300);
 }
 rotateHello();
-setInterval(rotateHello, 1500);
+let helloInterval = setInterval(rotateHello, 1500);  // keep a reference
 
 /* ---------- UI refs ---------- */
 const googleBtn = document.getElementById("googleSignInBtn");
@@ -454,28 +456,15 @@ async function assignDailyUsernameColor(userRef, data){
 /* ---------- Robust Google sign-in (popup first, fallback to redirect) ---------- */
 googleBtn.addEventListener("click", async () => {
   const provider = new GoogleAuthProvider();
-
-  // best-effort persistence
-  try { await setPersistence(auth, browserLocalPersistence); } catch (pErr) { console.warn("persistence set failed", pErr); }
-
   try {
+    await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithPopup(auth, provider);
-    console.log("Signed in (popup):", result.user.uid);
-    // onAuthStateChanged will handle UI
-    return;
+    console.log("Signed in:", result.user.uid);
   } catch (err) {
-    console.warn("signInWithPopup error:", err);
-    if (err.code === "auth/popup-blocked" || err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request" || err.code === "auth/web-storage-unsupported") {
-      try {
-        console.log("Falling back to redirect...");
-        await signInWithRedirect(auth, provider);
-        return;
-      } catch (rErr) {
-        console.error("signInWithRedirect failed:", rErr);
-        alert("Sign-in failed: " + (rErr.message || rErr));
-        return;
-      }
-    }
+    console.error("Sign-in failed:", err);
+    alert("Sign-in failed: " + (err.message || err));
+  }
+});
     // helpful admin messages
     if (err.code === "auth/operation-not-allowed") {
       alert("Google sign-in is disabled in Firebase. Enable it in Firebase Console -> Authentication -> Sign-in method.");
@@ -607,7 +596,10 @@ async function renderMessagesFromArray(arr){
 }
 /* ---------- Auth watcher (core) ---------- */
 onAuthStateChanged(auth, async (user) => {
-  if(user){
+  if(user){ 
+    // stop hello rotation when signed in
+clearInterval(helloInterval);
+helloEl.style.display = "none";  // hide HELLO
     // presence
     try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
