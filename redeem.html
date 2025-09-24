@@ -7,101 +7,45 @@
 <link rel="icon" href="data:," />
 <style>
 :root{
-  --bg:#0c0c0f;
-  --card:#1a1a1d;
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
   --accent:#FF1493;
-  --glass: rgba(255,255,255,0.05);
-  --highlight:#ff69b4;
+  --glass: rgba(255,255,255,0.03);
 }
-html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;background:var(--bg);}
-#appWrapper{display:flex;justify-content:center;align-items:center;height:100%;padding:10px;}
-.app{width:100%;max-width:480px;display:flex;flex-direction:column;gap:15px;position:relative;}
-
-/* Brand */
-.brand{text-align:center;font-weight:700;font-size:32px;color:var(--accent);letter-spacing:3px;margin-bottom:10px;}
-
-/* Google button */
-#authBox{display:flex;justify-content:center;margin-top:50px;}
-.google-btn{
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  padding:14px 28px;border-radius:999px;
-  background:linear-gradient(135deg,#FF69B4,#FF1493);
-  font-weight:700;color:#fff;font-size:16px;
-  border:none;cursor:pointer;box-shadow:0 6px 16px rgba(255,20,147,0.4);
-  transition:transform 0.2s,box-shadow 0.2s;
-}
-.google-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(255,20,147,0.6);}
-.google-btn img{width:20px;height:20px;border-radius:4px;padding:2px;}
-
-/* Exit button */
-.exit-btn{
-  position:absolute;top:10px;right:10px;
-  padding:8px 12px;background:var(--accent);color:#fff;font-weight:700;border:none;border-radius:8px;cursor:pointer;
-}
-
-/* Profile Card */
-.profile{display:none;flex-direction:column;gap:12px;margin-top:20px;}
-.profile-card{
-  background:var(--glass);
-  backdrop-filter:blur(16px);
-  padding:15px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,0.1);
-  box-shadow:0 8px 30px rgba(0,0,0,0.6);
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-/* Picture Frame */
-.picture-frame{width:100%;padding-top:100%;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 6px 20px rgba(255,20,147,0.3);}
-.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity 1s ease;}
+html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{width:100%;min-height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;min-height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;margin-bottom:10px;}
+#authBox{display:flex;justify-content:center;margin:20px 0;}
+.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);}
+.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+.profile{display:none;flex-direction:column;gap:12px;}
+.profile-card{background:var(--glass);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:10px;}
+.picture-frame{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;display:flex;justify-content:center;align-items:center;position:relative;}
+.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s;}
 .picture-frame img.active{opacity:1;}
-
-/* Stats */
-.profile-row{display:flex;justify-content:flex-start;gap:6px;font-size:15px;align-items:center;flex-wrap:wrap;}
-.profile-label{font-weight:800;color:var(--accent);min-width:110px;}
-.profile-value{font-family:monospace;font-weight:300;color:#fff;}
-
-/* Redeem Shop */
-.redeem-shop{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:15px;}
-.item-card{
-  background:var(--glass);
-  backdrop-filter:blur(12px);
-  border-radius:14px;
-  padding:12px;
-  text-align:center;
-  cursor:pointer;
-  border:1px solid rgba(255,20,147,0.2);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.item-card:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(255,20,147,0.5);}
-.item-name{font-weight:700;color:var(--accent);}
-.item-cost{font-family:monospace;font-size:14px;margin-top:4px;color:#fff;}
-.item-stock{font-family:monospace;font-size:12px;margin-top:2px;color:#aaa;}
-
-/* Confirmation Popup */
-#confirmPopup{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  display:none;justify-content:center;align-items:center;
-  background:rgba(0,0,0,0.8);z-index:99;
-}
-#confirmPopup .popup-content{
-  background:var(--card);padding:20px;border-radius:14px;text-align:center;
-  max-width:280px;
-}
-.popup-btn{margin:5px;padding:8px 12px;border:none;border-radius:8px;font-weight:700;cursor:pointer;}
-.yes-btn{background:var(--accent);color:#fff;}
-.cancel-btn{background:#555;color:#fff;}
+.profile-row{display:flex;justify-content:space-between;align-items:center;}
+.profile-label{font-weight:700;color:var(--accent);}
+.profile-value{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:#fff;}
+.exit-btn{padding:10px 0;border-radius:999px;background:var(--accent);border:0;color:#000;font-weight:700;font-size:16px;cursor:pointer;margin-top:10px;transition:transform .2s;}
+.exit-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,20,147,0.3);}
+.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.perk-card{background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,20,147,0.2);cursor:pointer;transition:transform .2s;}
+.perk-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,20,147,0.3);}
+.perk-card .perk-name{font-weight:700;color:#fff;margin-bottom:4px;}
+.perk-card .perk-cost{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:var(--accent);}
+.popup-confirm{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);display:none;flex-direction:column;align-items:center;gap:12px;z-index:1000;}
+.popup-confirm button{padding:8px 16px;border-radius:999px;border:0;background:var(--accent);color:#000;font-weight:700;cursor:pointer;}
+.popup-confirm button.cancel{background:#444;color:#fff;}
 </style>
 </head>
 <body>
 <div id="appWrapper">
   <div class="app">
-    <button class="exit-btn" onclick="window.location.href='#'">Exit</button>
-    <div class="brand">乂丨乂丨</div>
+    <div class="brand">乂丨乂丨 REDEEM</div>
 
-    <!-- Google Sign-In -->
+    <!-- Google sign-in -->
     <div id="authBox">
       <button id="googleSignInBtn" class="google-btn">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
@@ -117,180 +61,160 @@ html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;backgro
           <img src="https://placekitten.com/401/400">
           <img src="https://placekitten.com/402/400">
         </div>
-        <div class="profile-row"><span class="profile-label">Name:</span><span class="profile-value" id="profileName">GUEST</span></div>
-        <div class="profile-row"><span class="profile-label">Stars Collected:</span><span class="profile-value" id="starsCollected">0</span></div>
-        <div class="profile-row"><span class="profile-label">Stars Balance:</span><span class="profile-value" id="starsBalance">0 ⭐️</span></div>
-        <div class="profile-row"><span class="profile-label">Cash Collected:</span><span class="profile-value" id="cashCollected">₦0</span></div>
-        <div class="profile-row"><span class="profile-label">Cash Balance:</span><span class="profile-value" id="cashBalance">₦0</span></div>
+        <div class="profile-row">
+          <span class="profile-label" id="profileName"></span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Stars Collected:</span>
+          <span class="profile-value" id="starsCollected">0 ⭐️</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Stars Balance:</span>
+          <span class="profile-value" id="starsBalance">0 ⭐️</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Cash Collected:</span>
+          <span class="profile-value" id="cashCollected">₦0</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Cash Balance:</span>
+          <span class="profile-value" id="cashBalance">₦0</span>
+        </div>
+
+        <!-- Redeem Grid -->
+        <div class="redeem-grid" id="redeemGrid"></div>
+
+        <button class="exit-btn" onclick="window.location.href='#'">Back to Chatroom</button>
       </div>
     </div>
-
-    <!-- Redeem shop -->
-    <div class="redeem-shop" id="redeemShop" style="display:none;"></div>
   </div>
 </div>
 
-<!-- Confirmation Popup -->
-<div id="confirmPopup">
-  <div class="popup-content">
-    <p id="confirmText">Are you sure you want to redeem?</p>
-    <button class="popup-btn yes-btn" id="confirmYes">Yes</button>
-    <button class="popup-btn cancel-btn" id="confirmCancel">Cancel</button>
+<!-- Redeem confirmation popup -->
+<div class="popup-confirm" id="redeemPopup">
+  <div id="redeemText">Are you sure you want to redeem?</div>
+  <div style="display:flex;gap:10px;">
+    <button id="redeemYes">Yes</button>
+    <button class="cancel" id="redeemCancel">Cancel</button>
   </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
-};
+const firebaseConfig = { /* your config */ };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth,browserLocalPersistence);
+setPersistence(auth,browserLocalPersistence).catch(()=>{});
 const db = getFirestore(app);
 
-// UI refs
 const googleBtn = document.getElementById("googleSignInBtn");
 const authBox = document.getElementById("authBox");
-const profileBox = document.getElementById("profileBox");
+const profileBoxEl = document.getElementById("profileBox");
 const profileNameEl = document.getElementById("profileName");
 const starsCollectedEl = document.getElementById("starsCollected");
 const starsBalanceEl = document.getElementById("starsBalance");
 const cashCollectedEl = document.getElementById("cashCollected");
 const cashBalanceEl = document.getElementById("cashBalance");
-const redeemShopEl = document.getElementById("redeemShop");
-
-const confirmPopup = document.getElementById("confirmPopup");
-const confirmText = document.getElementById("confirmText");
-const confirmYes = document.getElementById("confirmYes");
-const confirmCancel = document.getElementById("confirmCancel");
+const redeemGridEl = document.getElementById("redeemGrid");
+const redeemPopupEl = document.getElementById("redeemPopup");
+const redeemTextEl = document.getElementById("redeemText");
+const redeemYesBtn = document.getElementById("redeemYes");
+const redeemCancelBtn = document.getElementById("redeemCancel");
 
 let currentUser = null;
-let selectedItem = null;
+let selectedPerk = null;
 
-const REDEEM_ITEMS = Array.from({length:12},(_,i)=>({
-  id:`item${i+1}`,
-  name:`Perk ${i+1}`,
-  cost:50*(i+1),
-  stock:5 + i%3
-}));
-
-function formatNumber(num){ return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g,","); }
-
-function populateRedeemShop(){
-  redeemShopEl.innerHTML = '';
-  REDEEM_ITEMS.forEach(item=>{
-    const div = document.createElement('div');
-    div.className = 'item-card';
-    div.dataset.cost = item.cost;
-    div.dataset.stock = item.stock;
-    div.innerHTML = `<div class="item-name">${item.name}</div>
-                     <div class="item-cost">${formatNumber(item.cost)} ⭐️</div>
-                     <div class="item-stock">${item.stock} left today</div>`;
-    redeemShopEl.appendChild(div);
-
-    div.addEventListener('click', async ()=>{
-      if(!currentUser) return alert("Sign in first!");
-      const userRef = doc(db,'users',currentUser.uid);
-      const snap = await getDoc(userRef);
-      const stars = snap.data()?.stars || 0;
-      let stock = parseInt(div.dataset.stock);
-
-      if(stars >= item.cost && stock > 0){
-        selectedItem = {item, div};
-        confirmText.innerText = `Are you sure you want to redeem ${item.name} for ${formatNumber(item.cost)} ⭐️?`;
-        confirmPopup.style.display='flex';
-      } else if(stars < item.cost){
-        alert("Not enough stars!");
-      } else {
-        alert("Item out of stock!");
-      }
-    });
-  });
-}
-
-// Confirmation popup handlers
-confirmYes.addEventListener('click', async ()=>{
-  if(!selectedItem) return;
-  const {item, div} = selectedItem;
-  const userRef = doc(db,'users',currentUser.uid);
-  const snap = await getDoc(userRef);
-  const stars = snap.data()?.stars || 0;
-
-  if(stars >= item.cost){
-    await updateDoc(userRef,{stars: increment(-item.cost)});
-    div.dataset.stock = parseInt(div.dataset.stock)-1;
-    div.querySelector('.item-stock').innerText = `${div.dataset.stock} left today`;
-    starsBalanceEl.innerText = `${formatNumber(stars-item.cost)} ⭐️`;
-
-    // Admin notification
-    await addDoc(collection(db,'admin_notifications'),{
-      message:`${currentUser.displayName || currentUser.uid} redeemed ${item.name}. Please gift them.`,
-      timestamp: serverTimestamp(),
-      userId: currentUser.uid
-    });
-    alert(`Redeemed ${item.name}!`);
-  }
-  confirmPopup.style.display='none';
-  selectedItem=null;
-});
-confirmCancel.addEventListener('click',()=>{confirmPopup.style.display='none';selectedItem=null;});
+// Sample perks
+const perks = [
+  {name:"VIP Badge", cost:50},
+  {name:"Sticker Pack", cost:30},
+  {name:"Custom Emoji", cost:70},
+  {name:"Profile Highlight", cost:100},
+  {name:"Animated Frame", cost:150},
+  {name:"Extra Star Boost", cost:80},
+  {name:"Cash Booster", cost:120},
+  {name:"Mini Game Unlock", cost:90},
+  {name:"Special Avatar", cost:110},
+  {name:"Lucky Spin", cost:60},
+  {name:"Exclusive Badge", cost:200},
+  {name:"Golden Crown", cost:300}
+];
 
 // Google Sign-In
-googleBtn.addEventListener('click', async ()=>{
+googleBtn.addEventListener("click",async()=>{
   const provider = new GoogleAuthProvider();
-  try{ await signInWithPopup(auth,provider); }
-  catch(err){
-    if(err.code==='auth/popup-blocked' || err.code==='auth/popup-closed-by-user'){
-      await signInWithRedirect(auth,provider);
-    } else alert(err.message||err);
-  }
+  try{ await signInWithPopup(auth,provider); }catch(err){ await signInWithRedirect(auth,provider); }
 });
 
-// Auth state
-onAuthStateChanged(auth,async user=>{
+onAuthStateChanged(auth,async(user)=>{
   if(user){
-    currentUser = user;
-    authBox.style.display='none';
-    profileBox.style.display='flex';
-    redeemShopEl.style.display='grid';
-
-    const userRef = doc(db,'users',user.uid);
-    const snap = await getDoc(userRef);
+    authBox.style.display="none";
+    profileBoxEl.style.display="flex";
+    const userRef = doc(db,"users",user.uid);
+    let snap = await getDoc(userRef);
     if(!snap.exists()){
-      await setDoc(userRef,{chatId:user.displayName||user.email||"GUEST",stars:1000,cash:0});
+      await setDoc(userRef,{chatId:user.displayName||"GUEST",stars:200,cash:500});
+      snap = await getDoc(userRef);
     }
-    const data = (await getDoc(userRef)).data();
-    profileNameEl.innerText = data.chatId;
-    starsCollectedEl.innerText = formatNumber(data.stars);
-    starsBalanceEl.innerText = `${formatNumber(data.stars)} ⭐️`;
-    cashCollectedEl.innerText = `₦${formatNumber(data.cash)}`;
-    cashBalanceEl.innerText = `₦${formatNumber(data.cash)}`;
-    populateRedeemShop();
-  } else {
-    currentUser = null;
-    authBox.style.display='flex';
-    profileBox.style.display='none';
-    redeemShopEl.style.display='none';
+    const data = snap.data();
+    currentUser={uid:user.uid,...data};
+    const colors = ["#FF1493","#FF69B4","#FF4500","#00CED1","#7CFC00"];
+    profileNameEl.innerText=data.chatId;
+    profileNameEl.style.color=colors[Math.floor(Math.random()*colors.length)];
+
+    starsCollectedEl.innerText = `${data.stars} ⭐️`;
+    starsBalanceEl.innerText = `${data.stars} ⭐️`;
+    cashCollectedEl.innerText = `₦${data.cash.toLocaleString()}`;
+    cashBalanceEl.innerText = `₦${data.cash.toLocaleString()}`;
+
+    // Populate perks
+    redeemGridEl.innerHTML="";
+    perks.forEach(p=>{
+      const div = document.createElement("div");
+      div.className="perk-card";
+      div.innerHTML=`<div class="perk-name">${p.name}</div><div class="perk-cost">${p.cost} ⭐️</div>`;
+      div.addEventListener("click",()=>{
+        if(currentUser.stars < p.cost){ alert("Not enough stars!"); return; }
+        selectedPerk=p;
+        redeemTextEl.innerText=`Are you sure you want to redeem ${p.name} for ${p.cost} ⭐️?`;
+        redeemPopupEl.style.display="flex";
+      });
+      redeemGridEl.appendChild(div);
+    });
+
+  } else { authBox.style.display="flex"; profileBoxEl.style.display="none"; }
+});
+
+// Redeem popup buttons
+redeemCancelBtn.addEventListener("click",()=>{ redeemPopupEl.style.display="none"; });
+redeemYesBtn.addEventListener("click",async()=>{
+  if(selectedPerk){
+    // Deduct stars and update
+    const userRef = doc(db,"users",currentUser.uid);
+    await updateDoc(userRef,{stars:increment(-selectedPerk.cost)});
+    currentUser.stars -= selectedPerk.cost;
+    starsBalanceEl.innerText=`${currentUser.stars} ⭐️`;
+    redeemPopupEl.style.display="none";
+
+    // Notify admin
+    await addDoc(collection(db,"adminMessages"),{
+      message:`${currentUser.chatId} redeemed ${selectedPerk.name}, please gift ${currentUser.chatId}`,
+      timestamp:serverTimestamp()
+    });
+    alert(`Successfully redeemed ${selectedPerk.name}!`);
   }
 });
 
 // Picture slideshow
-const pics = document.querySelectorAll("#pictureFrame img");
-let picIndex = 0;
+let slideIndex = 0;
 setInterval(()=>{
-  pics[picIndex].classList.remove("active");
-  picIndex = (picIndex+1)%pics.length;
-  pics[picIndex].classList.add("active");
+  const imgs = document.querySelectorAll("#pictureFrame img");
+  imgs.forEach(img=>img.classList.remove("active"));
+  slideIndex=(slideIndex+1)%imgs.length;
+  imgs[slideIndex].classList.add("active");
 },4000);
 </script>
 </body>
