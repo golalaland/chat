@@ -547,6 +547,30 @@ onAuthStateChanged(auth, async (user) => {
   if(user){
     // presence
     try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
+
+    // ensure user doc exists
+    const userRef = doc(db, "users", user.uid);
+    let snap = await getDoc(userRef);
+    if(!snap.exists()){
+      await setDoc(userRef, {
+        chatId: user.displayName || generateGuestName(),
+        stars: 100,
+        cash: 0,
+        usernameColor: randomColor(),
+        lastColorDate: new Date().toISOString().split("T")[0],
+        isAdmin: false,
+        lastStarReset: Date.now()
+      });
+      snap = await getDoc(userRef);
+    }
+    let userData = snap.exists() ? snap.data() : {};
+
+    // assign daily color if needed
+    const today = new Date().toISOString().split("T")[0];
+    if(!userData.lastColorDate || userData.lastColorDate !== today){
+      const newColor = randomColor();
+      try{ await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today }); userData.usernameColor = newColor; } catch(e){ console.warn("usernameColor update failed", e); }
+    }
     
  // 💙 ADD ADMIN CONTROL LOGIC HERE: START
 const adminControlsEl = document.getElementById("adminControls");
@@ -603,31 +627,7 @@ adminClearMessagesBtn.addEventListener("click", async () => {
   }
 });
 // 💙 ADD ADMIN CONTROL LOGIC HERE: END   
-
-    // ensure user doc exists
-    const userRef = doc(db, "users", user.uid);
-    let snap = await getDoc(userRef);
-    if(!snap.exists()){
-      await setDoc(userRef, {
-        chatId: user.displayName || generateGuestName(),
-        stars: 100,
-        cash: 0,
-        usernameColor: randomColor(),
-        lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false,
-        lastStarReset: Date.now()
-      });
-      snap = await getDoc(userRef);
-    }
-    let userData = snap.exists() ? snap.data() : {};
-
-    // assign daily color if needed
-    const today = new Date().toISOString().split("T")[0];
-    if(!userData.lastColorDate || userData.lastColorDate !== today){
-      const newColor = randomColor();
-      try{ await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today }); userData.usernameColor = newColor; } catch(e){ console.warn("usernameColor update failed", e); }
-    }
-
+    
     // set currentUser
     currentUser = { uid: user.uid, chatId: userData.chatId || user.displayName || generateGuestName(), stars: userData.stars || 0, cash: userData.cash || 0, usernameColor: userData.usernameColor || randomColor(), isAdmin: userData.isAdmin || false };
 
