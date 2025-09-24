@@ -6,32 +6,141 @@
 <title>Redeem | Xixi</title>
 <style>
 :root{
-  --bg:#000; --card:#111; --muted:#aaa; --accent:#FF1493; --glass: rgba(255,255,255,0.03);
+  --bg:#000;
+  --card:rgba(17,17,17,0.8);
+  --muted:#aaa;
+  --accent:#FF1493;
+  --glass: rgba(255,255,255,0.05);
 }
-body{margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
-#appWrapper{display:flex;flex-direction:column;align-items:center;padding:10px;}
-.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;margin:12px 0;}
-.profile-card{background:var(--glass);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);width:100%;max-width:400px;margin-bottom:16px;}
-.profile-name{font-weight:800;font-size:18px;}
-.profile-stars{margin-top:4px;font-size:14px;color:var(--accent);}
-.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer;margin:20px 0;}
-.google-btn img{width:18px;height:18px;border-radius:4px;padding:2px;}
-.items-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
-.item-card{background:var(--card);padding:12px;border-radius:10px;width:140px;text-align:center;cursor:pointer;transition:transform .15s, box-shadow .15s;}
-.item-card:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(255,20,147,0.3);}
+body{
+  margin:0;
+  font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  color:#fff;
+  background:var(--bg);
+  display:flex;
+  justify-content:center;
+  padding:12px;
+}
+#appWrapper{
+  width:100%;
+  max-width:420px;
+}
+.brand{
+  font-weight:700;
+  font-size:24px;
+  color:var(--accent);
+  text-align:center;
+  margin:12px 0;
+}
+/* Glass Card */
+.profile-card{
+  backdrop-filter: blur(12px);
+  background: var(--card);
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.1);
+  overflow:hidden;
+  margin-bottom:16px;
+}
+.glass-bar{
+  background: var(--accent);
+  padding:12px;
+  font-weight:700;
+  font-size:16px;
+  display:flex;
+  justify-content:space-between;
+}
+.stats{
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.stats div span.label{
+  color:var(--accent);
+  font-weight:600;
+}
+.stats div span.count{
+  color:#fff;
+  font-weight:300;
+}
+
+/* Google button */
+.google-btn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 20px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#FF69B4,#FF1493);
+  color:#000;
+  font-weight:700;
+  font-size:14px;
+  border:none;
+  cursor:pointer;
+  margin:20px 0;
+}
+.google-btn img{
+  width:18px;
+  height:18px;
+  border-radius:4px;
+  padding:2px;
+}
+
+/* Redeem items */
+.items-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  justify-content:center;
+}
+.item-card{
+  background:var(--card);
+  padding:12px;
+  border-radius:10px;
+  width:140px;
+  text-align:center;
+  cursor:pointer;
+  transition:transform .15s, box-shadow .15s;
+}
+.item-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 10px rgba(255,20,147,0.3);
+}
 .item-name{font-weight:600;margin-bottom:4px;}
 .item-cost{color:var(--accent);font-weight:700;}
-.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
+
+/* Popup */
+.star-popup{
+  position:fixed;
+  left:50%;
+  top:18%;
+  transform:translateX(-50%);
+  background:var(--card);
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.05);
+  display:none;
+  z-index:1000;
+  color:var(--accent);
+  font-size:13px;
+  text-align:center;
+}
 </style>
 </head>
 <body>
 <div id="appWrapper">
   <div class="brand">乂丨乂丨 Redeem</div>
-  
+
   <!-- Profile info -->
   <div id="profileCard" class="profile-card" style="display:none;">
-    <div id="profileName" class="profile-name"></div>
-    <div id="starCount" class="profile-stars"></div>
+    <div class="glass-bar">User Info</div>
+    <div class="stats">
+      <div>Name: <span class="count" id="profileName">Guest</span></div>
+      <div>Stars Collected: <span class="count" id="totalStars">0</span></div>
+      <div>Stars Balance: <span class="count" id="starCount">0 ⭐️</span></div>
+      <div>Cash Collected: <span class="count" id="totalCash">0</span></div>
+      <div>Cash Balance: <span class="count" id="cashBalance">₦0</span></div>
+    </div>
   </div>
 
   <!-- Sign in -->
@@ -77,6 +186,9 @@ const googleBtn = document.getElementById("googleSignInBtn");
 const profileCard = document.getElementById("profileCard");
 const profileNameEl = document.getElementById("profileName");
 const starCountEl = document.getElementById("starCount");
+const totalStarsEl = document.getElementById("totalStars");
+const totalCashEl = document.getElementById("totalCash");
+const cashBalanceEl = document.getElementById("cashBalance");
 const itemsGrid = document.getElementById("itemsGrid");
 const starPopup = document.getElementById("starPopup");
 
@@ -86,13 +198,13 @@ function showStarPopup(text){
   setTimeout(()=>{ starPopup.style.display="none"; }, 1500);
 }
 
-// Login flow
+// Login
 googleBtn.addEventListener("click", async ()=>{
   const provider = new GoogleAuthProvider();
   try {
     await setPersistence(auth, browserLocalPersistence);
     await signInWithPopup(auth, provider);
-  } catch(e){ console.error("Login failed", e); alert("Sign-in failed. Check popup settings."); }
+  } catch(e){ console.error("Login failed", e); alert("Sign-in failed. Allow popups."); }
 });
 
 // After login
@@ -103,26 +215,32 @@ onAuthStateChanged(auth, async user=>{
     profileCard.style.display = "block";
     itemsGrid.style.display = "flex";
 
-    // Ensure user doc exists
     const userRef = doc(db, "users", user.uid);
     const snap = await getDoc(userRef);
     if(!snap.exists()){
-      await setDoc(userRef, { chatId: user.displayName || "Guest", stars: 100 });
+      await setDoc(userRef, { chatId:user.displayName||"Guest", stars:100, totalStars:100, cash:0, totalCash:0 });
     }
     const userData = (await getDoc(userRef)).data();
-    profileNameEl.innerText = user.displayName || "Guest";
-    starCountEl.innerText = `${userData.stars || 0} ⭐`;
 
-    // Handle redeem
+    profileNameEl.innerText = userData.chatId || user.displayName;
+    starCountEl.innerText = `${userData.stars || 0} ⭐️`;
+    totalStarsEl.innerText = userData.totalStars || 0;
+    cashBalanceEl.innerText = `₦${userData.cash || 0}`;
+    totalCashEl.innerText = userData.totalCash || 0;
+
+    // Redeem
     document.querySelectorAll(".item-card").forEach(card=>{
       card.addEventListener("click", async ()=>{
         const cost = parseInt(card.dataset.cost);
         const snap2 = await getDoc(userRef);
         const stars = snap2.data()?.stars || 0;
+        const totalStars = snap2.data()?.totalStars || 0;
         if(stars >= cost){
-          await updateDoc(userRef, { stars: increment(-cost) });
-          profileNameEl.innerText = user.displayName || "Guest";
-          starCountEl.innerText = `${stars - cost} ⭐`;
+          await updateDoc(userRef, {
+            stars: increment(-cost),
+            totalStars: totalStars,
+          });
+          starCountEl.innerText = `${stars - cost} ⭐️`;
           showStarPopup(`Redeemed ${card.querySelector(".item-name").innerText}!`);
         } else {
           showStarPopup("Not enough stars!");
