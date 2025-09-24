@@ -175,13 +175,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
   <div id="center">
 <div id="videoWrapper">
-  <div id="videoContainer">
-    <iframe
-      src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
-      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-      allowfullscreen
-    ></iframe>
-  </div>
+  <div id="videoContainer">
+    <iframe
+      src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
+      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+  </div>
+
+  <!-- Video navigation arrows -->
+  <button id="prevVideoBtn" class="small-btn" style="position:absolute; top:50%; left:8px; transform:translateY(-50%); display:none;">◀</button>
+  <button id="nextVideoBtn" class="small-btn" style="position:absolute; top:50%; right:8px; transform:translateY(-50%); display:none;">▶</button>
 </div>
         <!-- HELLO -->
         <div id="helloText" aria-live="polite">HELLO</div>
@@ -543,7 +547,15 @@ function renderMessagesFromArray(arr){
 }
 /* ---------- Auth watcher (core) ---------- */
 onAuthStateChanged(auth, async (user) => {
-  if(user){
+  const prevVideoBtn = document.getElementById("prevVideoBtn");
+const nextVideoBtn = document.getElementById("nextVideoBtn");
+ if(user){
+ if(prevVideoBtn) prevVideoBtn.style.display = "inline-flex";
+ if(nextVideoBtn) nextVideoBtn.style.display = "inline-flex";
+} else {
+ if(prevVideoBtn) prevVideoBtn.style.display = "none";
+ if(nextVideoBtn) nextVideoBtn.style.display = "none";
+}
     // presence
     try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
