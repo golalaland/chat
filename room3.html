@@ -155,12 +155,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       <div id="greeting">✨</div>
 
       <div id="center">
-       <div id="videoContainer">
- <iframe
-  src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true"
-  allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-  allowfullscreen
-></iframe>
+  <div id="videoContainer" style="position:relative; width:100%; aspect-ratio:16/9;">
+  <iframe
+    id="cloudVideo"
+    src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
+    allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+    allowfullscreen
+    style="width:100%; height:100%; border:0;"
+  ></iframe>
+
+  <!-- Tap-to-unmute overlay -->
+  <div id="unmuteOverlay" style="
+    position:absolute;
+    top:0; left:0; right:0; bottom:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.4);
+    color:#fff;
+    font-weight:700;
+    font-size:18px;
+    cursor:pointer;
+    user-select:none;
+  ">
+    Tap to Unmute 🔊
+  </div>
 </div>
 
         <!-- HELLO -->
