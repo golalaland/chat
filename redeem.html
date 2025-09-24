@@ -7,55 +7,73 @@
 <link rel="icon" href="data:," />
 <style>
 :root{
-  --bg:#000;
-  --card:#111;
-  --muted:#aaa;
+  --bg:#0c0c0f;
+  --card:#1a1a1d;
   --accent:#FF1493;
-  --glass: rgba(255,255,255,0.03);
+  --glass: rgba(255,255,255,0.05);
+  --highlight:#ff69b4;
 }
-html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
-#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
-.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
-.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
+html,body{height:100%;margin:0;font-family:'Inter',sans-serif;color:#fff;background:var(--bg);}
+#appWrapper{display:flex;justify-content:center;align-items:center;height:100%;padding:10px;}
+.app{width:100%;max-width:480px;display:flex;flex-direction:column;gap:15px;}
 
-/* Profile glass card */
-.profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
-.profile-card{background:var(--glass);backdrop-filter:blur(12px);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:10px;}
-.picture-frame{width:100%;height:180px;background:#222;border-radius:10px;overflow:hidden;position:relative;}
-.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.8s;}
+/* Brand */
+.brand{text-align:center;font-weight:700;font-size:32px;color:var(--accent);letter-spacing:3px;margin-bottom:10px;}
+
+/* Google button */
+#authBox{display:flex;justify-content:center;margin-top:50px;}
+.google-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:14px 28px;border-radius:999px;
+  background:linear-gradient(135deg,#FF69B4,#FF1493);
+  font-weight:700;color:#fff;font-size:16px;
+  border:none;cursor:pointer;box-shadow:0 6px 16px rgba(255,20,147,0.4);
+  transition:transform 0.2s,box-shadow 0.2s;
+}
+.google-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(255,20,147,0.6);}
+.google-btn img{width:20px;height:20px;border-radius:4px;padding:2px;}
+
+/* Profile Card */
+.profile{display:none;flex-direction:column;gap:12px;margin-top:20px;}
+.profile-card{
+  background:var(--glass);
+  backdrop-filter:blur(16px);
+  padding:15px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.1);
+  box-shadow:0 8px 30px rgba(0,0,0,0.6);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* Picture Frame */
+.picture-frame{width:100%;height:200px;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 6px 20px rgba(255,20,147,0.3);}
+.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity 1s ease;}
 .picture-frame img.active{opacity:1;}
 
-/* Stats close together */
-.profile-row{display:flex;gap:6px;align-items:center;font-size:14px;}
-.profile-label{font-weight:800;color:var(--accent);}
+/* Stats */
+.profile-row{display:flex;justify-content:flex-start;gap:8px;font-size:15px;align-items:center;}
+.profile-label{font-weight:800;color:var(--accent);min-width:110px;}
 .profile-value{font-family:monospace;font-weight:300;color:#fff;}
 
-/* Redeem shop */
-.redeem-shop{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
-.item-card{flex:1 1 45%;background:var(--glass);backdrop-filter:blur(10px);padding:8px;border-radius:10px;text-align:center;cursor:pointer;border:1px solid rgba(255,20,147,0.18);}
-.item-name{font-weight:700;color:var(--accent);}
-.item-cost{font-family:monospace;font-size:14px;margin-top:4px;}
-.item-stock{font-family:monospace;font-size:12px;margin-top:2px;color:#fff;}
-
-/* Button */
-.google-btn{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:12px 20px;
-  border-radius:999px;
-  background:linear-gradient(135deg,#FF69B4,#FF1493);
-  color:#fff;
-  font-weight:600;
-  font-size:14px;
-  border:none;
+/* Redeem Shop */
+.redeem-shop{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px;justify-content:center;}
+.item-card{
+  flex:1 1 40%;
+  background:var(--glass);
+  backdrop-filter:blur(12px);
+  border-radius:14px;
+  padding:12px;
+  text-align:center;
   cursor:pointer;
-  box-shadow:0 4px 10px rgba(255,20,147,0.4);
-  transition:transform .2s, box-shadow .2s;
+  border:1px solid rgba(255,20,147,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
-.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+.item-card:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(255,20,147,0.5);}
+.item-name{font-weight:700;color:var(--accent);}
+.item-cost{font-family:monospace;font-size:14px;margin-top:4px;color:#fff;}
+.item-stock{font-family:monospace;font-size:12px;margin-top:2px;color:#aaa;}
 </style>
 </head>
 <body>
@@ -75,9 +93,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="profile" id="profileBox">
       <div class="profile-card">
         <div class="picture-frame" id="pictureFrame">
-          <img src="https://placekitten.com/480/180" class="active">
-          <img src="https://placekitten.com/481/180">
-          <img src="https://placekitten.com/482/180">
+          <img src="https://placekitten.com/480/200" class="active">
+          <img src="https://placekitten.com/481/200">
+          <img src="https://placekitten.com/482/200">
         </div>
         <div class="profile-row"><span class="profile-label">Name:</span><span class="profile-value" id="profileName">GUEST</span></div>
         <div class="profile-row"><span class="profile-label">Stars Collected:</span><span class="profile-value" id="starsCollected">0</span></div>
@@ -88,16 +106,14 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     </div>
 
     <!-- Redeem shop -->
-    <div class="redeem-shop" id="redeemShop" style="display:none;">
-      <!-- Items will populate here -->
-    </div>
+    <div class="redeem-shop" id="redeemShop" style="display:none;"></div>
   </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -106,8 +122,7 @@ const firebaseConfig = {
   projectId: "metaverse-1010",
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -126,18 +141,14 @@ const cashBalanceEl = document.getElementById("cashBalance");
 const redeemShopEl = document.getElementById("redeemShop");
 
 let currentUser = null;
-
-// Example redeem items
 const REDEEM_ITEMS = [
   {id:'item1',name:'Cool Sticker',cost:50,stock:10},
   {id:'item2',name:'VIP Badge',cost:200,stock:5},
   {id:'item3',name:'Exclusive Hat',cost:500,stock:3}
 ];
 
-// Helper to format numbers with commas
 function formatNumber(num){ return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g,","); }
 
-// Populate redeem shop
 function populateRedeemShop(){
   redeemShopEl.innerHTML = '';
   REDEEM_ITEMS.forEach(item=>{
@@ -182,12 +193,11 @@ function populateRedeemShop(){
 // Google Sign-In
 googleBtn.addEventListener('click', async ()=>{
   const provider = new GoogleAuthProvider();
-  try{
-    await signInWithPopup(auth,provider);
-  } catch(err){
-    if(err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user'){
+  try{ await signInWithPopup(auth,provider); }
+  catch(err){
+    if(err.code==='auth/popup-blocked' || err.code==='auth/popup-closed-by-user'){
       await signInWithRedirect(auth,provider);
-    } else alert(err.message || err);
+    } else alert(err.message||err);
   }
 });
 
@@ -202,11 +212,7 @@ onAuthStateChanged(auth,async user=>{
     const userRef = doc(db,'users',user.uid);
     const snap = await getDoc(userRef);
     if(!snap.exists()){
-      await setDoc(userRef,{
-        chatId:user.displayName || user.email || "GUEST",
-        stars:100,
-        cash:0
-      });
+      await setDoc(userRef,{chatId:user.displayName||user.email||"GUEST",stars:100,cash:0});
     }
     const data = (await getDoc(userRef)).data();
     profileNameEl.innerText = data.chatId;
@@ -214,7 +220,6 @@ onAuthStateChanged(auth,async user=>{
     starsBalanceEl.innerText = `${formatNumber(data.stars)} ⭐️`;
     cashCollectedEl.innerText = `₦${formatNumber(data.cash)}`;
     cashBalanceEl.innerText = `₦${formatNumber(data.cash)}`;
-
     populateRedeemShop();
   } else {
     currentUser = null;
@@ -232,7 +237,6 @@ setInterval(()=>{
   picIndex = (picIndex+1)%pics.length;
   pics[picIndex].classList.add("active");
 },4000);
-
 </script>
 </body>
 </html>
