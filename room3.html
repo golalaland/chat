@@ -560,39 +560,43 @@ setInterval(async () => {
 }, 60000);
 
 /* ---------- Message rendering ---------- */
-let lastMessagesArray = [];
 function renderMessagesFromArray(arr){
-  messagesEl.innerHTML = "";
-  arr.forEach(item => {
-    const m = item.data;
-    const wrapper = document.createElement("div");
-    wrapper.className = "msg";
+  messagesEl.innerHTML = "";
+  arr.forEach(async item => {
+    const m = item.data;
+    const wrapper = document.createElement("div");
+    wrapper.className = "msg";
 
-    const meta = document.createElement("span");
-    meta.className = "meta";
-    const nameText = (m.chatId || "Guest") + ":";  // <-- colon added here
-    meta.textContent = nameText;
-    meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
-    meta.style.marginRight = "4px"; // optional spacing
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.textContent = (m.chatId || "Guest") + ":";
+    meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+    meta.style.marginRight = "4px";
 
-const content = document.createElement("span");
-content.textContent = " " + (m.content || "");
+    const content = document.createElement("span");
+    content.textContent = " " + (m.content || "");
 
-// Determine class for normal vs buzz messages
-if(m.buzzColor){
-  content.classList.add("buzz-content");       // bold + padding
-  content.style.background = m.buzzColor;
-  content.style.color = "#000";
+    // BUZZ logic
+    if(m.highlight && !glowedMessages.has(item.id)){
+      glowedMessages.add(item.id);           // mark locally to avoid double glow
+      content.classList.add("buzz-content");
+      content.style.background = m.buzzColor || "#FF1493";
+      content.style.color = "#000";
 
-  // Glow only if highlight is true
-  glowBuzzMessage(content, m);
-}
+      glowBuzzMessage(content, m);           // trigger glow animation
 
-    wrapper.appendChild(meta);
-    wrapper.appendChild(content);
-    messagesEl.appendChild(wrapper);
-  });
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+      // ✅ update Firestore to prevent future clients from glowing this again
+      try {
+        const docRef = doc(db, CHAT_COLLECTION, item.id);
+        await updateDoc(docRef, { highlight: false, buzzColor: null });
+      } catch(e){ console.warn("Failed to clear highlight in Firestore", e); }
+    }
+
+    wrapper.appendChild(meta);
+    wrapper.appendChild(content);
+    messagesEl.appendChild(wrapper);
+  });
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 /* ---------- Auth watcher (core) ---------- */
 onAuthStateChanged(auth, async (user) => {
