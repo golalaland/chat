@@ -353,6 +353,8 @@ const AUTO_STAR_ADD = 5;
 const DAILY_STAR_CAP = 500;
 // ✅ Track which BUZZ messages already glowed
 const glowedMessages = new Set();
+// ✅ Track last messages for rendering
+let lastMessagesArray = []
 /* ---------- Helpers ---------- */
 function generateGuestName(){ return "GUEST " + Math.floor(1000 + Math.random()*9000); }
 function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format(n || 0); }
@@ -560,9 +562,12 @@ setInterval(async () => {
 }, 60000);
 
 /* ---------- Message rendering ---------- */
-function renderMessagesFromArray(arr){
+let lastMessagesArray = []; // must be declared at top-level
+
+async function renderMessagesFromArray(arr){
   messagesEl.innerHTML = "";
-  arr.forEach(async item => {
+
+  for (const item of arr){
     const m = item.data;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
@@ -576,26 +581,28 @@ function renderMessagesFromArray(arr){
     const content = document.createElement("span");
     content.textContent = " " + (m.content || "");
 
-    // BUZZ logic
+    // BUZZ glow
     if(m.highlight && !glowedMessages.has(item.id)){
-      glowedMessages.add(item.id);           // mark locally to avoid double glow
+      glowedMessages.add(item.id);
       content.classList.add("buzz-content");
       content.style.background = m.buzzColor || "#FF1493";
       content.style.color = "#000";
 
-      glowBuzzMessage(content, m);           // trigger glow animation
+      glowBuzzMessage(content, m);
 
-      // ✅ update Firestore to prevent future clients from glowing this again
-      try {
-        const docRef = doc(db, CHAT_COLLECTION, item.id);
-        await updateDoc(docRef, { highlight: false, buzzColor: null });
-      } catch(e){ console.warn("Failed to clear highlight in Firestore", e); }
+      // Fire-and-forget: do NOT await inside loop
+      const docRef = doc(db, CHAT_COLLECTION, item.id);
+      updateDoc(docRef, { highlight: false, buzzColor: null }).catch(e=>{
+        console.warn("Failed to clear highlight:", e);
+      });
     }
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
     messagesEl.appendChild(wrapper);
-  });
+  }
+
+  // scroll to bottom after all messages rendered
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 /* ---------- Auth watcher (core) ---------- */
