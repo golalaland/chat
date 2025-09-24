@@ -7,11 +7,17 @@
 <link rel="icon" href="data:," />
 <style>
 #videoNavButtons {
-  display: none;      /* hidden by default */
-  margin: 6px 0;      /* spacing above/below video */
+  display: none;               /* hidden by default */
+  position: absolute;           /* overlay */
+  top: 50%;                     /* vertically centered */
+  left: 0;
   width: 100%;
   display: flex;
-  justify-content: space-between; /* left/right alignment */
+  justify-content: space-between;
+  transform: translateY(-50%);  /* exact vertical centering */
+  pointer-events: none;         /* container doesn’t block clicks */
+  padding: 0 10px;              /* small left/right padding */
+  z-index: 100;                 /* above video */
 }
 
 #videoNavButtons button {
@@ -194,6 +200,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
   <div id="center">
 <div id="videoWrapper">
+<div id="videoWrapper">
   <div id="videoContainer">
     <iframe
       src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
@@ -201,12 +208,12 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       allowfullscreen
     ></iframe>
   </div>
-</div>
-    
-<!-- VIDEO NAV BUTTONS ABOVE CHAT -->
-<div id="videoNavButtons">
-  <button id="prevVideoBtn" class="small-btn">‹</button>
-  <button id="nextVideoBtn" class="small-btn">›</button>
+
+  <!-- VIDEO NAV BUTTONS OVERLAY -->
+  <div id="videoNavButtons">
+    <button id="prevVideoBtn" class="small-btn">‹</button>
+    <button id="nextVideoBtn" class="small-btn">›</button>
+  </div>
 </div>
         <!-- HELLO -->
         <div id="helloText" aria-live="polite">HELLO</div>
