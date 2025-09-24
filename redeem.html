@@ -7,47 +7,63 @@
 <link rel="icon" href="data:," />
 <style>
 :root{
-  --bg:#000;
+  --bg:#0d0d0d;
   --card:#111;
   --muted:#aaa;
   --accent:#FF1493;
-  --glass: rgba(255,255,255,0.03);
+  --accent2:#FF69B4;
+  --glass: rgba(255,255,255,0.05);
+  --glow-shadow: 0 0 12px rgba(255,20,147,0.6);
+  --neon-text-shadow: 0 0 6px #FF1493, 0 0 12px #FF69B4;
 }
-html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
-#appWrapper{width:100%;min-height:100%;display:flex;justify-content:center;}
-.app{display:flex;flex-direction:column;min-height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
-.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;margin-bottom:10px;}
-#authBox{display:flex;justify-content:center;margin:20px 0;}
-.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);}
-.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
-.profile{display:none;flex-direction:column;gap:12px;width:100%;}
+html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);overflow-x:hidden;}
+#appWrapper{width:100%;min-height:100%;display:flex;justify-content:center;align-items:flex-start;padding-top:20px;}
+.app{display:flex;flex-direction:column;min-height:100%;gap:15px;padding:15px;box-sizing:border-box;width:100%;max-width:480px;transition:all 0.3s ease;}
+.brand{font-weight:800;font-size:28px;color:var(--accent);text-align:center;margin-bottom:10px;text-shadow: var(--neon-text-shadow);}
+#authBox{display:flex;justify-content:center;margin:20px 0;animation:fadeIn 1s;}
+.google-btn{display:flex;align-items:center;gap:10px;padding:14px 24px;border-radius:999px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;font-weight:700;font-size:15px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(255,20,147,0.4);transition:transform 0.2s, box-shadow 0.3s;}
+.google-btn:hover{transform:translateY(-3px);box-shadow:0 6px 25px rgba(255,20,147,0.6);}
+.google-btn img{width:20px;height:20px;border-radius:4px;}
+.profile{display:none;flex-direction:column;gap:15px;width:100%;animation:fadeIn 0.6s;}
 .profile-card{
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(10px);
-  padding: 16px;
-  border-radius: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(15px);
+  padding: 20px;
+  border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  box-shadow: var(--glow-shadow);
 }
-.picture-frame{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;display:flex;justify-content:center;align-items:center;position:relative;}
-.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s;}
+.picture-frame{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:16px;display:flex;justify-content:center;align-items:center;position:relative;box-shadow:0 0 15px rgba(255,20,147,0.3);}
+.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity .8s ease-in-out;border-radius:12px;}
 .picture-frame img.active{opacity:1;}
-.profile-stats{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:10px;}
-.profile-label{font-weight:600;color:var(--accent);font-size:14px;}
-.profile-value{font-family:ui-monospace, Menlo, Monaco,"Roboto Mono",monospace;color:#fff;font-size:16px;}
-.exit-btn{padding:10px 0;border-radius:999px;background:var(--accent);border:0;color:#000;font-weight:700;font-size:16px;cursor:pointer;margin-top:10px;transition:transform .2s;}
-.exit-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,20,147,0.3);}
-.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;width:100%;}
-.perk-card{background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,20,147,0.2);cursor:pointer;transition:transform .2s;text-align:center;}
-.perk-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,20,147,0.3);}
-.perk-card .perk-name{font-weight:700;color:#fff;margin-bottom:4px;}
+.profile-stats{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:10px;}
+.profile-label{font-weight:600;color:var(--accent);font-size:14px;text-shadow:0 0 6px #FF1493;}
+.profile-value{font-family:ui-monospace,Menlo,Monaco,"Roboto Mono",monospace;color:#fff;font-size:16px;}
+.exit-btn{padding:12px 0;border-radius:999px;background:var(--accent);border:0;color:#000;font-weight:800;font-size:16px;cursor:pointer;margin-top:10px;transition:transform .2s, box-shadow .3s;}
+.exit-btn:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(255,20,147,0.5);}
+.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px;width:100%;}
+.perk-card{background:var(--card);padding:14px;border-radius:14px;border:1px solid rgba(255,20,147,0.2);cursor:pointer;transition:transform .2s,box-shadow .3s;text-align:center;position:relative;overflow:hidden;}
+.perk-card:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(255,20,147,0.5);}
+.perk-card .perk-name{font-weight:700;color:#fff;margin-bottom:6px;font-size:15px;}
 .perk-card .perk-cost{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:var(--accent);}
-.popup-confirm{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);display:none;flex-direction:column;align-items:center;gap:12px;z-index:1000;}
-.popup-confirm button{padding:8px 16px;border-radius:999px;border:0;background:var(--accent);color:#000;font-weight:700;cursor:pointer;}
+.perk-card::before{
+  content:"";
+  position:absolute;
+  top:0; left:0; width:100%; height:100%;
+  background: linear-gradient(120deg,#FF1493,#FF69B4, #FF1493);
+  opacity:0;
+  transition:opacity 0.4s;
+}
+.perk-card:hover::before{opacity:0.1;}
+.popup-confirm{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);padding:22px;border-radius:16px;border:1px solid rgba(255,255,255,0.05);display:none;flex-direction:column;align-items:center;gap:14px;z-index:1000;box-shadow:0 8px 30px rgba(255,20,147,0.5);}
+.popup-confirm button{padding:10px 18px;border-radius:999px;border:0;background:var(--accent);color:#000;font-weight:700;cursor:pointer;transition:transform .2s, box-shadow .3s;}
+.popup-confirm button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,20,147,0.4);}
 .popup-confirm button.cancel{background:#444;color:#fff;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
@@ -72,7 +88,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           <img src="https://placekitten.com/402/400">
         </div>
 
-        <!-- Centered Profile Stats -->
         <div class="profile-stats">
           <div id="profileName" style="font-size:28px;font-weight:700;"></div>
           <div class="profile-row">
@@ -105,13 +120,14 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <!-- Redeem confirmation popup -->
 <div class="popup-confirm" id="redeemPopup">
   <div id="redeemText">Are you sure you want to redeem?</div>
-  <div style="display:flex;gap:10px;">
+  <div style="display:flex;gap:12px;">
     <button id="redeemYes">Yes</button>
     <button class="cancel" id="redeemCancel">Cancel</button>
   </div>
 </div>
 
 <script type="module">
+// (Firebase code remains unchanged)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
