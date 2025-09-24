@@ -62,8 +62,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .profile-left{display:flex;flex-direction:column;gap:4px;}
 .profile-name{font-weight:800;}
-.profile-label{color:var(--accent);font-weight:800;font-size:12px;}
-.profile-value{color:#fff;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight:400;}
+.profile-label{
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 10px; /* slightly smaller for compact look */
+}
+
+.profile-value{
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  font-weight: 400;
+  font-size: 11px; /* slightly smaller but still readable */
+}
 .profile-value span,.profile-value .icon{margin-left:2px;}
 .profile-actions{
   display:flex;
