@@ -73,15 +73,21 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .small-btn{
-  padding:6px 8px;
-  border-radius:999px; /* make it fully rounded like send button */
-  background: var(--accent); /* same pink as send button */
-  border: 0; /* remove border */
-  color: #000; /* black text like send button */
+  padding:4px 10px;          /* smaller button size */
+  border-radius:8px;          /* slightly curved edges, not fully rounded */
+  background: var(--accent);  /* same pink as Send button */
+  border: 0;                  /* remove any border */
+  color: #000;                /* black text */
   cursor: pointer;
   font-weight:700;
-  text-decoration: none; /* removes underline for links */
-  transition: transform .2s, box-shadow .2s;
+  font-size:12px;             /* smaller text */
+  text-decoration: none;      /* removes underline for links */
+  transition: transform .15s, box-shadow .15s;
+}
+
+.small-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(255,20,147,0.3);  /* subtle hover glow */
 }
 
 .small-btn:hover{
