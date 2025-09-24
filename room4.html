@@ -338,7 +338,7 @@ sendBtn.addEventListener("click", async ()=>{
   if(!currentUser) return;
   const text = messageInput.value.trim();
   if(!text) return;
-  await addDoc(collection(db,"messages_livestreaming"),{
+  await addDoc(collection(db,"messages_room4"),{
     uid: currentUser.uid,
     chatId: currentUser.chatId,
     text:text,
@@ -351,7 +351,7 @@ sendBtn.addEventListener("click", async ()=>{
 
 buzzBtn.addEventListener("click", async ()=>{
   if(!currentUser) return;
-  await addDoc(collection(db,"messages_livestreaming"),{
+  await addDoc(collection(db,"messages_room4"),{
     uid: currentUser.uid,
     chatId: currentUser.chatId,
     text:"BUZZ 🚨",
@@ -361,7 +361,8 @@ buzzBtn.addEventListener("click", async ()=>{
   });
 });
 
-onSnapshot(collection(db,"messages_livestreaming"),(snap)=>{
+onSnapshot(collection(db,"messages_room4
+  "),(snap)=>{
   messagesEl.innerHTML="";
   snap.docs.sort((a,b)=>a.data().ts?.seconds-(b.data().ts?.seconds)).forEach(doc=>{
     renderMessage(doc.data());
