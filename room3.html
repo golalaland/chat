@@ -230,6 +230,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
             <span class="profile-label">CASH EARNED:</span>
             <span class="profile-value">₦<span id="cashCount">0</span></span>
           </div>
+          <!-- Admin Controls (visible only for admins) -->
+<div id="adminControls" style="display:none;flex-direction:column;gap:6px;margin-top:8px;">
+  <span class="profile-label">ADMIN CONTROLS:</span>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+    <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
+    <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
+    <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
+    <button class="small-btn" id="adminResetCashBtn">Reset Cash</button>
+    <button class="small-btn" id="adminClearMessagesBtn">Clear Messages</button>
+  </div>
+</div>
+          
         </div>
       </div>
 
@@ -535,6 +547,62 @@ onAuthStateChanged(auth, async (user) => {
   if(user){
     // presence
     try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
+    
+ // 💙 ADD ADMIN CONTROL LOGIC HERE: START
+const adminControlsEl = document.getElementById("adminControls");
+const adminGiveStarsBtn = document.getElementById("adminGiveStarsBtn");
+const adminResetStarsBtn = document.getElementById("adminResetStarsBtn");
+const adminGiveCashBtn = document.getElementById("adminGiveCashBtn");
+const adminResetCashBtn = document.getElementById("adminResetCashBtn");
+const adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
+
+// show admin controls if user is admin
+if(currentUser?.isAdmin){
+  adminControlsEl.style.display = "flex";
+}
+
+// button event handlers
+adminGiveStarsBtn.addEventListener("click", async () => {
+  const amount = parseInt(prompt("Enter number of stars to give:","100")) || 0;
+  if(amount > 0){
+    const userRef = doc(db, "users", currentUser.uid);
+    await updateDoc(userRef, { stars: increment(amount) });
+    showStarPopup(`You just gave yourself +${amount} ⭐️`);
+  }
+});
+
+adminResetStarsBtn.addEventListener("click", async () => {
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { stars: 0 });
+  showStarPopup("Stars reset to 0");
+});
+
+adminGiveCashBtn.addEventListener("click", async () => {
+  const amount = parseInt(prompt("Enter amount of cash to give:","1000")) || 0;
+  if(amount > 0){
+    const userRef = doc(db, "users", currentUser.uid);
+    await updateDoc(userRef, { cash: increment(amount) });
+    showStarPopup(`You just added ₦${amount}`);
+  }
+});
+
+adminResetCashBtn.addEventListener("click", async () => {
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { cash: 0 });
+  showStarPopup("Cash reset to 0");
+});
+
+adminClearMessagesBtn.addEventListener("click", async () => {
+  if(confirm("Clear all messages in this room?")){
+    const snap = await getDocs(collection(db, CHAT_COLLECTION));
+    const batch = writeBatch(db);
+    snap.forEach(docSnap => batch.delete(docSnap.ref));
+    await batch.commit();
+    messagesEl.innerHTML = "";
+    showStarPopup("All messages cleared");
+  }
+});
+// 💙 ADD ADMIN CONTROL LOGIC HERE: END   
 
     // ensure user doc exists
     const userRef = doc(db, "users", user.uid);
