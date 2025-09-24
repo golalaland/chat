@@ -42,7 +42,13 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* compact message layout: username + message on same line */
 .msg{padding:8px 10px;border-radius:8px;background:var(--glass);max-width:100%;display:flex;gap:8px;align-items:center;}
 .msg.me{background:rgba(255,20,147,0.06);}
-.msg .meta{font-weight:700;font-size:13px;white-space:nowrap;}
+.msg .meta{
+  font-weight:700;
+  font-size:13px;
+  white-space:nowrap;
+  margin-right:4px; /* ensures space after colon */
+  color: inherit;  /* uses assigned username color */
+}
 .msg .content{font-size:13px;color:#fff;white-space:pre-wrap;word-break:break-word;display:inline-block;}
 /* highlighted buzz content but keep username+content on same line */
 .buzz-content{font-weight:800;font-size:14px;color:#000;padding:6px 8px;border-radius:8px;display:inline-block;}
