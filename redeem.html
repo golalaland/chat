@@ -3,59 +3,58 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Xixi — Redeem</title>
-<link rel="icon" href="data:," />
+<title>Redeem | Xixi</title>
 <style>
 :root{
-  --bg:#000;
-  --card:#111;
-  --muted:#aaa;
-  --accent:#FF1493;
-  --glass: rgba(255,255,255,0.03);
+  --bg:#000; --card:#111; --muted:#aaa; --accent:#FF1493; --glass: rgba(255,255,255,0.03);
 }
-html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
-#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
-.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
-.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
-#userInfo{font-size:13px;text-align:center;font-weight:600;margin-bottom:6px;color:var(--accent);}
-#itemsGrid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-.itemCard{background:var(--card);border-radius:10px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;}
-.itemCard img{width:80px;height:80px;border-radius:8px;object-fit:cover;}
-.itemCard button{padding:8px 12px;border-radius:999px;background:var(--accent);color:#000;border:0;font-weight:700;cursor:pointer;transition:transform .15s;}
-.itemCard button:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(255,20,147,0.3);}
-#starPopup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
+body{margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{display:flex;flex-direction:column;align-items:center;padding:10px;}
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;margin:12px 0;}
+.profile-card{background:var(--glass);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);width:100%;max-width:400px;margin-bottom:16px;}
+.profile-name{font-weight:800;font-size:18px;}
+.profile-stars{margin-top:4px;font-size:14px;color:var(--accent);}
+.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer;margin:20px 0;}
+.google-btn img{width:18px;height:18px;border-radius:4px;padding:2px;}
+.items-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
+.item-card{background:var(--card);padding:12px;border-radius:10px;width:140px;text-align:center;cursor:pointer;transition:transform .15s, box-shadow .15s;}
+.item-card:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(255,20,147,0.3);}
+.item-name{font-weight:600;margin-bottom:4px;}
+.item-cost{color:var(--accent);font-weight:700;}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
 <div id="appWrapper">
-  <div class="app">
-    <div class="brand">乂丨乂丨</div>
-    <div id="userInfo">Loading user info...</div>
-    <div id="itemsGrid"></div>
+  <div class="brand">乂丨乂丨 Redeem</div>
+  
+  <!-- Profile info -->
+  <div id="profileCard" class="profile-card" style="display:none;">
+    <div id="profileName" class="profile-name"></div>
+    <div id="starCount" class="profile-stars"></div>
+  </div>
+
+  <!-- Sign in -->
+  <button id="googleSignInBtn" class="google-btn">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+    Sign in with Google
+  </button>
+
+  <!-- Redeem items -->
+  <div id="itemsGrid" class="items-grid" style="display:none;">
+    <div class="item-card" data-cost="50"><div class="item-name">Pink Badge</div><div class="item-cost">50 ⭐</div></div>
+    <div class="item-card" data-cost="100"><div class="item-name">VIP Access</div><div class="item-cost">100 ⭐</div></div>
+    <div class="item-card" data-cost="200"><div class="item-name">Gift Pack</div><div class="item-cost">200 ⭐</div></div>
   </div>
 </div>
 
-<div id="starPopup">You've just redeemed an item! ⭐</div>
+<div class="star-popup" id="starPopup">Redeemed!</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  updateDoc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Firebase config (same as chat)
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -63,90 +62,79 @@ const firebaseConfig = {
   storageBucket: "metaverse-1010.firebasestorage.app",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+  measurementId: "G-S77BMC266C"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const db = getFirestore(app);
-
-// Elements
-const userInfoEl = document.getElementById("userInfo");
-const itemsGridEl = document.getElementById("itemsGrid");
-const starPopupEl = document.getElementById("starPopup");
-
-// Redeem items list
-const redeemItems = [
-  { id:"item1", name:"VIP Badge", cost:50, img:"https://via.placeholder.com/80?text=VIP" },
-  { id:"item2", name:"Custom Emoji", cost:100, img:"https://via.placeholder.com/80?text=Emoji" },
-  { id:"item3", name:"Special Sticker", cost:150, img:"https://via.placeholder.com/80?text=Sticker" },
-  { id:"item4", name:"Mystery Box", cost:200, img:"https://via.placeholder.com/80?text=Box" }
-];
-
-// Helper
-function showStarPopup(text){ starPopupEl.innerText=text; starPopupEl.style.display="block"; setTimeout(()=>starPopupEl.style.display="none",1700); }
-function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format(n || 0); }
 
 let currentUser = null;
 
-// Render items
-function renderItems(userStars){
-  itemsGridEl.innerHTML = "";
-  redeemItems.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "itemCard";
-    card.innerHTML = `<img src="${item.img}" alt="${item.name}"><div>${item.name}</div><div>${item.cost} ⭐</div>`;
-    const btn = document.createElement("button");
-    btn.textContent = "Redeem";
-    btn.disabled = userStars < item.cost;
-    btn.style.opacity = btn.disabled ? 0.5 : 1;
-    btn.addEventListener("click", async ()=>{
-      if(userStars < item.cost){ showStarPopup("Not enough stars!"); return; }
-      try{
-        const userRef = doc(db,"users",currentUser.uid);
-        await updateDoc(userRef,{ stars: userStars - item.cost });
-        showStarPopup(`Redeemed ${item.name}! ⭐`);
-        userStars -= item.cost;
-        renderItems(userStars);
-      }catch(e){ console.error("Redeem failed", e); showStarPopup("Redeem failed"); }
-    });
-    card.appendChild(btn);
-    itemsGridEl.appendChild(card);
-  });
+// UI refs
+const googleBtn = document.getElementById("googleSignInBtn");
+const profileCard = document.getElementById("profileCard");
+const profileNameEl = document.getElementById("profileName");
+const starCountEl = document.getElementById("starCount");
+const itemsGrid = document.getElementById("itemsGrid");
+const starPopup = document.getElementById("starPopup");
+
+function showStarPopup(text){
+  starPopup.innerText = text;
+  starPopup.style.display = "block";
+  setTimeout(()=>{ starPopup.style.display="none"; }, 1500);
 }
 
-// Auth watcher
-onAuthStateChanged(auth, async (user)=>{
-  if(!user){
-    // Not signed in -> prompt Google login
-    const provider = new GoogleAuthProvider();
+// Login flow
+googleBtn.addEventListener("click", async ()=>{
+  const provider = new GoogleAuthProvider();
+  try {
     await setPersistence(auth, browserLocalPersistence);
-    try{ await signInWithPopup(auth,provider); } catch(e){ console.error(e); alert("Sign-in failed!"); return; }
-  } else {
-    currentUser = user;
-    const userRef = doc(db,"users",user.uid);
-    let snap = await getDoc(userRef);
-    if(!snap.exists()){
-      await setDoc(userRef,{
-        chatId: user.displayName || "GUEST",
-        stars: 100,
-        cash: 0
-      });
-      snap = await getDoc(userRef);
-    }
-    const userData = snap.data();
-    let stars = userData.stars || 0;
-    userInfoEl.innerText = `Hello, ${userData.chatId || "Guest"} — Stars: ${formatNumberWithCommas(stars)}`;
-    renderItems(stars);
+    await signInWithPopup(auth, provider);
+  } catch(e){ console.error("Login failed", e); alert("Sign-in failed. Check popup settings."); }
+});
 
-    // Listen to stars updates
-    const unsubscribe = onSnapshot(userRef,(snap)=>{
-      const data = snap.data();
-      stars = data.stars || 0;
-      userInfoEl.innerText = `Hello, ${data.chatId || "Guest"} — Stars: ${formatNumberWithCommas(stars)}`;
-      renderItems(stars);
+// After login
+onAuthStateChanged(auth, async user=>{
+  if(user){
+    currentUser = user;
+    googleBtn.style.display = "none";
+    profileCard.style.display = "block";
+    itemsGrid.style.display = "flex";
+
+    // Ensure user doc exists
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    if(!snap.exists()){
+      await setDoc(userRef, { chatId: user.displayName || "Guest", stars: 100 });
+    }
+    const userData = (await getDoc(userRef)).data();
+    profileNameEl.innerText = user.displayName || "Guest";
+    starCountEl.innerText = `${userData.stars || 0} ⭐`;
+
+    // Handle redeem
+    document.querySelectorAll(".item-card").forEach(card=>{
+      card.addEventListener("click", async ()=>{
+        const cost = parseInt(card.dataset.cost);
+        const snap2 = await getDoc(userRef);
+        const stars = snap2.data()?.stars || 0;
+        if(stars >= cost){
+          await updateDoc(userRef, { stars: increment(-cost) });
+          profileNameEl.innerText = user.displayName || "Guest";
+          starCountEl.innerText = `${stars - cost} ⭐`;
+          showStarPopup(`Redeemed ${card.querySelector(".item-name").innerText}!`);
+        } else {
+          showStarPopup("Not enough stars!");
+        }
+      });
     });
+
+  } else {
+    currentUser = null;
+    googleBtn.style.display = "block";
+    profileCard.style.display = "none";
+    itemsGrid.style.display = "none";
   }
 });
 </script>
