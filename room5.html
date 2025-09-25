@@ -468,18 +468,17 @@ googleBtn.addEventListener("click", async () => {
 
 /* ---------- Send + Buzz ---------- */
 function triggerBuzzFeedback() {
-  // Play sound (works on all browsers)
+  // Play buzz sound
   const audio = document.getElementById("buzz-sound");
-  if(audio) {
+  if(audio){
     audio.currentTime = 0;
     audio.play().catch(()=>{});
   }
 
-  // Detect if iOS Safari
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-  if (isIOS) {
-    // Fake vibration: shake the input area quickly
+  if(isIOS){
+    // Shake input area as fake vibration
     const el = document.getElementById("sendArea");
     if(el){
       el.style.transition = "transform 0.05s";
@@ -489,11 +488,9 @@ function triggerBuzzFeedback() {
       setTimeout(()=>{ el.style.transform = "translateX(6px)"; }, 150);
       setTimeout(()=>{ el.style.transform = "translateX(0px)"; }, 200);
     }
-  } else {
-    // For other browsers, do real vibration
-    if(navigator.vibrate){
-      navigator.vibrate(150);
-    }
+  } else if(navigator.vibrate){
+    // real vibration for other devices
+    navigator.vibrate([100,50,100]);
   }
 }
 buzzBtn.addEventListener("click", async () => {
@@ -540,11 +537,6 @@ buzzBtn.addEventListener("click", async () => {
     if (audio) {
       audio.currentTime = 0;
       audio.play().catch(e => console.warn("Audio play failed:", e));
-    }
-
-    if ("vibrate" in navigator) {
-      const didVibrate = navigator.vibrate([100, 50, 100]);
-      if (!didVibrate) console.warn("Vibration not allowed on this device/context");
     }
 
     showStarPopup("BUZZ 🚨 sent!");
