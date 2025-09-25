@@ -506,10 +506,18 @@ buzzBtn.addEventListener("click", async () => {
     return;
   }
 
+  // Immediate feedback: vibration + sound
+  triggerBuzzFeedback();
+
+  // Optimistically show success message
+  showStarPopup("BUZZ 🚨 sent!");
+  messageInputEl.value = "";
+
   try {
-    // Atomic decrement to avoid race conditions
+    // Deduct stars safely
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
 
+    // Add the BUZZ message
     const color = randomColor();
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
@@ -520,26 +528,21 @@ buzzBtn.addEventListener("click", async () => {
       buzzColor: color
     });
 
-    showStarPopup("BUZZ 🚨 sent!");
-    messageInputEl.value = "";
-
-    // --- BUZZ feedback: sound + vibration ---
-    triggerBuzzFeedback();
-
-    // Clear highlight after 10s
+    // Clear highlight after 10s (non-blocking)
     setTimeout(async () => {
       try {
         await updateDoc(docRef, { highlight: false, buzzColor: null });
       } catch (e) {
-        console.warn("clear buzz failed", e);
+        console.warn("Failed to clear BUZZ highlight", e);
       }
     }, 10000);
 
   } catch (e) {
-    console.error("buzz failed", e);
-    showStarPopup("BUZZ failed");
+    console.error("BUZZ Firestore error:", e);
+    // Optional: you could reverse the star deduction if you want
   }
 });
+
 /* Tip & Redeem (placeholders) */
 tipBtn.addEventListener("click", () => { window.open("https://your-placeholder-payment-link.com","_blank"); showStarPopup("Thanks! Tip clicked 💵"); });
 redeemBtn.addEventListener("click", () => { window.open("https://xixi.live","_blank"); showStarPopup("Redeem clicked"); });
