@@ -194,10 +194,28 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 100;           
 }
 
-/* 🔥 Glass bar directly under chat input */
+/* 🔥 Chat input (send area) - fixed at bottom */
+.send-area {
+  position: fixed;       
+  bottom: 0;           /* sits at the very bottom */
+  left: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  padding: 10px;
+  border-radius: 999px;  
+  box-sizing: border-box;
+  z-index: 100;           
+}
+
+/* 🔥 Glass bar always below chat input */
 .glass-bar {
   position: fixed;
-  bottom: -60px;          /* hide under chat input */
+  bottom: 0;           /* same as input, visually behind it */
   left: 0;
   width: 100%;
   max-width: 480px;
@@ -210,7 +228,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   justify-content: center;
   padding: 0 16px;
   box-sizing: border-box;
-  z-index: 50;
+  z-index: 50;          /* lower than input so input overlays */
 }
 
 /* Input field in send area */
@@ -236,9 +254,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 
-/* Ensure last messages aren’t hidden under send-area */
+/* Ensure last messages aren’t hidden under send-area + glass bar */
 #messages {
-  padding-bottom: 80px;  /* just enough for chat input */
+  padding-bottom: 80px;  /* enough for input + glass bar stacked */
 }
 
 /* Send button */
