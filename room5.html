@@ -467,23 +467,6 @@ googleBtn.addEventListener("click", async () => {
 });
 
 /* ---------- Send + Buzz ---------- */
-sendBtn.addEventListener("click", async () => {
-  if(!currentUser){ showStarPopup("Sign in to send messages"); return; }
-  const txt = messageInputEl.value.trim();
-  if(!txt) return;
-  messageInputEl.value = "";
-  try{
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId || generateGuestName(),
-      timestamp: serverTimestamp(),
-      highlight: false
-    });
-  }catch(e){ console.error("send error", e); showStarPopup("Message failed to send"); }
-});
-messageInputEl.addEventListener("keydown", (e)=> { if(e.key === "Enter") sendBtn.click(); });
-
 buzzBtn.addEventListener("click", async () => {
   if (!currentUser) {
     showStarPopup("Sign in to BUZZ");
@@ -491,12 +474,19 @@ buzzBtn.addEventListener("click", async () => {
   }
 
   const userRef = doc(db, "users", currentUser.uid);
-  const snapshot = await getDoc(userRef);
-  const userData = snapshot.exists() ? snapshot.data() : {};
-  const currentStars = userData.stars || 0;
+  let userData;
+  try {
+    const snap = await getDoc(userRef);
+    userData = snap.exists() ? snap.data() : {};
+  } catch(e) {
+    console.error("Failed to fetch user data:", e);
+    showStarPopup("BUZZ failed");
+    return;
+  }
 
-  if (currentStars < BUZZ_COST) {
-    showStarPopup("Not enough stars to create a BUZZ! 🚨");
+  const stars = userData.stars || 0;
+  if (stars < BUZZ_COST) {
+    showStarPopup("Not enough stars to BUZZ! 🚨");
     return;
   }
 
@@ -506,40 +496,37 @@ buzzBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Immediate feedback: vibration + sound
-  triggerBuzzFeedback();
-
-  // Optimistically show success message
-  showStarPopup("BUZZ 🚨 sent!");
-  messageInputEl.value = "";
+  const chatId = userData.chatId || generateGuestName();
+  const color = randomColor();
 
   try {
-    // Deduct stars safely
+    // Deduct stars first
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
 
-    // Add the BUZZ message
-    const color = randomColor();
+    // Send BUZZ message
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: currentUser.uid,
-      chatId: currentUser.chatId || generateGuestName(),
+      chatId: chatId,
       timestamp: serverTimestamp(),
       highlight: true,
       buzzColor: color
     });
 
-    // Clear highlight after 10s (non-blocking)
+    // Feedback
+    triggerBuzzFeedback();
+    showStarPopup("BUZZ 🚨 sent!");
+    messageInputEl.value = "";
+
+    // Clear highlight after 10s
     setTimeout(async () => {
-      try {
-        await updateDoc(docRef, { highlight: false, buzzColor: null });
-      } catch (e) {
-        console.warn("Failed to clear BUZZ highlight", e);
-      }
+      try { await updateDoc(docRef, { highlight: false, buzzColor: null }); }
+      catch (e) { console.warn("clear buzz failed", e); }
     }, 10000);
 
   } catch (e) {
-    console.error("BUZZ Firestore error:", e);
-    // Optional: you could reverse the star deduction if you want
+    console.error("BUZZ failed:", e);
+    showStarPopup("BUZZ failed");
   }
 });
 
