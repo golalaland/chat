@@ -10,8 +10,8 @@
   --bg:#0a0a0a;
   --card:#111;
   --muted:#888;
-  --accent:#0ff;          /* Neon cyan */
-  --accent-light:#33ffff; /* Slightly lighter neon */
+  --accent:#0ff;
+  --accent-light:#33ffff;
   --border:#222;
 }
 html,body{
@@ -51,9 +51,9 @@ html,body{
 .profile-value{font-family:ui-monospace, Menlo, Monaco,"Roboto Mono",monospace;color:var(--accent);font-size:16px;text-shadow:0 0 6px rgba(0,255,255,0.6);}
 .exit-btn{
   padding:10px 0;border-radius:999px;
-  background:var(--accent);border:0;color:#000;font-weight:700;font-size:16px;
+  background:var(--accent);border:0;color:#000;font-weight:700;font-size:14px;
   cursor:pointer;margin-top:10px;transition:all .2s;
-  box-shadow:0 0 12px rgba(0,255,255,0.4);
+  box-shadow:0 0 12px rgba(0,255,255,0.4);width:100%;
 }
 .exit-btn:hover{background:var(--accent-light);transform:translateY(-2px);box-shadow:0 0 16px rgba(0,255,255,0.6);}
 .redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;width:100%;}
@@ -81,6 +81,18 @@ html,body{
 .popup-confirm button:not(.cancel):hover{background:var(--accent-light);}
 .popup-confirm button.cancel{
   background:#1a1a1a;color:#eee;border:1px solid var(--border);
+}
+/* success toast */
+.success-toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  background:var(--card);padding:12px 20px;border-radius:999px;
+  border:1px solid var(--border);color:var(--accent);
+  font-weight:600;opacity:0;pointer-events:none;
+  transition:opacity .5s, bottom .5s;
+  box-shadow:0 0 12px rgba(0,255,255,0.3);
+}
+.success-toast.show{
+  opacity:1;bottom:50px;
 }
 </style>
 </head>
@@ -130,7 +142,7 @@ html,body{
         <!-- Redeem Grid -->
         <div class="redeem-grid" id="redeemGrid"></div>
 
-        <button class="exit-btn" onclick="window.location.href='#'">Back to Chatroom</button>
+        <button class="exit-btn" onclick="window.location.href='#'">⬅ Back to Chatroom</button>
       </div>
     </div>
   </div>
@@ -144,6 +156,9 @@ html,body{
     <button class="cancel" id="redeemCancel">Cancel</button>
   </div>
 </div>
+
+<!-- success toast -->
+<div class="success-toast" id="successToast">✅ Successfully Redeemed!</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -176,6 +191,7 @@ const redeemPopupEl = document.getElementById("redeemPopup");
 const redeemTextEl = document.getElementById("redeemText");
 const redeemYesBtn = document.getElementById("redeemYes");
 const redeemCancelBtn = document.getElementById("redeemCancel");
+const successToastEl = document.getElementById("successToast");
 
 let currentUser = null;
 let selectedPerk = null;
@@ -251,7 +267,11 @@ redeemYesBtn.addEventListener("click",async()=>{
       message:`${currentUser.chatId} redeemed ${selectedPerk.name}, please gift ${currentUser.chatId}`,
       timestamp:serverTimestamp()
     });
-    alert(`Successfully redeemed ${selectedPerk.name}!`);
+
+    // show toast
+    successToastEl.innerText = `✅ Successfully redeemed ${selectedPerk.name}!`;
+    successToastEl.classList.add("show");
+    setTimeout(()=>{ successToastEl.classList.remove("show"); }, 3000);
   }
 });
 
