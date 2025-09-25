@@ -474,19 +474,20 @@ buzzBtn.addEventListener("click", async () => {
   }
 
   const userRef = doc(db, "users", currentUser.uid);
-  let userData;
+  let userData = {};
   try {
-    const snap = await getDoc(userRef);
-    userData = snap.exists() ? snap.data() : {};
-  } catch(e) {
+    const snapshot = await getDoc(userRef);
+    userData = snapshot.exists() ? snapshot.data() : {};
+  } catch (e) {
     console.error("Failed to fetch user data:", e);
-    showStarPopup("BUZZ failed");
+    showStarPopup("BUZZ failed: could not fetch user data");
     return;
   }
 
-  const stars = userData.stars || 0;
-  if (stars < BUZZ_COST) {
-    showStarPopup("Not enough stars to BUZZ! 🚨");
+  const currentStars = userData.stars || 0;
+
+  if (currentStars < BUZZ_COST) {
+    showStarPopup("Not enough stars to create a BUZZ! 🚨");
     return;
   }
 
@@ -496,32 +497,44 @@ buzzBtn.addEventListener("click", async () => {
     return;
   }
 
-  const chatId = userData.chatId || generateGuestName();
-  const color = randomColor();
-
   try {
-    // Deduct stars first
+    // Decrement stars atomically
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
 
-    // Send BUZZ message
+    const color = randomColor();
+
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: currentUser.uid,
-      chatId: chatId,
+      chatId: currentUser.chatId || generateGuestName(),
       timestamp: serverTimestamp(),
       highlight: true,
       buzzColor: color
     });
 
-    // Feedback
-    triggerBuzzFeedback();
-    showStarPopup("BUZZ 🚨 sent!");
+    // Reset input
     messageInputEl.value = "";
+
+    // --- BUZZ feedback: sound + vibration ---
+    const audio = document.getElementById("buzz-sound");
+    if (audio) { 
+      audio.currentTime = 0; 
+      audio.play().catch(e => console.warn("Audio play failed:", e));
+    }
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 100]);
+    }
+
+    // Show success popup
+    showStarPopup("BUZZ 🚨 sent!");
 
     // Clear highlight after 10s
     setTimeout(async () => {
-      try { await updateDoc(docRef, { highlight: false, buzzColor: null }); }
-      catch (e) { console.warn("clear buzz failed", e); }
+      try {
+        await updateDoc(docRef, { highlight: false, buzzColor: null });
+      } catch (e) {
+        console.warn("Failed to clear BUZZ highlight:", e);
+      }
     }, 10000);
 
   } catch (e) {
