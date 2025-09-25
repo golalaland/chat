@@ -226,14 +226,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div id="greeting">✨</div>
     <div id="center">
       <div id="videoWrapper">
-  <div id="videoContainer">
-    <iframe
-      id="player"
-      src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
-      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-      allowfullscreen
-    ></iframe>
-  </div>
+<video id="videoPlayer" autoplay muted playsinline loop preload="auto" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">
+  <source src="https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4" type="video/mp4">
+</video>
   <button class="arrow" id="prev">&#10094;</button>
   <button class="arrow" id="next">&#10095;</button>
 </div>
