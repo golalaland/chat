@@ -194,49 +194,27 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 100;           
 }
 
-/* 🔥 Chat input (send area) - fixed at bottom */
+/* 🔥 Chat input area */
 .send-area {
-  position: fixed;       
-  bottom: 0;           /* sits at the very bottom */
-  left: 0;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--card);
+  background: var(--card, #111);
   padding: 10px;
-  border-radius: 999px;  
-  box-sizing: border-box;
-  z-index: 100;           
-}
-
-/* 🔥 Glass bar always below chat input */
-.glass-bar {
-  position: fixed;
-  bottom: 0;           /* same as input, visually behind it */
-  left: 0;
+  position: sticky;   /* sticky inside container */
+  bottom: 0;          /* always at bottom */
+  z-index: 10;
+  border-radius: 999px;
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  height: 60px;                
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
   box-sizing: border-box;
-  z-index: 50;          /* lower than input so input overlays */
+  border-top: 1px solid rgba(255,255,255,0.04);
 }
 
-/* Input field in send area */
 .send-area input {
   flex: 1;
-  padding: 12px 16px;
-  border-radius: 999px;  
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 16px;       /* your preferred size */
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
   background-color: #0e0e0e;
   color: #fff;
   font-size: 16px;
@@ -245,25 +223,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .send-area input::placeholder {
-  color: var(--muted);
+  color: var(--muted, #aaa);
   opacity: 0.7;
 }
 
 .send-area input:focus {
-  border-color: var(--accent);
+  border-color: var(--accent, #FF1493);
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 
-/* Ensure last messages aren’t hidden under send-area + glass bar */
-#messages {
-  padding-bottom: 80px;  /* enough for input + glass bar stacked */
-}
-
-/* Send button */
 .send-btn {
   padding: 10px 16px;
-  border-radius: 999px; 
-  background-color: var(--accent);
+  border-radius: 999px;
+  background-color: var(--accent, #FF1493);
   color: #000;
   cursor: pointer;
   font-weight: 700;
@@ -273,8 +245,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .send-btn:hover {
-  background-color: #ff33a1; 
+  background-color: #ff33a1;
   transform: scale(1.05);
+}
+
+/* 🔥 Glass bar underneath input */
+.glass-bar {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 60px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  margin-top: 6px;  /* small gap under input */
+  z-index: 5;        /* below input */
 }
 .buzz-content {
   font-weight: 800;    /* really thick */
