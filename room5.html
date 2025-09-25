@@ -467,6 +467,35 @@ googleBtn.addEventListener("click", async () => {
 });
 
 /* ---------- Send + Buzz ---------- */
+function triggerBuzzFeedback() {
+  // Play sound (works on all browsers)
+  const audio = document.getElementById("buzz-sound");
+  if(audio) {
+    audio.currentTime = 0;
+    audio.play().catch(()=>{});
+  }
+
+  // Detect if iOS Safari
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  if (isIOS) {
+    // Fake vibration: shake the input area quickly
+    const el = document.getElementById("sendArea");
+    if(el){
+      el.style.transition = "transform 0.05s";
+      el.style.transform = "translateX(-8px)";
+      setTimeout(()=>{ el.style.transform = "translateX(8px)"; }, 50);
+      setTimeout(()=>{ el.style.transform = "translateX(-6px)"; }, 100);
+      setTimeout(()=>{ el.style.transform = "translateX(6px)"; }, 150);
+      setTimeout(()=>{ el.style.transform = "translateX(0px)"; }, 200);
+    }
+  } else {
+    // For other browsers, do real vibration
+    if(navigator.vibrate){
+      navigator.vibrate(150);
+    }
+  }
+}
 buzzBtn.addEventListener("click", async () => {
   if (!currentUser) {
     showStarPopup("Sign in to BUZZ");
