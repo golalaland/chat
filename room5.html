@@ -82,31 +82,32 @@
 #prev { left: 5px; }
 #next { right: 5px; }
   /* Minimal, almost invisible Prev/Next buttons */
-/* Style for Prev/Next buttons */
-#prevBtn, #nextBtn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 2rem;
-  color: white;
-  background: transparent; /* Remove black backdrop */
-  border: none;
-  cursor: pointer;
-  opacity: 0; /* Start hidden */
-  transition: opacity 0.3s ease;
-  z-index: 10;
-  padding: 0.5rem;
-}
+  #prevBtn, #nextBtn {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.05); /* very subtle */
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    opacity: 0;               /* invisible by default */
+    transition: opacity 0.3s ease;
+  }
 
-/* Position each button */
-#prevBtn { left: 10px; }
-#nextBtn { right: 10px; }
+  #prevBtn:hover, #nextBtn:hover,
+  #prevBtn.active, #nextBtn.active {
+    opacity: 0.8;             /* appear on hover or when active */
+    cursor: pointer;
+  }
 
-/* Show buttons on hover over video container */
-.video-container:hover #prevBtn,
-.video-container:hover #nextBtn {
-  opacity: 1;
-}
+  #prevBtn { left: 10px; }
+  #nextBtn { right: 10px; }
 /* overall layout */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
@@ -261,10 +262,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div id="greeting">✨</div>
     <div id="center">
     <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
-<div class="video-container" style="position: relative;">
-  <video id="videoPlayer" ...></video>
-  <button id="prevBtn">&#10094;</button>
-  <button id="nextBtn">&#10095;</button>
+<div id="videoWrapper">
+  <video id="videoPlayer" muted playsinline></video>
+  <button class="arrow" id="prev">&#10094;</button>
+  <button class="arrow" id="next">&#10095;</button>
 </div>
       <div id="helloText" aria-live="polite">HELLO</div>
       <div class="room-desc">Chat. Own your vibe.
