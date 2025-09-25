@@ -96,8 +96,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #videoPlayer {
   width: 100%;
   height: 100%;
+  object-fit: contain; /* keeps entire video in frame */
   border-radius: 10px;
-  object-fit: cover;  /* ensures video stays inside frame */
+  cursor: pointer;
 }
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
@@ -871,7 +872,7 @@ messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
     if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
   }
 });
-// VIDEO NAVIGATION
+// VIDEO NAVIGATION FIXED
 const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
@@ -880,27 +881,35 @@ const videos = [
 ];
 let currentVideoIndex = 0;
 
-// Load video
+// Make sure video starts muted (autoplay allowed)
+videoPlayer.muted = true;
+videoPlayer.loop = true; // optional: loop video
+
 function loadVideo(index) {
-  if(index < 0) index = videos.length - 1;
-  if(index >= videos.length) index = 0;
+  if (index < 0) index = videos.length - 1;
+  if (index >= videos.length) index = 0;
   currentVideoIndex = index;
   videoPlayer.src = videos[currentVideoIndex];
-  videoPlayer.play().catch(()=>{}); // autoplay fallback
+  videoPlayer.load();
+  videoPlayer.play().catch(() => {
+    // fallback if autoplay blocked
+    console.log("Autoplay blocked, muted video first.");
+    videoPlayer.muted = true;
+    videoPlayer.play().catch(()=>{});
+  });
 }
 
 // Prev / Next buttons
 document.getElementById("prev").addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 document.getElementById("next").addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 
-// Tap to unmute
+// Tap to mute/unmute
 videoPlayer.addEventListener("click", () => {
-  if(videoPlayer.muted){
-    videoPlayer.muted = false;
-  } else {
-    videoPlayer.muted = true;
-  }
+  videoPlayer.muted = !videoPlayer.muted;
 });
+
+// Load first video on page load
+loadVideo(0);
 </script>
 </body>
 </html>
