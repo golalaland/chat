@@ -335,6 +335,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* ====== Full page JS: Firebase + UI logic (kept layout & behavior identical) ====== */
 
 /* ---------- Imports ---------- */
+import {
+  // ... existing imports
+  query,
+  orderBy,
+  increment,
+  // ⭐️ NEW IMPORTS ⭐️
+  getDocs,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
