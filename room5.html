@@ -89,16 +89,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   position: sticky;
   top: 0;
   width: 100%;
+  max-width: 480px; /* keeps your max container width */
   aspect-ratio: 16/9;
   overflow: hidden;
+  border-radius: 10px;
+  background: #111;
+  z-index: 50;
+  margin: auto;
 }
-#videoContainer iframe,
+
 #videoPlayer {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* keeps entire video in frame */
+  object-fit: contain; /* keeps video fully visible */
   border-radius: 10px;
-  cursor: pointer;
 }
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
