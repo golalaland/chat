@@ -921,51 +921,70 @@ const videos = [
 ];
 let currentVideoIndex = 0;
 
+// Buttons & wrapper
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const videoWrapper = document.getElementById("videoWrapper");
+let fadeTimeout;
+
+// Hide buttons initially (before signup)
+prevBtn.style.opacity = "0";
+nextBtn.style.opacity = "0";
+prevBtn.style.pointerEvents = "none";
+nextBtn.style.pointerEvents = "none";
+
+// Function to load videos
 function loadVideo(index) {
   if (index < 0) index = videos.length - 1;
   if (index >= videos.length) index = 0;
   currentVideoIndex = index;
   videoPlayer.src = videos[currentVideoIndex];
-  videoPlayer.muted = true;   // mobile autoplay
+  videoPlayer.muted = true; // mobile autoplay
   videoPlayer.play().catch(() => {}); // fallback
 }
 
-// initial load
-loadVideo(0);
+// Fade in/out nav buttons
+function showNavButtons() {
+  prevBtn.style.opacity = "0.8";
+  nextBtn.style.opacity = "0.8";
 
-// Prev / Next buttons
-document.getElementById("prev").addEventListener("click", () => loadVideo(currentVideoIndex - 1));
-document.getElementById("next").addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+  if (fadeTimeout) clearTimeout(fadeTimeout);
+
+  fadeTimeout = setTimeout(() => {
+    prevBtn.style.opacity = "0";
+    nextBtn.style.opacity = "0";
+  }, 2000);
+}
+
+// Enable video controls after signup
+function enableVideoControls() {
+  prevBtn.style.pointerEvents = "auto";
+  nextBtn.style.pointerEvents = "auto";
+
+  // Prev/Next click
+  prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+  nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+  // Show buttons on interaction
+  videoWrapper.addEventListener("mousemove", showNavButtons);
+  videoWrapper.addEventListener("touchstart", showNavButtons);
+  prevBtn.addEventListener("mouseenter", () => prevBtn.style.opacity = "0.8");
+  nextBtn.addEventListener("mouseenter", () => nextBtn.style.opacity = "0.8");
+
+  // Optional: show buttons initially for a moment
+  showNavButtons();
+}
 
 // Tap to toggle mute
 videoPlayer.addEventListener("click", () => {
   videoPlayer.muted = !videoPlayer.muted;
 });
- const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const videoWrapper = document.getElementById("videoWrapper");
 
-    let fadeTimeout;
-
-    function showNavButtons() {
-      prevBtn.style.opacity = "0.8";
-      nextBtn.style.opacity = "0.8";
-
-      if(fadeTimeout) clearTimeout(fadeTimeout);
-
-      fadeTimeout = setTimeout(() => {
-        prevBtn.style.opacity = "0";
-        nextBtn.style.opacity = "0";
-      }, 2000);
-    }
-
-    videoWrapper.addEventListener("mousemove", showNavButtons);
-    videoWrapper.addEventListener("touchstart", showNavButtons);
-
-    prevBtn.addEventListener("mouseenter", () => prevBtn.style.opacity = "0.8");
-    nextBtn.addEventListener("mouseenter", () => nextBtn.style.opacity = "0.8");
-// Load first video on page load
+// Initial load
 loadVideo(0);
+
+// Example: call this when the user signs up
+// enableVideoControls();
 </script>
 </body>
 </html>
