@@ -14,6 +14,30 @@
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
 }
+#videoWrapper .nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+  position: absolute;
+  bottom: 6px; /* overlay near bottom of video */
+  width: 100%;
+  pointer-events: auto;
+}
+
+#videoWrapper .nav-buttons button {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,20,147,0.2);
+  background: rgba(30,30,30,0.7);
+  color: var(--accent);
+  cursor: pointer;
+}
+#videoWrapper .nav-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(255,20,147,0.3);
+}
 /* overall layout */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
@@ -175,14 +199,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div id="greeting">✨</div>
     <div id="center">
       <div id="videoWrapper">
-        <div id="videoContainer">
-          <iframe
-            src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            allowfullscreen
-          ></iframe>
-        </div>
-      </div>
+  <div id="videoContainer">
+    <iframe
+      src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
+      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+  </div>
+  <!-- Nav buttons -->
+  <div id="videoNav">
+    <button id="prevVideo">⏮️ Prev</button>
+    <button id="nextVideo">Next ⏭️</button>
+  </div>
+</div>
       <div id="helloText" aria-live="polite">HELLO</div>
       <div class="room-desc">Chat. Own your vibe.
         <span id="onlineCount" class="onlineCount"></span>
