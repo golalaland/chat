@@ -467,32 +467,24 @@ googleBtn.addEventListener("click", async () => {
 });
 
 /* ---------- Send + Buzz ---------- */
+// --- BUZZ feedback function ---
 function triggerBuzzFeedback() {
-  // Play buzz sound
-  const audio = document.getElementById("buzz-sound");
-  if(audio){
-    audio.currentTime = 0;
-    audio.play().catch(()=>{});
-  }
+  // play BUZZ sound
+  const buzzAudio = new Audio("/sounds/buzz.mp3"); // adjust path
+  buzzAudio.play().catch(() => {});
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-  if(isIOS){
-    // Shake input area as fake vibration
-    const el = document.getElementById("sendArea");
-    if(el){
-      el.style.transition = "transform 0.05s";
-      el.style.transform = "translateX(-8px)";
-      setTimeout(()=>{ el.style.transform = "translateX(8px)"; }, 50);
-      setTimeout(()=>{ el.style.transform = "translateX(-6px)"; }, 100);
-      setTimeout(()=>{ el.style.transform = "translateX(6px)"; }, 150);
-      setTimeout(()=>{ el.style.transform = "translateX(0px)"; }, 200);
-    }
-  } else if(navigator.vibrate){
-    // real vibration for other devices
-    navigator.vibrate([100,50,100]);
+  // vibrate or shake depending on device
+  if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
+    // iOS: shake the input bar
+    messageInputEl.classList.add("shake");
+    setTimeout(() => messageInputEl.classList.remove("shake"), 500);
+  } else if (navigator.vibrate) {
+    // others: vibrate
+    navigator.vibrate([100, 50, 100]);
   }
 }
+
+// --- BUZZ click listener ---
 buzzBtn.addEventListener("click", async () => {
   if (!currentUser) {
     showStarPopup("Sign in to BUZZ");
@@ -533,12 +525,7 @@ buzzBtn.addEventListener("click", async () => {
     messageInputEl.value = "";
 
     // --- BUZZ feedback ---
-    const audio = document.getElementById("buzz-sound");
-    if (audio) {
-      audio.currentTime = 0;
-      audio.play().catch(e => console.warn("Audio play failed:", e));
-    }
-
+    triggerBuzzFeedback();
     showStarPopup("BUZZ 🚨 sent!");
 
     // Clear highlight after 10s
