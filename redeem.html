@@ -19,46 +19,75 @@ html,body{
   font-family: Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
   background:var(--bg);color:#eee;
 }
+#appWrapper{width:100%;min-height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;min-height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
 .brand{
-  font-weight:700;font-size:22px;text-align:center;
-  color:var(--accent);
+  font-weight:700;font-size:24px;text-align:center;
+  color:var(--accent);margin-bottom:10px;
+  text-shadow:0 0 8px var(--accent);
 }
+#authBox{display:flex;justify-content:center;margin:20px 0;}
 .google-btn{
-  background:var(--accent);color:#000;
+  display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;
+  background:var(--accent);color:#000;font-weight:600;font-size:14px;
+  border:none;cursor:pointer;box-shadow:0 0 12px rgba(0,255,255,0.4);
+  transition:all .2s;
 }
-.google-btn:hover{background:var(--accent-light);}
+.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+.google-btn:hover{background:var(--accent-light);box-shadow:0 0 16px rgba(0,255,255,0.6);}
+.profile{display:none;flex-direction:column;gap:12px;width:100%;}
 .profile-card{
-  background:var(--card);border:1px solid var(--border);
-  color:#eee;
+  background:var(--card);
+  padding:16px;border-radius:16px;
+  border:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  box-shadow:0 0 20px rgba(0,255,255,0.05);
 }
-.balance-value{color:var(--accent);}
-.row-stats{
-  background:#1a1a1a;border:1px solid var(--border);
-}
-.row-label{color:var(--muted);}
-.row-value{color:var(--accent);}
-.perk-card{
-  background:var(--card);border:1px solid var(--border);
-  color:#eee;
-}
-.perk-cost{color:var(--accent);}
+.picture-frame{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;display:flex;justify-content:center;align-items:center;position:relative;}
+.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s;}
+.picture-frame img.active{opacity:1;}
+.profile-stats{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:10px;}
+.profile-label{font-weight:600;color:var(--muted);font-size:14px;}
+.profile-value{font-family:ui-monospace, Menlo, Monaco,"Roboto Mono",monospace;color:var(--accent);font-size:16px;text-shadow:0 0 6px rgba(0,255,255,0.6);}
 .exit-btn{
-  background:var(--accent);color:#000;
+  padding:10px 0;border-radius:999px;
+  background:var(--accent);border:0;color:#000;font-weight:700;font-size:16px;
+  cursor:pointer;margin-top:10px;transition:all .2s;
+  box-shadow:0 0 12px rgba(0,255,255,0.4);
 }
-.exit-btn:hover{background:var(--accent-light);}
-.popup-card{
-  background:var(--card);border:1px solid var(--border);
-  color:#eee;
+.exit-btn:hover{background:var(--accent-light);transform:translateY(-2px);box-shadow:0 0 16px rgba(0,255,255,0.6);}
+.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;width:100%;}
+.perk-card{
+  background:var(--card);padding:12px;border-radius:12px;border:1px solid var(--border);
+  cursor:pointer;transition:all .2s;text-align:center;
+  box-shadow:0 0 8px rgba(0,255,255,0.1);
 }
-.popup-actions .yes{background:var(--accent);color:#000;}
-.popup-actions .yes:hover{background:var(--accent-light);}
-.popup-actions .cancel{background:#1a1a1a;color:#eee;border:1px solid var(--border);}
+.perk-card:hover{transform:translateY(-2px);box-shadow:0 0 16px rgba(0,255,255,0.4);}
+.perk-card .perk-name{font-weight:700;color:#eee;margin-bottom:4px;}
+.perk-card .perk-cost{font-family:ui-monospace,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:var(--accent);}
+.popup-confirm{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:var(--card);padding:20px;border-radius:12px;
+  border:1px solid var(--border);display:none;flex-direction:column;
+  align-items:center;gap:12px;z-index:1000;color:#eee;
+  box-shadow:0 0 20px rgba(0,255,255,0.3);
+}
+.popup-confirm button{
+  padding:8px 16px;border-radius:999px;border:0;font-weight:700;cursor:pointer;
+}
+.popup-confirm button:not(.cancel){
+  background:var(--accent);color:#000;box-shadow:0 0 12px rgba(0,255,255,0.4);
+}
+.popup-confirm button:not(.cancel):hover{background:var(--accent-light);}
+.popup-confirm button.cancel{
+  background:#1a1a1a;color:#eee;border:1px solid var(--border);
+}
 </style>
 </head>
 <body>
 <div id="appWrapper">
   <div class="app">
-    <div class="brand">乂丨乂丨 Redeem</div>
+    <div class="brand">乂丨乂丨 REDEEM</div>
 
     <!-- Google sign-in -->
     <div id="authBox">
@@ -77,26 +106,28 @@ html,body{
           <img src="https://placekitten.com/402/400">
         </div>
 
+        <!-- Centered Profile Stats -->
         <div class="profile-stats">
-          <div class="balance-display">
-            <div class="balance-name">Stars Balance</div>
-            <div class="balance-value" id="starsBalance">0 ⭐️</div>
+          <div id="profileName" style="font-size:28px;font-weight:700;"></div>
+          <div class="profile-row">
+            <span class="profile-label">Stars Collected:</span>
+            <span class="profile-value" id="starsCollected">0 ⭐️</span>
           </div>
-          <div class="balance-display">
-            <div class="balance-name">Cash Balance</div>
-            <div class="balance-value" id="cashBalance">₦0</div>
+          <div class="profile-row">
+            <span class="profile-label">Stars Balance:</span>
+            <span class="profile-value" id="starsBalance">0 ⭐️</span>
           </div>
-
-          <div class="row-stats">
-            <span class="row-label">Stars Collected</span>
-            <span class="row-value" id="starsCollected">0 ⭐️</span>
+          <div class="profile-row">
+            <span class="profile-label">Cash Collected:</span>
+            <span class="profile-value" id="cashCollected">₦0</span>
           </div>
-          <div class="row-stats">
-            <span class="row-label">Cash Collected</span>
-            <span class="row-value" id="cashCollected">₦0</span>
+          <div class="profile-row">
+            <span class="profile-label">Cash Balance:</span>
+            <span class="profile-value" id="cashBalance">₦0</span>
           </div>
         </div>
 
+        <!-- Redeem Grid -->
         <div class="redeem-grid" id="redeemGrid"></div>
 
         <button class="exit-btn" onclick="window.location.href='#'">Back to Chatroom</button>
@@ -107,17 +138,14 @@ html,body{
 
 <!-- Redeem confirmation popup -->
 <div class="popup-confirm" id="redeemPopup">
-  <div class="popup-card">
-    <p id="redeemText">Are you sure you want to redeem?</p>
-    <div class="popup-actions">
-      <button class="yes" id="redeemYes">Yes</button>
-      <button class="cancel" id="redeemCancel">Cancel</button>
-    </div>
+  <div id="redeemText">Are you sure you want to redeem?</div>
+  <div style="display:flex;gap:10px;">
+    <button id="redeemYes">Yes</button>
+    <button class="cancel" id="redeemCancel">Cancel</button>
   </div>
 </div>
 
 <script type="module">
-// --- Firebase code unchanged ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -138,6 +166,7 @@ const db = getFirestore(app);
 const googleBtn = document.getElementById("googleSignInBtn");
 const authBox = document.getElementById("authBox");
 const profileBoxEl = document.getElementById("profileBox");
+const profileNameEl = document.getElementById("profileName");
 const starsCollectedEl = document.getElementById("starsCollected");
 const starsBalanceEl = document.getElementById("starsBalance");
 const cashCollectedEl = document.getElementById("cashCollected");
@@ -166,6 +195,7 @@ const perks = [
   {name:"Golden Crown", cost:300}
 ];
 
+// Google Sign-In
 googleBtn.addEventListener("click",async()=>{
   const provider = new GoogleAuthProvider();
   try{ await signInWithPopup(auth,provider); }catch(err){ await signInWithRedirect(auth,provider); }
@@ -183,6 +213,7 @@ onAuthStateChanged(auth,async(user)=>{
     }
     const data = snap.data();
     currentUser={uid:user.uid,...data};
+    profileNameEl.innerText=data.chatId;
 
     starsCollectedEl.innerText = `${data.stars} ⭐️`;
     starsBalanceEl.innerText = `${data.stars} ⭐️`;
@@ -197,7 +228,7 @@ onAuthStateChanged(auth,async(user)=>{
       div.addEventListener("click",()=>{
         if(currentUser.stars < p.cost){ alert("Not enough stars!"); return; }
         selectedPerk=p;
-        redeemTextEl.innerText=`Redeem ${p.name} for ${p.cost} ⭐️?`;
+        redeemTextEl.innerText=`Are you sure you want to redeem ${p.name} for ${p.cost} ⭐️?`;
         redeemPopupEl.style.display="flex";
       });
       redeemGridEl.appendChild(div);
@@ -206,6 +237,7 @@ onAuthStateChanged(auth,async(user)=>{
   } else { authBox.style.display="flex"; profileBoxEl.style.display="none"; }
 });
 
+// Redeem popup buttons
 redeemCancelBtn.addEventListener("click",()=>{ redeemPopupEl.style.display="none"; });
 redeemYesBtn.addEventListener("click",async()=>{
   if(selectedPerk){
@@ -223,7 +255,7 @@ redeemYesBtn.addEventListener("click",async()=>{
   }
 });
 
-// Slideshow
+// Picture slideshow
 let slideIndex = 0;
 setInterval(()=>{
   const imgs = document.querySelectorAll("#pictureFrame img");
