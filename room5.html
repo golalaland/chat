@@ -878,40 +878,29 @@ messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
     if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
   }
 });
-// ---------- VIDEO NAVIGATION ----------
-const videoContainer = document.querySelector("#videoContainer iframe");
+// VIDEO NAVIGATION
+const videoFrame = document.querySelector("#videoContainer iframe");
 const videos = [
   "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false",
-  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false",
-  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false"
+  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=1140143_video_with_sound_xt1i7l&profile=cld-default&autoplay=true&muted=true&controls=false",
+  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=some_other_video_id&profile=cld-default&autoplay=true&muted=true&controls=false"
 ];
 let currentVideoIndex = 0;
 
-const navWrapper = document.createElement("div");
-navWrapper.style.display = "flex";
-navWrapper.style.justifyContent = "center";
-navWrapper.style.gap = "10px";
-navWrapper.style.marginTop = "6px";
+// Grab the buttons
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
 
-const prevBtn = document.createElement("button");
-prevBtn.className = "small-btn";
-prevBtn.textContent = "⏮️ Prev";
-const nextBtn = document.createElement("button");
-nextBtn.className = "small-btn";
-nextBtn.textContent = "Next ⏭️";
-
-navWrapper.appendChild(prevBtn);
-navWrapper.appendChild(nextBtn);
-document.getElementById("videoWrapper").appendChild(navWrapper);
-
-prevBtn.addEventListener("click", () => {
-  currentVideoIndex = (currentVideoIndex - 1 + videos.length) % videos.length;
-  videoContainer.src = videos[currentVideoIndex];
-});
-nextBtn.addEventListener("click", () => {
-  currentVideoIndex = (currentVideoIndex + 1) % videos.length;
-  videoContainer.src = videos[currentVideoIndex];
-});
+// Function to load video at current index
+function loadVideo(index) {
+  if(index < 0) index = videos.length - 1;        // wrap around backward
+  if(index >= videos.length) index = 0;          // wrap around forward
+  currentVideoIndex = index;
+  videoFrame.src = videos[currentVideoIndex];
+}
+// Button events
+prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 </script>
 </body>
 </html>
