@@ -2,69 +2,94 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Video Carousel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Video Swipe</title>
 <style>
-  /* ... previous styles ... */
+  body {
+    margin: 0;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .video-container {
+    position: relative;
+    width: 90%;
+    max-width: 600px;
+  }
+
+  video {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 10px;
+  }
 
   .arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 25px;             /* smaller size */
-    color: rgba(255, 255, 255, 0.3); /* mostly transparent */
-    background: rgba(0, 0, 0, 0.2);  /* subtle background */
+    font-size: 25px;                       /* smaller size */
+    color: rgba(255, 255, 255, 0.3);       /* mostly transparent */
+    background: rgba(0, 0, 0, 0.2);        /* subtle background */
     border: none;
     padding: 8px;
     cursor: pointer;
     border-radius: 50%;
     user-select: none;
     transition: all 0.2s ease;
+    z-index: 10;
   }
 
   .arrow:hover {
-    background: rgba(255, 20, 147, 0.5); /* slightly brighter on hover */
+    background: rgba(255, 20, 147, 0.5);   /* bright pink hover */
     color: #fff;
   }
 
-  #prevBtn {
-    left: 5px;
-  }
-
-  #nextBtn {
-    right: 5px;
-  }
+  #prevBtn { left: 5px; }
+  #nextBtn { right: 5px; }
 </style>
 </head>
 <body>
 
-<h2>Video Carousel</h2>
-<div id="video-container">
-  <iframe id="player" src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=false&controls=true" allowfullscreen></iframe>
-  
+<div class="video-container">
+  <video id="videoPlayer" autoplay muted playsinline loop>
+    <source src="https://player.cloudinary.com/video/upload/v1686752292/sample.mp4" type="video/mp4">
+    Your browser does not support HTML5 video.
+  </video>
+
   <button class="arrow" id="prevBtn">&#10094;</button>
   <button class="arrow" id="nextBtn">&#10095;</button>
 </div>
 
 <script>
   const videos = [
-    "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=false&controls=true",
-    "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=1140143_video_with_sound_xt1i7l&profile=cld-default&autoplay=false&controls=true"
-    // Add more Cloudinary video URLs here
+    "https://player.cloudinary.com/video/upload/v1686752292/sample.mp4",
+    "https://player.cloudinary.com/video/upload/v1686752292/sample2.mp4",
+    "https://player.cloudinary.com/video/upload/v1686752292/sample3.mp4"
   ];
 
-  let currentIndex = 0;
-  const player = document.getElementById("player");
+  let current = 0;
+  const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prevBtn");
   const nextBtn = document.getElementById("nextBtn");
 
-  function showVideo(index) {
-    currentIndex = (index + videos.length) % videos.length; // wrap around
-    player.src = videos[currentIndex];
+  function loadVideo(index) {
+    videoPlayer.src = videos[index];
+    videoPlayer.play();
   }
 
-  prevBtn.addEventListener("click", () => showVideo(currentIndex - 1));
-  nextBtn.addEventListener("click", () => showVideo(currentIndex + 1));
+  prevBtn.addEventListener("click", () => {
+    current = (current - 1 + videos.length) % videos.length;
+    loadVideo(current);
+  });
+
+  nextBtn.addEventListener("click", () => {
+    current = (current + 1) % videos.length;
+    loadVideo(current);
+  });
 </script>
 
 </body>
