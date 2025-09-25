@@ -898,6 +898,20 @@ function loadVideo(index) {
   currentVideoIndex = index;
   videoFrame.src = videos[currentVideoIndex];
 }
+// --- TAP ON VIDEO TO PREV/NEXT ---
+const videoContainer = document.getElementById("videoContainer");
+
+videoContainer.addEventListener("click", (e) => {
+  const rect = videoContainer.getBoundingClientRect();
+  const x = e.clientX - rect.left;  // click position relative to video
+  const width = rect.width;
+
+  if (x < width / 2) {
+    loadVideo(currentVideoIndex - 1); // left half -> prev
+  } else {
+    loadVideo(currentVideoIndex + 1); // right half -> next
+  }
+});
 // Button events
 prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
