@@ -265,16 +265,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">✨</div>
     <div id="center">
-    <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
-<div id="videoWrapper">
-<video id="videoPlayer" muted playsinline autoplay loop controls>
-  <source src="https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4" type="video/mp4" />
-  <source src="https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4" type="video/mp4" />
-  <source src="https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4" type="video/mp4" />
-  Your browser does not support the video tag.
-</video>
-  <button class="arrow" id="prev">&#10094;</button>
-  <button class="arrow" id="next">&#10095;</button>
+    <div id="videoWrapper">
+  <video id="videoPlayer" autoplay muted playsinline></video>
+  <button id="prevBtn">Prev</button>
+  <button id="nextBtn">Next</button>
 </div>
       <div id="helloText" aria-live="polite">HELLO</div>
       <div class="room-desc">Chat. Own your vibe.
