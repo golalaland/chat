@@ -193,6 +193,14 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           Sign in with Google
         </button>
       </div>
+      <!-- Chat ID Modal -->
+<div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
+  <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
+    <h3 style="margin-bottom:12px;color:var(--accent);">Choose your Chat ID</h3>
+    <input id="chatIDInput" type="text" placeholder="Your chat ID" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);margin-bottom:12px;font-size:16px;color:#fff;background:#111;outline:none;" />
+    <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
+  </div>
+</div>
       <div id="messages"></div>
       <div class="send-area" id="sendArea" style="display:none;">
         <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
@@ -310,6 +318,37 @@ function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format
 function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
 function showStarPopup(text){ const popup = document.getElementById("starPopup"); document.getElementById("starText").innerText = text; popup.style.display = "block"; setTimeout(()=>{ popup.style.display = "none"; }, 1700); }
 
+/* ---------- One-time Chat ID modal ---------- */
+const chatIDModal = document.getElementById("chatIDModal");
+const chatIDInput = document.getElementById("chatIDInput");
+const chatIDConfirmBtn = document.getElementById("chatIDConfirmBtn");
+
+async function promptForChatIDModal(userRef, userData){
+  if(userData.chatId) return userData.chatId;  // already exists, skip
+
+  chatIDModal.style.display = "flex";   // show modal
+
+  return new Promise((resolve) => {
+    chatIDConfirmBtn.onclick = async () => {
+      let chosenID = chatIDInput.value.trim();
+      if(chosenID.length < 3){
+        alert("Chat ID must be at least 3 characters.");
+        return;
+      }
+
+      try{
+        await updateDoc(userRef, { chatId: chosenID });
+      }catch(e){
+        console.error("Error saving chat ID:", e);
+        alert("Failed to save. Try again.");
+        return;
+      }
+
+      chatIDModal.style.display = "none"; // hide modal
+      resolve(chosenID);
+    };
+  });
+}
 /* ---------- HELLO rotation (runs immediately, non-blocking) ---------- */
 const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
 let helloIndex = 0;
