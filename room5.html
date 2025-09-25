@@ -735,16 +735,16 @@ function renderMessagesFromArray(arr){
 }
 /* ---------- Auth watcher (core) ---------- */
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
+  if(user){
     // presence
-    try { setupPresence(user); } catch (e) { console.warn("presence err", e); }
+    try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
     // ensure user doc exists
     const userRef = doc(db, "users", user.uid);
     let snap = await getDoc(userRef);
-    if (!snap.exists()) {
+    if(!snap.exists()){
       await setDoc(userRef, {
-        chatId: "", // force user to set this
+        chatId: user.displayName || generateGuestName(),
         stars: 100,
         cash: 0,
         usernameColor: randomColor(),
@@ -758,40 +758,10 @@ onAuthStateChanged(auth, async (user) => {
 
     // assign daily color if needed
     const today = new Date().toISOString().split("T")[0];
-    if (!userData.lastColorDate || userData.lastColorDate !== today) {
+    if(!userData.lastColorDate || userData.lastColorDate !== today){
       const newColor = randomColor();
-      try { 
-        await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today }); 
-        userData.usernameColor = newColor; 
-      } catch (e) { console.warn("usernameColor update failed", e); }
+      try{ await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today }); userData.usernameColor = newColor; } catch(e){ console.warn("usernameColor update failed", e); }
     }
-
-    // --- SHOW CHAT ID POPUP AFTER 3.5s ---
-    setTimeout(() => {
-      if (!userData.chatId) { // only show if empty
-        const popup = document.getElementById("chatIdPopup");
-        popup.style.display = "flex";
-
-        // block background interaction
-        document.body.style.overflow = "hidden";
-      }
-    }, 3500);
-
-    // --- SAVE CHAT ID BUTTON ---
-    document.getElementById("chatIdSaveBtn").addEventListener("click", async () => {
-      const chatId = document.getElementById("chatIdInput").value.trim();
-      if (!chatId) return alert("Chat ID cannot be empty");
-
-      await updateDoc(userRef, { chatId });
-
-      // hide popup and restore scrolling
-      document.getElementById("chatIdPopup").style.display = "none";
-      document.body.style.overflow = "auto";
-
-      console.log("Chat ID set to:", chatId);
-    });
-  }
-});
     
  // 💙 ADD ADMIN CONTROL LOGIC HERE: START
 const adminControlsEl = document.getElementById("adminControls");
