@@ -249,13 +249,13 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   transform: scale(1.05);
 }
 
-/* 🔥 Glass bar underneath input */
+/* 🔥 Glass bar underneath input with subtle shadow/glow */
 .glass-bar {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
   height: 60px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.03);  /* very light glass */
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
@@ -263,8 +263,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   padding: 0 16px;
   box-sizing: border-box;
   border-radius: 12px;
-  margin-top: 6px;  /* small gap under input */
-  z-index: 5;        /* below input */
+  margin-top: 6px;            /* small gap under input */
+  z-index: 5;                  /* below input */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25); /* subtle shadow for depth */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Optional: hover effect (or when chat is active) */
+.send-area:focus-within + .glass-bar {
+  transform: translateY(2px);   /* slight “push down” effect */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 .buzz-content {
   font-weight: 800;    /* really thick */
