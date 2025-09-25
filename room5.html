@@ -178,21 +178,28 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 /* 🔥 Glass chat input bar (flows with keyboard) */
 .send-area {
+  position: fixed;       /* stick to viewport bottom */
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: 480px;      /* optional, match your layout */
+  margin: 0 auto;        /* center horizontally */
   display: flex;
   align-items: center;
   gap: 8px;
   background: var(--card);
   padding: 10px;
   border-top: 1px solid rgba(255,255,255,0.04);
-  border-radius: 999px;
-  margin: 6px;
+  border-radius: 999px;  /* keep pill shape */
   box-sizing: border-box;
+  z-index: 100;          /* stay above messages */
 }
+
 /* Input field in send area */
 .send-area input {
   flex: 1;
   padding: 12px 16px;
-  border-radius: 999px; /* pill shape */
+  border-radius: 999px;  /* pill shape */
   border: 1px solid rgba(255, 255, 255, 0.08);
   background-color: #0e0e0e;
   color: #fff;
@@ -209,6 +216,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .send-area input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
+}
+
+/* Ensure last messages aren’t hidden under the bar */
+#messages {
+  padding-bottom: 70px;  /* roughly the height of .send-area */
 }
 
 /* Send button */
@@ -295,12 +307,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
   </div>
 </div>
-      <div id="messages"></div>
-      <div class="send-area" id="sendArea" style="display:none;">
-        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
-        <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
-        <button id="sendBtn" class="send-btn">Send</button>
-      </div>
+   <div id="center">
+  <div id="messages"></div>
+</div>
+
+<div class="send-area" id="sendArea" style="display:none;">
+  <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+  <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+  <button id="sendBtn" class="send-btn">Send</button>
+</div>
     </div>
     <div class="profile" id="profileBox">
       <div class="profile-card">
