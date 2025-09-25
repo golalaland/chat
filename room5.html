@@ -941,6 +941,29 @@ document.getElementById("next").addEventListener("click", () => loadVideo(curren
 videoPlayer.addEventListener("click", () => {
   videoPlayer.muted = !videoPlayer.muted;
 });
+ const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const videoWrapper = document.getElementById("videoWrapper");
+
+    let fadeTimeout;
+
+    function showNavButtons() {
+      prevBtn.style.opacity = "0.8";
+      nextBtn.style.opacity = "0.8";
+
+      if(fadeTimeout) clearTimeout(fadeTimeout);
+
+      fadeTimeout = setTimeout(() => {
+        prevBtn.style.opacity = "0";
+        nextBtn.style.opacity = "0";
+      }, 2000);
+    }
+
+    videoWrapper.addEventListener("mousemove", showNavButtons);
+    videoWrapper.addEventListener("touchstart", showNavButtons);
+
+    prevBtn.addEventListener("mouseenter", () => prevBtn.style.opacity = "0.8");
+    nextBtn.addEventListener("mouseenter", () => nextBtn.style.opacity = "0.8");
 // Load first video on page load
 loadVideo(0);
 </script>
