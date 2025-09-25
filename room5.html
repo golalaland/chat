@@ -40,7 +40,11 @@
 }
 /* Video swipe buttons (from Code 1) */
 #videoWrapper {
-  position: relative; /* to position arrows */
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .arrow {
@@ -48,19 +52,13 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.25);
-  background: none;
+  color: rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.3);
   border: none;
   cursor: pointer;
-  z-index: 10;
-  user-select: none;
   padding: 6px;
   border-radius: 50%;
-}
-
-.arrow:hover {
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.05);
+  z-index: 10;
 }
 
 #prev { left: 5px; }
@@ -225,8 +223,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">✨</div>
     <div id="center">
-     <video id="videoPlayer" ...></video>
-<div class="nav-buttons">
+    <div id="videoWrapper">
+  <video id="videoPlayer" ...></video>
   <button class="arrow" id="prev">&#10094;</button>
   <button class="arrow" id="next">&#10095;</button>
 </div>
