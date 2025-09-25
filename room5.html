@@ -14,7 +14,7 @@
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
 }
-#videoWrapper .nav-buttons {
+#videoWrapper(( .nav-buttons {
   display: flex;
   justify-content: center;
   gap: 10px;
@@ -879,37 +879,33 @@ messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
   }
 });
 // VIDEO NAVIGATION
-const videoFrame = document.querySelector("#videoContainer iframe");
+const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
-  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=true&muted=true&controls=false",
-  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=1140143_video_with_sound_xt1i7l&profile=cld-default&autoplay=true&muted=true&controls=false",
-  "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=some_other_video_id&profile=cld-default&autoplay=true&muted=true&controls=false"
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
 ];
 let currentVideoIndex = 0;
 
-// Grab the buttons
-const prevBtn = document.getElementById("prev");
-const nextBtn = document.getElementById("next");
-
-// Function to load video at current index
+// Load video
 function loadVideo(index) {
-  if(index < 0) index = videos.length - 1;        // wrap around backward
-  if(index >= videos.length) index = 0;          // wrap around forward
+  if(index < 0) index = videos.length - 1;
+  if(index >= videos.length) index = 0;
   currentVideoIndex = index;
-  videoFrame.src = videos[currentVideoIndex];
+  videoPlayer.src = videos[currentVideoIndex];
+  videoPlayer.play().catch(()=>{}); // autoplay fallback
 }
-// --- TAP ON VIDEO TO PREV/NEXT ---
-const videoContainer = document.getElementById("videoContainer");
 
-videoContainer.addEventListener("click", (e) => {
-  const rect = videoContainer.getBoundingClientRect();
-  const x = e.clientX - rect.left;  // click position relative to video
-  const width = rect.width;
+// Prev / Next buttons
+document.getElementById("prev").addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+document.getElementById("next").addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 
-  if (x < width / 2) {
-    loadVideo(currentVideoIndex - 1); // left half -> prev
+// Tap to unmute
+videoPlayer.addEventListener("click", () => {
+  if(videoPlayer.muted){
+    videoPlayer.muted = false;
   } else {
-    loadVideo(currentVideoIndex + 1); // right half -> next
+    videoPlayer.muted = true;
   }
 });
 // Button events
