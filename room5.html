@@ -39,21 +39,31 @@
   box-shadow: 0 4px 10px rgba(255,20,147,0.3);
 }
 /* Video swipe buttons (from Code 1) */
+/* 🔥 1. Sticky video frame */
+/* 🔥 Video wrapper for chatroom */
+/* 🔥 Responsive video wrapper for chatroom */
+/* 🔥 Responsive video wrapper for chatroom */
+/* Sticky video wrapper for chatroom */
 #videoWrapper {
-  position: relative;
+  flex-shrink: 0;
   width: 100%;
-  max-width: 480px;
-  aspect-ratio: 16/9;
+  aspect-ratio: 16 / 9;
   border-radius: 10px;
   overflow: hidden;
-  margin: auto;
+  background: #111;
+
+  /* NEW: make sticky */
+  position: sticky;
+  top: 0;
+  z-index: 50; /* make sure it’s above messages but below popups like stars */
 }
 
-#videoPlayer {
+/* Video container inside wrapper */
+#videoContainer {
   width: 100%;
-  height: 100%;
-  object-fit: cover; /* fills wrapper */
+  height: 100%;       /* fill the wrapper */
   border-radius: 10px;
+  overflow: hidden;
 }
 
 .arrow {
