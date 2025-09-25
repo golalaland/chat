@@ -168,6 +168,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 </style>
 </head>
 <body>
+<audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
 <div id="appWrapper">
   <div class="app">
     <div class="brand">乂丨乂丨</div>
@@ -484,17 +485,29 @@ sendBtn.addEventListener("click", async () => {
 messageInputEl.addEventListener("keydown", (e)=> { if(e.key === "Enter") sendBtn.click(); });
 
 buzzBtn.addEventListener("click", async () => {
-  if(!currentUser){ showStarPopup("Sign in to BUZZ"); return; }
+  if (!currentUser) {
+    showStarPopup("Sign in to BUZZ");
+    return;
+  }
+
   const userRef = doc(db, "users", currentUser.uid);
   const snapshot = await getDoc(userRef);
   const userData = snapshot.exists() ? snapshot.data() : {};
   const currentStars = userData.stars || 0;
-  if(currentStars < BUZZ_COST){ showStarPopup("Not enough stars to create a BUZZ! 🚨"); return; }
-  const txt = messageInputEl.value.trim();
-  if(!txt){ showStarPopup("Type a message to BUZZ! 🚨"); return; }
 
-  try{
-    // atomic decrement to avoid race conditions
+  if (currentStars < BUZZ_COST) {
+    showStarPopup("Not enough stars to create a BUZZ! 🚨");
+    return;
+  }
+
+  const txt = messageInputEl.value.trim();
+  if (!txt) {
+    showStarPopup("Type a message to BUZZ! 🚨");
+    return;
+  }
+
+  try {
+    // Atomic decrement to avoid race conditions
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
 
     const color = randomColor();
@@ -510,14 +523,23 @@ buzzBtn.addEventListener("click", async () => {
     showStarPopup("BUZZ 🚨 sent!");
     messageInputEl.value = "";
 
-    // clear highlight after 10s
+    // --- BUZZ feedback: sound + vibration ---
+    triggerBuzzFeedback();
+
+    // Clear highlight after 10s
     setTimeout(async () => {
-      try{ await updateDoc(docRef, { highlight: false, buzzColor: null }); } catch(e){ console.warn("clear buzz failed", e); }
+      try {
+        await updateDoc(docRef, { highlight: false, buzzColor: null });
+      } catch (e) {
+        console.warn("clear buzz failed", e);
+      }
     }, 10000);
 
-  }catch(e){ console.error("buzz failed", e); showStarPopup("BUZZ failed"); }
+  } catch (e) {
+    console.error("buzz failed", e);
+    showStarPopup("BUZZ failed");
+  }
 });
-
 /* Tip & Redeem (placeholders) */
 tipBtn.addEventListener("click", () => { window.open("https://your-placeholder-payment-link.com","_blank"); showStarPopup("Thanks! Tip clicked 💵"); });
 redeemBtn.addEventListener("click", () => { window.open("https://xixi.live","_blank"); showStarPopup("Redeem clicked"); });
