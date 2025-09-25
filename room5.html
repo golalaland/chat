@@ -637,7 +637,28 @@ buzzBtn.addEventListener("click", async () => {
     showStarPopup("BUZZ failed");
   }
 });
+// ======= STAR MESSAGE VISIBILITY =======
+// Make sure your "Sign in to chat and collect stars" message is in a div with id="star-message"
 
+const starMessageEl = document.getElementById("star-message");
+
+function updateStarMessage(user) {
+  if (user) {
+    starMessageEl.style.display = "none"; // hide when logged in
+  } else {
+    starMessageEl.style.display = "block"; // show when not logged in
+  }
+}
+
+// Initial check
+updateStarMessage(currentUser);
+
+// Listen for login/logout changes
+auth.onAuthStateChanged((user) => {
+  currentUser = user;           // update currentUser
+  updateStarMessage(user);      // update message visibility
+});
+// ======= END STAR MESSAGE VISIBILITY =======
 /* ---------- SEND BUTTON LOGIC ---------- */
 sendBtn.addEventListener("click", async () => {
   if (!currentUser) {
