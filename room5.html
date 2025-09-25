@@ -474,16 +474,8 @@ buzzBtn.addEventListener("click", async () => {
   }
 
   const userRef = doc(db, "users", currentUser.uid);
-  let userData = {};
-  try {
-    const snapshot = await getDoc(userRef);
-    userData = snapshot.exists() ? snapshot.data() : {};
-  } catch (e) {
-    console.error("Failed to fetch user data:", e);
-    showStarPopup("BUZZ failed: could not fetch user data");
-    return;
-  }
-
+  const snap = await getDoc(userRef);
+  const userData = snap.exists() ? snap.data() : {};
   const currentStars = userData.stars || 0;
 
   if (currentStars < BUZZ_COST) {
@@ -498,11 +490,11 @@ buzzBtn.addEventListener("click", async () => {
   }
 
   try {
-    // Decrement stars atomically
+    // Deduct stars
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
 
+    // Add BUZZ message
     const color = randomColor();
-
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: currentUser.uid,
@@ -512,20 +504,20 @@ buzzBtn.addEventListener("click", async () => {
       buzzColor: color
     });
 
-    // Reset input
     messageInputEl.value = "";
 
-    // --- BUZZ feedback: sound + vibration ---
+    // --- BUZZ feedback ---
     const audio = document.getElementById("buzz-sound");
-    if (audio) { 
-      audio.currentTime = 0; 
+    if (audio) {
+      audio.currentTime = 0;
       audio.play().catch(e => console.warn("Audio play failed:", e));
     }
-    if (navigator.vibrate) {
-      navigator.vibrate([100, 50, 100]);
+
+    if ("vibrate" in navigator) {
+      const didVibrate = navigator.vibrate([100, 50, 100]);
+      if (!didVibrate) console.warn("Vibration not allowed on this device/context");
     }
 
-    // Show success popup
     showStarPopup("BUZZ 🚨 sent!");
 
     // Clear highlight after 10s
@@ -533,12 +525,12 @@ buzzBtn.addEventListener("click", async () => {
       try {
         await updateDoc(docRef, { highlight: false, buzzColor: null });
       } catch (e) {
-        console.warn("Failed to clear BUZZ highlight:", e);
+        console.warn("clear buzz highlight failed", e);
       }
     }, 10000);
 
   } catch (e) {
-    console.error("BUZZ failed:", e);
+    console.error("buzz failed", e);
     showStarPopup("BUZZ failed");
   }
 });
