@@ -56,19 +56,7 @@
   border-radius: 10px;
 }
 
-.arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 24px;
-  background: rgba(0,0,0,0.3);
-  color: #fff;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 50%;
-  z-index: 10;
-}
+
 #prev { left: 5px; }
 #next { right: 5px; }
   /* Minimal, almost invisible Prev/Next buttons */
@@ -254,8 +242,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
 <div id="videoWrapper">
   <video id="videoPlayer" muted playsinline></video>
-  <button class="arrow" id="prev">&#10094;</button>
-  <button class="arrow" id="next">&#10095;</button>
 </div>
       <div id="helloText" aria-live="polite">HELLO</div>
       <div class="room-desc">Chat. Own your vibe.
