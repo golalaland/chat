@@ -10,80 +10,35 @@
   --bg:#0a0a0a;
   --card:#111;
   --muted:#888;
-  --accent:#0ff;          /* Neon cyan */
-  --accent-light:#33ffff; /* Slightly lighter neon */
+  --accent:#0ff;
+  --accent-light:#33ffff;
   --border:#222;
 }
-html,body{
-  height:100%;margin:0;
-  font-family: Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
-  background:var(--bg);color:#eee;
-}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#eee;}
 #appWrapper{width:100%;min-height:100%;display:flex;justify-content:center;}
 .app{display:flex;flex-direction:column;min-height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
-.brand{
-  font-weight:700;font-size:24px;text-align:center;
-  color:var(--accent);margin-bottom:10px;
-  text-shadow:0 0 8px var(--accent);
-}
+.brand{font-weight:700;font-size:24px;text-align:center;color:var(--accent);margin:15px 0;text-shadow:0 0 8px var(--accent);}
 #authBox{display:flex;justify-content:center;margin:20px 0;}
-.google-btn{
-  display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;
-  background:var(--accent);color:#000;font-weight:600;font-size:14px;
-  border:none;cursor:pointer;box-shadow:0 0 12px rgba(0,255,255,0.4);
-  transition:all .2s;
-}
+.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:var(--accent);color:#000;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 0 12px rgba(0,255,255,0.4);transition:all .2s;}
 .google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
 .google-btn:hover{background:var(--accent-light);box-shadow:0 0 16px rgba(0,255,255,0.6);}
+.google-btn:disabled{background:#333;color:#666;cursor:not-allowed;opacity:0.6;}
 .profile{display:none;flex-direction:column;gap:12px;width:100%;}
-.profile-card{
-  background:var(--card);
-  padding:16px;border-radius:16px;
-  border:1px solid var(--border);
-  display:flex;flex-direction:column;align-items:center;gap:12px;
-  box-shadow:0 0 20px rgba(0,255,255,0.05);
-}
-.picture-frame{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;display:flex;justify-content:center;align-items:center;position:relative;}
-.picture-frame img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s;}
-.picture-frame img.active{opacity:1;}
+.profile-card{background:var(--card);padding:16px;border-radius:16px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 0 20px rgba(0,255,255,0.05);}
 .profile-stats{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:10px;}
 .profile-label{font-weight:600;color:var(--muted);font-size:14px;}
 .profile-value{font-family:ui-monospace, Menlo, Monaco,"Roboto Mono",monospace;color:var(--accent);font-size:16px;text-shadow:0 0 6px rgba(0,255,255,0.6);}
-.exit-btn{
-  padding:10px 0;border-radius:999px;
-  background:var(--accent);border:0;color:#000;font-weight:700;font-size:14px;
-  cursor:pointer;margin-top:10px;transition:all .2s;width:100%;
-  box-shadow:0 0 12px rgba(0,255,255,0.4);
-}
-.exit-btn:hover{background:var(--accent-light);transform:translateY(-2px);box-shadow:0 0 16px rgba(0,255,255,0.6);}
-.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;width:100%;}
-.perk-card{
-  background:var(--card);padding:12px;border-radius:12px;border:1px solid var(--border);
-  cursor:pointer;transition:all .2s;text-align:center;
-  box-shadow:0 0 8px rgba(0,255,255,0.1);
-}
+.exit-btn{padding:10px 0;border-radius:999px;background:var(--accent);border:0;color:#000;font-weight:700;font-size:14px;cursor:pointer;margin-top:10px;transition:all .2s;box-shadow:0 0 12px rgba(0,255,255,0.4);}
+.exit-btn:hover{background:var(--accent-light);}
+.perk-card{background:var(--card);padding:12px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all .2s;text-align:center;margin-bottom:10px;}
 .perk-card:hover{transform:translateY(-2px);box-shadow:0 0 16px rgba(0,255,255,0.4);}
 .perk-card.disabled{opacity:0.5;pointer-events:none;}
-.perk-card .perk-name{font-weight:700;color:#eee;margin-bottom:4px;}
-.perk-card .perk-cost{font-family:ui-monospace,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:var(--accent);}
-.perk-card .perk-stock{font-size:12px;color:var(--muted);margin-top:4px;}
-.popup-confirm{
-  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:var(--card);padding:20px;border-radius:12px;
-  border:1px solid var(--border);display:none;flex-direction:column;
-  align-items:center;gap:12px;z-index:1000;color:#eee;
-  box-shadow:0 0 20px rgba(0,255,255,0.3);
-}
-.popup-confirm button{
-  padding:8px 16px;border-radius:999px;border:0;font-weight:700;cursor:pointer;
-}
-.popup-confirm button:not(.cancel){
-  background:var(--accent);color:#000;box-shadow:0 0 12px rgba(0,255,255,0.4);
-}
-.popup-confirm button:not(.cancel):hover{background:var(--accent-light);}
-.popup-confirm button.cancel{
-  background:#1a1a1a;color:#eee;border:1px solid var(--border);
-}
+.perk-name{font-weight:700;color:#eee;margin-bottom:4px;}
+.perk-cost{color:var(--accent);}
+.perk-available{color:var(--muted);font-size:13px;margin-top:4px;}
+.success-message{color:var(--accent);font-size:14px;font-weight:600;margin-top:6px;opacity:0;transition:opacity .5s;}
+.success-message.show{opacity:1;}
+.success-message.hide{opacity:0;}
 </style>
 </head>
 <body>
@@ -94,7 +49,7 @@ html,body{
     <!-- Google sign-in -->
     <div id="authBox">
       <button id="googleSignInBtn" class="google-btn">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
         Sign in with Google
       </button>
     </div>
@@ -102,55 +57,24 @@ html,body{
     <!-- Profile -->
     <div class="profile" id="profileBox">
       <div class="profile-card">
-        <div class="picture-frame" id="pictureFrame">
-          <img src="https://placekitten.com/400/400" class="active">
-          <img src="https://placekitten.com/401/400">
-          <img src="https://placekitten.com/402/400">
-        </div>
-
-        <!-- Centered Profile Stats -->
         <div class="profile-stats">
-          <div id="profileName" style="font-size:28px;font-weight:700;"></div>
-          <div class="profile-row">
-            <span class="profile-label">Stars Collected:</span>
-            <span class="profile-value" id="starsCollected">0 ⭐️</span>
-          </div>
-          <div class="profile-row">
-            <span class="profile-label">Stars Balance:</span>
-            <span class="profile-value" id="starsBalance">0 ⭐️</span>
-          </div>
-          <div class="profile-row">
-            <span class="profile-label">Cash Collected:</span>
-            <span class="profile-value" id="cashCollected">₦0</span>
-          </div>
-          <div class="profile-row">
-            <span class="profile-label">Cash Balance:</span>
-            <span class="profile-value" id="cashBalance">₦0</span>
-          </div>
+          <div id="profileName" style="font-size:20px;font-weight:700;"></div>
+          <div class="profile-row"><span class="profile-label">Stars Collected:</span> <span class="profile-value" id="starsCollected">0 ⭐️</span></div>
+          <div class="profile-row"><span class="profile-label">Stars Balance:</span> <span class="profile-value" id="starsBalance">0 ⭐️</span></div>
+          <div class="profile-row"><span class="profile-label">Cash Collected:</span> <span class="profile-value" id="cashCollected">₦0</span></div>
+          <div class="profile-row"><span class="profile-label">Cash Balance:</span> <span class="profile-value" id="cashBalance">₦0</span></div>
         </div>
-
-        <!-- Redeem Grid -->
-        <div class="redeem-grid" id="redeemGrid"></div>
-
+        <div id="perksContainer"></div>
         <button class="exit-btn" onclick="window.location.href='#'">Back to Chatroom</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Redeem confirmation popup -->
-<div class="popup-confirm" id="redeemPopup">
-  <div id="redeemText">Are you sure you want to redeem?</div>
-  <div style="display:flex;gap:10px;">
-    <button id="redeemYes">Yes</button>
-    <button class="cancel" id="redeemCancel">Cancel</button>
-  </div>
-</div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -173,31 +97,17 @@ const starsCollectedEl = document.getElementById("starsCollected");
 const starsBalanceEl = document.getElementById("starsBalance");
 const cashCollectedEl = document.getElementById("cashCollected");
 const cashBalanceEl = document.getElementById("cashBalance");
-const redeemGridEl = document.getElementById("redeemGrid");
-const redeemPopupEl = document.getElementById("redeemPopup");
-const redeemTextEl = document.getElementById("redeemText");
-const redeemYesBtn = document.getElementById("redeemYes");
-const redeemCancelBtn = document.getElementById("redeemCancel");
+const perksContainer = document.getElementById("perksContainer");
 
 let currentUser = null;
-let selectedPerk = null;
 
-const perks = [
+// perks setup with availability
+let perks = [
   {name:"VIP Badge", cost:50, available:8},
-  {name:"Sticker Pack", cost:30, available:10},
-  {name:"Custom Emoji", cost:70, available:5},
-  {name:"Profile Highlight", cost:100, available:3},
-  {name:"Animated Frame", cost:150, available:6},
-  {name:"Extra Star Boost", cost:80, available:12},
-  {name:"Cash Booster", cost:120, available:7},
-  {name:"Mini Game Unlock", cost:90, available:9},
-  {name:"Special Avatar", cost:110, available:4},
-  {name:"Lucky Spin", cost:60, available:15},
-  {name:"Exclusive Badge", cost:200, available:2},
-  {name:"Golden Crown", cost:300, available:1}
+  {name:"Sticker Pack", cost:30, available:5},
+  {name:"Cash Booster", cost:120, available:3}
 ];
 
-// Google Sign-In
 googleBtn.addEventListener("click",async()=>{
   const provider = new GoogleAuthProvider();
   try{ await signInWithPopup(auth,provider); }catch(err){ await signInWithRedirect(auth,provider); }
@@ -210,86 +120,72 @@ onAuthStateChanged(auth,async(user)=>{
     const userRef = doc(db,"users",user.uid);
     let snap = await getDoc(userRef);
     if(!snap.exists()){
-      await setDoc(userRef,{
-        chatId:user.displayName||"GUEST",
-        stars:200,
-        cash:500,
-        starsCollected:200,
-        cashCollected:500
-      });
+      await setDoc(userRef,{chatId:user.displayName||"GUEST",stars:200,cash:500,starsCollected:200,cashCollected:500});
       snap = await getDoc(userRef);
     }
-    const data = snap.data();
-    currentUser={uid:user.uid,...data};
-    profileNameEl.innerText=data.chatId;
-
-    starsCollectedEl.innerText = `${data.starsCollected} ⭐️`;
-    starsBalanceEl.innerText = `${data.stars} ⭐️`;
-    cashCollectedEl.innerText = `₦${data.cashCollected.toLocaleString()}`;
-    cashBalanceEl.innerText = `₦${data.cash.toLocaleString()}`;
-
+    currentUser={uid:user.uid,...snap.data()};
+    renderUser();
     renderPerks();
   } else { authBox.style.display="flex"; profileBoxEl.style.display="none"; }
 });
 
+function renderUser(){
+  profileNameEl.innerText=currentUser.chatId;
+  starsCollectedEl.innerText=`${currentUser.starsCollected} ⭐️`;
+  starsBalanceEl.innerText=`${currentUser.stars} ⭐️`;
+  cashCollectedEl.innerText=`₦${currentUser.cashCollected.toLocaleString()}`;
+  cashBalanceEl.innerText=`₦${currentUser.cash.toLocaleString()}`;
+}
+
 function renderPerks(){
-  redeemGridEl.innerHTML="";
-  perks.forEach(p=>{
-    const div = document.createElement("div");
-    div.className="perk-card";
-    if(p.available<=0){ div.classList.add("disabled"); }
+  perksContainer.innerHTML="";
+  perks.forEach((p,i)=>{
+    const div=document.createElement("div");
+    div.className="perk-card"+(p.available<=0?" disabled":"");
     div.innerHTML=`
       <div class="perk-name">${p.name}</div>
       <div class="perk-cost">${p.cost} ⭐️</div>
-      <div class="perk-stock">${p.available>0 ? p.available+" available today" : "Sold Out"}</div>
+      <div class="perk-available">${p.available>0? p.available+" available today":"❌ No more available"}</div>
+      <button class="google-btn" ${p.available<=0?"disabled":""}>Redeem</button>
+      <div class="success-message">✅ Successfully Redeemed!</div>
     `;
-    if(p.available>0){
-      div.addEventListener("click",()=>{
-        if(currentUser.stars < p.cost){ alert("Not enough stars!"); return; }
-        selectedPerk=p;
-        redeemTextEl.innerText=`Are you sure you want to redeem ${p.name} for ${p.cost} ⭐️?`;
-        redeemPopupEl.style.display="flex";
-      });
-    }
-    redeemGridEl.appendChild(div);
+    const btn=div.querySelector("button");
+    btn.addEventListener("click",()=>redeemPerk(p,i,div));
+    perksContainer.appendChild(div);
   });
 }
 
-// Redeem popup buttons
-redeemCancelBtn.addEventListener("click",()=>{ redeemPopupEl.style.display="none"; });
-redeemYesBtn.addEventListener("click",async()=>{
-  if(selectedPerk){
-    const userRef = doc(db,"users",currentUser.uid);
-    await updateDoc(userRef,{stars:increment(-selectedPerk.cost)});
-    currentUser.stars -= selectedPerk.cost;
-    starsBalanceEl.innerText=`${currentUser.stars} ⭐️`;
+async function redeemPerk(p,i,div){
+  if(currentUser.stars < p.cost){ alert("Not enough stars!"); return; }
+  if(p.available<=0){ return; }
 
-    selectedPerk.available--;
-    renderPerks();
+  const userRef = doc(db,"users",currentUser.uid);
+  await updateDoc(userRef,{
+    stars:increment(-p.cost),
+    starsCollected:increment(p.cost),
+    cash:increment(p.cost*1000),
+    cashCollected:increment(p.cost*1000)
+  });
 
-    redeemPopupEl.style.display="none";
-    await addDoc(collection(db,"adminMessages"),{
-      message:`${currentUser.chatId} redeemed ${selectedPerk.name}, please gift ${currentUser.chatId}`,
-      timestamp:serverTimestamp()
-    });
+  currentUser.stars -= p.cost;
+  currentUser.starsCollected += p.cost;
+  currentUser.cash += p.cost*1000;
+  currentUser.cashCollected += p.cost*1000;
 
-    const msg=document.createElement("div");
-    msg.innerText=`Successfully redeemed ${selectedPerk.name}!`;
-    msg.style.color="var(--accent)";
-    msg.style.marginTop="10px";
-    profileBoxEl.appendChild(msg);
-    setTimeout(()=>msg.remove(),3000);
-  }
-});
+  perks[i].available -=1;
 
-// Picture slideshow
-let slideIndex = 0;
-setInterval(()=>{
-  const imgs = document.querySelectorAll("#pictureFrame img");
-  imgs.forEach(img=>img.classList.remove("active"));
-  slideIndex=(slideIndex+1)%imgs.length;
-  imgs[slideIndex].classList.add("active");
-},4000);
+  await addDoc(collection(db,"adminMessages"),{
+    message:`${currentUser.chatId} redeemed ${p.name}, gift them please.`,
+    timestamp:serverTimestamp()
+  });
+
+  renderUser();
+  renderPerks();
+
+  const msg=div.querySelector(".success-message");
+  msg.classList.add("show");
+  setTimeout(()=>{msg.classList.add("hide");setTimeout(()=>msg.classList.remove("show","hide"),1000)},2000);
+}
 </script>
 </body>
 </html>
