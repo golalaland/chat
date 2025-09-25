@@ -565,6 +565,43 @@ buzzBtn.addEventListener("click", async () => {
   }
 });
 
+/* ---------- SEND BUTTON LOGIC ---------- */
+sendBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    showStarPopup("Sign in to chat");
+    return;
+  }
+
+  const txt = messageInputEl.value.trim();
+  if (!txt) {
+    showStarPopup("Type a message first");
+    return;
+  }
+
+  try {
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId || generateGuestName(),
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null
+    });
+
+    messageInputEl.value = "";
+  } catch (e) {
+    console.error("Send message failed", e);
+    showStarPopup("Message failed to send");
+  }
+});
+// ---------- SEND MESSAGE ON ENTER KEY ----------
+messageInputEl.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();   // prevent new line in input
+    sendBtn.click();      // trigger the send button logic
+  }
+});
+
 /* Tip & Redeem (placeholders) */
 tipBtn.addEventListener("click", () => { window.open("https://your-placeholder-payment-link.com","_blank"); showStarPopup("Thanks! Tip clicked 💵"); });
 redeemBtn.addEventListener("click", () => { window.open("https://xixi.live","_blank"); showStarPopup("Redeem clicked"); });
