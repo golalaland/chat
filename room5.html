@@ -86,13 +86,13 @@
 #prev { left: 5px; }
 #next { right: 5px; }
   /* Minimal, almost invisible Prev/Next buttons */
-  #prevBtn, #nextBtn {
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
-    background: rgba(0, 0, 0, 0.5); /* very subtle */
+#prevBtn, #nextBtn {
+    width: 25px;               /* slightly smaller for mobile look */
+    height: 25px;
+    font-size: 16px;           /* smaller arrow size */
+    color: #fff;               /* pure white */
+    background: none;          /* no circle or dark background */
     border: none;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -100,18 +100,17 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
-    opacity: 0;               /* invisible by default */
-    transition: opacity 0.3s ease;
-  }
-
-  #prevBtn:hover, #nextBtn:hover,
-  #prevBtn.active, #nextBtn.active {
-    opacity: 0.8;             /* appear on hover or when active */
     cursor: pointer;
-  }
+    opacity: 1;                /* always visible */
+    transition: transform 0.2s ease;
+}
 
-  #prevBtn { left: 10px; }
-  #nextBtn { right: 10px; }
+#prevBtn:hover, #nextBtn:hover {
+    transform: translateY(-2px);
+}
+
+#prevBtn { left: 8px; }       /* snug on the left */
+#nextBtn { right: 8px; }      /* snug on the right */
 /* overall layout */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
