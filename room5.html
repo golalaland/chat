@@ -642,14 +642,38 @@ adminClearMessagesBtn.addEventListener("click", async () => {
       }
     });
 
-    // messages listener (room-scoped)
-    if(messagesUnsub) messagesUnsub();
-    const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
-    messagesUnsub = onSnapshot(messagesQuery, (snap) => {
-      lastMessagesArray = [];
-      snap.forEach(docSnap => lastMessagesArray.push({ id: docSnap.id, data: docSnap.data() }));
-      renderMessagesFromArray(lastMessagesArray);
-    });
+// messages listener (room-scoped) — fixed no-flicker version
+if(messagesUnsub) messagesUnsub();
+
+const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
+messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
+  snapshot.docChanges().forEach(change => {
+    if (change.type === "added") {
+      const m = change.doc.data();
+      const wrapper = document.createElement("div");
+      wrapper.className = "msg";
+
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = (m.chatId || "Guest") + ":";
+      meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+      meta.style.marginRight = "4px";
+
+      const content = document.createElement("span");
+      content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+      content.textContent = " " + (m.content || "");
+      if(m.buzzColor) content.style.background = m.buzzColor;
+      if(m.highlight) content.style.color = "#000";
+      if(m.highlight) content.style.fontWeight = "700"; // ensure bold
+
+      wrapper.appendChild(meta);
+      wrapper.appendChild(content);
+      messagesEl.appendChild(wrapper);
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  });
+});
 
   } else {
     // signed out UI -> reset
