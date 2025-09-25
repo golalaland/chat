@@ -953,70 +953,73 @@ messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
 });
 // VIDEO NAVIGATION FIXED
 const videoPlayer = document.getElementById("videoPlayer");
-const videos = [
-  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
-  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
-  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
-];
-let currentVideoIndex = 0;
-
-// Buttons & wrapper
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const videoWrapper = document.getElementById("videoWrapper");
 let fadeTimeout;
 
-// Hide buttons initially (before signup)
+// List of videos
+const videos = [
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
+];
+
+let currentIndex = 0;
+
+// Hide buttons initially
 prevBtn.style.opacity = "0";
 nextBtn.style.opacity = "0";
 prevBtn.style.pointerEvents = "none";
 nextBtn.style.pointerEvents = "none";
 
-// Function to load videos
+// Load video
 function loadVideo(index) {
-  if (index < 0) index = videos.length - 1;
-  if (index >= videos.length) index = 0;
-  currentVideoIndex = index;
-  videoPlayer.src = videos[currentVideoIndex];
-  videoPlayer.muted = true; // mobile autoplay
-  videoPlayer.play().catch(() => {}); // fallback
+  if(index < 0) index = videos.length - 1;
+  if(index >= videos.length) index = 0;
+  currentIndex = index;
+  videoPlayer.src = videos[currentIndex];
+  videoPlayer.muted = true;
+  videoPlayer.play().catch(()=>{});
 }
 
-// Fade in/out nav buttons
+// Fade nav buttons
 function showNavButtons() {
   prevBtn.style.opacity = "0.8";
   nextBtn.style.opacity = "0.8";
-
-  if (fadeTimeout) clearTimeout(fadeTimeout);
-
+  if(fadeTimeout) clearTimeout(fadeTimeout);
   fadeTimeout = setTimeout(() => {
     prevBtn.style.opacity = "0";
     nextBtn.style.opacity = "0";
   }, 2000);
 }
 
-// Enable video controls after signup
+// Enable controls after signup
 function enableVideoControls() {
   prevBtn.style.pointerEvents = "auto";
   nextBtn.style.pointerEvents = "auto";
 
-  // Prev/Next click
-  prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
-  nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+  prevBtn.addEventListener("click", () => loadVideo(currentIndex - 1));
+  nextBtn.addEventListener("click", () => loadVideo(currentIndex + 1));
 
-  // Show buttons on interaction
   videoWrapper.addEventListener("mousemove", showNavButtons);
   videoWrapper.addEventListener("touchstart", showNavButtons);
+
   prevBtn.addEventListener("mouseenter", () => prevBtn.style.opacity = "0.8");
   nextBtn.addEventListener("mouseenter", () => nextBtn.style.opacity = "0.8");
 
-  // Optional: show buttons initially for a moment
   showNavButtons();
 }
 
 // Tap to toggle mute
 videoPlayer.addEventListener("click", () => {
   videoPlayer.muted = !videoPlayer.muted;
+});
+
+// Optional: keyboard support
+document.addEventListener("keydown", (e) => {
+  if(e.key === "ArrowLeft") loadVideo(currentIndex - 1);
+  if(e.key === "ArrowRight") loadVideo(currentIndex + 1);
 });
 
 // Initial load
