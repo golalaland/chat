@@ -10,8 +10,8 @@
   --bg:#0a0a0a;
   --card:#111;
   --muted:#888;
-  --accent:#0ff;
-  --accent-light:#33ffff;
+  --accent:#0ff;          /* Neon cyan */
+  --accent-light:#33ffff; /* Slightly lighter neon */
   --border:#222;
 }
 html,body{
@@ -52,8 +52,8 @@ html,body{
 .exit-btn{
   padding:10px 0;border-radius:999px;
   background:var(--accent);border:0;color:#000;font-weight:700;font-size:14px;
-  cursor:pointer;margin-top:10px;transition:all .2s;
-  box-shadow:0 0 12px rgba(0,255,255,0.4);width:100%;
+  cursor:pointer;margin-top:10px;transition:all .2s;width:100%;
+  box-shadow:0 0 12px rgba(0,255,255,0.4);
 }
 .exit-btn:hover{background:var(--accent-light);transform:translateY(-2px);box-shadow:0 0 16px rgba(0,255,255,0.6);}
 .redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;width:100%;}
@@ -63,8 +63,10 @@ html,body{
   box-shadow:0 0 8px rgba(0,255,255,0.1);
 }
 .perk-card:hover{transform:translateY(-2px);box-shadow:0 0 16px rgba(0,255,255,0.4);}
+.perk-card.disabled{opacity:0.5;pointer-events:none;}
 .perk-card .perk-name{font-weight:700;color:#eee;margin-bottom:4px;}
 .perk-card .perk-cost{font-family:ui-monospace,Menlo,Monaco,"Roboto Mono","Courier New",monospace;color:var(--accent);}
+.perk-card .perk-stock{font-size:12px;color:var(--muted);margin-top:4px;}
 .popup-confirm{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   background:var(--card);padding:20px;border-radius:12px;
@@ -81,18 +83,6 @@ html,body{
 .popup-confirm button:not(.cancel):hover{background:var(--accent-light);}
 .popup-confirm button.cancel{
   background:#1a1a1a;color:#eee;border:1px solid var(--border);
-}
-/* success toast */
-.success-toast{
-  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
-  background:var(--card);padding:12px 20px;border-radius:999px;
-  border:1px solid var(--border);color:var(--accent);
-  font-weight:600;opacity:0;pointer-events:none;
-  transition:opacity .5s, bottom .5s;
-  box-shadow:0 0 12px rgba(0,255,255,0.3);
-}
-.success-toast.show{
-  opacity:1;bottom:50px;
 }
 </style>
 </head>
@@ -142,7 +132,7 @@ html,body{
         <!-- Redeem Grid -->
         <div class="redeem-grid" id="redeemGrid"></div>
 
-        <button class="exit-btn" onclick="window.location.href='#'">⬅ Back to Chatroom</button>
+        <button class="exit-btn" onclick="window.location.href='#'">Back to Chatroom</button>
       </div>
     </div>
   </div>
@@ -156,9 +146,6 @@ html,body{
     <button class="cancel" id="redeemCancel">Cancel</button>
   </div>
 </div>
-
-<!-- success toast -->
-<div class="success-toast" id="successToast">✅ Successfully Redeemed!</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -191,24 +178,23 @@ const redeemPopupEl = document.getElementById("redeemPopup");
 const redeemTextEl = document.getElementById("redeemText");
 const redeemYesBtn = document.getElementById("redeemYes");
 const redeemCancelBtn = document.getElementById("redeemCancel");
-const successToastEl = document.getElementById("successToast");
 
 let currentUser = null;
 let selectedPerk = null;
 
 const perks = [
-  {name:"VIP Badge", cost:50},
-  {name:"Sticker Pack", cost:30},
-  {name:"Custom Emoji", cost:70},
-  {name:"Profile Highlight", cost:100},
-  {name:"Animated Frame", cost:150},
-  {name:"Extra Star Boost", cost:80},
-  {name:"Cash Booster", cost:120},
-  {name:"Mini Game Unlock", cost:90},
-  {name:"Special Avatar", cost:110},
-  {name:"Lucky Spin", cost:60},
-  {name:"Exclusive Badge", cost:200},
-  {name:"Golden Crown", cost:300}
+  {name:"VIP Badge", cost:50, available:8},
+  {name:"Sticker Pack", cost:30, available:10},
+  {name:"Custom Emoji", cost:70, available:5},
+  {name:"Profile Highlight", cost:100, available:3},
+  {name:"Animated Frame", cost:150, available:6},
+  {name:"Extra Star Boost", cost:80, available:12},
+  {name:"Cash Booster", cost:120, available:7},
+  {name:"Mini Game Unlock", cost:90, available:9},
+  {name:"Special Avatar", cost:110, available:4},
+  {name:"Lucky Spin", cost:60, available:15},
+  {name:"Exclusive Badge", cost:200, available:2},
+  {name:"Golden Crown", cost:300, available:1}
 ];
 
 // Google Sign-In
@@ -224,34 +210,50 @@ onAuthStateChanged(auth,async(user)=>{
     const userRef = doc(db,"users",user.uid);
     let snap = await getDoc(userRef);
     if(!snap.exists()){
-      await setDoc(userRef,{chatId:user.displayName||"GUEST",stars:200,cash:500});
+      await setDoc(userRef,{
+        chatId:user.displayName||"GUEST",
+        stars:200,
+        cash:500,
+        starsCollected:200,
+        cashCollected:500
+      });
       snap = await getDoc(userRef);
     }
     const data = snap.data();
     currentUser={uid:user.uid,...data};
     profileNameEl.innerText=data.chatId;
 
-    starsCollectedEl.innerText = `${data.stars} ⭐️`;
+    starsCollectedEl.innerText = `${data.starsCollected} ⭐️`;
     starsBalanceEl.innerText = `${data.stars} ⭐️`;
-    cashCollectedEl.innerText = `₦${data.cash.toLocaleString()}`;
+    cashCollectedEl.innerText = `₦${data.cashCollected.toLocaleString()}`;
     cashBalanceEl.innerText = `₦${data.cash.toLocaleString()}`;
 
-    redeemGridEl.innerHTML="";
-    perks.forEach(p=>{
-      const div = document.createElement("div");
-      div.className="perk-card";
-      div.innerHTML=`<div class="perk-name">${p.name}</div><div class="perk-cost">${p.cost} ⭐️</div>`;
+    renderPerks();
+  } else { authBox.style.display="flex"; profileBoxEl.style.display="none"; }
+});
+
+function renderPerks(){
+  redeemGridEl.innerHTML="";
+  perks.forEach(p=>{
+    const div = document.createElement("div");
+    div.className="perk-card";
+    if(p.available<=0){ div.classList.add("disabled"); }
+    div.innerHTML=`
+      <div class="perk-name">${p.name}</div>
+      <div class="perk-cost">${p.cost} ⭐️</div>
+      <div class="perk-stock">${p.available>0 ? p.available+" available today" : "Sold Out"}</div>
+    `;
+    if(p.available>0){
       div.addEventListener("click",()=>{
         if(currentUser.stars < p.cost){ alert("Not enough stars!"); return; }
         selectedPerk=p;
         redeemTextEl.innerText=`Are you sure you want to redeem ${p.name} for ${p.cost} ⭐️?`;
         redeemPopupEl.style.display="flex";
       });
-      redeemGridEl.appendChild(div);
-    });
-
-  } else { authBox.style.display="flex"; profileBoxEl.style.display="none"; }
-});
+    }
+    redeemGridEl.appendChild(div);
+  });
+}
 
 // Redeem popup buttons
 redeemCancelBtn.addEventListener("click",()=>{ redeemPopupEl.style.display="none"; });
@@ -261,17 +263,22 @@ redeemYesBtn.addEventListener("click",async()=>{
     await updateDoc(userRef,{stars:increment(-selectedPerk.cost)});
     currentUser.stars -= selectedPerk.cost;
     starsBalanceEl.innerText=`${currentUser.stars} ⭐️`;
-    redeemPopupEl.style.display="none";
 
+    selectedPerk.available--;
+    renderPerks();
+
+    redeemPopupEl.style.display="none";
     await addDoc(collection(db,"adminMessages"),{
       message:`${currentUser.chatId} redeemed ${selectedPerk.name}, please gift ${currentUser.chatId}`,
       timestamp:serverTimestamp()
     });
 
-    // show toast
-    successToastEl.innerText = `✅ Successfully redeemed ${selectedPerk.name}!`;
-    successToastEl.classList.add("show");
-    setTimeout(()=>{ successToastEl.classList.remove("show"); }, 3000);
+    const msg=document.createElement("div");
+    msg.innerText=`Successfully redeemed ${selectedPerk.name}!`;
+    msg.style.color="var(--accent)";
+    msg.style.marginTop="10px";
+    profileBoxEl.appendChild(msg);
+    setTimeout(()=>msg.remove(),3000);
   }
 });
 
