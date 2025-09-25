@@ -642,16 +642,18 @@ adminClearMessagesBtn.addEventListener("click", async () => {
       }
     });
 
-// messages listener (room-scoped) — fixed no-flicker version
+// messages listener (room-scoped) — fixed no-flicker + highlight stable
 if(messagesUnsub) messagesUnsub();
 
 const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
 messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
   snapshot.docChanges().forEach(change => {
-    if (change.type === "added") {
-      const m = change.doc.data();
+    const m = change.doc.data();
+
+    if(change.type === "added") {
       const wrapper = document.createElement("div");
       wrapper.className = "msg";
+      wrapper.id = change.doc.id; // ⚡ important for updates
 
       const meta = document.createElement("span");
       meta.className = "meta";
@@ -664,13 +666,24 @@ messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
       content.textContent = " " + (m.content || "");
       if(m.buzzColor) content.style.background = m.buzzColor;
       if(m.highlight) content.style.color = "#000";
-      if(m.highlight) content.style.fontWeight = "700"; // ensure bold
+      if(m.highlight) content.style.fontWeight = "700";
 
       wrapper.appendChild(meta);
       wrapper.appendChild(content);
       messagesEl.appendChild(wrapper);
 
       messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    } else if(change.type === "modified") {
+      // update existing message DOM
+      const msgEl = document.getElementById(change.doc.id);
+      if(msgEl){
+        const contentEl = msgEl.querySelector(".content");
+        contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+        contentEl.style.background = m.buzzColor || "";
+        contentEl.style.color = m.highlight ? "#000" : "";
+        contentEl.style.fontWeight = m.highlight ? "700" : "";
+      }
     }
   });
 });
