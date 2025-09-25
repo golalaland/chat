@@ -329,5 +329,132 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-
 <script type="module">
+// --- Video Playlist Setup ---
+const videoPlayer = document.getElementById('videoPlayer');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+
+// Example video URLs — replace with your actual sources
+const videos = [
+  'https://res.cloudinary.com/demo/video/upload/sample.mp4',
+  'https://res.cloudinary.com/demo/video/upload/elephants.mp4',
+  'https://res.cloudinary.com/demo/video/upload/butterfly.mp4'
+];
+let currentVideo = 0;
+
+// Load initial video
+function loadVideo(index) {
+  videoPlayer.src = videos[index];
+  videoPlayer.play();
+}
+loadVideo(currentVideo);
+
+// Prev / Next functionality
+prevBtn.addEventListener('click', () => {
+  currentVideo = (currentVideo - 1 + videos.length) % videos.length;
+  loadVideo(currentVideo);
+});
+nextBtn.addEventListener('click', () => {
+  currentVideo = (currentVideo + 1) % videos.length;
+  loadVideo(currentVideo);
+});
+
+// --- Chat Functionality ---
+const sendArea = document.getElementById('sendArea');
+const messageInput = document.getElementById('messageInput');
+const messagesEl = document.getElementById('messages');
+const sendBtn = document.getElementById('sendBtn');
+const buzzBtn = document.getElementById('buzzBtn');
+const buzzSound = document.getElementById('buzz-sound');
+
+function addMessage(content, sender = 'me') {
+  const msgEl = document.createElement('div');
+  msgEl.className = 'msg ' + (sender === 'me' ? 'me' : '');
+  msgEl.innerHTML = `<div class="meta">${sender.toUpperCase()}:</div><div class="content">${content}</div>`;
+  messagesEl.appendChild(msgEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+sendBtn.addEventListener('click', () => {
+  const text = messageInput.value.trim();
+  if (!text) return;
+  addMessage(text, 'me');
+  messageInput.value = '';
+});
+
+buzzBtn.addEventListener('click', () => {
+  buzzSound.play();
+  addMessage('🚨 BUZZ!', 'me');
+});
+
+// --- Chat ID Modal ---
+const chatIDModal = document.getElementById('chatIDModal');
+const chatIDInput = document.getElementById('chatIDInput');
+const chatIDConfirmBtn = document.getElementById('chatIDConfirmBtn');
+
+function openChatIDModal() {
+  chatIDModal.style.display = 'flex';
+}
+function closeChatIDModal() {
+  chatIDModal.style.display = 'none';
+  sendArea.style.display = 'flex';
+}
+chatIDConfirmBtn.addEventListener('click', () => {
+  const id = chatIDInput.value.trim();
+  if (id) {
+    document.getElementById('profileName').textContent = id.toUpperCase();
+    closeChatIDModal();
+  } else alert('Please enter a valid Chat ID');
+});
+
+// Open modal on page load
+openChatIDModal();
+
+// --- Google Sign-In Placeholder ---
+const googleBtn = document.getElementById('googleSignInBtn');
+googleBtn.addEventListener('click', () => {
+  alert('Google Sign-In functionality not implemented. Integrate Firebase / OAuth here.');
+});
+
+// --- Profile Updates ---
+const starCountEl = document.getElementById('starCount');
+const cashCountEl = document.getElementById('cashCount');
+let stars = 0;
+let cash = 0;
+
+function addStars(n = 1) {
+  stars += n;
+  starCountEl.textContent = stars;
+}
+function addCash(n = 100) {
+  cash += n;
+  cashCountEl.textContent = cash;
+}
+
+// Admin buttons (example)
+document.getElementById('adminGiveStarsBtn').addEventListener('click', () => addStars(5));
+document.getElementById('adminResetStarsBtn').addEventListener('click', () => {
+  stars = 0; starCountEl.textContent = stars;
+});
+document.getElementById('adminGiveCashBtn').addEventListener('click', () => addCash(500));
+document.getElementById('adminResetCashBtn').addEventListener('click', () => {
+  cash = 0; cashCountEl.textContent = cash;
+});
+document.getElementById('adminClearMessagesBtn').addEventListener('click', () => {
+  messagesEl.innerHTML = '';
+});
+
+// Optional: Show star popup
+function showStarPopup(text = "You've just earned +1 star! ⭐") {
+  const popup = document.getElementById('starPopup');
+  document.getElementById('starText').textContent = text;
+  popup.style.display = 'block';
+  setTimeout(() => popup.style.display = 'none', 1500);
+}
+
+// --- Keyboard Controls for Video (optional) ---
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') prevBtn.click();
+  if (e.key === 'ArrowRight') nextBtn.click();
+});
