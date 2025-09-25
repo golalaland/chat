@@ -1,3 +1,7 @@
+what’s the thing to add ??
+
+See my code: work with it 
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -39,32 +43,75 @@
   box-shadow: 0 4px 10px rgba(255,20,147,0.3);
 }
 /* Video swipe buttons (from Code 1) */
+/* 🔥 1. Sticky video frame */
+/* 🔥 Video wrapper for chatroom */
+/* 🔥 Responsive video wrapper for chatroom */
+/* 🔥 Responsive video wrapper for chatroom */
+/* Sticky video wrapper for chatroom */
 #videoWrapper {
-  position: relative; /* to position arrows */
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111;
+
+  /* NEW: make sticky */
+  position: sticky;
+  top: 0;
+  z-index: 50; /* make sure it’s above messages but below popups like stars */
+}
+
+/* Video container inside wrapper */
+#videoContainer {
+  width: 100%;
+  height: 100%;       /* fill the wrapper */
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.25);
-  background: none;
+  font-size: 24px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
   border: none;
+  padding: 10px;
   cursor: pointer;
-  z-index: 10;
-  user-select: none;
-  padding: 6px;
   border-radius: 50%;
+  z-index: 10;
 }
-
-.arrow:hover {
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.05);
-}
-
 #prev { left: 5px; }
 #next { right: 5px; }
+  /* Minimal, almost invisible Prev/Next buttons */
+  #prevBtn, #nextBtn {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.05); /* very subtle */
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    opacity: 0;               /* invisible by default */
+    transition: opacity 0.3s ease;
+  }
+
+  #prevBtn:hover, #nextBtn:hover,
+  #prevBtn.active, #nextBtn.active {
+    opacity: 0.8;             /* appear on hover or when active */
+    cursor: pointer;
+  }
+
+  #prevBtn { left: 10px; }
+  #nextBtn { right: 10px; }
 /* overall layout */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
@@ -76,28 +123,21 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #center{flex:1;display:flex;flex-direction:column;gap:6px;}
 
 /* Sticky video wrapper */
-#videoWrapper {
-  flex-shrink: 0;
-  width: 100%;
-  aspect-ratio: 16 / 9;
+#videoPlayerWrapper {
+  position: fixed;
+  top: 10px; /* distance from top */
+  right: 10px; /* or left: 50%; transform: translateX(-50%) for center */
+  width: 320px;
+  height: 180px;
+  z-index: 999;
   border-radius: 10px;
-  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   background: #111;
-  position: sticky;
-  top: 0;
-  z-index: 50;
 }
-#videoContainer {
+#videoPlayer {
   width: 100%;
   height: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-}
-#videoContainer iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  border-radius: 10px;
+  object-fit: cover; /* or contain if you prefer full visibility */
 }
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
@@ -225,8 +265,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">✨</div>
     <div id="center">
-     <video id="videoPlayer" ...></video>
-<div class="nav-buttons">
+    <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+<div id="videoWrapper">
+  <video id="videoPlayer" muted playsinline></video>
   <button class="arrow" id="prev">&#10094;</button>
   <button class="arrow" id="next">&#10095;</button>
 </div>
@@ -871,7 +912,7 @@ messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
     if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
   }
 });
-// VIDEO NAVIGATION
+// VIDEO NAVIGATION FIXED
 const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
@@ -880,30 +921,28 @@ const videos = [
 ];
 let currentVideoIndex = 0;
 
-// Load video
 function loadVideo(index) {
-  if(index < 0) index = videos.length - 1;
-  if(index >= videos.length) index = 0;
+  if (index < 0) index = videos.length - 1;
+  if (index >= videos.length) index = 0;
   currentVideoIndex = index;
   videoPlayer.src = videos[currentVideoIndex];
-  videoPlayer.play().catch(()=>{}); // autoplay fallback
+  videoPlayer.muted = true;   // mobile autoplay
+  videoPlayer.play().catch(() => {}); // fallback
 }
+
+// initial load
+loadVideo(0);
 
 // Prev / Next buttons
 document.getElementById("prev").addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 document.getElementById("next").addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 
-// Tap to unmute
+// Tap to toggle mute
 videoPlayer.addEventListener("click", () => {
-  if(videoPlayer.muted){
-    videoPlayer.muted = false;
-  } else {
-    videoPlayer.muted = true;
-  }
+  videoPlayer.muted = !videoPlayer.muted;
 });
-// Button events
-prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
-nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+// Load first video on page load
+loadVideo(0);
 </script>
 </body>
 </html>
