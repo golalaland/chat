@@ -571,12 +571,14 @@ onAuthStateChanged(auth, async (user) => {
     // presence
     try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
-    // ensure user doc exists
+    // --- Ensure user doc exists ---
     const userRef = doc(db, "users", user.uid);
     let snap = await getDoc(userRef);
+
     if(!snap.exists()){
+      // New user: create default doc
       await setDoc(userRef, {
-        chatId: user.displayName || generateGuestName(),
+        chatId: null, // we’ll set this after modal
         stars: 100,
         cash: 0,
         usernameColor: randomColor(),
@@ -586,14 +588,110 @@ onAuthStateChanged(auth, async (user) => {
       });
       snap = await getDoc(userRef);
     }
+
     let userData = snap.exists() ? snap.data() : {};
 
-    // assign daily color if needed
-    const today = new Date().toISOString().split("T")[0];
-    if(!userData.lastColorDate || userData.lastColorDate !== today){
-      const newColor = randomColor();
-      try{ await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today }); userData.usernameColor = newColor; } catch(e){ console.warn("usernameColor update failed", e); }
+    // --- Prompt only if chatId not set ---
+    if(!userData.chatId){
+      userData.chatId = await promptForChatIDModal(userRef, userData);
     }
+
+    // --- Set currentUser ---
+    currentUser = {
+      uid: user.uid,
+      chatId: userData.chatId || user.displayName || generateGuestName(),
+      stars: userData.stars || 0,
+      cash: userData.cash || 0,
+      usernameColor: userData.usernameColor || randomColor(),
+      isAdmin: userData.isAdmin || false
+    };
+
+    // UI: hide hello + auth, show chat & profile
+    if(helloEl) helloEl.style.display = "none";
+    const greetingEl = document.getElementById("greeting"); if(greetingEl) greetingEl.style.display = "none";
+    if(authBox) authBox.style.display = "none";
+    sendAreaEl.style.display = "flex";
+    profileBoxEl.style.display = "block";
+
+    // populate profile UI
+    profileNameEl.innerText = currentUser.chatId;
+    profileNameEl.style.color = currentUser.usernameColor;
+    starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+
+    // listen to user doc for live updates to stars/cash/usernameColor
+    if(userDocUnsub) userDocUnsub();
+    userDocUnsub = onSnapshot(userRef, (uSnap) => {
+      const d = uSnap.data() || {};
+      currentUser.stars = d.stars || 0;
+      currentUser.cash = d.cash || 0;
+      starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+      cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+      if(d.usernameColor) {
+        profileNameEl.style.color = d.usernameColor;
+        userColors[userRef.id] = d.usernameColor; // keep map in sync
+      }
+    });
+
+    // messages listener (room-scoped) — fixed no-flicker + highlight stable
+    if(messagesUnsub) messagesUnsub();
+
+    const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
+    messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
+      snapshot.docChanges().forEach(change => {
+        const m = change.doc.data();
+
+        if(change.type === "added") {
+          const wrapper = document.createElement("div");
+          wrapper.className = "msg";
+          wrapper.id = change.doc.id; // ⚡ important for updates
+
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = (m.chatId || "Guest") + ":";
+          meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+          meta.style.marginRight = "4px";
+
+          const content = document.createElement("span");
+          content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+          content.textContent = " " + (m.content || "");
+          if(m.buzzColor) content.style.background = m.buzzColor;
+          if(m.highlight) content.style.color = "#000";
+          if(m.highlight) content.style.fontWeight = "700";
+
+          wrapper.appendChild(meta);
+          wrapper.appendChild(content);
+          messagesEl.appendChild(wrapper);
+
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+
+        } else if(change.type === "modified") {
+          // update existing message DOM
+          const msgEl = document.getElementById(change.doc.id);
+          if(msgEl){
+            const contentEl = msgEl.querySelector(".content");
+            contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+            contentEl.style.background = m.buzzColor || "";
+            contentEl.style.color = m.highlight ? "#000" : "";
+            contentEl.style.fontWeight = m.highlight ? "700" : "";
+          }
+        }
+      });
+    });
+
+  } else {
+    // signed out UI -> reset
+    currentUser = null;
+    if(helloEl) helloEl.style.display = "";
+    const greetingEl = document.getElementById("greeting"); if(greetingEl) greetingEl.style.display = "";
+    if(authBox) authBox.style.display = "";
+    sendAreaEl.style.display = "none";
+    profileBoxEl.style.display = "none";
+    messagesEl.innerHTML = "";
+    if(userDocUnsub){ userDocUnsub(); userDocUnsub = null; }
+    if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
+  }
+});
     
  // 💙 ADD ADMIN CONTROL LOGIC HERE: START
 const adminControlsEl = document.getElementById("adminControls");
