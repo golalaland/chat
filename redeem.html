@@ -31,21 +31,14 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 25px;                       /* smaller size */
-    color: rgba(255, 255, 255, 0.3);       /* mostly transparent */
-    background: rgba(0, 0, 0, 0.2);        /* subtle background */
+    font-size: 20px;                       /* small arrows */
+    color: rgba(255, 255, 255, 0.3);       /* transparent */
+    background: none;                       /* no glow or background */
     border: none;
-    padding: 8px;
+    padding: 5px;
     cursor: pointer;
-    border-radius: 50%;
     user-select: none;
-    transition: all 0.2s ease;
     z-index: 10;
-  }
-
-  .arrow:hover {
-    background: rgba(255, 20, 147, 0.5);   /* bright pink hover */
-    color: #fff;
   }
 
   #prevBtn { left: 5px; }
@@ -56,7 +49,7 @@
 
 <div class="video-container">
   <video id="videoPlayer" autoplay muted playsinline loop>
-    <source src="https://player.cloudinary.com/video/upload/v1686752292/sample.mp4" type="video/mp4">
+    <source src="https://res.cloudinary.com/demo/video/upload/sample.mp4" type="video/mp4">
     Your browser does not support HTML5 video.
   </video>
 
@@ -66,9 +59,9 @@
 
 <script>
   const videos = [
-    "https://player.cloudinary.com/video/upload/v1686752292/sample.mp4",
-    "https://player.cloudinary.com/video/upload/v1686752292/sample2.mp4",
-    "https://player.cloudinary.com/video/upload/v1686752292/sample3.mp4"
+    "https://res.cloudinary.com/demo/video/upload/sample.mp4",
+    "https://res.cloudinary.com/demo/video/upload/elephants.mp4",
+    "https://res.cloudinary.com/demo/video/upload/dog.mp4"
   ];
 
   let current = 0;
