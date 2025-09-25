@@ -52,6 +52,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 /* messages */
 /* 🔥 Chat messages container */
+/* 🔥 Chat messages container */
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -61,12 +62,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   gap: 6px;
   border-radius: 8px;
   background: #000;
-  margin-bottom: 6px;
 
-  /* ✅ Safe-area padding so text doesn’t slide under keyboard */
-  padding-bottom: calc(8px + env(safe-area-inset-bottom));
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  /* ✅ give space so last message never hides behind bar */
+  margin-bottom: 70px;
   box-sizing: border-box;
 }
 
@@ -96,25 +94,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   display: inline-block;
 }
 
-/* 🔥 Chat input area (fixed to bottom, safe-area aware) */
+/* 🔥 Glass chat input bar (flows with keyboard) */
 .send-area {
   display: flex;
   align-items: center;
   gap: 8px;
   background: var(--card);
   padding: 10px;
-  position: fixed;   /* ✅ sticks to screen bottom */
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 0;  /* flatten edges so it doesn’t poke out */
-
-  /* ✅ Safe-area fixes */
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  border-radius: 999px;
+  margin: 6px;
   box-sizing: border-box;
 }
 
@@ -122,7 +111,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   flex: 1;
   padding: 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255,255,255,0.06);
   background: #0e0e0e;
   color: #fff;
   font-size: 14px;
@@ -131,7 +120,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .send-area input::placeholder { color: var(--muted); }
 .send-area input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 14px rgba(255, 20, 147, 0.12);
+  box-shadow: 0 0 14px rgba(255,20,147,0.12);
 }
 .send-btn {
   padding: 10px 14px;
