@@ -904,6 +904,12 @@ videoPlayer.addEventListener("click", () => {
 // Button events
 prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+// HIDE & DISABLE VIDEO NAVIGATION BUTTONS ON STARTUP
+const navButtons = document.querySelectorAll("#videoWrapper .nav-buttons button");
+navButtons.forEach(btn => {
+  btn.style.display = "none";   // hides the button
+  btn.disabled = true;           // disables it
+});
 </script>
 </body>
 </html>
