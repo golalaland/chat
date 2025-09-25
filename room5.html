@@ -746,7 +746,10 @@ onAuthStateChanged(auth, async (user) => {
     // ensure user doc exists
     const userRef = doc(db, "users", user.uid);
     let snap = await getDoc(userRef);
+    let isNewUser = false;
+
     if(!snap.exists()){
+      isNewUser = true; // mark new user
       await setDoc(userRef, {
         chatId: user.displayName || generateGuestName(),
         stars: 100,
@@ -759,6 +762,37 @@ onAuthStateChanged(auth, async (user) => {
       snap = await getDoc(userRef);
     }
     let userData = snap.exists() ? snap.data() : {};
+
+    // prompt for chatId if new user or missing chatId
+    if(isNewUser || !userData.chatId){
+      let newChatId = null;
+
+      const isUniqueChatId = async (chatId) => {
+        const q = query(collection(db, "users"), where("chatId", "==", chatId));
+        const querySnap = await getDocs(q);
+        return querySnap.empty; // true if unique
+      }
+
+      do {
+        newChatId = prompt("Enter a unique chat ID:")?.trim();
+        if(!newChatId){
+          alert("Chat ID cannot be empty.");
+          continue;
+        }
+        const unique = await isUniqueChatId(newChatId);
+        if(!unique){
+          alert("This chat ID is already taken. Choose another one.");
+          newChatId = null;
+        }
+      } while(!newChatId);
+
+      try{
+        await updateDoc(userRef, { chatId: newChatId });
+        userData.chatId = newChatId;
+      }catch(e){
+        console.warn("Failed to update chatId", e);
+      }
+    }
 
     // assign daily color if needed
     const today = new Date().toISOString().split("T")[0];
