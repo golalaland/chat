@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -773,6 +772,8 @@ onAuthStateChanged(auth, async (user) => {
       const newColor = randomColor();
       try{ await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today }); userData.usernameColor = newColor; } catch(e){ console.warn("usernameColor update failed", e); }
     }
+    const finalChatId = await promptForChatIDModal(userRef, userData);
+userData.chatId = finalChatId;
     
  // 💙 ADD ADMIN CONTROL LOGIC HERE: START
 const adminControlsEl = document.getElementById("adminControls");
