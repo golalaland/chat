@@ -483,9 +483,9 @@ function triggerBuzzFeedback() {
     navigator.vibrate([100, 50, 100]);
   }
 }
-
-// --- BUZZ click listener ---
+/* ---------- BUZZ BUTTON LOGIC ---------- */
 buzzBtn.addEventListener("click", async () => {
+  // ---------- PRECHECKS ----------
   if (!currentUser) {
     showStarPopup("Sign in to BUZZ");
     return;
@@ -508,10 +508,10 @@ buzzBtn.addEventListener("click", async () => {
   }
 
   try {
-    // Deduct stars
+    // ---------- DEDUCT STARS ----------
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
 
-    // Add BUZZ message
+    // ---------- ADD BUZZ MESSAGE ----------
     const color = randomColor();
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
@@ -524,11 +524,33 @@ buzzBtn.addEventListener("click", async () => {
 
     messageInputEl.value = "";
 
-    // --- BUZZ feedback ---
-    triggerBuzzFeedback();
+    // ---------- BUZZ FEEDBACK ----------
+    const audio = document.getElementById("buzz-sound");
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    // Vibration / iOS workaround
+    if ("vibrate" in navigator) {
+      const didVibrate = navigator.vibrate([100, 50, 100]);
+      if (!didVibrate && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        // iOS Safari hack: shake input bar
+        const el = document.getElementById("sendArea");
+        if (el) {
+          el.style.transition = "transform 0.05s";
+          el.style.transform = "translateX(-8px)";
+          setTimeout(() => { el.style.transform = "translateX(8px)"; }, 50);
+          setTimeout(() => { el.style.transform = "translateX(-6px)"; }, 100);
+          setTimeout(() => { el.style.transform = "translateX(6px)"; }, 150);
+          setTimeout(() => { el.style.transform = "translateX(0px)"; }, 200);
+        }
+      }
+    }
+
     showStarPopup("BUZZ 🚨 sent!");
 
-    // Clear highlight after 10s
+    // ---------- CLEAR HIGHLIGHT AFTER 10s ----------
     setTimeout(async () => {
       try {
         await updateDoc(docRef, { highlight: false, buzzColor: null });
