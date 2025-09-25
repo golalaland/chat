@@ -2,84 +2,908 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cloudinary Video Swipe</title>
+<meta name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Xixi</title>
+<link rel="icon" href="data:," />
 <style>
-  body {
-    background: #000;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-family: sans-serif;
-  }
+:root{
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
+  --accent:#FF1493;
+  --glass: rgba(255,255,255,0.03);
+}
+#videoWrapper .nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+  position: absolute;
+  bottom: 6px; /* overlay near bottom of video */
+  width: 100%;
+  pointer-events: auto;
+}
 
-  .video-wrapper {
-    position: relative;
-    width: 90%;
-    max-width: 600px;
-    aspect-ratio: 16/9;
-  }
+#videoWrapper .nav-buttons button {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,20,147,0.2);
+  background: rgba(30,30,30,0.7);
+  color: var(--accent);
+  cursor: pointer;
+}
+#videoWrapper .nav-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(255,20,147,0.3);
+}
+/* Video swipe buttons (from Code 1) */
+#videoWrapper {
+  position: relative; /* to position arrows */
+}
 
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 10px;
-  }
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.25);
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+  user-select: none;
+  padding: 6px;
+  border-radius: 50%;
+}
 
-  .arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 18px; /* smaller */
-    color: rgba(255, 255, 255, 0.25); /* subtle */
-    background: none;
-    border: none;
-    cursor: pointer;
-    z-index: 10;
-    user-select: none;
-    padding: 6px; /* small hit area for mobile */
-    border-radius: 50%; 
-  }
+.arrow:hover {
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
 
-  .arrow:hover {
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.05); /* subtle hover */
-  }
+#prev { left: 5px; }
+#next { right: 5px; }
+/* overall layout */
+html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
+.room-desc{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
+#greeting{font-size:13px;text-align:center;font-weight:600;margin-bottom:6px;color:var(--accent);}
+#helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
+#center{flex:1;display:flex;flex-direction:column;gap:6px;}
 
-  #prev { left: 5px; }
-  #next { right: 5px; }
+/* Sticky video wrapper */
+#videoWrapper {
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+#videoContainer {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+}
+#videoContainer iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 10px;
+}
+
+#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
+
+/* messages */
+/* 🔥 Chat messages container */
+/* 🔥 Chat messages container */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  background: #000;
+
+  /* ✅ give space so last message never hides behind bar */
+  margin-bottom: 70px;
+  box-sizing: border-box;
+}
+
+/* 🔥 Message bubble */
+.msg {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--glass);
+  max-width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.msg.me { background: rgba(255, 20, 147, 0.06); }
+.msg .meta {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 4px;
+  color: inherit;
+}
+.msg .content {
+  font-size: 13px;
+  color: #fff;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: inline-block;
+}
+
+/* 🔥 Glass chat input bar (flows with keyboard) */
+.send-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  padding: 10px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  border-radius: 999px;
+  margin: 6px;
+  box-sizing: border-box;
+}
+.send-area input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: #0e0e0e;
+  color: #fff;
+  font-size: 16px;  /* 👈 changed from 14px */
+  outline: none;
+}
+.send-area input::placeholder { color: var(--muted); }
+.send-area input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 14px rgba(255,20,147,0.12);
+}
+.send-btn {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #000;
+  cursor: pointer;
+  font-weight: 700;
+  border: 0;
+  font-size: 14px;
+}
+.buzz-content {
+  font-weight: 800;    /* really thick */
+  color: #000 !important;  /* force black text */
+  padding: 4px 6px;    /* make text breathe inside color */
+  border-radius: 4px;  /* rounded backdrop */
+  display: inline-block;
+}
+.buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
+.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
+@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
+
+/* profile glass bar */
+.profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
+.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
+.profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.profile-left{display:flex;flex-direction:column;gap:2px;}
+.profile-name{font-weight:800;}
+.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
+.profile-value{color: #fff;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight: 400;font-size: 11px;}
+.profile-value span,.profile-value .icon{margin-left:2px;}
+.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
+.small-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border: 0;color: #000;cursor: pointer;font-weight:700;font-size:12px;text-decoration: none;transition: transform .15s, box-shadow .15s;}
+.small-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 10px rgba(255,20,147,0.3);}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
+.onlineCount{font-size:11px;color:var(--muted);}
+#authBox{display:flex;justify-content:center;margin:12px 0;}
+.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;}
+.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
+.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+@media (max-width:420px){
+  .send-area input{padding:10px;font-size:13px;}
+  .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
+}
 </style>
 </head>
 <body>
-
-<div class="video-wrapper">
-  <iframe id="player" src="https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=false&controls=true" allowfullscreen></iframe>
+<audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
+<div id="appWrapper">
+  <div class="app">
+    <div class="brand">乂丨乂丨</div>
+    <div id="greeting">✨</div>
+    <div id="center">
+     <video id="videoPlayer" ...></video>
+<div class="nav-buttons">
   <button class="arrow" id="prev">&#10094;</button>
   <button class="arrow" id="next">&#10095;</button>
 </div>
+      <div id="helloText" aria-live="polite">HELLO</div>
+      <div class="room-desc">Chat. Own your vibe.
+        <span id="onlineCount" class="onlineCount"></span>
+      </div>
+      <div id="guestMsg"></div>
+      <div id="authBox">
+        <button id="googleSignInBtn" class="google-btn">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+          Sign in with Google
+        </button>
+      </div>
+      <!-- Chat ID Modal -->
+<div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
+  <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
+    <h3 style="margin-bottom:12px;color:var(--accent);">Choose your Chat ID</h3>
+    <input id="chatIDInput" type="text" placeholder="Your chat ID" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);margin-bottom:12px;font-size:16px;color:#fff;background:#111;outline:none;" />
+    <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
+  </div>
+</div>
+      <div id="messages"></div>
+      <div class="send-area" id="sendArea" style="display:none;">
+        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+        <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+        <button id="sendBtn" class="send-btn">Send</button>
+      </div>
+    </div>
+    <div class="profile" id="profileBox">
+      <div class="profile-card">
+        <div class="profile-top">
+          <div class="profile-left">
+            <div id="profileName" class="profile-name">GUEST 0000</div>
+            <div>
+              <span class="profile-label">STARS COLLECTED:</span>
+              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+            </div>
+          </div>
+          <div class="profile-actions">
+            <a id="redeemBtn" class="small-btn" href="https://xixi.live" target="_blank">Redeem</a>
+            <button id="tipBtn" class="small-btn">💵</button>
+          </div>
+        </div>
+        <div>
+          <span class="profile-label">CASH EARNED:</span>
+          <span class="profile-value">₦<span id="cashCount">0</span></span>
+        </div>
+        <div id="adminControls" style="display:none;flex-direction:column;gap:6px;margin-top:8px;">
+          <span class="profile-label">ADMIN CONTROLS:</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
+            <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
+            <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
+            <button class="small-btn" id="adminResetCashBtn">Reset Cash</button>
+            <button class="small-btn" id="adminClearMessagesBtn">Clear Messages</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="star-popup" id="starPopup">
+  <div id="starText">You've just earned +1 star! ⭐</div>
+</div>
 
-<script>
-  const videos = [
-    "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw&profile=cld-default&autoplay=false&controls=true",
-    "https://player.cloudinary.com/embed/?cloud_name=dekxhwh6l&public_id=1140143_video_with_sound_xt1i7l&profile=cld-default&autoplay=false&controls=true"
-  ];
+<script type="module">
+/* ====== Full page JS: Firebase + UI logic (kept layout & behavior identical) ====== */
 
-  let currentIndex = 0;
-  const player = document.getElementById("player");
+/* ---------- Imports ---------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  setPersistence,
+  browserLocalPersistence,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+  increment
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getDatabase,
+  ref as rtdbRef,
+  set as rtdbSet,
+  onDisconnect,
+  onValue
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  document.getElementById("prev").addEventListener("click", () => {
-    currentIndex = (currentIndex - 1 + videos.length) % videos.length;
-    player.src = videos[currentIndex];
+/* ---------- Firebase config (existing project you provided) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
+const db = getFirestore(app);
+const rtdb = getDatabase(app);
+
+/* ---------- Room Collection (room-scoped) ---------- */
+const ROOM_ID = "room4";  // change to room2/room3 when duplicating the file
+const CHAT_COLLECTION = "messages_room4";
+
+/* ---------- State & constants ---------- */
+let currentUser = null;
+let userDocUnsub = null;
+let messagesUnsub = null;
+let usersUnsub = null;
+const BUZZ_COST = 10;
+const AUTO_STAR_ADD = 5;
+const DAILY_STAR_CAP = 500;
+
+/* ---------- Helpers ---------- */
+function generateGuestName(){ return "GUEST " + Math.floor(1000 + Math.random()*9000); }
+function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format(n || 0); }
+function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
+function showStarPopup(text){ const popup = document.getElementById("starPopup"); document.getElementById("starText").innerText = text; popup.style.display = "block"; setTimeout(()=>{ popup.style.display = "none"; }, 1700); }
+
+/* ---------- One-time Chat ID modal ---------- */
+const chatIDModal = document.getElementById("chatIDModal");
+const chatIDInput = document.getElementById("chatIDInput");
+const chatIDConfirmBtn = document.getElementById("chatIDConfirmBtn");
+
+async function promptForChatIDModal(userRef, userData){
+  if(userData.chatId) return userData.chatId;  // already exists, skip
+
+  chatIDModal.style.display = "flex";   // show modal
+
+  return new Promise((resolve) => {
+    chatIDConfirmBtn.onclick = async () => {
+      let chosenID = chatIDInput.value.trim();
+      if(chosenID.length < 3){
+        alert("Chat ID must be at least 3 characters.");
+        return;
+      }
+
+      try{
+        await updateDoc(userRef, { chatId: chosenID });
+      }catch(e){
+        console.error("Error saving chat ID:", e);
+        alert("Failed to save. Try again.");
+        return;
+      }
+
+      chatIDModal.style.display = "none"; // hide modal
+      resolve(chosenID);
+    };
   });
+}
+/* ---------- HELLO rotation (runs immediately, non-blocking) ---------- */
+const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
+let helloIndex = 0;
+const helloEl = document.getElementById("helloText");
+function rotateHello(){
+  if(!helloEl || helloEl.style.display === "none") return;
+  // fade-like swap
+  helloEl.style.opacity = '0';
+  setTimeout(()=> {
+    helloEl.innerText = greetings[helloIndex++ % greetings.length];
+    helloEl.style.color = randomColor();
+    helloEl.style.opacity = '1';
+  }, 220);
+}
+rotateHello();
+setInterval(rotateHello, 1500);
 
-  document.getElementById("next").addEventListener("click", () => {
-    currentIndex = (currentIndex + 1) % videos.length;
-    player.src = videos[currentIndex];
+/* ---------- UI refs ---------- */
+const googleBtn = document.getElementById("googleSignInBtn");
+const authBox = document.getElementById("authBox");
+const messagesEl = document.getElementById("messages");
+const sendAreaEl = document.getElementById("sendArea");
+const messageInputEl = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const buzzBtn = document.getElementById("buzzBtn");
+const profileBoxEl = document.getElementById("profileBox");
+const profileNameEl = document.getElementById("profileName");
+const starCountEl = document.getElementById("starCount");
+const cashCountEl = document.getElementById("cashCount");
+const tipBtn = document.getElementById("tipBtn");
+const redeemBtn = document.getElementById("redeemBtn");
+const onlineCountEl = document.getElementById("onlineCount");
+
+/* ---------- Presence (room-scoped) ---------- */
+function setupPresence(user){
+  try{
+    const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${user.uid}`);
+    rtdbSet(pRef, true).catch(()=>{});
+    onDisconnect(pRef).remove().catch(()=>{});
+  }catch(e){ console.warn("presence error", e); }
+}
+onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
+  const val = snap.val() || {};
+  onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
+});
+
+/* ---------- Keep user color map (uid -> color) ---------- */
+const userColors = {}; // uid => color
+function setupUsersListener(){
+  if(usersUnsub) usersUnsub();
+  usersUnsub = onSnapshot(collection(db,"users"), (snap)=>{
+    snap.forEach(d => {
+      const data = d.data() || {};
+      userColors[d.id] = data.usernameColor || "#ffffff";
+    });
+    if(lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
   });
+}
+setupUsersListener(); // non-blocking call
+
+/* ---------- daily color helper ---------- */
+async function assignDailyUsernameColor(userRef, data){
+  const today = new Date().toISOString().split("T")[0];
+  try{
+    if(!data || !data.lastColorDate || data.lastColorDate !== today){
+      const newColor = randomColor();
+      await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today });
+      userColors[userRef.id] = newColor;
+      return newColor;
+    }
+    userColors[userRef.id] = data.usernameColor || randomColor();
+    return data.usernameColor || randomColor();
+  }catch(e){
+    console.warn("assignDailyUsernameColor error", e);
+    return data?.usernameColor || randomColor();
+  }
+}
+
+/* ---------- Robust Google sign-in (popup first, fallback to redirect) ---------- */
+googleBtn.addEventListener("click", async () => {
+  const provider = new GoogleAuthProvider();
+
+  // best-effort persistence
+  try { await setPersistence(auth, browserLocalPersistence); } catch (pErr) { console.warn("persistence set failed", pErr); }
+
+  try {
+    const result = await signInWithPopup(auth, provider);
+    console.log("Signed in (popup):", result.user.uid);
+    // onAuthStateChanged will handle UI
+    return;
+  } catch (err) {
+    console.warn("signInWithPopup error:", err);
+    if (err.code === "auth/popup-blocked" || err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request" || err.code === "auth/web-storage-unsupported") {
+      try {
+        console.log("Falling back to redirect...");
+        await signInWithRedirect(auth, provider);
+        return;
+      } catch (rErr) {
+        console.error("signInWithRedirect failed:", rErr);
+        alert("Sign-in failed: " + (rErr.message || rErr));
+        return;
+      }
+    }
+    // helpful admin messages
+    if (err.code === "auth/operation-not-allowed") {
+      alert("Google sign-in is disabled in Firebase. Enable it in Firebase Console -> Authentication -> Sign-in method.");
+      return;
+    }
+    if (err.code === "auth/unauthorized-domain") {
+      alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
+      return;
+    }
+    alert("Sign-in failed: " + (err.message || err));
+  }
+});
+
+/* ---------- Send + Buzz ---------- */
+// --- BUZZ feedback function ---
+function triggerBuzzFeedback() {
+  // play BUZZ sound
+  const buzzAudio = new Audio("/sounds/buzz.mp3"); // adjust path
+  buzzAudio.play().catch(() => {});
+
+  // vibrate or shake depending on device
+  if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
+    // iOS: shake the input bar
+    messageInputEl.classList.add("shake");
+    setTimeout(() => messageInputEl.classList.remove("shake"), 500);
+  } else if (navigator.vibrate) {
+    // others: vibrate
+    navigator.vibrate([100, 50, 100]);
+  }
+}
+/* ---------- BUZZ BUTTON LOGIC ---------- */
+buzzBtn.addEventListener("click", async () => {
+  // ---------- PRECHECKS ----------
+  if (!currentUser) {
+    showStarPopup("Sign in to BUZZ");
+    return;
+  }
+
+  const userRef = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(userRef);
+  const userData = snap.exists() ? snap.data() : {};
+  const currentStars = userData.stars || 0;
+
+  if (currentStars < BUZZ_COST) {
+    showStarPopup("Not enough stars to create a BUZZ! 🚨");
+    return;
+  }
+
+  const txt = messageInputEl.value.trim();
+  if (!txt) {
+    showStarPopup("Type a message to BUZZ! 🚨");
+    return;
+  }
+
+  try {
+    // ---------- DEDUCT STARS ----------
+    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+
+    // ---------- ADD BUZZ MESSAGE ----------
+    const color = randomColor();
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId || generateGuestName(),
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor: color
+    });
+
+    messageInputEl.value = "";
+
+    // ---------- BUZZ FEEDBACK ----------
+    const audio = document.getElementById("buzz-sound");
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    // Vibration / iOS workaround
+    if ("vibrate" in navigator) {
+      const didVibrate = navigator.vibrate([100, 50, 100]);
+      if (!didVibrate && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        // iOS Safari hack: shake input bar
+        const el = document.getElementById("sendArea");
+        if (el) {
+          el.style.transition = "transform 0.05s";
+          el.style.transform = "translateX(-8px)";
+          setTimeout(() => { el.style.transform = "translateX(8px)"; }, 50);
+          setTimeout(() => { el.style.transform = "translateX(-6px)"; }, 100);
+          setTimeout(() => { el.style.transform = "translateX(6px)"; }, 150);
+          setTimeout(() => { el.style.transform = "translateX(0px)"; }, 200);
+        }
+      }
+    }
+
+    showStarPopup("BUZZ 🚨 sent!");
+
+    // ---------- CLEAR HIGHLIGHT AFTER 10s ----------
+    setTimeout(async () => {
+      try {
+        await updateDoc(docRef, { highlight: false, buzzColor: null });
+      } catch (e) {
+        console.warn("clear buzz highlight failed", e);
+      }
+    }, 10000);
+
+  } catch (e) {
+    console.error("buzz failed", e);
+    showStarPopup("BUZZ failed");
+  }
+});
+
+/* ---------- SEND BUTTON LOGIC ---------- */
+sendBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    showStarPopup("Sign in to chat");
+    return;
+  }
+
+  const txt = messageInputEl.value.trim();
+  if (!txt) {
+    showStarPopup("Type a message first");
+    return;
+  }
+
+  try {
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId || generateGuestName(),
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null
+    });
+
+    messageInputEl.value = "";
+  } catch (e) {
+    console.error("Send message failed", e);
+    showStarPopup("Message failed to send");
+  }
+});
+// ---------- SEND MESSAGE ON ENTER KEY ----------
+messageInputEl.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();   // prevent new line in input
+    sendBtn.click();      // trigger the send button logic
+  }
+});
+
+/* Tip & Redeem (placeholders) */
+tipBtn.addEventListener("click", () => { window.open("https://your-placeholder-payment-link.com","_blank"); showStarPopup("Thanks! Tip clicked 💵"); });
+redeemBtn.addEventListener("click", () => { window.open("https://xixi.live","_blank"); showStarPopup("Redeem clicked"); });
+
+/* ---------- Auto-star (periodic) ---------- */
+setInterval(async () => {
+  if(!currentUser) return;
+  try{
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const data = snap.exists() ? snap.data() : {};
+    const curr = data.stars || 0;
+    if(curr < DAILY_STAR_CAP){
+      const next = Math.min(curr + AUTO_STAR_ADD, DAILY_STAR_CAP);
+      await updateDoc(userRef, { stars: next });
+    }
+  }catch(e){ /* ignore periodic errors */ }
+}, 60000);
+
+/* ---------- Message rendering ---------- */
+let lastMessagesArray = [];
+function renderMessagesFromArray(arr){
+  messagesEl.innerHTML = "";
+  arr.forEach(item => {
+    const m = item.data;
+    const wrapper = document.createElement("div");
+    wrapper.className = "msg";
+
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    const nameText = (m.chatId || "Guest") + ":";  // <-- colon added here
+    meta.textContent = nameText;
+    meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+    meta.style.marginRight = "4px"; // optional spacing
+
+    const content = document.createElement("span");
+    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    content.textContent = " " + (m.content || "");
+    if(m.buzzColor) content.style.background = m.buzzColor;
+    if(m.highlight) content.style.color = "#000";
+
+    wrapper.appendChild(meta);
+    wrapper.appendChild(content);
+    messagesEl.appendChild(wrapper);
+  });
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+/* ---------- Auth watcher (core) ---------- */
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    // presence
+    try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
+
+    // ensure user doc exists
+    const userRef = doc(db, "users", user.uid);
+    let snap = await getDoc(userRef);
+    if(!snap.exists()){
+      await setDoc(userRef, {
+        chatId: user.displayName || generateGuestName(),
+        stars: 100,
+        cash: 0,
+        usernameColor: randomColor(),
+        lastColorDate: new Date().toISOString().split("T")[0],
+        isAdmin: false,
+        lastStarReset: Date.now()
+      });
+      snap = await getDoc(userRef);
+    }
+    let userData = snap.exists() ? snap.data() : {};
+
+    // assign daily color if needed
+    const today = new Date().toISOString().split("T")[0];
+    if(!userData.lastColorDate || userData.lastColorDate !== today){
+      const newColor = randomColor();
+      try{ await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today }); userData.usernameColor = newColor; } catch(e){ console.warn("usernameColor update failed", e); }
+    }
+    
+ // 💙 ADD ADMIN CONTROL LOGIC HERE: START
+const adminControlsEl = document.getElementById("adminControls");
+const adminGiveStarsBtn = document.getElementById("adminGiveStarsBtn");
+const adminResetStarsBtn = document.getElementById("adminResetStarsBtn");
+const adminGiveCashBtn = document.getElementById("adminGiveCashBtn");
+const adminResetCashBtn = document.getElementById("adminResetCashBtn");
+const adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
+
+// show admin controls if user is admin
+if(currentUser?.isAdmin){
+  adminControlsEl.style.display = "flex";
+}
+
+// button event handlers
+adminGiveStarsBtn.addEventListener("click", async () => {
+  const amount = parseInt(prompt("Enter number of stars to give:","100")) || 0;
+  if(amount > 0){
+    const userRef = doc(db, "users", currentUser.uid);
+    await updateDoc(userRef, { stars: increment(amount) });
+    showStarPopup(`You just gave yourself +${amount} ⭐️`);
+  }
+});
+
+adminResetStarsBtn.addEventListener("click", async () => {
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { stars: 0 });
+  showStarPopup("Stars reset to 0");
+});
+
+adminGiveCashBtn.addEventListener("click", async () => {
+  const amount = parseInt(prompt("Enter amount of cash to give:","1000")) || 0;
+  if(amount > 0){
+    const userRef = doc(db, "users", currentUser.uid);
+    await updateDoc(userRef, { cash: increment(amount) });
+    showStarPopup(`You just added ₦${amount}`);
+  }
+});
+
+adminResetCashBtn.addEventListener("click", async () => {
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { cash: 0 });
+  showStarPopup("Cash reset to 0");
+});
+
+adminClearMessagesBtn.addEventListener("click", async () => {
+  if(confirm("Clear all messages in this room?")){
+    const snap = await getDocs(collection(db, CHAT_COLLECTION));
+    const batch = writeBatch(db);
+    snap.forEach(docSnap => batch.delete(docSnap.ref));
+    await batch.commit();
+    messagesEl.innerHTML = "";
+    showStarPopup("All messages cleared");
+  }
+});
+// 💙 ADD ADMIN CONTROL LOGIC HERE: END   
+    
+    // set currentUser
+    currentUser = { uid: user.uid, chatId: userData.chatId || user.displayName || generateGuestName(), stars: userData.stars || 0, cash: userData.cash || 0, usernameColor: userData.usernameColor || randomColor(), isAdmin: userData.isAdmin || false };
+
+    // UI: hide hello + auth, show chat & profile
+    if(helloEl) helloEl.style.display = "none";
+    const greetingEl = document.getElementById("greeting"); if(greetingEl) greetingEl.style.display = "none";
+    if(authBox) authBox.style.display = "none";
+    sendAreaEl.style.display = "flex";
+    profileBoxEl.style.display = "block";
+
+    // populate profile UI
+    profileNameEl.innerText = currentUser.chatId;
+    profileNameEl.style.color = currentUser.usernameColor;
+    starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+
+    // listen to user doc for live updates to stars/cash/usernameColor
+    if(userDocUnsub) userDocUnsub();
+    userDocUnsub = onSnapshot(userRef, (uSnap) => {
+      const d = uSnap.data() || {};
+      currentUser.stars = d.stars || 0;
+      currentUser.cash = d.cash || 0;
+      starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+      cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+      if(d.usernameColor) {
+        profileNameEl.style.color = d.usernameColor;
+        userColors[userRef.id] = d.usernameColor; // keep map in sync
+      }
+    });
+
+// messages listener (room-scoped) — fixed no-flicker + highlight stable
+if(messagesUnsub) messagesUnsub();
+
+const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
+messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
+  snapshot.docChanges().forEach(change => {
+    const m = change.doc.data();
+
+    if(change.type === "added") {
+      const wrapper = document.createElement("div");
+      wrapper.className = "msg";
+      wrapper.id = change.doc.id; // ⚡ important for updates
+
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = (m.chatId || "Guest") + ":";
+      meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+      meta.style.marginRight = "4px";
+
+      const content = document.createElement("span");
+      content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+      content.textContent = " " + (m.content || "");
+      if(m.buzzColor) content.style.background = m.buzzColor;
+      if(m.highlight) content.style.color = "#000";
+      if(m.highlight) content.style.fontWeight = "700";
+
+      wrapper.appendChild(meta);
+      wrapper.appendChild(content);
+      messagesEl.appendChild(wrapper);
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    } else if(change.type === "modified") {
+      // update existing message DOM
+      const msgEl = document.getElementById(change.doc.id);
+      if(msgEl){
+        const contentEl = msgEl.querySelector(".content");
+        contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+        contentEl.style.background = m.buzzColor || "";
+        contentEl.style.color = m.highlight ? "#000" : "";
+        contentEl.style.fontWeight = m.highlight ? "700" : "";
+      }
+    }
+  });
+});
+
+  } else {
+    // signed out UI -> reset
+    currentUser = null;
+    if(helloEl) helloEl.style.display = "";
+    const greetingEl = document.getElementById("greeting"); if(greetingEl) greetingEl.style.display = "";
+    if(authBox) authBox.style.display = "";
+    sendAreaEl.style.display = "none";
+    profileBoxEl.style.display = "none";
+    messagesEl.innerHTML = "";
+    if(userDocUnsub){ userDocUnsub(); userDocUnsub = null; }
+    if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
+  }
+});
+// VIDEO NAVIGATION
+const videoPlayer = document.getElementById("videoPlayer");
+const videos = [
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
+];
+let currentVideoIndex = 0;
+
+// Load video
+function loadVideo(index) {
+  if(index < 0) index = videos.length - 1;
+  if(index >= videos.length) index = 0;
+  currentVideoIndex = index;
+  videoPlayer.src = videos[currentVideoIndex];
+  videoPlayer.play().catch(()=>{}); // autoplay fallback
+}
+
+// Prev / Next buttons
+document.getElementById("prev").addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+document.getElementById("next").addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+// Tap to unmute
+videoPlayer.addEventListener("click", () => {
+  if(videoPlayer.muted){
+    videoPlayer.muted = false;
+  } else {
+    videoPlayer.muted = true;
+  }
+});
+// Button events
+prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 </script>
-
 </body>
 </html>
