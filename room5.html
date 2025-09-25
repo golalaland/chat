@@ -176,29 +176,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   display: inline-block;
 }
 
-/* 🔥 Glass bar at bottom */
-.glass-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  height: 60px;                /* height of glass bar */
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  box-sizing: border-box;
-  z-index: 50;
-}
-
-/* 🔥 Keypad above glass bar */
+/* 🔥 Keypad (chat input) - always at bottom */
 .send-area {
   position: fixed;       
-  bottom: 60px;           /* push above glass bar */
+  bottom: 0;           /* sits at the very bottom */
   left: 0;
   width: 100%;
   max-width: 480px;
@@ -211,6 +192,25 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-radius: 999px;  
   box-sizing: border-box;
   z-index: 100;           
+}
+
+/* 🔥 Glass bar directly under chat input */
+.glass-bar {
+  position: fixed;
+  bottom: -60px;          /* hide under chat input */
+  left: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 60px;                
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  z-index: 50;
 }
 
 /* Input field in send area */
@@ -236,9 +236,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 
-/* Ensure last messages aren’t hidden under send-area + glass bar */
+/* Ensure last messages aren’t hidden under send-area */
 #messages {
-  padding-bottom: 140px;  /* 60px glass + 70px keypad + small gap */
+  padding-bottom: 80px;  /* just enough for chat input */
 }
 
 /* Send button */
