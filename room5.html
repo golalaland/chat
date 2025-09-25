@@ -49,6 +49,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
+
+/* messages */
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -57,6 +59,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  background: #000;
+  margin-bottom: 6px;
+}
+
+/* message item */
 .msg{padding:8px 10px;border-radius:8px;background:var(--glass);max-width:100%;display:flex;gap:8px;align-items:center;}
 .msg.me{background:rgba(255,20,147,0.06);}
 .msg .meta{
@@ -68,6 +79,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .msg .content{font-size:13px;color:#fff;white-space:pre-wrap;word-break:break-word;display:inline-block;}
 .buzz-content{font-weight:800;font-size:14px;color:#000;padding:6px 8px;border-radius:8px;display:inline-block;}
+
+/* chat input area (safe-area aware) */
 .send-area {
   display: flex;
   align-items: center;
@@ -76,12 +89,14 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   padding: 10px;
   position: sticky;
   bottom: 0; /* stick to safe bottom */
-  z-index: 20;
+  z-index: 60;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 999px;
-
-  /* ✅ Safe-area fix so keyboard gaps don’t expose chat */
+  /* Safe area so keyboard doesn't clip content */
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  box-sizing: border-box;
 }
 
 .send-area input {
