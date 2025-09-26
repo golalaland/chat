@@ -333,8 +333,12 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   <button class="arrow" id="next">&#10095;</button>
 </div>
 
-<script>
-const isSignedIn = false; // Set to true if user is logged in
+
+<script type="module">
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.2/firebase-auth.js";
+import { app } from "./firebase.js"; // adjust path to your Firebase initialization
+
+const auth = getAuth(app);
 
 const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
@@ -362,15 +366,16 @@ document.addEventListener("DOMContentLoaded", function() {
   if(prevBtn) prevBtn.style.display = 'none';
   if(nextBtn) nextBtn.style.display = 'none';
 
-  // Show buttons only if user is signed in
-  if(isSignedIn) {
-    if(prevBtn) prevBtn.style.display = 'inline-block';
-    if(nextBtn) nextBtn.style.display = 'inline-block';
+  // Show/hide buttons based on Firebase auth state
+  onAuthStateChanged(auth, (user) => {
+    const signedIn = !!user;
+    if(prevBtn) prevBtn.style.display = signedIn ? 'inline-block' : 'none';
+    if(nextBtn) nextBtn.style.display = signedIn ? 'inline-block' : 'none';
+  });
 
-    // Attach navigation events
-    prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
-    nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
-  }
+  // Attach navigation events
+  if(prevBtn) prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+  if(nextBtn) nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 
   // Toggle mute on video click
   if(videoPlayer) {
@@ -689,24 +694,16 @@ helloInterval = setInterval(rotateHello, 1500);
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
     const provider = new GoogleAuthProvider();
-    try { await setPersistence(auth, browserLocalPersistence); } catch (pErr) { console.warn("persistence set failed", pErr); }
     try {
-      await signInWithPopup(auth, provider);
-      return;
+      await setPersistence(auth, browserLocalPersistence);
+      const result = await signInWithPopup(auth, provider);
+      currentUser = result.user;
+      console.log("Signed in:", currentUser.displayName || currentUser.email);
+      // Hide auth box and show chat UI
+      if(authBox) authBox.style.display = "none";
+      if(sendAreaEl) sendAreaEl.style.display = "flex";
     } catch (err) {
-      console.warn("signInWithPopup error:", err);
-      if (["auth/popup-blocked","auth/popup-closed-by-user","auth/cancelled-popup-request","auth/web-storage-unsupported"].includes(err.code)) {
-        try { await signInWithRedirect(auth, provider); return; }
-        catch (rErr) { console.error("redirect failed", rErr); alert("Sign-in failed: " + (rErr.message || rErr)); return; }
-      }
-      if (err.code === "auth/operation-not-allowed") {
-        alert("Enable Google sign-in in Firebase Console -> Authentication -> Sign-in method.");
-        return;
-      }
-      if (err.code === "auth/unauthorized-domain") {
-        alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
-        return;
-      }
+      console.error("Google sign-in failed:", err);
       alert("Sign-in failed: " + (err.message || err));
     }
   });
