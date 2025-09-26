@@ -317,6 +317,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   .buttons-container { display: flex; flex-wrap: wrap; gap: 6px; }
   .small-btn { padding: 6px 12px; font-size: 14px; cursor: pointer; }
   #adminUserSearch, #adminUserSelect { margin-top: 6px; width: 100%; padding: 6px; box-sizing: border-box; }
+  .hidden {
+  display: none;
+}
 </style>
 </head>
 <body>
@@ -329,8 +332,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
 <div id="videoWrapper">
   <video id="videoPlayer" muted playsinline></video>
-  <button class="arrow" id="prev">&#10094;</button>
-  <button class="arrow" id="next">&#10095;</button>
+  <button class="arrow hidden" id="prev">&#10094;</button>
+  <button class="arrow hidden" id="next">&#10095;</button>
 </div>
       <div id="helloText" aria-live="polite">HELLO</div>
       <div class="room-desc">Chat. Own your vibe.
@@ -1082,6 +1085,7 @@ const videos = [
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
 ];
 let currentVideoIndex = 0;
+
 function loadVideo(index) {
   if (!videoPlayer) return;
   if (index < 0) index = videos.length - 1;
@@ -1091,16 +1095,33 @@ function loadVideo(index) {
   videoPlayer.muted = true;
   videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
 }
+
+// Video navigation
 document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+// Toggle mute on video click
 videoPlayer?.addEventListener("click", () => { if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; });
+
 document.addEventListener("DOMContentLoaded", function() {
-  const prevBtn = document.querySelector('.prev');
-  const nextBtn = document.querySelector('.next');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  // Hide buttons by default
   if(prevBtn) prevBtn.style.display = 'none';
   if(nextBtn) nextBtn.style.display = 'none';
-  if(prevBtn) prevBtn.disabled = true;
-  if(nextBtn) nextBtn.disabled = true;
+
+  // Function to show buttons after login
+  function showVideoButtons() {
+    if(prevBtn) prevBtn.style.display = 'block';
+    if(nextBtn) nextBtn.style.display = 'block';
+  }
+
+  // Example: when login happens
+  document.getElementById('loginBtn')?.addEventListener('click', () => {
+    showVideoButtons();
+  });
+
   loadVideo(0);
 });
 </script>
