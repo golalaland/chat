@@ -1122,56 +1122,67 @@ async function handleSendMessage(content){
   lastSentTime[uid] = now;
 }
 /* ---------- Video navigation (fixed) ---------- */
-let isSignedIn = false; // true if user is logged in
-
-  // -------- ELEMENTS --------
+document.addEventListener("DOMContentLoaded", () => {
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById('prev');
   const nextBtn = document.getElementById('next');
 
   const videos = [
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
+    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video1.mp4",
+    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video2.mp4",
+    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video3.mp4"
   ];
+  
+  let currentIndex = 0;
 
-  let currentVideoIndex = 0;
+  // Initially hide buttons
+  if(prevBtn) prevBtn.style.display = 'none';
+  if(nextBtn) nextBtn.style.display = 'none';
 
-  // -------- LOAD VIDEO --------
+  // Load a video
   function loadVideo(index) {
-    if (!videoPlayer) return;
-    if (index < 0) index = videos.length - 1;
-    if (index >= videos.length) index = 0;
-    currentVideoIndex = index;
-    videoPlayer.src = videos[currentVideoIndex];
-    videoPlayer.muted = true; // start muted
-    videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
+    if(videoPlayer) {
+      videoPlayer.src = videos[index];
+      videoPlayer.muted = true;      // Start muted for autoplay
+      videoPlayer.playsInline = true;
+      videoPlayer.autoplay = true;
+      videoPlayer.loop = true;
+      videoPlayer.play().catch(err => console.log("Autoplay blocked:", err));
+    }
   }
 
-  // -------- NAVIGATION BUTTONS --------
-  prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
-  nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+  loadVideo(currentIndex);
 
-  function updateVideoButtons() {
-    const displayStyle = isSignedIn ? 'block' : 'none';
-    prevBtn.style.display = displayStyle;
-    nextBtn.style.display = displayStyle;
+  // Handle prev/next buttons
+  if(prevBtn) prevBtn.addEventListener('click', () => {
+    currentIndex = (currentIndex - 1 + videos.length) % videos.length;
+    loadVideo(currentIndex);
+  });
+
+  if(nextBtn) nextBtn.addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % videos.length;
+    loadVideo(currentIndex);
+  });
+
+  // Tap/click to mute/unmute
+  if(videoPlayer) {
+    videoPlayer.addEventListener("click", (e) => {
+      e.preventDefault();
+      videoPlayer.muted = !videoPlayer.muted;
+      console.log("Muted:", videoPlayer.muted);
+    });
   }
 
-  // -------- TAP TO MUTE/UNMUTE --------
-  videoPlayer.addEventListener("click", () => {
-    videoPlayer.muted = !videoPlayer.muted;
-  });
-
-  // -------- INITIAL SETUP --------
-  document.addEventListener("DOMContentLoaded", () => {
-    updateVideoButtons();
-    loadVideo(0);
-  });
-
-  // -------- SIMULATE LOGIN --------
-  document.getElementById('loginBtn')?.addEventListener('click', () => {
-    isSignedIn = true;
-    updateVideoButtons();
+  // Firebase auth listener
+  firebase.auth().onAuthStateChanged(user => {
+    if(user) {
+      // Show buttons for signed-in user
+      if(prevBtn) prevBtn.style.display = 'block';
+      if(nextBtn) nextBtn.style.display = 'block';
+    } else {
+      // Hide buttons if not signed in
+      if(prevBtn) prevBtn.style.display = 'none';
+      if(nextBtn) nextBtn.style.display = 'none';
+    }
   });
 </script>
