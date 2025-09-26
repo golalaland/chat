@@ -511,7 +511,6 @@ function rotateHello(){
 rotateHello();
 setInterval(rotateHello, 1500);
 
-/* ---------- UI refs ---------- */
 const googleBtn = document.getElementById("googleSignInBtn");
 const authBox = document.getElementById("authBox");
 const messagesEl = document.getElementById("messages");
@@ -527,7 +526,7 @@ const tipBtn = document.getElementById("tipBtn");
 const redeemBtn = document.getElementById("redeemBtn");
 const onlineCountEl = document.getElementById("onlineCount");
 
-/* ---------- Presence ---------- */
+/* ---------- Presence (room-scoped) ---------- */
 function setupPresence(user){
   try{
     const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${user.uid}`);
@@ -540,7 +539,7 @@ onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
   onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
 });
 
-/* ---------- User Colors ---------- */
+/* ---------- Keep user color map (uid -> color) ---------- */
 const userColors = {};
 function setupUsersListener(){
   if(usersUnsub) usersUnsub();
@@ -554,15 +553,33 @@ function setupUsersListener(){
 }
 setupUsersListener();
 
-/* ---------- Google sign-in ---------- */
+/* ---------- daily color helper ---------- */
+async function assignDailyUsernameColor(userRef, data){
+  const today = new Date().toISOString().split("T")[0];
+  try{
+    if(!data || !data.lastColorDate || data.lastColorDate !== today){
+      const newColor = randomColor();
+      await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today });
+      userColors[userRef.id] = newColor;
+      return newColor;
+    }
+    userColors[userRef.id] = data.usernameColor || randomColor();
+    return data.usernameColor || randomColor();
+  }catch(e){
+    console.warn("assignDailyUsernameColor error", e);
+    return data?.usernameColor || randomColor();
+  }
+}
+
+/* ---------- Robust Google sign-in ---------- */
 googleBtn.addEventListener("click", async () => {
   const provider = new GoogleAuthProvider();
   try { await setPersistence(auth, browserLocalPersistence); } catch (pErr) { console.warn("persistence set failed", pErr); }
   try {
-    await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
     return;
   } catch (err) {
-    if (["auth/popup-blocked","auth/popup-closed-by-user","auth/cancelled-popup-request","auth/web-storage-unsupported"].includes(err.code)) {
+    if (err.code === "auth/popup-blocked" || err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request" || err.code === "auth/web-storage-unsupported") {
       try { await signInWithRedirect(auth, provider); return; }
       catch (rErr) { alert("Sign-in failed: " + (rErr.message || rErr)); return; }
     }
@@ -570,186 +587,78 @@ googleBtn.addEventListener("click", async () => {
   }
 });
 
-/* ---------- Buzz + Send ---------- */
-sendBtn.addEventListener("click", async () => {
-  if(!currentUser) return;
-  let txt = messageInputEl.value.trim();
-  if(!txt) return;
-  try{
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      content: txt,
-      buzzColor: null,
-      highlight: false,
-      createdAt: serverTimestamp()
-    });
-    messageInputEl.value = "";
-    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(AUTO_STAR_ADD) });
-    showStarPopup(`+${AUTO_STAR_ADD}`);
-  }catch(e){ console.error("send failed", e); }
-});
-
+/* ---------- BUZZ BUTTON (fixed) ---------- */
 buzzBtn.addEventListener("click", async () => {
-  if(!currentUser) return;
-  if(currentUser.stars < BUZZ_COST){ alert("Not enough stars."); return; }
-  try{
-    await addDoc(collection(db, CHAT_COLLECTION), {
+  if (!currentUser) {
+    showStarPopup("Sign in to BUZZ");
+    return;
+  }
+
+  const txt = messageInputEl.value.trim();
+  if (!txt) {
+    showStarPopup("Type a message to BUZZ! 🚨");
+    return;
+  }
+
+  try {
+    const color = randomColor();
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
       uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      content: "BUZZ!",
-      buzzColor: randomColor(),
+      chatId: currentUser.chatId || generateGuestName(),
+      timestamp: serverTimestamp(),
       highlight: true,
-      createdAt: serverTimestamp()
-    });
-    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-BUZZ_COST) });
-  }catch(e){ console.error("buzz failed", e); }
-});
-
-/* ---------- Message rendering ---------- */
-let lastMessagesArray = [];
-function renderMessagesFromArray(arr){
-  messagesEl.innerHTML = "";
-  arr.forEach(item => {
-    const m = item.data;
-    const wrapper = document.createElement("div");
-    wrapper.className = "msg";
-
-    const meta = document.createElement("span");
-    meta.className = "meta";
-    meta.textContent = (m.chatId || "Guest") + ":";
-    meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
-    meta.style.marginRight = "4px";
-
-    const content = document.createElement("span");
-    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-    content.textContent = " " + (m.content || "");
-    if(m.buzzColor) content.style.background = m.buzzColor;
-    if(m.highlight) content.style.color = "#000";
-
-    wrapper.appendChild(meta);
-    wrapper.appendChild(content);
-    messagesEl.appendChild(wrapper);
-  });
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
-/* ---------- Auth watcher ---------- */
-onAuthStateChanged(auth, async (user) => {
-  if(user){
-    setupPresence(user);
-
-    const userRef = doc(db, "users", user.uid);
-    let snap = await getDoc(userRef);
-    if(!snap.exists()){
-      await setDoc(userRef, {
-        chatId: user.displayName || generateGuestName(),
-        stars: 100,
-        cash: 0,
-        usernameColor: randomColor(),
-        lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false,
-        lastStarReset: Date.now()
-      });
-      snap = await getDoc(userRef);
-    }
-    let userData = snap.data();
-
-    const today = new Date().toISOString().split("T")[0];
-    if(!userData.lastColorDate || userData.lastColorDate !== today){
-      const newColor = randomColor();
-      await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today });
-      userData.usernameColor = newColor;
-    }
-
-    currentUser = {
-      uid: user.uid,
-      chatId: userData.chatId || user.displayName || generateGuestName(),
-      stars: userData.stars || 0,
-      cash: userData.cash || 0,
-      usernameColor: userData.usernameColor,
-      isAdmin: userData.isAdmin || false
-    };
-
-    currentUser.chatId = await promptForChatIDModal(userRef, userData);
-
-    helloEl.style.display = "none";
-    authBox.style.display = "none";
-    sendAreaEl.style.display = "flex";
-    profileBoxEl.style.display = "block";
-    profileNameEl.innerText = currentUser.chatId;
-    starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-
-    if(userDocUnsub) userDocUnsub();
-    userDocUnsub = onSnapshot(userRef, (docSnap)=>{
-      if(docSnap.exists()){
-        const d = docSnap.data();
-        currentUser.stars = d.stars || 0;
-        currentUser.cash = d.cash || 0;
-        currentUser.usernameColor = d.usernameColor || currentUser.usernameColor;
-        starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-        cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-      }
+      buzzColor: color
     });
 
-    if(currentUser.isAdmin){
-      const adminControls = document.getElementById("adminControls");
-      adminControls.style.display = "block";
-      document.getElementById("giveStarsBtn").onclick = async()=>{
-        const q = await getDocs(collection(db,"users"));
-        const batch = writeBatch(db);
-        q.forEach(u=> batch.update(doc(db,"users",u.id),{stars: increment(100)}));
-        await batch.commit();
-      };
-      document.getElementById("resetStarsBtn").onclick = async()=>{
-        const q = await getDocs(collection(db,"users"));
-        const batch = writeBatch(db);
-        q.forEach(u=> batch.update(doc(db,"users",u.id),{stars:0}));
-        await batch.commit();
-      };
-      document.getElementById("giveCashBtn").onclick = async()=>{
-        const q = await getDocs(collection(db,"users"));
-        const batch = writeBatch(db);
-        q.forEach(u=> batch.update(doc(db,"users",u.id),{cash: increment(100)}));
-        await batch.commit();
-      };
-      document.getElementById("resetCashBtn").onclick = async()=>{
-        const q = await getDocs(collection(db,"users"));
-        const batch = writeBatch(db);
-        q.forEach(u=> batch.update(doc(db,"users",u.id),{cash:0}));
-        await batch.commit();
-      };
-      document.getElementById("clearMessagesBtn").onclick = async()=>{
-        const q = await getDocs(collection(db,CHAT_COLLECTION));
-        const batch = writeBatch(db);
-        q.forEach(m=> batch.delete(doc(db,CHAT_COLLECTION,m.id)));
-        await batch.commit();
-      };
-    }
+    messageInputEl.value = "";
+    showStarPopup("BUZZ 🚨 sent!");
 
-    if(messagesUnsub) messagesUnsub();
-    const qMsg = query(collection(db, CHAT_COLLECTION), orderBy("createdAt","asc"));
-    messagesUnsub = onSnapshot(qMsg, (snap)=>{
-      const arr = [];
-      snap.forEach(d=> arr.push({id:d.id,data:d.data()}));
-      lastMessagesArray = arr;
-      renderMessagesFromArray(arr);
-    });
-
-  } else {
-    currentUser = null;
-    helloEl.style.display = "";
-    authBox.style.display = "";
-    sendAreaEl.style.display = "none";
-    profileBoxEl.style.display = "none";
-    messagesEl.innerHTML = "";
-    if(userDocUnsub){ userDocUnsub(); userDocUnsub = null; }
-    if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
+    // clear highlight after 10s
+    setTimeout(async () => {
+      try { await updateDoc(docRef, { highlight: false, buzzColor: null }); }
+      catch (e) { console.warn("clear buzz highlight failed", e); }
+    }, 10000);
+  } catch (e) {
+    console.error("buzz failed", e);
+    showStarPopup("BUZZ failed");
   }
 });
 
-/* ---------- Video navigation ---------- */
+/* ---------- SEND BUTTON ---------- */
+sendBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    showStarPopup("Sign in to chat");
+    return;
+  }
+  const txt = messageInputEl.value.trim();
+  if (!txt) {
+    showStarPopup("Type a message first");
+    return;
+  }
+  try {
+    await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId || generateGuestName(),
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null
+    });
+    messageInputEl.value = "";
+  } catch (e) {
+    console.error("Send message failed", e);
+    showStarPopup("Message failed to send");
+  }
+});
+messageInputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendBtn.click();
+  }
+});
+
+/* ---------- Video Navigation ---------- */
 const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
