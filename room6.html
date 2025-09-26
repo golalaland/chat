@@ -779,14 +779,17 @@ setInterval(async () => {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    // --- Signed out ---
+    console.log("🚫 Signed out");
     currentUser = null;
-    if (authBox) authBox.style.display = "";
+
+    if (authBox) authBox.style.display = "flex";
     if (sendAreaEl) sendAreaEl.style.display = "none";
     if (profileBoxEl) profileBoxEl.style.display = "none";
     if (messagesEl) messagesEl.innerHTML = "";
+
     if (userDocUnsub) { userDocUnsub(); userDocUnsub = null; }
     if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+
     return;
   }
 
@@ -795,34 +798,51 @@ onAuthStateChanged(auth, async (user) => {
   const userRef = doc(db, "users", user.uid);
   let snap = await getDoc(userRef);
 
-  // --- Create doc if missing ---
+  // Create user doc if missing
   if (!snap.exists()) {
     await setDoc(userRef, {
-      chatId: null,
+      chatId: null,               // 🚩 force modal on first login
       chatIdLower: null,
       stars: 100,
       cash: 0,
       usernameColor: randomColor(),
       lastColorDate: new Date().toISOString().split("T")[0],
       isAdmin: false,
-      lastStarReset: Date.now()
+      lastStarReset: Date.now(),
+      createdAt: serverTimestamp()
     });
     snap = await getDoc(userRef);
   }
 
-  let userData = snap.data() || {};
-
+  let userData = snap.exists() ? snap.data() : {};
   await assignDailyUsernameColor(userRef, userData);
 
   currentUser = {
     uid: user.uid,
-    chatId: userData.chatId || null,
-    chatIdLower: userData.chatIdLower || null,
+    chatId: userData.chatId || user.displayName || generateGuestName(),
+    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
     stars: userData.stars || 0,
     cash: userData.cash || 0,
     usernameColor: userData.usernameColor || randomColor(),
     isAdmin: userData.isAdmin || false
   };
+
+  // 🚩 If no ChatID → force modal
+  if (!userData?.chatId) {
+    const chosen = await promptForChatIDModal(userRef, userData);
+    if (chosen) {
+      currentUser.chatId = chosen;
+      currentUser.chatIdLower = chosen.toLowerCase();
+    }
+  }
+
+  // Show chat UI
+  if (authBox) authBox.style.display = "none";
+  if (sendAreaEl) sendAreaEl.style.display = "flex";
+  if (profileBoxEl) profileBoxEl.style.display = "flex";
+
+  console.log("✅ User ready:", currentUser);
+});
 
   // --- Show UI ---
   if (profileBoxEl) profileBoxEl.style.display = "flex";
@@ -1085,23 +1105,37 @@ async function handleSendMessage(content){
   lastSentTime[uid] = now;
 }
 /* ---------- Video navigation (fixed) ---------- */
+/* ---------- Video navigation ---------- */
 const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
-  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+"https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
 ];
+
 let currentVideoIndex = 0;
 
 function loadVideo(index) {
   if (!videoPlayer) return;
   if (index < 0) index = videos.length - 1;
   if (index >= videos.length) index = 0;
+
   currentVideoIndex = index;
   videoPlayer.src = videos[currentVideoIndex];
   videoPlayer.muted = true;
-  videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+  videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
 }
+
+document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+videoPlayer?.addEventListener("click", () => {
+  videoPlayer.muted = !videoPlayer.muted;
+});
+
+// Start with first video
+loadVideo(0);
+
 
 // prev/next click
 document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
