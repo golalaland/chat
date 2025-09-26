@@ -442,7 +442,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-
 <script type="module">
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -595,8 +594,7 @@ async function assignDailyUsernameColor(userRef, data){
   }
 }
 
-/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
-/* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
+/* ---------- Chat ID modal (case-insensitive uniqueness, no reload) ---------- */
 async function promptForChatIDModal(userRef, userData){
   if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
   if(userData?.chatId) return userData.chatId;
@@ -635,9 +633,9 @@ async function promptForChatIDModal(userRef, userData){
         return;
       }
 
+      // hide modal and show typing area — DO NOT reload page (was breaking auth / video)
       chatIDModal.style.display = "none";
       if(sendAreaEl) sendAreaEl.style.display = "flex";
-      location.reload(); // 🔥 refresh so it reflects instantly
       resolve(chosenID);
     };
   });
@@ -807,7 +805,6 @@ setInterval(async () => {
 }, 60000);
 
 /* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
-/* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
 onAuthStateChanged(auth, async (user) => {
   if(!user){
     currentUser = null;
@@ -891,6 +888,7 @@ if(adminControlsEl) {
     document.getElementById("adminUserSelectContainer").style.display = "none";
   }
 }
+
 /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
 if(messagesUnsub) messagesUnsub();
 const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
@@ -925,7 +923,7 @@ messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
         messagesEl.scrollTop = messagesEl.scrollHeight;
 
         // 🔥 BUZZ animation only when new highlighted message arrives
-        if (m.highlight) {
+        if (m.highlight && content) {
           content.classList.add("buzz-message", "new");
           setTimeout(() => {
             content.classList.remove("new");
@@ -1121,13 +1119,17 @@ const videos = [
 ];
 let currentVideoIndex = 0;
 function loadVideo(index) {
-  if (!videoPlayer) return;
-  if (index < 0) index = videos.length - 1;
-  if (index >= videos.length) index = 0;
-  currentVideoIndex = index;
-  videoPlayer.src = videos[currentVideoIndex];
-  videoPlayer.muted = true;
-  videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+  try {
+    if (!videoPlayer) return;
+    if (index < 0) index = videos.length - 1;
+    if (index >= videos.length) index = 0;
+    currentVideoIndex = index;
+    videoPlayer.src = videos[currentVideoIndex];
+    videoPlayer.muted = true;
+    videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+  } catch (err) {
+    console.error("Video load error:", err);
+  }
 }
 document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
@@ -1135,3 +1137,6 @@ videoPlayer?.addEventListener("click", () => { if(videoPlayer) videoPlayer.muted
 loadVideo(0);
 
 </script>
+
+</body>
+</html>
