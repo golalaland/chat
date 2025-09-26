@@ -1122,8 +1122,9 @@ async function handleSendMessage(content){
   lastSentTime[uid] = now;
 }
 /* ---------- Video navigation (fixed) ---------- */
-let isSignedIn = false; // e.g., true if user is logged in
+let isSignedIn = false; // true if user is logged in
 
+  // -------- ELEMENTS --------
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById('prev');
   const nextBtn = document.getElementById('next');
@@ -1133,44 +1134,42 @@ let isSignedIn = false; // e.g., true if user is logged in
     "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
     "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
   ];
+
   let currentVideoIndex = 0;
 
+  // -------- LOAD VIDEO --------
   function loadVideo(index) {
     if (!videoPlayer) return;
     if (index < 0) index = videos.length - 1;
     if (index >= videos.length) index = 0;
     currentVideoIndex = index;
     videoPlayer.src = videos[currentVideoIndex];
-    videoPlayer.muted = true;
-    videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+    videoPlayer.muted = true; // start muted
+    videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
   }
 
-  // Navigation buttons
+  // -------- NAVIGATION BUTTONS --------
   prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
   nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 
-  // Tap to mute/unmute
+  function updateVideoButtons() {
+    const displayStyle = isSignedIn ? 'block' : 'none';
+    prevBtn.style.display = displayStyle;
+    nextBtn.style.display = displayStyle;
+  }
+
+  // -------- TAP TO MUTE/UNMUTE --------
   videoPlayer.addEventListener("click", () => {
     videoPlayer.muted = !videoPlayer.muted;
   });
 
-  function updateVideoButtons() {
-    if (isSignedIn) {
-      prevBtn.style.display = 'block';
-      nextBtn.style.display = 'block';
-    } else {
-      prevBtn.style.display = 'none';
-      nextBtn.style.display = 'none';
-    }
-  }
-
-  // Initial setup
-  document.addEventListener("DOMContentLoaded", function() {
+  // -------- INITIAL SETUP --------
+  document.addEventListener("DOMContentLoaded", () => {
     updateVideoButtons();
     loadVideo(0);
   });
 
-  // Example: simulate login (replace with your actual login event)
+  // -------- SIMULATE LOGIN --------
   document.getElementById('loginBtn')?.addEventListener('click', () => {
     isSignedIn = true;
     updateVideoButtons();
