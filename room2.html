@@ -334,50 +334,53 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 </div>
 
 <script>
-  // Example: replace this with your actual login check
-  const isSignedIn = false; // change to true if user is logged in
+const isSignedIn = false; // Set to true if user is logged in
 
-  const videoPlayer = document.getElementById("videoPlayer");
-  const videos = [
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
-  ];
-  let currentVideoIndex = 0;
+const videoPlayer = document.getElementById("videoPlayer");
+const videos = [
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
+];
+let currentVideoIndex = 0;
 
-  function loadVideo(index) {
-    if (!videoPlayer) return;
-    if (index < 0) index = videos.length - 1;
-    if (index >= videos.length) index = 0;
-    currentVideoIndex = index;
-    videoPlayer.src = videos[currentVideoIndex];
-    videoPlayer.muted = true;
-    videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+function loadVideo(index) {
+  if (!videoPlayer) return;
+  if (index < 0) index = videos.length - 1;
+  if (index >= videos.length) index = 0;
+  currentVideoIndex = index;
+  videoPlayer.src = videos[currentVideoIndex];
+  videoPlayer.muted = true;
+  videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  // Hide buttons by default
+  if(prevBtn) prevBtn.style.display = 'none';
+  if(nextBtn) nextBtn.style.display = 'none';
+
+  // Show buttons only if user is signed in
+  if(isSignedIn) {
+    if(prevBtn) prevBtn.style.display = 'inline-block';
+    if(nextBtn) nextBtn.style.display = 'inline-block';
+
+    // Attach navigation events
+    prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+    nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
   }
 
-  document.getElementById("prev").addEventListener("click", () => loadVideo(currentVideoIndex - 1));
-  document.getElementById("next").addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+  // Toggle mute on video click
+  if(videoPlayer) {
+    videoPlayer.addEventListener("click", () => { 
+      videoPlayer.muted = !videoPlayer.muted; 
+    });
+  }
 
-  videoPlayer.addEventListener("click", () => { 
-    if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; 
-  });
-
-  document.addEventListener("DOMContentLoaded", function() {
-    const prevBtn = document.getElementById('prev');
-    const nextBtn = document.getElementById('next');
-
-    // Hide buttons by default
-    if(prevBtn) prevBtn.style.display = 'none';
-    if(nextBtn) nextBtn.style.display = 'none';
-
-    // Show buttons if signed in
-    if(isSignedIn) {
-      if(prevBtn) prevBtn.style.display = 'block';
-      if(nextBtn) nextBtn.style.display = 'block';
-    }
-
-    loadVideo(0);
-  });
+  loadVideo(0);
+});
 </script>
       <div id="helloText" aria-live="polite">HELLO</div>
       <div class="room-desc">Chat. Own your vibe.
