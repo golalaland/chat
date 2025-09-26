@@ -335,10 +335,49 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 
 <script type="module">
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.2/firebase-auth.js";
-import { app } from "./firebase.js"; // adjust path to your Firebase initialization
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.2.0/firebase-auth.js";
 
-const auth = getAuth(app);
+// Initialize Firebase Auth
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
+
+// Get nav buttons
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+
+// Optional: initially hide nav buttons before auth loads
+if(prevBtn) prevBtn.style.display = 'none';
+if(nextBtn) nextBtn.style.display = 'none';
+
+// Handle auth state changes
+onAuthStateChanged(auth, (user) => {
+  if(user){
+    console.log("User signed in:", user.email);
+    
+    // Show nav buttons
+    if(prevBtn) prevBtn.style.display = 'inline-block';
+    if(nextBtn) nextBtn.style.display = 'inline-block';
+
+  } else {
+    console.log("User signed out");
+    
+    // Hide nav buttons
+    if(prevBtn) prevBtn.style.display = 'none';
+    if(nextBtn) nextBtn.style.display = 'none';
+  }
+});
+
+// Optional: Sign-in button example
+const googleSignInBtn = document.getElementById('googleSignInBtn');
+if(googleSignInBtn){
+  googleSignInBtn.addEventListener('click', async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(err){
+      console.error("Sign-in error:", err);
+    }
+  });
+}
 
 const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
@@ -1123,36 +1162,35 @@ async function handleSendMessage(content){
 }
 /* ---------- Video navigation (fixed) ---------- */
 document.addEventListener("DOMContentLoaded", () => {
-  const videoPlayer = document.getElementById("videoPlayer");
-  const prevBtn = document.getElementById('prev');
-  const nextBtn = document.getElementById('next');
+const videoPlayer = document.getElementById("videoPlayer");
+const videos = [
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video1.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video2.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video3.mp4"
+];
 
-  const videos = [
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video1.mp4",
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video2.mp4",
-    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac/video3.mp4"
-  ];
-  
-  let currentIndex = 0;
+let currentIndex = 0;
 
-  // Initially hide buttons
-  if(prevBtn) prevBtn.style.display = 'none';
-  if(nextBtn) nextBtn.style.display = 'none';
+const showVideo = (index) => {
+  if(videoPlayer) videoPlayer.src = videos[index];
+};
 
-  // Load a video
-  function loadVideo(index) {
-    if(videoPlayer) {
-      videoPlayer.src = videos[index];
-      videoPlayer.muted = true;      // Start muted for autoplay
-      videoPlayer.playsInline = true;
-      videoPlayer.autoplay = true;
-      videoPlayer.loop = true;
-      videoPlayer.play().catch(err => console.log("Autoplay blocked:", err));
-    }
-  }
+if(prevBtn){
+  prevBtn.addEventListener('click', () => {
+    currentIndex = (currentIndex - 1 + videos.length) % videos.length;
+    showVideo(currentIndex);
+  });
+}
 
-  loadVideo(currentIndex);
+if(nextBtn){
+  nextBtn.addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % videos.length;
+    showVideo(currentIndex);
+  });
+}
 
+// Load first video initially
+showVideo(currentIndex);
   // Handle prev/next buttons
   if(prevBtn) prevBtn.addEventListener('click', () => {
     currentIndex = (currentIndex - 1 + videos.length) % videos.length;
