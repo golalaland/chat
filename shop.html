@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Xixi Shop</title>
+<title>乂丨乂丨Redeem</title>
 <style>
 :root {
   --bg: #f5f5f5;
@@ -110,11 +110,26 @@ header {
 <div class="shop-grid" id="shop-items"></div>
 
 <script>
+// Placeholder products list (18 products)
 const shopItems = [
   { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150" },
   { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150" },
   { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150" },
-  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150" }
+  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150" },
+  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150" },
+  { id: 6, name: "Chat Highlight", cost: 40, img: "https://via.placeholder.com/150" },
+  { id: 7, name: "Profile Frame", cost: 25, img: "https://via.placeholder.com/150" },
+  { id: 8, name: "VIP Emote", cost: 15, img: "https://via.placeholder.com/150" },
+  { id: 9, name: "Secret Room Pass", cost: 200, img: "https://via.placeholder.com/150" },
+  { id: 10, name: "Daily Booster", cost: 35, img: "https://via.placeholder.com/150" },
+  { id: 11, name: "Exclusive Wallpaper", cost: 45, img: "https://via.placeholder.com/150" },
+  { id: 12, name: "VIP Badge Animation", cost: 60, img: "https://via.placeholder.com/150" },
+  { id: 13, name: "Gift Pack", cost: 55, img: "https://via.placeholder.com/150" },
+  { id: 14, name: "Mystery Box", cost: 70, img: "https://via.placeholder.com/150" },
+  { id: 15, name: "Lucky Spin Token", cost: 80, img: "https://via.placeholder.com/150" },
+  { id: 16, name: "Custom Chat Theme", cost: 90, img: "https://via.placeholder.com/150" },
+  { id: 17, name: "Flash Spotlight", cost: 120, img: "https://via.placeholder.com/150" },
+  { id: 18, name: "Ultra VIP Pass", cost: 250, img: "https://via.placeholder.com/150" }
 ];
 
 const starsCountEl = document.getElementById('stars-count');
@@ -143,9 +158,10 @@ function renderShop() {
   shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
+// Load stars from chatroom backend
 async function loadUser() {
   try {
-    const res = await fetch('/api/user'); // chat backend endpoint
+    const res = await fetch('/api/user'); // replace with your backend endpoint
     const data = await res.json();
     starsCountEl.innerText = data.stars;
   } catch(err) {
@@ -153,6 +169,7 @@ async function loadUser() {
   }
 }
 
+// Buy product and update stars
 async function buyItem(item, card) {
   try {
     const res = await fetch('/api/buy', {
@@ -177,6 +194,9 @@ async function buyItem(item, card) {
 
 renderShop();
 loadUser();
+
+// Optional: auto-refresh stars every 10 sec if spent elsewhere
+setInterval(loadUser, 10000);
 </script>
 
 </body>
