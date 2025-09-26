@@ -33,7 +33,10 @@ header {
 #user-info {
   text-align: center;
   padding: 1rem;
-  font-size: 1.2rem;
+}
+
+#user-info div {
+  margin: 0.2rem 0;
 }
 
 .shop-grid {
@@ -78,7 +81,13 @@ header {
 .product-cost {
   color: var(--accent);
   font-weight: bold;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.product-availability {
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
 }
 
 .buy-btn {
@@ -104,32 +113,37 @@ header {
 <header>Xixi Shop</header>
 
 <div id="user-info">
-  Stars: <span id="stars-count">0</span>
+  <div style="font-weight:bold; font-size:1.3rem; background:#000; color:#fff; display:inline-block; padding:0.2rem 0.5rem; border-radius:4px;">
+    CHATID: <span id="chat-id">12345</span>
+  </div>
+  <div style="font-size:0.9rem; font-weight:bold;">
+    Stars: <span style="font-weight:300;" id="stars-count">0</span>
+  </div>
 </div>
 
 <div class="shop-grid" id="shop-items"></div>
 
 <script>
-// Placeholder products list (18 products)
+// Full 18 products with availability
 const shopItems = [
-  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150" },
-  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150" },
-  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150" },
-  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150" },
-  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150" },
-  { id: 6, name: "Chat Highlight", cost: 40, img: "https://via.placeholder.com/150" },
-  { id: 7, name: "Profile Frame", cost: 25, img: "https://via.placeholder.com/150" },
-  { id: 8, name: "VIP Emote", cost: 15, img: "https://via.placeholder.com/150" },
-  { id: 9, name: "Secret Room Pass", cost: 200, img: "https://via.placeholder.com/150" },
-  { id: 10, name: "Daily Booster", cost: 35, img: "https://via.placeholder.com/150" },
-  { id: 11, name: "Exclusive Wallpaper", cost: 45, img: "https://via.placeholder.com/150" },
-  { id: 12, name: "VIP Badge Animation", cost: 60, img: "https://via.placeholder.com/150" },
-  { id: 13, name: "Gift Pack", cost: 55, img: "https://via.placeholder.com/150" },
-  { id: 14, name: "Mystery Box", cost: 70, img: "https://via.placeholder.com/150" },
-  { id: 15, name: "Lucky Spin Token", cost: 80, img: "https://via.placeholder.com/150" },
-  { id: 16, name: "Custom Chat Theme", cost: 90, img: "https://via.placeholder.com/150" },
-  { id: 17, name: "Flash Spotlight", cost: 120, img: "https://via.placeholder.com/150" },
-  { id: 18, name: "Ultra VIP Pass", cost: 250, img: "https://via.placeholder.com/150" }
+  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
+  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
+  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 },
+  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150", available: 5 },
+  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150", available: 10 },
+  { id: 6, name: "Chat Highlight", cost: 40, img: "https://via.placeholder.com/150", available: 6 },
+  { id: 7, name: "Profile Frame", cost: 25, img: "https://via.placeholder.com/150", available: 14 },
+  { id: 8, name: "VIP Emote", cost: 15, img: "https://via.placeholder.com/150", available: 20 },
+  { id: 9, name: "Secret Room Pass", cost: 200, img: "https://via.placeholder.com/150", available: 2 },
+  { id: 10, name: "Daily Booster", cost: 35, img: "https://via.placeholder.com/150", available: 7 },
+  { id: 11, name: "Exclusive Wallpaper", cost: 45, img: "https://via.placeholder.com/150", available: 9 },
+  { id: 12, name: "VIP Badge Animation", cost: 60, img: "https://via.placeholder.com/150", available: 4 },
+  { id: 13, name: "Gift Pack", cost: 55, img: "https://via.placeholder.com/150", available: 11 },
+  { id: 14, name: "Mystery Box", cost: 70, img: "https://via.placeholder.com/150", available: 3 },
+  { id: 15, name: "Lucky Spin Token", cost: 80, img: "https://via.placeholder.com/150", available: 5 },
+  { id: 16, name: "Custom Chat Theme", cost: 90, img: "https://via.placeholder.com/150", available: 6 },
+  { id: 17, name: "Flash Spotlight", cost: 120, img: "https://via.placeholder.com/150", available: 2 },
+  { id: 18, name: "Ultra VIP Pass", cost: 250, img: "https://via.placeholder.com/150", available: 1 }
 ];
 
 const starsCountEl = document.getElementById('stars-count');
@@ -143,6 +157,7 @@ function createProductCard(item) {
     <div class="product-info">
       <div class="product-name">${item.name}</div>
       <div class="product-cost">${item.cost} ⭐</div>
+      <div class="product-availability">${item.available} available for today</div>
       <button class="buy-btn">Buy</button>
     </div>
   `;
