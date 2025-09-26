@@ -1,1 +1,167 @@
 
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Xixi Shop</title>
+<style>
+:root {
+  --bg: #000;
+  --card: #111;
+  --accent: #ffcc00;
+  --text: #fff;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.5rem;
+  border-bottom: 1px solid #333;
+}
+
+#user-info {
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+#shop-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.item-card {
+  background: var(--card);
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: transform 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.item-card:hover {
+  transform: scale(1.05);
+}
+
+.item-name {
+  margin: 0.5rem 0;
+}
+
+.item-cost {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.purchase-spark {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: spark 0.5s ease-out forwards;
+}
+
+@keyframes spark {
+  0% { opacity: 1; transform: translate(0,0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+}
+</style>
+</head>
+<body>
+
+<header>Xixi Shop</header>
+<div id="user-info">
+  Stars: <span id="stars-count">0</span>
+</div>
+
+<div id="shop-items"></div>
+
+<script>
+const shopItems = [
+  { id: 1, name: "VIP Pass", cost: 50 },
+  { id: 2, name: "Glow Badge", cost: 20 },
+  { id: 3, name: "Special Emoji Pack", cost: 10 },
+  { id: 4, name: "Custom Avatar", cost: 100 }
+];
+
+const starsCountEl = document.getElementById('stars-count');
+const shopItemsEl = document.getElementById('shop-items');
+
+function createItemCard(item) {
+  const card = document.createElement('div');
+  card.classList.add('item-card');
+  card.innerHTML = `
+    <div class="item-name">${item.name}</div>
+    <div class="item-cost">${item.cost} ⭐</div>
+  `;
+
+  card.addEventListener('click', () => buyItem(item));
+  return card;
+}
+
+function renderShop() {
+  shopItemsEl.innerHTML = '';
+  shopItems.forEach(item => {
+    shopItemsEl.appendChild(createItemCard(item));
+  });
+}
+
+async function loadUser() {
+  try {
+    const res = await fetch('/api/user'); // your chat backend endpoint
+    const data = await res.json();
+    starsCountEl.innerText = data.stars;
+  } catch(err) {
+    console.error("Failed to load user:", err);
+  }
+}
+
+async function buyItem(item) {
+  try {
+    const res = await fetch('/api/buy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: item.id })
+    });
+    const result = await res.json();
+    if(result.success) {
+      starsCountEl.innerText = result.starsLeft;
+      showSparkAnimation(event.target);
+      if(navigator.vibrate) navigator.vibrate(100);
+      alert(`Purchased ${item.name}!`);
+    } else {
+      alert(result.message);
+    }
+  } catch(err) {
+    console.error("Purchase failed:", err);
+  }
+}
+
+function showSparkAnimation(card) {
+  const spark = document.createElement('div');
+  spark.className = 'purchase-spark';
+  const dx = (Math.random() - 0.5) * 50 + 'px';
+  const dy = (Math.random() - 0.5) * 50 + 'px';
+  spark.style.setProperty('--dx', dx);
+  spark.style.setProperty('--dy', dy);
+  card.appendChild(spark);
+  setTimeout(() => card.removeChild(spark), 500);
+}
+
+renderShop();
+loadUser();
+</script>
+
+</body>
+</html>
