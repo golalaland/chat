@@ -1113,4 +1113,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 5000);
   }
 });
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("video-container");
+  const prevBtn = document.getElementById("prev");
+  const nextBtn = document.getElementById("next");
+
+  // Simple mobile check
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile && container && prevBtn && nextBtn) {
+    container.addEventListener("click", () => {
+      // Show buttons
+      prevBtn.style.opacity = "1";
+      nextBtn.style.opacity = "1";
+      prevBtn.style.pointerEvents = "auto";
+      nextBtn.style.pointerEvents = "auto";
+
+      // Hide again after 3s
+      setTimeout(() => {
+        prevBtn.style.opacity = "0";
+        nextBtn.style.opacity = "0";
+        prevBtn.style.pointerEvents = "none";
+        nextBtn.style.pointerEvents = "none";
+      }, 3000);
+    });
+  }
+});
 </script>
