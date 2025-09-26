@@ -1082,6 +1082,7 @@ const videos = [
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
 ];
 let currentVideoIndex = 0;
+
 function loadVideo(index) {
   if (!videoPlayer) return;
   if (index < 0) index = videos.length - 1;
@@ -1091,39 +1092,67 @@ function loadVideo(index) {
   videoPlayer.muted = true;
   videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
 }
+
+// prev/next click
 document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
-videoPlayer?.addEventListener("click", () => { if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; });
+
+// toggle mute on click
+videoPlayer?.addEventListener("click", () => { 
+  if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; 
+});
+
 loadVideo(0);
-// 🔥 Auto-fade prev/next buttons after 5s
-addEventListener("DOMContentLoaded", () => {
+
+// ---------- Auto fade logic ----------
+document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("video-container");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
+  if (!container || !prevBtn || !nextBtn) return;
 
-  // Simple mobile check
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  // Transition setup
+  prevBtn.style.transition = "opacity 0.6s ease";
+  nextBtn.style.transition = "opacity 0.6s ease";
 
-  if (isMobile && container && prevBtn && nextBtn) {
-    // Ensure visible at start
+  // Show at start
+  prevBtn.style.opacity = "1";
+  nextBtn.style.opacity = "1";
+
+  let hideTimeout;
+
+  function showButtons() {
     prevBtn.style.opacity = "1";
     nextBtn.style.opacity = "1";
+    prevBtn.style.pointerEvents = "auto";
+    nextBtn.style.pointerEvents = "auto";
 
-    container.addEventListener("click", () => {
-      // Show again on tap
-      prevBtn.style.opacity = "1";
-      nextBtn.style.opacity = "1";
-      prevBtn.style.pointerEvents = "auto";
-      nextBtn.style.pointerEvents = "auto";
-
-      // Hide again after 3s
-      setTimeout(() => {
-        prevBtn.style.opacity = "0";
-        nextBtn.style.opacity = "0";
-        prevBtn.style.pointerEvents = "none";
-        nextBtn.style.pointerEvents = "none";
-      }, 3000);
-    });
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      prevBtn.style.opacity = "0";
+      nextBtn.style.opacity = "0";
+      prevBtn.style.pointerEvents = "none";
+      nextBtn.style.pointerEvents = "none";
+    }, 3000); // auto-hide after 3s
   }
+
+  // Desktop: show on hover
+  container.addEventListener("mouseenter", showButtons);
+  container.addEventListener("mousemove", showButtons);
+  container.addEventListener("mouseleave", () => {
+    prevBtn.style.opacity = "0";
+    nextBtn.style.opacity = "0";
+  });
+
+  // Mobile: show on tap
+  container.addEventListener("click", showButtons);
+
+  // Initial auto-hide
+  hideTimeout = setTimeout(() => {
+    prevBtn.style.opacity = "0";
+    nextBtn.style.opacity = "0";
+    prevBtn.style.pointerEvents = "none";
+    nextBtn.style.pointerEvents = "none";
+  }, 3000);
 });
 </script>
