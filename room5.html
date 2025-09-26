@@ -374,14 +374,29 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           <span class="profile-label">CASH EARNED:</span>
           <span class="profile-value">₦<span id="cashCount">0</span></span>
         </div>
-        <div id="adminControls" style="display:none;flex-direction:column;gap:6px;margin-top:8px;">
-          <span class="profile-label">ADMIN CONTROLS:</span>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
-            <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
-            <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
-            <button class="small-btn" id="adminResetCashBtn">Reset Cash</button>
-            <button class="small-btn" id="adminClearMessagesBtn">Clear Messages</button>
+        <div id="adminUserSelectContainer" style="margin-top:10px;">
+  <select id="adminUserSelect">
+    <option value="">Select user...</option>
+  </select>
+</div>
+       <div id="adminControls" style="display:none;flex-direction:column;gap:6px;margin-top:8px;">
+  <span class="profile-label">ADMIN CONTROLS:</span>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+    <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
+    <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
+    <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
+    <button class="small-btn" id="adminResetCashBtn">Reset Cash</button>
+    <button class="small-btn" id="adminClearMessagesBtn">Clear Messages</button>
+    <button class="small-btn" id="adminDeleteMsgBtn">Delete Msg</button>
+    <button class="small-btn" id="adminKickUserBtn">Kick User</button>
+    <button class="small-btn" id="adminBlockSendBtn">Block Send/Buzz</button>
+    <button class="small-btn" id="adminSetTimeoutBtn">Set Chat Timeout</button>
+  </div>
+  <input type="text" id="adminUserSearch" placeholder="Search by chatID..." style="margin-top:6px;width:100%;">
+  <select id="adminUserSelect" style="margin-top:6px;width:100%;">
+    <option value="">Select user...</option>
+  </select>
+</div>
           </div>
         </div>
       </div>
@@ -772,7 +787,10 @@ onAuthStateChanged(auth, async (user) => {
         usernameColor: randomColor(),
         lastColorDate: new Date().toISOString().split("T")[0],
         isAdmin: false,
-        lastStarReset: Date.now()
+        lastStarReset: Date.now(),
+        blockSend: false,
+        kicked: false,
+        chatTimeoutUntil: 0
       });
       snap = await getDoc(userRef);
     }
@@ -789,17 +807,20 @@ onAuthStateChanged(auth, async (user) => {
       stars: userData.stars || 0,
       cash: userData.cash || 0,
       usernameColor: userData.usernameColor || randomColor(),
-      isAdmin: userData.isAdmin || false
+      isAdmin: userData.isAdmin || false,
+      blockSend: userData.blockSend || false,
+      kicked: userData.kicked || false,
+      chatTimeoutUntil: userData.chatTimeoutUntil || 0
     };
 
-    // prompt for chatId if none / or still guest
-    try {
+    // Show Chat ID modal **blocking** for first-time users
+    if(!userData?.chatId) {
       const chosen = await promptForChatIDModal(userRef, userData);
       if (chosen) {
         currentUser.chatId = chosen;
         currentUser.chatIdLower = chosen.toLowerCase();
       }
-    } catch(e) { /* ignore modal abort */ }
+    }
 
     // UI show/hide
     if(helloEl) helloEl.style.display = "none";
@@ -819,18 +840,28 @@ onAuthStateChanged(auth, async (user) => {
       const d = uSnap.data() || {};
       currentUser.stars = d.stars || 0;
       currentUser.cash = d.cash || 0;
+      currentUser.blockSend = d.blockSend || false;
+      currentUser.kicked = d.kicked || false;
+      currentUser.chatTimeoutUntil = d.chatTimeoutUntil || 0;
       if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
       if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
       if(d.usernameColor){
         if(profileNameEl) profileNameEl.style.color = d.usernameColor;
         userColors[userRef.id] = d.usernameColor;
       }
+      // enforce kick
+      if(currentUser.kicked){
+        alert("You have been kicked by an admin.");
+        auth.signOut().catch(()=>{});
+      }
     });
 
-    // admin controls (bind only for admins, overwrite handlers safely)
+    /* ---------- Admin controls ---------- */
     if(adminControlsEl){
       if(currentUser.isAdmin){
         adminControlsEl.style.display = "flex";
+
+        // Give / reset stars & cash
         adminGiveStarsBtn && (adminGiveStarsBtn.onclick = async () => {
           const amount = parseInt(prompt("Enter stars to give to all users:", "100")) || 0;
           if(amount <=0) return;
@@ -865,6 +896,8 @@ onAuthStateChanged(auth, async (user) => {
           await batch.commit();
           showStarPopup("Cash reset for all users");
         });
+
+        // Clear messages
         adminClearMessagesBtn && (adminClearMessagesBtn.onclick = async () => {
           if(!confirm("Clear ALL messages in this room?")) return;
           const snapMsgs = await getDocs(collection(db, CHAT_COLLECTION));
@@ -874,25 +907,74 @@ onAuthStateChanged(auth, async (user) => {
           if(messagesEl) messagesEl.innerHTML = "";
           showStarPopup("All messages cleared");
         });
+
+        // Admin user search & select
+        const adminUserSelect = document.getElementById("adminUserSelect");
+        const adminUserSearch = document.getElementById("adminUserSearch");
+        if(adminUserSearch){
+          adminUserSearch.addEventListener("input", async () => {
+            const filter = adminUserSearch.value.toLowerCase();
+            if(!adminUserSelect) return;
+            adminUserSelect.innerHTML = `<option value="">Select user...</option>`;
+            const snap = await getDocs(collection(db,"users"));
+            snap.forEach(docSnap=>{
+              const d = docSnap.data();
+              if((d.chatId || "").toLowerCase().includes(filter)){
+                adminUserSelect.innerHTML += `<option value="${docSnap.id}">${d.chatId || docSnap.id}</option>`;
+              }
+            });
+          });
+        }
+
+        // Delete message
+        adminDeleteMsgBtn && (adminDeleteMsgBtn.onclick = async () => {
+          const msgId = prompt("Enter message ID to delete:");
+          if(!msgId) return;
+          await deleteDoc(doc(db, CHAT_COLLECTION, msgId));
+          const msgEl = document.getElementById(msgId);
+          if(msgEl) msgEl.remove();
+          showStarPopup(`Message ${msgId} deleted`);
+        });
+
+        // Kick user
+        adminKickUserBtn && (adminKickUserBtn.onclick = async () => {
+          const targetUid = adminUserSelect?.value;
+          if(!targetUid) return alert("Select a user first");
+          await updateDoc(doc(db,"users",targetUid),{kicked:true});
+          showStarPopup(`User kicked`);
+        });
+
+        // Block send/buzz
+        adminBlockSendBtn && (adminBlockSendBtn.onclick = async () => {
+          const targetUid = adminUserSelect?.value;
+          if(!targetUid) return alert("Select a user first");
+          await updateDoc(doc(db,"users",targetUid),{blockSend:true});
+          showStarPopup(`User blocked from sending/buzzing`);
+        });
+
+        // Set chat timeout
+        adminSetTimeoutBtn && (adminSetTimeoutBtn.onclick = async () => {
+          const targetUid = adminUserSelect?.value;
+          if(!targetUid) return alert("Select a user first");
+          const timeoutSec = parseInt(prompt("Timeout duration in seconds:", "10")) || 0;
+          await updateDoc(doc(db,"users",targetUid),{chatTimeoutUntil: Date.now() + timeoutSec*1000});
+          showStarPopup(`User in timeout for ${timeoutSec} sec`);
+        });
+
       } else {
         adminControlsEl.style.display = "none";
-        // clear handlers
-        adminGiveStarsBtn && (adminGiveStarsBtn.onclick = null);
-        adminResetStarsBtn && (adminResetStarsBtn.onclick = null);
-        adminGiveCashBtn && (adminGiveCashBtn.onclick = null);
-        adminResetCashBtn && (adminResetCashBtn.onclick = null);
-        adminClearMessagesBtn && (adminClearMessagesBtn.onclick = null);
+        [adminGiveStarsBtn,adminResetStarsBtn,adminGiveCashBtn,adminResetCashBtn,adminClearMessagesBtn,
+         adminDeleteMsgBtn,adminKickUserBtn,adminBlockSendBtn,adminSetTimeoutBtn].forEach(b=>b&& (b.onclick=null));
       }
     }
 
-    // messages listener (no-flicker, incremental updates)
+    /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
     if(messagesUnsub) messagesUnsub();
     const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
     messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
       snapshot.docChanges().forEach(change => {
         const m = change.doc.data();
         if (change.type === "added") {
-          // append once
           lastMessagesArray.push({ id: change.doc.id, data: m });
           if(messagesEl){
             const wrapper = document.createElement("div");
@@ -917,7 +999,6 @@ onAuthStateChanged(auth, async (user) => {
             messagesEl.scrollTop = messagesEl.scrollHeight;
           }
         } else if (change.type === "modified") {
-          // update existing DOM node
           const msgEl = document.getElementById(change.doc.id);
           if(msgEl){
             const contentEl = msgEl.querySelector(".content");
@@ -927,7 +1008,6 @@ onAuthStateChanged(auth, async (user) => {
             contentEl.style.color = m.highlight ? "#000" : "";
             contentEl.style.fontWeight = m.highlight ? "700" : "";
           }
-          // also update lastMessagesArray
           const idx = lastMessagesArray.findIndex(x=>x.id===change.doc.id);
           if(idx>=0) lastMessagesArray[idx].data = m;
         }
