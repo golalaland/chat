@@ -1095,5 +1095,22 @@ document.getElementById("prev")?.addEventListener("click", () => loadVideo(curre
 document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 videoPlayer?.addEventListener("click", () => { if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; });
 loadVideo(0);
+// 🔥 Auto-fade prev/next buttons after 5s
+document.addEventListener("DOMContentLoaded", () => {
+  const prevBtn = document.getElementById("prev");
+  const nextBtn = document.getElementById("next");
 
+  if (prevBtn && nextBtn) {
+    // Make sure they're visible first
+    prevBtn.style.opacity = "1";
+    nextBtn.style.opacity = "1";
+    prevBtn.style.transition = "opacity 1s ease";
+    nextBtn.style.transition = "opacity 1s ease";
+
+    setTimeout(() => {
+      prevBtn.style.opacity = "0";
+      nextBtn.style.opacity = "0";
+    }, 5000);
+  }
+});
 </script>
