@@ -771,6 +771,7 @@ setInterval(async () => {
 }, 60000);
 
 /* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
+/* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
 onAuthStateChanged(auth, async (user) => {
   if(!user){
     currentUser = null;
@@ -844,25 +845,55 @@ onAuthStateChanged(auth, async (user) => {
     }
   }
 
-  // -------- Messages listener (no-flicker) --------
+  /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
   if(messagesUnsub) messagesUnsub();
   const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
-  messagesUnsub = onSnapshot(messagesQuery, (snapshot)=>{
-    snapshot.docChanges().forEach(change=>{
+  messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
+    snapshot.docChanges().forEach(change => {
       const m = change.doc.data();
-      if(change.type==="added"){
-        lastMessagesArray.push({id:change.doc.id,data:m});
-        renderMessagesFromArray(lastMessagesArray);
-      } else if(change.type==="modified"){
+      if (change.type === "added") {
+        lastMessagesArray.push({ id: change.doc.id, data: m });
+        if(messagesEl){
+          const wrapper = document.createElement("div");
+          wrapper.className = "msg";
+          wrapper.id = change.doc.id;
+
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = (m.chatId || "Guest") + ":";
+          meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+          meta.style.marginRight = "4px";
+
+          const content = document.createElement("span");
+          content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+          content.textContent = " " + (m.content || "");
+          if (m.buzzColor) content.style.background = m.buzzColor;
+          if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
+
+          wrapper.appendChild(meta);
+          wrapper.appendChild(content);
+          messagesEl.appendChild(wrapper);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+      } else if (change.type === "modified") {
+        const msgEl = document.getElementById(change.doc.id);
+        if(msgEl){
+          const contentEl = msgEl.querySelector(".content");
+          contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+          contentEl.textContent = " " + (m.content || "");
+          contentEl.style.background = m.buzzColor || "";
+          contentEl.style.color = m.highlight ? "#000" : "";
+          contentEl.style.fontWeight = m.highlight ? "700" : "";
+        }
         const idx = lastMessagesArray.findIndex(x=>x.id===change.doc.id);
         if(idx>=0) lastMessagesArray[idx].data = m;
-        renderMessagesFromArray(lastMessagesArray);
       }
     });
   });
+
 });
 
-// ---------- ADMIN FUNCTIONS ----------
+/* ---------- ADMIN FUNCTIONS ---------- */
 function setupAdminControls(){
   const userSelect = document.getElementById("adminUserSelect");
   const userSearch = document.getElementById("adminUserSearch");
@@ -963,7 +994,7 @@ function setupAdminControls(){
     if(messagesEl) messagesEl.innerHTML="";
   });
 
-  // ------- Delete Msg / Kick / Block / Timeout (basic placeholders) -------
+  // ------- Delete Msg / Kick / Block / Timeout -------
   document.getElementById("adminDeleteMsgBtn")?.addEventListener("click", async ()=>{
     const msgId = prompt("Enter message ID to delete:");
     if(!msgId) return;
@@ -989,66 +1020,43 @@ function setupAdminControls(){
     window.chatTimeoutSec=sec;
     alert(`Users can now only send one message every ${sec} seconds`);
   });
+
 }
-    /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
-    if(messagesUnsub) messagesUnsub();
-    const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
-    messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
-      snapshot.docChanges().forEach(change => {
-        const m = change.doc.data();
-        if (change.type === "added") {
-          lastMessagesArray.push({ id: change.doc.id, data: m });
-          if(messagesEl){
-            const wrapper = document.createElement("div");
-            wrapper.className = "msg";
-            wrapper.id = change.doc.id;
 
-            const meta = document.createElement("span");
-            meta.className = "meta";
-            meta.textContent = (m.chatId || "Guest") + ":";
-            meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
-            meta.style.marginRight = "4px";
+/* ---------- Send/Buzz handler with timeout & block ---------- */
+const lastSentTime = {}; // tracks per-user last message
 
-            const content = document.createElement("span");
-            content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-            content.textContent = " " + (m.content || "");
-            if (m.buzzColor) content.style.background = m.buzzColor;
-            if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
+async function handleSendMessage(content){
+  if(!currentUser) return;
+  const uid = currentUser.uid;
 
-            wrapper.appendChild(meta);
-            wrapper.appendChild(content);
-            messagesEl.appendChild(wrapper);
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-          }
-        } else if (change.type === "modified") {
-          const msgEl = document.getElementById(change.doc.id);
-          if(msgEl){
-            const contentEl = msgEl.querySelector(".content");
-            contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-            contentEl.textContent = " " + (m.content || "");
-            contentEl.style.background = m.buzzColor || "";
-            contentEl.style.color = m.highlight ? "#000" : "";
-            contentEl.style.fontWeight = m.highlight ? "700" : "";
-          }
-          const idx = lastMessagesArray.findIndex(x=>x.id===change.doc.id);
-          if(idx>=0) lastMessagesArray[idx].data = m;
-        }
-      });
-    });
-
-  } else {
-    // signed out UI -> reset
-    currentUser = null;
-    if(helloEl) helloEl.style.display = "";
-    if(authBox) authBox.style.display = "";
-    if(sendAreaEl) sendAreaEl.style.display = "none";
-    if(profileBoxEl) profileBoxEl.style.display = "none";
-    if(messagesEl) messagesEl.innerHTML = "";
-    if(userDocUnsub){ userDocUnsub(); userDocUnsub = null; }
-    if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
+  // Blocked globally
+  if(window.chatBlocked){
+    alert("Chat send/buzz is currently blocked by admin!");
+    return;
   }
-});
 
+  // Timeout per user
+  const now = Date.now();
+  const timeoutSec = window.chatTimeoutSec || 0;
+  if(timeoutSec > 0 && lastSentTime[uid]){
+    const diffSec = (now - lastSentTime[uid]) / 1000;
+    if(diffSec < timeoutSec){
+      alert(`You must wait ${Math.ceil(timeoutSec - diffSec)} more seconds before sending again.`);
+      return;
+    }
+  }
+
+  // Send message
+  await addDoc(collection(db, CHAT_COLLECTION), {
+    uid,
+    chatId: currentUser.chatId,
+    content,
+    timestamp: serverTimestamp()
+  });
+
+  lastSentTime[uid] = now;
+}
 /* ---------- Video navigation (fixed) ---------- */
 const videoPlayer = document.getElementById("videoPlayer");
 const videos = [
