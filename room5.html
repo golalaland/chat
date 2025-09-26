@@ -545,12 +545,14 @@ async function assignDailyUsernameColor(userRef, data){
 }
 
 /* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
+/* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
 async function promptForChatIDModal(userRef, userData){
   if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
   if(userData?.chatId) return userData.chatId;
 
   chatIDInput.value = "";
   chatIDModal.style.display = "flex";
+  if(sendAreaEl) sendAreaEl.style.display = "none"; // hide typing area until chosen
 
   return new Promise((resolve) => {
     chatIDConfirmBtn.onclick = async () => {
@@ -583,6 +585,8 @@ async function promptForChatIDModal(userRef, userData){
       }
 
       chatIDModal.style.display = "none";
+      if(sendAreaEl) sendAreaEl.style.display = "flex";
+      location.reload(); // 🔥 refresh so it reflects instantly
       resolve(chosenID);
     };
   });
