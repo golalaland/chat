@@ -317,20 +317,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   .buttons-container { display: flex; flex-wrap: wrap; gap: 6px; }
   .small-btn { padding: 6px 12px; font-size: 14px; cursor: pointer; }
   #adminUserSearch, #adminUserSelect { margin-top: 6px; width: 100%; padding: 6px; box-sizing: border-box; }
-  .room-subtitle {
-  font-size: 20px;       /* same as #helloText */
-  font-weight: 600;      /* slightly lighter than HELLO */
+/* Make sure to include the Google Font in your HTML:
+<link href="https://fonts.googleapis.com/css2?family=Playlist+Script&display=swap" rel="stylesheet">
+*/
+
+.room-subtitle {
+  font-size: 20px;              /* same as #helloText */
+  font-weight: 600;             /* slightly lighter than HELLO */
   text-align: center;
   margin-top: 4px;
-  font-family: 'Courier New', Courier, monospace; /* themed font */
+  font-family: 'Playlist Script', cursive; /* handwritten HELLO-style font */
   color: var(--accent);
   letter-spacing: 0.5px;
   opacity: 0.85;
   transition: color 0.2s ease;
 }
+
 .room-subtitle:hover {
-  color: #fff;           /* subtle hover effect */
+  color: #fff;                  /* subtle hover effect */
 }
+
 
 </style>
 </head>
