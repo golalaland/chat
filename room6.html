@@ -777,11 +777,9 @@ setInterval(async () => {
   }catch(e){ /* ignore periodic errors */ }
 }, 60000);
 
-/* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
-/* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    // --- User signed out ---
+    // --- Signed out ---
     currentUser = null;
     if (authBox) authBox.style.display = "";
     if (sendAreaEl) sendAreaEl.style.display = "none";
@@ -792,19 +790,15 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  try { 
-    setupPresence(user); 
-  } catch (e) { 
-    console.warn("presence err", e); 
-  }
+  try { setupPresence(user); } catch (e) { console.warn("presence err", e); }
 
   const userRef = doc(db, "users", user.uid);
   let snap = await getDoc(userRef);
 
-  // --- First-time user: create Firestore doc with empty chatId ---
+  // --- Create doc if missing ---
   if (!snap.exists()) {
     await setDoc(userRef, {
-      chatId: null,              // 🔥 force modal
+      chatId: null,
       chatIdLower: null,
       stars: 100,
       cash: 0,
@@ -816,12 +810,10 @@ onAuthStateChanged(auth, async (user) => {
     snap = await getDoc(userRef);
   }
 
-  let userData = snap.exists() ? snap.data() : {};
+  let userData = snap.data() || {};
 
-  // --- Ensure daily username color logic still runs ---
   await assignDailyUsernameColor(userRef, userData);
 
-  // --- Build currentUser object ---
   currentUser = {
     uid: user.uid,
     chatId: userData.chatId || null,
@@ -832,13 +824,21 @@ onAuthStateChanged(auth, async (user) => {
     isAdmin: userData.isAdmin || false
   };
 
-  // --- Chat ID modal for first-time users ---
-  if (!userData?.chatId) {
-    const chosen = await promptForChatIDModal(userRef, userData);
-    if (chosen) {
-      currentUser.chatId = chosen;
-      currentUser.chatIdLower = chosen.toLowerCase();
-    }
+  // --- Show UI ---
+  if (profileBoxEl) profileBoxEl.style.display = "flex";
+  if (sendAreaEl) sendAreaEl.style.display = "flex";
+  if (profileNameEl) profileNameEl.textContent = currentUser.chatId || "Guest";
+
+  // --- Trigger ChatID modal separately (non-blocking) ---
+  if (!userData.chatId) {
+    setTimeout(async () => {
+      const chosen = await promptForChatIDModal(userRef, userData);
+      if (chosen) {
+        currentUser.chatId = chosen;
+        currentUser.chatIdLower = chosen.toLowerCase();
+        if (profileNameEl) profileNameEl.textContent = chosen;
+      }
+    }, 500); // delay so Google sign-in flow finishes cleanly
   }
 });
 
