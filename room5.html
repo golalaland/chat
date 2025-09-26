@@ -311,6 +311,12 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   .send-area input{padding:10px;font-size:13px;}
   .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
 }
+  #adminUserSelectContainer { margin-top: 10px; }
+  #adminControls { display: none; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .profile-label { font-weight: bold; }
+  .buttons-container { display: flex; flex-wrap: wrap; gap: 6px; }
+  .small-btn { padding: 6px 12px; font-size: 14px; cursor: pointer; }
+  #adminUserSearch, #adminUserSelect { margin-top: 6px; width: 100%; padding: 6px; box-sizing: border-box; }
 </style>
 </head>
 <body>
@@ -374,14 +380,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           <span class="profile-label">CASH EARNED:</span>
           <span class="profile-value">₦<span id="cashCount">0</span></span>
         </div>
-        <div id="adminUserSelectContainer" style="margin-top:10px;">
+  <div id="adminUserSelectContainer">
   <select id="adminUserSelect">
     <option value="">Select user...</option>
   </select>
 </div>
-      <div id="adminControls" style="display:none; flex-direction:column; gap:6px; margin-top:8px;">
+
+<div id="adminControls">
   <span class="profile-label">ADMIN CONTROLS:</span>
-  <div style="display:flex; flex-wrap:wrap; gap:6px;">
+  <div class="buttons-container">
     <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
     <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
     <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
@@ -392,7 +399,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <button class="small-btn" id="adminBlockSendBtn">Block Send/Buzz</button>
     <button class="small-btn" id="adminSetTimeoutBtn">Set Chat Timeout</button>
   </div>
-  <input type="text" id="adminUserSearch" placeholder="Search by chatID..." style="margin-top:6px; width:100%;" />
+  <input type="text" id="adminUserSearch" placeholder="Search by chatID...">
+  <select id="adminUserSelect">
+    <option value="">Select user...</option>
+  </select>
 </div>
           </div>
         </div>
