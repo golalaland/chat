@@ -772,202 +772,224 @@ setInterval(async () => {
 
 /* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
 onAuthStateChanged(auth, async (user) => {
-  if(user){
-    try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
+  if(!user){
+    currentUser = null;
+    if(authBox) authBox.style.display = "";
+    if(sendAreaEl) sendAreaEl.style.display = "none";
+    if(profileBoxEl) profileBoxEl.style.display = "none";
+    if(messagesEl) messagesEl.innerHTML = "";
+    if(userDocUnsub){ userDocUnsub(); userDocUnsub=null; }
+    if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }
+    return;
+  }
 
-    // ensure user doc exists
-    const userRef = doc(db, "users", user.uid);
-    let snap = await getDoc(userRef);
-    if(!snap.exists()){
-      await setDoc(userRef, {
-        chatId: generateGuestName(),
-        chatIdLower: (generateGuestName()).toLowerCase(),
-        stars: 100,
-        cash: 0,
-        usernameColor: randomColor(),
-        lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false,
-        lastStarReset: Date.now(),
-        blockSend: false,
-        kicked: false,
-        chatTimeoutUntil: 0
-      });
-      snap = await getDoc(userRef);
+  try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
+
+  const userRef = doc(db, "users", user.uid);
+  let snap = await getDoc(userRef);
+  if(!snap.exists()){
+    await setDoc(userRef, {
+      chatId: generateGuestName(),
+      chatIdLower: (generateGuestName()).toLowerCase(),
+      stars: 100,
+      cash: 0,
+      usernameColor: randomColor(),
+      lastColorDate: new Date().toISOString().split("T")[0],
+      isAdmin: false,
+      lastStarReset: Date.now()
+    });
+    snap = await getDoc(userRef);
+  }
+  let userData = snap.exists()? snap.data() : {};
+
+  await assignDailyUsernameColor(userRef, userData);
+
+  currentUser = {
+    uid: user.uid,
+    chatId: userData.chatId || user.displayName || generateGuestName(),
+    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
+    stars: userData.stars || 0,
+    cash: userData.cash || 0,
+    usernameColor: userData.usernameColor || randomColor(),
+    isAdmin: userData.isAdmin || false
+  };
+
+  // -------- Chat ID modal for first-time users --------
+  if(!userData?.chatId){
+    const chosen = await promptForChatIDModal(userRef, userData);
+    if(chosen){
+      currentUser.chatId = chosen;
+      currentUser.chatIdLower = chosen.toLowerCase();
     }
-    let userData = snap.exists() ? snap.data() : {};
+  }
 
-    // ensure daily color
-    await assignDailyUsernameColor(userRef, userData);
+  // -------- UI updates --------
+  if(authBox) authBox.style.display = "none";
+  if(sendAreaEl) sendAreaEl.style.display = "flex";
+  if(profileBoxEl) profileBoxEl.style.display = "block";
+  if(profileNameEl){
+    profileNameEl.innerText = currentUser.chatId;
+    profileNameEl.style.color = currentUser.usernameColor;
+  }
+  if(starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+  if(cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
 
-    // set currentUser object
-    currentUser = {
-      uid: user.uid,
-      chatId: userData.chatId || user.displayName || generateGuestName(),
-      chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
-      stars: userData.stars || 0,
-      cash: userData.cash || 0,
-      usernameColor: userData.usernameColor || randomColor(),
-      isAdmin: userData.isAdmin || false,
-      blockSend: userData.blockSend || false,
-      kicked: userData.kicked || false,
-      chatTimeoutUntil: userData.chatTimeoutUntil || 0
-    };
-
-    // Show Chat ID modal **blocking** for first-time users
-    if(!userData?.chatId) {
-      const chosen = await promptForChatIDModal(userRef, userData);
-      if (chosen) {
-        currentUser.chatId = chosen;
-        currentUser.chatIdLower = chosen.toLowerCase();
-      }
+  // -------- Admin controls --------
+  if(adminControlsEl){
+    if(currentUser.isAdmin){
+      adminControlsEl.style.display = "flex";
+      setupAdminControls();
+    } else {
+      adminControlsEl.style.display = "none";
     }
+  }
 
-    // UI show/hide
-    if(helloEl) helloEl.style.display = "none";
-    if(authBox) authBox.style.display = "none";
-    if(sendAreaEl) sendAreaEl.style.display = "flex";
-    if(profileBoxEl) profileBoxEl.style.display = "block";
-    if(profileNameEl) {
-      profileNameEl.innerText = currentUser.chatId;
-      profileNameEl.style.color = currentUser.usernameColor;
-    }
-    if(starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if(cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-
-    // listen to user doc for live updates
-    if(userDocUnsub) userDocUnsub();
-    userDocUnsub = onSnapshot(userRef, (uSnap) => {
-      const d = uSnap.data() || {};
-      currentUser.stars = d.stars || 0;
-      currentUser.cash = d.cash || 0;
-      currentUser.blockSend = d.blockSend || false;
-      currentUser.kicked = d.kicked || false;
-      currentUser.chatTimeoutUntil = d.chatTimeoutUntil || 0;
-      if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-      if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-      if(d.usernameColor){
-        if(profileNameEl) profileNameEl.style.color = d.usernameColor;
-        userColors[userRef.id] = d.usernameColor;
-      }
-      // enforce kick
-      if(currentUser.kicked){
-        alert("You have been kicked by an admin.");
-        auth.signOut().catch(()=>{});
+  // -------- Messages listener (no-flicker) --------
+  if(messagesUnsub) messagesUnsub();
+  const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
+  messagesUnsub = onSnapshot(messagesQuery, (snapshot)=>{
+    snapshot.docChanges().forEach(change=>{
+      const m = change.doc.data();
+      if(change.type==="added"){
+        lastMessagesArray.push({id:change.doc.id,data:m});
+        renderMessagesFromArray(lastMessagesArray);
+      } else if(change.type==="modified"){
+        const idx = lastMessagesArray.findIndex(x=>x.id===change.doc.id);
+        if(idx>=0) lastMessagesArray[idx].data = m;
+        renderMessagesFromArray(lastMessagesArray);
       }
     });
+  });
+});
 
-    /* ---------- Admin controls ---------- */
-    if(adminControlsEl){
-      if(currentUser.isAdmin){
-        adminControlsEl.style.display = "flex";
+// ---------- ADMIN FUNCTIONS ----------
+function setupAdminControls(){
+  const userSelect = document.getElementById("adminUserSelect");
+  const userSearch = document.getElementById("adminUserSearch");
 
-        // Give / reset stars & cash
-        adminGiveStarsBtn && (adminGiveStarsBtn.onclick = async () => {
-          const amount = parseInt(prompt("Enter stars to give to all users:", "100")) || 0;
-          if(amount <=0) return;
-          const q = await getDocs(collection(db,"users"));
-          const batch = writeBatch(db);
-          q.forEach(u=> batch.update(doc(db,"users",u.id),{stars: increment(amount)}));
-          await batch.commit();
-          showStarPopup(`Gave ${amount} stars to all users`);
-        });
-        adminResetStarsBtn && (adminResetStarsBtn.onclick = async () => {
-          if(!confirm("Reset all users' stars to 0?")) return;
-          const q = await getDocs(collection(db,"users"));
-          const batch = writeBatch(db);
-          q.forEach(u=> batch.update(doc(db,"users",u.id),{stars:0}));
-          await batch.commit();
-          showStarPopup("Stars reset for all users");
-        });
-        adminGiveCashBtn && (adminGiveCashBtn.onclick = async () => {
-          const amount = parseInt(prompt("Enter cash to give to all users:", "1000")) || 0;
-          if(amount <= 0) return;
-          const q = await getDocs(collection(db,"users"));
-          const batch = writeBatch(db);
-          q.forEach(u=> batch.update(doc(db,"users",u.id),{cash: increment(amount)}));
-          await batch.commit();
-          showStarPopup(`Gave ₦${amount} to all users`);
-        });
-        adminResetCashBtn && (adminResetCashBtn.onclick = async () => {
-          if(!confirm("Reset all users' cash to 0?")) return;
-          const q = await getDocs(collection(db,"users"));
-          const batch = writeBatch(db);
-          q.forEach(u=> batch.update(doc(db,"users",u.id),{cash:0}));
-          await batch.commit();
-          showStarPopup("Cash reset for all users");
-        });
+  async function refreshUserSelect(){
+    if(!userSelect) return;
+    userSelect.innerHTML = `<option value="">Select user...</option>`;
+    const snap = await getDocs(collection(db,"users"));
+    snap.forEach(d=>{
+      const data = d.data();
+      const name = data.chatId || "Guest";
+      const opt = document.createElement("option");
+      opt.value = d.id;
+      opt.innerText = name;
+      userSelect.appendChild(opt);
+    });
+  }
+  refreshUserSelect();
 
-        // Clear messages
-        adminClearMessagesBtn && (adminClearMessagesBtn.onclick = async () => {
-          if(!confirm("Clear ALL messages in this room?")) return;
-          const snapMsgs = await getDocs(collection(db, CHAT_COLLECTION));
-          const batch = writeBatch(db);
-          snapMsgs.forEach(m => batch.delete(doc(db, CHAT_COLLECTION, m.id)));
-          await batch.commit();
-          if(messagesEl) messagesEl.innerHTML = "";
-          showStarPopup("All messages cleared");
-        });
+  userSearch?.addEventListener("input", async ()=>{
+    const val = userSearch.value.trim().toLowerCase();
+    if(!val) return refreshUserSelect();
+    const q = query(collection(db,"users"), where("chatIdLower","==",val));
+    const snap = await getDocs(q);
+    if(!userSelect) return;
+    userSelect.innerHTML = `<option value="">Select user...</option>`;
+    snap.forEach(d=>{
+      const data=d.data();
+      const opt=document.createElement("option");
+      opt.value=d.id;
+      opt.innerText=data.chatId || "Guest";
+      userSelect.appendChild(opt);
+    });
+  });
 
-        // Admin user search & select
-        const adminUserSelect = document.getElementById("adminUserSelect");
-        const adminUserSearch = document.getElementById("adminUserSearch");
-        if(adminUserSearch){
-          adminUserSearch.addEventListener("input", async () => {
-            const filter = adminUserSearch.value.toLowerCase();
-            if(!adminUserSelect) return;
-            adminUserSelect.innerHTML = `<option value="">Select user...</option>`;
-            const snap = await getDocs(collection(db,"users"));
-            snap.forEach(docSnap=>{
-              const d = docSnap.data();
-              if((d.chatId || "").toLowerCase().includes(filter)){
-                adminUserSelect.innerHTML += `<option value="${docSnap.id}">${d.chatId || docSnap.id}</option>`;
-              }
-            });
-          });
-        }
-
-        // Delete message
-        adminDeleteMsgBtn && (adminDeleteMsgBtn.onclick = async () => {
-          const msgId = prompt("Enter message ID to delete:");
-          if(!msgId) return;
-          await deleteDoc(doc(db, CHAT_COLLECTION, msgId));
-          const msgEl = document.getElementById(msgId);
-          if(msgEl) msgEl.remove();
-          showStarPopup(`Message ${msgId} deleted`);
-        });
-
-        // Kick user
-        adminKickUserBtn && (adminKickUserBtn.onclick = async () => {
-          const targetUid = adminUserSelect?.value;
-          if(!targetUid) return alert("Select a user first");
-          await updateDoc(doc(db,"users",targetUid),{kicked:true});
-          showStarPopup(`User kicked`);
-        });
-
-        // Block send/buzz
-        adminBlockSendBtn && (adminBlockSendBtn.onclick = async () => {
-          const targetUid = adminUserSelect?.value;
-          if(!targetUid) return alert("Select a user first");
-          await updateDoc(doc(db,"users",targetUid),{blockSend:true});
-          showStarPopup(`User blocked from sending/buzzing`);
-        });
-
-        // Set chat timeout
-        adminSetTimeoutBtn && (adminSetTimeoutBtn.onclick = async () => {
-          const targetUid = adminUserSelect?.value;
-          if(!targetUid) return alert("Select a user first");
-          const timeoutSec = parseInt(prompt("Timeout duration in seconds:", "10")) || 0;
-          await updateDoc(doc(db,"users",targetUid),{chatTimeoutUntil: Date.now() + timeoutSec*1000});
-          showStarPopup(`User in timeout for ${timeoutSec} sec`);
-        });
-
-      } else {
-        adminControlsEl.style.display = "none";
-        [adminGiveStarsBtn,adminResetStarsBtn,adminGiveCashBtn,adminResetCashBtn,adminClearMessagesBtn,
-         adminDeleteMsgBtn,adminKickUserBtn,adminBlockSendBtn,adminSetTimeoutBtn].forEach(b=>b&& (b.onclick=null));
-      }
+  // ------- Give / Reset Stars & Cash --------
+  document.getElementById("adminGiveStarsBtn")?.addEventListener("click", async ()=>{
+    const amount = parseInt(prompt("Stars to give:","100"))||0;
+    if(amount<=0) return;
+    const uid = userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{stars: increment(amount)});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{stars: increment(amount)}));
+      await batch.commit();
     }
+  });
 
+  document.getElementById("adminResetStarsBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Reset stars to 0?")) return;
+    const uid=userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{stars:0});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{stars:0}));
+      await batch.commit();
+    }
+  });
+
+  document.getElementById("adminGiveCashBtn")?.addEventListener("click", async ()=>{
+    const amount=parseInt(prompt("Cash to give:","1000"))||0;
+    if(amount<=0) return;
+    const uid = userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{cash: increment(amount)});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash: increment(amount)}));
+      await batch.commit();
+    }
+  });
+
+  document.getElementById("adminResetCashBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Reset cash to 0?")) return;
+    const uid=userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{cash:0});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash:0}));
+      await batch.commit();
+    }
+  });
+
+  // ------- Clear Messages --------
+  document.getElementById("adminClearMessagesBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Clear ALL messages in this room?")) return;
+    const snapMsgs = await getDocs(collection(db, CHAT_COLLECTION));
+    const batch = writeBatch(db);
+    snapMsgs.forEach(m=> batch.delete(doc(db, CHAT_COLLECTION, m.id)));
+    await batch.commit();
+    if(messagesEl) messagesEl.innerHTML="";
+  });
+
+  // ------- Delete Msg / Kick / Block / Timeout (basic placeholders) -------
+  document.getElementById("adminDeleteMsgBtn")?.addEventListener("click", async ()=>{
+    const msgId = prompt("Enter message ID to delete:");
+    if(!msgId) return;
+    await deleteDoc(doc(db, CHAT_COLLECTION, msgId));
+    lastMessagesArray = lastMessagesArray.filter(m=> m.id!==msgId);
+    renderMessagesFromArray(lastMessagesArray);
+  });
+
+  document.getElementById("adminKickUserBtn")?.addEventListener("click", async ()=>{
+    const uid = userSelect.value;
+    if(!uid) return alert("Select a user to kick");
+    await rtdbSet(rtdbRef(rtdb, `kicked/${ROOM_ID}/${uid}`), true);
+    alert("User kicked (block from chat) until refresh");
+  });
+
+  document.getElementById("adminBlockSendBtn")?.addEventListener("click", ()=>{
+    window.chatBlocked = !window.chatBlocked;
+    alert(window.chatBlocked?"Send/Buzz blocked":"Send/Buzz unblocked");
+  });
+
+  document.getElementById("adminSetTimeoutBtn")?.addEventListener("click", ()=>{
+    const sec=parseInt(prompt("Set chat timeout seconds per user:","10"))||0;
+    window.chatTimeoutSec=sec;
+    alert(`Users can now only send one message every ${sec} seconds`);
+  });
+}
     /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
     if(messagesUnsub) messagesUnsub();
     const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
