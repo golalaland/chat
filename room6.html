@@ -288,35 +288,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
 .buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
 @keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
-/* Generic BUZZ look */
-.buzz-message {
-  border-left: 4px solid yellow;
-  padding: 8px;
-  border-radius: 6px;
-  font-weight: bold;
-  color: #fff;  /* default text color (can be overridden) */
-}
-
-/* Animate when BUZZ first appears */
-.buzz-message.new {
-  animation: buzzShake 0.6s ease-in-out, buzzFlash 0.6s ease-in-out;
-}
-
-@keyframes buzzShake {
-  0%   { transform: translateX(0); }
-  20%  { transform: translateX(-4px); }
-  40%  { transform: translateX(4px); }
-  60%  { transform: translateX(-4px); }
-  80%  { transform: translateX(4px); }
-  100% { transform: translateX(0); }
-}
-
-@keyframes buzzFlash {
-  0%   { filter: brightness(1); }
-  50%  { filter: brightness(1.5); }
-  100% { filter: brightness(1); }
-}
-
 
 /* profile glass bar */
 .profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
@@ -499,8 +470,8 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
 /* ---------- Room Collection ---------- */
-const ROOM_ID = "room6";
-const CHAT_COLLECTION = "messages_room6";
+const ROOM_ID = "room5";
+const CHAT_COLLECTION = "messages_room5";
 
 /* ---------- State & constants ---------- */
 let currentUser = null;        // { uid, chatId, chatIdLower, stars, cash, usernameColor, isAdmin }
@@ -595,7 +566,8 @@ async function assignDailyUsernameColor(userRef, data){
   }
 }
 
-/* ---------- Chat ID modal (case-insensitive uniqueness, no reload) ---------- */
+/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
+/* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
 async function promptForChatIDModal(userRef, userData){
   if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
   if(userData?.chatId) return userData.chatId;
@@ -634,9 +606,9 @@ async function promptForChatIDModal(userRef, userData){
         return;
       }
 
-      // hide modal and show typing area — DO NOT reload page (was breaking auth / video)
       chatIDModal.style.display = "none";
       if(sendAreaEl) sendAreaEl.style.display = "flex";
+      location.reload(); // 🔥 refresh so it reflects instantly
       resolve(chosenID);
     };
   });
@@ -806,6 +778,7 @@ setInterval(async () => {
 }, 60000);
 
 /* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
+/* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
 onAuthStateChanged(auth, async (user) => {
   if(!user){
     currentUser = null;
@@ -889,62 +862,52 @@ if(adminControlsEl) {
     document.getElementById("adminUserSelectContainer").style.display = "none";
   }
 }
+  /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
+  if(messagesUnsub) messagesUnsub();
+  const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
+  messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
+    snapshot.docChanges().forEach(change => {
+      const m = change.doc.data();
+      if (change.type === "added") {
+        lastMessagesArray.push({ id: change.doc.id, data: m });
+        if(messagesEl){
+          const wrapper = document.createElement("div");
+          wrapper.className = "msg";
+          wrapper.id = change.doc.id;
 
-/* ---------- Messages listener (no-flicker, incremental updates) ---------- */
-if(messagesUnsub) messagesUnsub();
-const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
-messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
-  snapshot.docChanges().forEach(change => {
-    const m = change.doc.data();
-    if (change.type === "added") {
-      lastMessagesArray.push({ id: change.doc.id, data: m });
-      if(messagesEl){
-        const wrapper = document.createElement("div");
-        wrapper.className = "msg";
-        wrapper.id = change.doc.id;
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = (m.chatId || "Guest") + ":";
+          meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+          meta.style.marginRight = "4px";
 
-        const meta = document.createElement("span");
-        meta.className = "meta";
-        meta.textContent = (m.chatId || "Guest") + ":";
-        meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
-        meta.style.marginRight = "4px";
+          const content = document.createElement("span");
+          content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+          content.textContent = " " + (m.content || "");
+          if (m.buzzColor) content.style.background = m.buzzColor;
+          if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
 
-        const content = document.createElement("span");
-        content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-        content.textContent = " " + (m.content || "");
-        if (m.buzzColor) content.style.background = m.buzzColor;
-        if (m.highlight) { 
-          content.style.color = "#000"; 
-          content.style.fontWeight = "700"; 
+          wrapper.appendChild(meta);
+          wrapper.appendChild(content);
+          messagesEl.appendChild(wrapper);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
         }
-
-        wrapper.appendChild(meta);
-        wrapper.appendChild(content);
-        messagesEl.appendChild(wrapper);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-
-        // 🔥 BUZZ animation only when new highlighted message arrives
-        if (m.highlight && content) {
-          content.classList.add("buzz-message", "new");
-          setTimeout(() => {
-            content.classList.remove("new");
-          }, 700);
+      } else if (change.type === "modified") {
+        const msgEl = document.getElementById(change.doc.id);
+        if(msgEl){
+          const contentEl = msgEl.querySelector(".content");
+          contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+          contentEl.textContent = " " + (m.content || "");
+          contentEl.style.background = m.buzzColor || "";
+          contentEl.style.color = m.highlight ? "#000" : "";
+          contentEl.style.fontWeight = m.highlight ? "700" : "";
         }
+        const idx = lastMessagesArray.findIndex(x=>x.id===change.doc.id);
+        if(idx>=0) lastMessagesArray[idx].data = m;
       }
-    } else if (change.type === "modified") {
-      const msgEl = document.getElementById(change.doc.id);
-      if(msgEl){
-        const contentEl = msgEl.querySelector(".content");
-        contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-        contentEl.textContent = " " + (m.content || "");
-        contentEl.style.background = m.buzzColor || "";
-        contentEl.style.color = m.highlight ? "#000" : "";
-        contentEl.style.fontWeight = m.highlight ? "700" : "";
-      }
-      const idx = lastMessagesArray.findIndex(x=>x.id===change.doc.id);
-      if(idx>=0) lastMessagesArray[idx].data = m;
-    }
+    });
   });
+
 });
 
 /* ---------- ADMIN FUNCTIONS ---------- */
@@ -1120,17 +1083,13 @@ const videos = [
 ];
 let currentVideoIndex = 0;
 function loadVideo(index) {
-  try {
-    if (!videoPlayer) return;
-    if (index < 0) index = videos.length - 1;
-    if (index >= videos.length) index = 0;
-    currentVideoIndex = index;
-    videoPlayer.src = videos[currentVideoIndex];
-    videoPlayer.muted = true;
-    videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
-  } catch (err) {
-    console.error("Video load error:", err);
-  }
+  if (!videoPlayer) return;
+  if (index < 0) index = videos.length - 1;
+  if (index >= videos.length) index = 0;
+  currentVideoIndex = index;
+  videoPlayer.src = videos[currentVideoIndex];
+  videoPlayer.muted = true;
+  videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
 }
 document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
@@ -1138,6 +1097,3 @@ videoPlayer?.addEventListener("click", () => { if(videoPlayer) videoPlayer.muted
 loadVideo(0);
 
 </script>
-
-</body>
-</html>
