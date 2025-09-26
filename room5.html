@@ -821,6 +821,7 @@ onAuthStateChanged(auth, async (user) => {
     usernameColor: userData.usernameColor || randomColor(),
     isAdmin: userData.isAdmin || false
   };
+  
 
   // -------- Chat ID modal for first-time users --------
   if(!userData?.chatId){
@@ -851,7 +852,16 @@ onAuthStateChanged(auth, async (user) => {
       adminControlsEl.style.display = "none";
     }
   }
-
+if(adminControlsEl) {
+  if(currentUser.isAdmin){
+    adminControlsEl.style.display = "flex";
+    document.getElementById("adminUserSelectContainer").style.display = "block";
+    setupAdminControls();
+  } else {
+    adminControlsEl.style.display = "none";
+    document.getElementById("adminUserSelectContainer").style.display = "none";
+  }
+}
   /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
   if(messagesUnsub) messagesUnsub();
   const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
