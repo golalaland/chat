@@ -1096,24 +1096,7 @@ document.getElementById("next")?.addEventListener("click", () => loadVideo(curre
 videoPlayer?.addEventListener("click", () => { if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; });
 loadVideo(0);
 // 🔥 Auto-fade prev/next buttons after 5s
-document.addEventListener("DOMContentLoaded", () => {
-  const prevBtn = document.getElementById("prev");
-  const nextBtn = document.getElementById("next");
-
-  if (prevBtn && nextBtn) {
-    // Make sure they're visible first
-    prevBtn.style.opacity = "1";
-    nextBtn.style.opacity = "1";
-    prevBtn.style.transition = "opacity 1s ease";
-    nextBtn.style.transition = "opacity 1s ease";
-
-    setTimeout(() => {
-      prevBtn.style.opacity = "0";
-      nextBtn.style.opacity = "0";
-    }, 5000);
-  }
-});
-document.addEventListener("DOMContentLoaded", () => {
+addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("video-container");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
@@ -1122,8 +1105,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   if (isMobile && container && prevBtn && nextBtn) {
+    // Ensure visible at start
+    prevBtn.style.opacity = "1";
+    nextBtn.style.opacity = "1";
+
     container.addEventListener("click", () => {
-      // Show buttons
+      // Show again on tap
       prevBtn.style.opacity = "1";
       nextBtn.style.opacity = "1";
       prevBtn.style.pointerEvents = "auto";
