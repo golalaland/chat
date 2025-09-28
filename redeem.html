@@ -28,7 +28,7 @@ h2{
 }
 img#girlImage{
   width:100%;
-  max-width:400px;
+  max-width:300px; /* reduced size */
   height:auto;
   margin:0 auto 20px auto;
   border-radius:15px;
@@ -77,34 +77,26 @@ button:hover{
   background:linear-gradient(45deg,#ff66aa,#ff3399);
 }
 
-/* VIP Perks Tabs */
+/* VIP Perks stacked sections */
 #vipPerks{
-  text-align:center;
   max-width:400px;
   margin:30px auto;
-  padding:15px;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+.perksBox{
   background:#111;
   border-radius:15px;
-}
-.tabButtons{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin-bottom:15px;
-}
-.tabBtn{
-  padding:10px 20px;
-  background:#222;
-  border:none;
-  border-radius:10px;
-  color:#fff;
-  cursor:pointer;
-  transition:0.2s;
-}
-.tabBtn:hover{background:#ff66aa;}
-.tabContent{
-  color:#ccc;
+  padding:15px;
   text-align:center;
+}
+.perksBox h3{
+  color:#ff66aa;
+  margin-bottom:10px;
+}
+.perksBox p{
+  color:#ccc;
   line-height:1.6;
 }
 
@@ -133,7 +125,7 @@ footer a:hover{text-decoration:underline;}
 
 <h1>VIP TAB</h1>
 <h2 id="subHeader">You’re on <span id="vipUsername">{username}</span>’s VIP Tab</h2>
-<img src="https://via.placeholder.com/400x200" id="girlImage" alt="Girl Image">
+<img src="https://via.placeholder.com/300x200" id="girlImage" alt="Girl Image">
 
 <form id="vipForm">
   <label for="userName">Name</label>
@@ -144,15 +136,24 @@ footer a:hover{text-decoration:underline;}
 </form>
 
 <div id="vipPerks">
-  <div class="tabButtons">
-    <button class="tabBtn" onclick="openTab('tab1')">Perks 1</button>
-    <button class="tabBtn" onclick="openTab('tab2')">Perks 2</button>
+  <div class="perksBox">
+    <h3>Perks Section 1</h3>
+    <p>
+      Direct chat & personal connection with {username}<br>
+      Unlock premium content & behind-the-scenes media<br>
+      VIP badges & status in the community<br>
+      Access to exclusive events & rewards<br>
+      Early notifications & special surprises
+    </p>
   </div>
-  <div id="tab1" class="tabContent">
-    <p>Perks content 1 goes here...</p>
-  </div>
-  <div id="tab2" class="tabContent" style="display:none;">
-    <p>Perks content 2 goes here...</p>
+
+  <div class="perksBox">
+    <h3>Perks Section 2</h3>
+    <p>
+      Additional perks content goes here...<br>
+      You can add more VIP benefits<br>
+      Keep content engaging and enticing
+    </p>
   </div>
 </div>
 
@@ -191,7 +192,7 @@ if(girlCode){
       const data = snapshot.docs[0].data();
       document.getElementById("subHeader").textContent = 
         `You’re on ${data.name}'s VIP Tab`;
-      document.getElementById("girlImage").src = data.photoURL || "https://via.placeholder.com/400x200";
+      document.getElementById("girlImage").src = data.photoURL || "https://via.placeholder.com/300x200";
       document.getElementById("vipUsername").textContent = data.name;
     }
   });
@@ -242,12 +243,6 @@ document.getElementById("payBtn").addEventListener("click", function(){
   });
   handler.openIframe();
 });
-
-// Tab switch
-function openTab(tabId){
-  document.querySelectorAll('.tabContent').forEach(tc=>tc.style.display='none');
-  document.getElementById(tabId).style.display='block';
-}
 </script>
 </body>
 </html>
