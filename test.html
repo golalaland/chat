@@ -1,0 +1,1237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Xixi</title>
+<link rel="icon" href="data:," />
+<style>
+:root{
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
+  --accent:#FF1493;
+  --glass: rgba(255,255,255,0.03);
+}
+#videoWrapper .nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+  position: absolute;
+  bottom: 6px; /* overlay near bottom of video */
+  width: 100%;
+  pointer-events: auto;
+}
+
+#videoWrapper .nav-buttons button {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,20,147,0.2);
+  background: rgba(30,30,30,0.7);
+  color: var(--accent);
+  cursor: pointer;
+}
+#videoWrapper .nav-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(255,20,147,0.3);
+}
+#videoWrapper {
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111;
+
+  /* NEW: make sticky */
+  position: sticky;
+  top: 0;
+  z-index: 50; /* make sure it’s above messages but below popups like stars */
+}
+
+/* Video container inside wrapper */
+#videoContainer {
+  width: 100%;
+  height: 100%;       /* fill the wrapper */
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 10;
+}
+#prev { left: 5px; }
+#next { right: 5px; }
+  /* Minimal, almost invisible Prev/Next buttons */
+  #prevBtn, #nextBtn {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.05); /* very subtle */
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    opacity: 0;               /* invisible by default */
+    transition: opacity 0.3s ease;
+  }
+
+  #prevBtn:hover, #nextBtn:hover,
+  #prevBtn.active, #nextBtn.active {
+    opacity: 0.8;             /* appear on hover or when active */
+    cursor: pointer;
+  }
+
+  #prevBtn { left: 10px; }
+  #nextBtn { right: 10px; }
+/* overall layout */
+html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
+.room-desc{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
+#greeting{font-size:13px;text-align:center;font-weight:600;margin-bottom:6px;color:var(--accent);}
+#helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
+#center{flex:1;display:flex;flex-direction:column;gap:6px;}
+
+/* Sticky video wrapper */
+#videoPlayerWrapper {
+  position: fixed;
+  top: 10px; /* distance from top */
+  right: 10px; /* or left: 50%; transform: translateX(-50%) for center */
+  width: 320px;
+  height: 180px;
+  z-index: 999;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  background: #111;
+}
+#videoPlayer {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* or contain if you prefer full visibility */
+}
+
+#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
+
+/* messages */
+/* 🔥 Chat messages container */
+/* 🔥 Chat messages container */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  background: #000;
+
+  /* ✅ give space so last message never hides behind bar */
+  margin-bottom: 70px;
+  box-sizing: border-box;
+}
+
+/* 🔥 Message bubble */
+.msg {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--glass);
+  max-width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.msg.me { background: rgba(255, 20, 147, 0.06); }
+.msg .meta {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 4px;
+  color: inherit;
+}
+.msg .content {
+  font-size: 13px;
+  color: #fff;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: inline-block;
+}
+
+/* 🔥 Keypad (chat input) - always at bottom */
+.send-area {
+  position: fixed;       
+  bottom: 0;           /* sits at the very bottom */
+  left: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  padding: 10px;
+  border-radius: 999px;  
+  box-sizing: border-box;
+  z-index: 100;           
+}
+
+/* 🔥 Chat input area */
+.send-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card, #111);
+  padding: 10px;
+  position: sticky;   /* sticky inside container */
+  bottom: 0;          /* always at bottom */
+  z-index: 10;
+  border-radius: 999px;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.send-area input {
+  flex: 1;
+  padding: 12px 16px;       /* your preferred size */
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #0e0e0e;
+  color: #fff;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.send-area input::placeholder {
+  color: var(--muted, #aaa);
+  opacity: 0.7;
+}
+
+.send-area input:focus {
+  border-color: var(--accent, #FF1493);
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
+}
+
+.send-btn {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background-color: var(--accent, #FF1493);
+  color: #000;
+  cursor: pointer;
+  font-weight: 700;
+  border: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.send-btn:hover {
+  background-color: #ff33a1;
+  transform: scale(1.05);
+}
+
+/* 🔥 Glass bar with neon accent glow under input */
+.glass-bar {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  margin-top: 6px; /* sits just under input */
+  z-index: 5;      /* stays beneath input */
+  
+  /* 🔥 Neon underglow */
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.25),
+              0 0 24px rgba(255, 20, 147, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+/* When typing/focused – stronger glow */
+.send-area:focus-within + .glass-bar {
+  transform: translateY(2px); 
+  box-shadow: 0 0 16px rgba(255, 20, 147, 0.45),
+              0 0 32px rgba(255, 20, 147, 0.25);
+}
+.buzz-content {
+  font-weight: 800;    /* really thick */
+  color: #000 !important;  /* force black text */
+  padding: 4px 6px;    /* make text breathe inside color */
+  border-radius: 4px;  /* rounded backdrop */
+  display: inline-block;
+}
+.buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
+.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
+@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
+
+/* profile glass bar */
+.profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
+.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
+.profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.profile-left{display:flex;flex-direction:column;gap:2px;}
+.profile-name{font-weight:800;}
+.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
+.profile-value{color: #fff;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight: 400;font-size: 11px;}
+.profile-value span,.profile-value .icon{margin-left:2px;}
+.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
+.small-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border: 0;color: #000;cursor: pointer;font-weight:700;font-size:12px;text-decoration: none;transition: transform .15s, box-shadow .15s;}
+.small-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 10px rgba(255,20,147,0.3);}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
+.onlineCount{font-size:11px;color:var(--muted);}
+#authBox{display:flex;justify-content:center;margin:12px 0;}
+.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;}
+.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
+.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+@media (max-width:420px){
+  .send-area input{padding:10px;font-size:13px;}
+  .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
+}
+  #adminUserSelectContainer { margin-top: 10px; }
+  #adminControls { display: none; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .profile-label { font-weight: bold; }
+  .buttons-container { display: flex; flex-wrap: wrap; gap: 6px; }
+  .small-btn { padding: 6px 12px; font-size: 14px; cursor: pointer; }
+  #adminUserSearch, #adminUserSelect { margin-top: 6px; width: 100%; padding: 6px; box-sizing: border-box; }
+/* Make sure to include Montserrat in your HTML head:
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+*/
+.room-subtitle {
+  font-size: 12px;              /* same as #helloText */
+  font-weight: 600;             /* slightly lighter than HELLO */
+  text-align: center;
+  margin-top: 4px;
+  font-family: 'Montserrat', sans-serif; /* Montserrat font */
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+  transition: color 0.2s ease;
+}
+
+.room-subtitle:hover {
+  color: #fff;                  /* subtle hover effect */
+}
+
+
+</style>
+</head>
+<body>
+<audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
+<div id="appWrapper">
+  <div class="app">
+    <div class="brand">乂丨乂丨</div>
+    <div id="greeting">✨</div>
+    <div id="center">
+    <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+<div id="videoWrapper">
+  <video id="videoPlayer" muted playsinline></video>
+  <button class="arrow" id="prev">&#10094;</button>
+  <button class="arrow" id="next">&#10095;</button>
+</div>
+      <div id="helloText" aria-live="polite">HELLO</div>
+      <div class="room-desc">Chat. Own your vibe.
+        
+<div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
+<span id="onlineCount" class="onlineCount"></span>
+
+
+      <div id="guestMsg"></div>
+      <div id="authBox">
+        <button id="googleSignInBtn" class="google-btn">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+          Sign in with Google
+        </button>
+      </div>
+      <!-- Chat ID Modal -->
+<div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
+  <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
+    <h3 style="margin-bottom:12px;color:var(--accent);">Choose your Chat ID</h3>
+    <input id="chatIDInput" type="text" placeholder="Your chat ID" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);margin-bottom:12px;font-size:16px;color:#fff;background:#111;outline:none;" />
+    <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
+  </div>
+</div>
+   <div id="center">
+  <div id="messages"></div>
+</div>
+
+<div class="send-area" id="sendArea" style="display:none;">
+  <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+  <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+  <button id="sendBtn" class="send-btn">Send</button>
+</div>
+    </div>
+    <div class="profile" id="profileBox">
+      <div class="profile-card">
+        <div class="profile-top">
+          <div class="profile-left">
+            <div id="profileName" class="profile-name">GUEST 0000</div>
+            <div>
+              <span class="profile-label">STARS COLLECTED:</span>
+              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+            </div>
+          </div>
+          <div class="profile-actions">
+            <a id="redeemBtn" class="small-btn" href="https://xixi.live" target="_blank">Redeem</a>
+            <button id="tipBtn" class="small-btn">💵</button>
+          </div>
+        </div>
+        <div>
+          <span class="profile-label">CASH EARNED:</span>
+          <span class="profile-value">₦<span id="cashCount">0</span></span>
+        </div>
+  <div id="adminUserSelectContainer">
+  <select id="adminUserSelect">
+    <option value="">Select user...</option>
+  </select>
+</div>
+
+<div id="adminControls">
+  <span class="profile-label">ADMIN CONTROLS:</span>
+  <div class="buttons-container">
+    <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
+    <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
+    <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
+    <button class="small-btn" id="adminResetCashBtn">Reset Cash</button>
+    <button class="small-btn" id="adminClearMessagesBtn">Clear Messages</button>
+    <button class="small-btn" id="adminDeleteMsgBtn">Delete Msg</button>
+    <button class="small-btn" id="adminKickUserBtn">Kick User</button>
+    <button class="small-btn" id="adminBlockSendBtn">Block Send/Buzz</button>
+    <button class="small-btn" id="adminSetTimeoutBtn">Set Chat Timeout</button>
+  </div>
+  <input type="text" id="adminUserSearch" placeholder="Search by chatID...">
+  <select id="adminUserSelect">
+    <option value="">Select user...</option>
+  </select>
+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="star-popup" id="starPopup">
+  <div id="starText">You've just earned +1 star! ⭐</div>
+</div>
+
+<script type="module">
+/* ---------- Imports (Firebase v10) ---------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  setPersistence,
+  browserLocalPersistence,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+  increment,
+  getDocs,
+  writeBatch,
+  where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getDatabase,
+  ref as rtdbRef,
+  set as rtdbSet,
+  onDisconnect,
+  onValue
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* ---------- Firebase config (fixed storageBucket) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com", // <- fixed
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
+const db = getFirestore(app);
+const rtdb = getDatabase(app);
+
+/* ---------- Room Collection ---------- */
+const ROOM_ID = "room5";
+const CHAT_COLLECTION = "messages_room5";
+
+/* ---------- State & constants ---------- */
+let currentUser = null;        // { uid, chatId, chatIdLower, stars, cash, usernameColor, isAdmin }
+let userDocUnsub = null;
+let messagesUnsub = null;
+let usersUnsub = null;
+let lastMessagesArray = [];
+const BUZZ_COST = 50;
+const AUTO_STAR_ADD = 1;
+const DAILY_STAR_CAP = 500;
+const SEND_COST = 1; // cost per send
+
+/* ---------- Helpers ---------- */
+function generateGuestName(){ return "GUEST " + Math.floor(1000 + Math.random()*9000); }
+function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format(n || 0); }
+function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
+function showStarPopup(text){ const popup = document.getElementById("starPopup"); const starText = document.getElementById("starText"); if (!popup || !starText) return; starText.innerText = text; popup.style.display = "block"; setTimeout(()=>{ popup.style.display = "none"; }, 1700); }
+
+/* ---------- UI refs (guarded) ---------- */
+const googleBtn = document.getElementById("googleSignInBtn");
+const authBox = document.getElementById("authBox");
+const messagesEl = document.getElementById("messages");
+const sendAreaEl = document.getElementById("sendArea");
+const messageInputEl = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const buzzBtn = document.getElementById("buzzBtn");
+const profileBoxEl = document.getElementById("profileBox");
+const profileNameEl = document.getElementById("profileName");
+const starCountEl = document.getElementById("starCount");
+const cashCountEl = document.getElementById("cashCount");
+const tipBtn = document.getElementById("tipBtn");
+const redeemBtn = document.getElementById("redeemBtn");
+const onlineCountEl = document.getElementById("onlineCount");
+
+const adminControlsEl = document.getElementById("adminControls");
+const adminGiveStarsBtn = document.getElementById("adminGiveStarsBtn");
+const adminResetStarsBtn = document.getElementById("adminResetStarsBtn");
+const adminGiveCashBtn = document.getElementById("adminGiveCashBtn");
+const adminResetCashBtn = document.getElementById("adminResetCashBtn");
+const adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
+
+/* ---------- Chat ID modal refs ---------- */
+const chatIDModal = document.getElementById("chatIDModal");
+const chatIDInput = document.getElementById("chatIDInput");
+const chatIDConfirmBtn = document.getElementById("chatIDConfirmBtn");
+if(chatIDInput) chatIDInput.setAttribute("maxlength","12"); // enforce typing limit
+
+/* ---------- Presence (room-scoped) ---------- */
+function setupPresence(user){
+  try{
+    if (!rtdb) return;
+    const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${user.uid}`);
+    rtdbSet(pRef, true).catch(()=>{});
+    onDisconnect(pRef).remove().catch(()=>{});
+  }catch(e){ console.warn("presence error", e); }
+}
+if (rtdb && onlineCountEl) {
+  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
+    const val = snap.val() || {};
+    onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
+  });
+}
+
+/* ---------- Keep user color map (uid -> color) ---------- */
+const userColors = {};
+function setupUsersListener(){
+  if(usersUnsub) usersUnsub();
+  usersUnsub = onSnapshot(collection(db,"users"), (snap)=>{
+    snap.forEach(d => {
+      const data = d.data() || {};
+      userColors[d.id] = data.usernameColor || "#ffffff";
+    });
+    if(lastMessagesArray?.length) renderMessagesFromArray(lastMessagesArray);
+  });
+}
+setupUsersListener(); // start non-blocking
+
+/* ---------- Daily color helper ---------- */
+async function assignDailyUsernameColor(userRef, data){
+  const today = new Date().toISOString().split("T")[0];
+  try{
+    if(!data || !data.lastColorDate || data.lastColorDate !== today){
+      const newColor = randomColor();
+      await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today });
+      userColors[userRef.id] = newColor;
+      return newColor;
+    }
+    userColors[userRef.id] = data.usernameColor || randomColor();
+    return data.usernameColor || randomColor();
+  }catch(e){
+    console.warn("assignDailyUsernameColor error", e);
+    return data?.usernameColor || randomColor();
+  }
+}
+
+/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
+/* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
+async function promptForChatIDModal(userRef, userData){
+  if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
+  if(userData?.chatId) return userData.chatId;
+
+  chatIDInput.value = "";
+  chatIDModal.style.display = "flex";
+  if(sendAreaEl) sendAreaEl.style.display = "none"; // hide typing area until chosen
+
+  return new Promise((resolve) => {
+    chatIDConfirmBtn.onclick = async () => {
+      const chosenID = chatIDInput.value.trim();
+      if (chosenID.length < 3 || chosenID.length > 12) {
+        alert("Chat ID must be between 3 and 12 characters.");
+        return;
+      }
+
+      const normalized = chosenID.toLowerCase();
+      try {
+        const q = query(collection(db, "users"), where("chatIdLower", "==", normalized));
+        const snap = await getDocs(q);
+        // allow if the only match is the current user
+        let conflict = false;
+        snap.forEach(docSnap => {
+          if(docSnap.id !== userRef.id) conflict = true;
+        });
+        if (conflict) {
+          alert("This Chat ID is already taken (case-insensitive). Please choose another.");
+          return;
+        }
+
+        // save both original and normalized
+        await updateDoc(userRef, { chatId: chosenID, chatIdLower: normalized });
+      } catch (e) {
+        console.error("Error saving chat ID:", e);
+        alert("Failed to save. Try again.");
+        return;
+      }
+
+      chatIDModal.style.display = "none";
+      if(sendAreaEl) sendAreaEl.style.display = "flex";
+      location.reload(); // 🔥 refresh so it reflects instantly
+      resolve(chosenID);
+    };
+  });
+}
+
+/* ---------- HELLO rotation ---------- */
+const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
+let helloIndex = 0;
+const helloEl = document.getElementById("helloText");
+let helloInterval = null;
+function rotateHello(){
+  if(!helloEl) {
+    if(helloInterval) clearInterval(helloInterval);
+    return;
+  }
+  if(helloEl.style.display === "none") return;
+  helloEl.style.opacity = '0';
+  setTimeout(()=> {
+    helloEl.innerText = greetings[helloIndex++ % greetings.length];
+    helloEl.style.color = randomColor();
+    helloEl.style.opacity = '1';
+  }, 220);
+}
+rotateHello();
+helloInterval = setInterval(rotateHello, 1500);
+
+/* ---------- Robust Google sign-in (popup then redirect) ---------- */
+if (googleBtn) {
+  googleBtn.addEventListener("click", async () => {
+    const provider = new GoogleAuthProvider();
+    try { await setPersistence(auth, browserLocalPersistence); } catch (pErr) { console.warn("persistence set failed", pErr); }
+    try {
+      await signInWithPopup(auth, provider);
+      return;
+    } catch (err) {
+      console.warn("signInWithPopup error:", err);
+      if (["auth/popup-blocked","auth/popup-closed-by-user","auth/cancelled-popup-request","auth/web-storage-unsupported"].includes(err.code)) {
+        try { await signInWithRedirect(auth, provider); return; }
+        catch (rErr) { console.error("redirect failed", rErr); alert("Sign-in failed: " + (rErr.message || rErr)); return; }
+      }
+      if (err.code === "auth/operation-not-allowed") {
+        alert("Enable Google sign-in in Firebase Console -> Authentication -> Sign-in method.");
+        return;
+      }
+      if (err.code === "auth/unauthorized-domain") {
+        alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
+        return;
+      }
+      alert("Sign-in failed: " + (err.message || err));
+    }
+  });
+}
+
+/* ---------- Message rendering (full redraw helper) ---------- */
+function renderMessagesFromArray(arr){
+  if(!messagesEl) return;
+  messagesEl.innerHTML = "";
+  arr.forEach(item => {
+    const m = item.data;
+    const wrapper = document.createElement("div");
+    wrapper.className = "msg";
+    wrapper.id = item.id;
+
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.textContent = (m.chatId || "Guest") + ":";
+    meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+    meta.style.marginRight = "4px";
+
+    const content = document.createElement("span");
+    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    content.textContent = " " + (m.content || "");
+    if(m.buzzColor) content.style.background = m.buzzColor;
+    if(m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
+
+    wrapper.appendChild(meta);
+    wrapper.appendChild(content);
+    messagesEl.appendChild(wrapper);
+  });
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+/* ---------- SEND (normal) ---------- */
+if (sendBtn) {
+  sendBtn.addEventListener("click", async () => {
+    if (!currentUser) { 
+      showStarPopup("Sign in to chat"); 
+      return; 
+    }
+    const txt = messageInputEl?.value.trim();
+    if (!txt) { 
+      showStarPopup("Type a message first"); 
+      return; 
+    }
+
+    // ⭐ check stars before sending
+    if ((currentUser.stars || 0) < SEND_COST) {
+      showStarPopup("Not enough stars to send a message");
+      return;
+    }
+
+    try {
+      // deduct instantly for UI
+      currentUser.stars -= SEND_COST;
+      starCountEl.textContent = currentUser.stars;
+
+      // update in Firestore
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        stars: increment(-SEND_COST)
+      });
+
+      // send the message
+      await addDoc(collection(db, CHAT_COLLECTION), {
+        content: txt,
+        uid: currentUser.uid,
+        chatId: currentUser.chatId,
+        timestamp: serverTimestamp(),
+        highlight: false,
+        buzzColor: null
+      });
+
+      if (messageInputEl) messageInputEl.value = "";
+
+    } catch (e) {
+      console.error("Send failed", e);
+      showStarPopup("Message failed to send");
+
+      // rollback stars if failed
+      currentUser.stars += SEND_COST;
+      starCountEl.textContent = currentUser.stars;
+    }
+  });
+
+  // Enter => send (unless shift)
+  if (messageInputEl) {
+    messageInputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+  }
+}
+
+/* ---------- BUZZ (typed messages only, permanent) ---------- */
+if(buzzBtn) {
+  buzzBtn.addEventListener("click", async () => {
+    if (!currentUser) { showStarPopup("Sign in to BUZZ"); return; }
+    const txt = messageInputEl?.value.trim();
+    if (!txt) { showStarPopup("Type a message to BUZZ! 🚨"); return; }
+
+    try {
+      // check & deduct stars
+      const userRef = doc(db, "users", currentUser.uid);
+      const snap = await getDoc(userRef);
+      const data = snap.exists() ? snap.data() : {};
+      const currentStars = data.stars || 0;
+      if (currentStars < BUZZ_COST) { showStarPopup("Not enough stars to create a BUZZ! 🚨"); return; }
+      await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+
+      // send highlighted message (permanent)
+      const color = randomColor();
+      await addDoc(collection(db, CHAT_COLLECTION), {
+        content: txt,
+        uid: currentUser.uid,
+        chatId: currentUser.chatId,
+        timestamp: serverTimestamp(),
+        highlight: true,
+        buzzColor: color
+      });
+
+      // feedback
+      if(messageInputEl) messageInputEl.value = "";
+      const audio = document.getElementById("buzz-sound");
+      if (audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
+      if (navigator.vibrate) navigator.vibrate([100,50,100]);
+      showStarPopup("BUZZ 🚨 sent!");
+    } catch (e) {
+      console.error("buzz failed", e);
+      showStarPopup("BUZZ failed");
+    }
+  });
+}
+
+/* ---------- Auto-star regen (server reads/writes) ---------- */
+setInterval(async () => {
+  if(!currentUser) return;
+  try{
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const data = snap.exists() ? snap.data() : {};
+    const curr = data.stars || 0;
+    if(curr < DAILY_STAR_CAP){
+      const next = Math.min(curr + AUTO_STAR_ADD, DAILY_STAR_CAP);
+      await updateDoc(userRef, { stars: next });
+    }
+  }catch(e){ /* ignore periodic errors */ }
+}, 10000);
+
+/* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
+onAuthStateChanged(auth, async (user) => {
+  const roomSubtitleEl = document.getElementById("roomSubtitle");  // 👈 added
+
+  if (!user) {
+    currentUser = null;
+    if (authBox) authBox.style.display = "";
+    if (sendAreaEl) sendAreaEl.style.display = "none";
+    if (profileBoxEl) profileBoxEl.style.display = "none";
+    if (messagesEl) messagesEl.innerHTML = "";
+    if (userDocUnsub) { userDocUnsub(); userDocUnsub = null; }
+    if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+
+    // 👇 Show sign-in subtitle again when logged out
+    if (roomSubtitleEl) roomSubtitleEl.style.display = "block";
+
+    return;
+  }
+
+  // 👇 Hide sign-in subtitle after login
+  if (roomSubtitleEl) roomSubtitleEl.style.display = "none";
+
+  try { setupPresence(user); } catch (e) { console.warn("presence err", e); }
+
+  const userRef = doc(db, "users", user.uid);
+  let snap = await getDoc(userRef);
+  if (!snap.exists()) {
+    await setDoc(userRef, {
+      chatId: generateGuestName(),
+      chatIdLower: (generateGuestName()).toLowerCase(),
+      stars: 100,
+      cash: 0,
+      usernameColor: randomColor(),
+      lastColorDate: new Date().toISOString().split("T")[0],
+      isAdmin: false,
+      lastStarReset: Date.now()
+    });
+    snap = await getDoc(userRef);
+  }
+  let userData = snap.exists() ? snap.data() : {};
+
+  await assignDailyUsernameColor(userRef, userData);
+
+  currentUser = {
+    uid: user.uid,
+    chatId: userData.chatId || user.displayName || generateGuestName(),
+    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
+    stars: userData.stars || 0,
+    cash: userData.cash || 0,
+    usernameColor: userData.usernameColor || randomColor(),
+    isAdmin: userData.isAdmin || false
+  };
+
+  // Stop previous listener if any
+  if (userDocUnsub) userDocUnsub();
+
+  // Attach new real-time listener
+  userDocUnsub = onSnapshot(userRef, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+
+    currentUser.stars = data.stars || 0;
+    currentUser.cash = data.cash || 0;
+
+    if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+  });
+
+  // -------- Chat ID modal for first-time users --------
+  if (!userData?.chatId) {
+    const chosen = await promptForChatIDModal(userRef, userData);
+    if (chosen) {
+      currentUser.chatId = chosen;
+      currentUser.chatIdLower = chosen.toLowerCase();
+    }
+  }
+});
+
+  // -------- UI updates --------
+  if(authBox) authBox.style.display = "none";
+  if(sendAreaEl) sendAreaEl.style.display = "flex";
+  if(profileBoxEl) profileBoxEl.style.display = "block";
+  if(profileNameEl){
+    profileNameEl.innerText = currentUser.chatId;
+    profileNameEl.style.color = currentUser.usernameColor;
+  }
+  if(starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+  if(cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+
+  // -------- Admin controls --------
+  if(adminControlsEl){
+    if(currentUser.isAdmin){
+      adminControlsEl.style.display = "flex";
+      setupAdminControls();
+    } else {
+      adminControlsEl.style.display = "none";
+    }
+  }
+if(adminControlsEl) {
+  if(currentUser.isAdmin){
+    adminControlsEl.style.display = "flex";
+    document.getElementById("adminUserSelectContainer").style.display = "block";
+    setupAdminControls();
+  } else {
+    adminControlsEl.style.display = "none";
+    document.getElementById("adminUserSelectContainer").style.display = "none";
+  }
+}
+  /* ---------- Messages listener (no-flicker, incremental updates) ---------- */
+  if(messagesUnsub) messagesUnsub();
+  const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
+  messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
+    snapshot.docChanges().forEach(change => {
+      const m = change.doc.data();
+      if (change.type === "added") {
+        lastMessagesArray.push({ id: change.doc.id, data: m });
+        if(messagesEl){
+          const wrapper = document.createElement("div");
+          wrapper.className = "msg";
+          wrapper.id = change.doc.id;
+
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = (m.chatId || "Guest") + ":";
+          meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
+          meta.style.marginRight = "4px";
+
+          const content = document.createElement("span");
+          content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+          content.textContent = " " + (m.content || "");
+          if (m.buzzColor) content.style.background = m.buzzColor;
+          if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
+
+          wrapper.appendChild(meta);
+          wrapper.appendChild(content);
+          messagesEl.appendChild(wrapper);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+      } else if (change.type === "modified") {
+        const msgEl = document.getElementById(change.doc.id);
+        if(msgEl){
+          const contentEl = msgEl.querySelector(".content");
+          contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+          contentEl.textContent = " " + (m.content || "");
+          contentEl.style.background = m.buzzColor || "";
+          contentEl.style.color = m.highlight ? "#000" : "";
+          contentEl.style.fontWeight = m.highlight ? "700" : "";
+        }
+        const idx = lastMessagesArray.findIndex(x=>x.id===change.doc.id);
+        if(idx>=0) lastMessagesArray[idx].data = m;
+      }
+    });
+  });
+
+});
+
+/* ---------- ADMIN FUNCTIONS ---------- */
+function setupAdminControls(){
+  const userSelect = document.getElementById("adminUserSelect");
+  const userSearch = document.getElementById("adminUserSearch");
+
+  async function refreshUserSelect(){
+    if(!userSelect) return;
+    userSelect.innerHTML = `<option value="">Select user...</option>`;
+    const snap = await getDocs(collection(db,"users"));
+    snap.forEach(d=>{
+      const data = d.data();
+      const name = data.chatId || "Guest";
+      const opt = document.createElement("option");
+      opt.value = d.id;
+      opt.innerText = name;
+      userSelect.appendChild(opt);
+    });
+  }
+  refreshUserSelect();
+
+  userSearch?.addEventListener("input", async ()=>{
+    const val = userSearch.value.trim().toLowerCase();
+    if(!val) return refreshUserSelect();
+    const q = query(collection(db,"users"), where("chatIdLower","==",val));
+    const snap = await getDocs(q);
+    if(!userSelect) return;
+    userSelect.innerHTML = `<option value="">Select user...</option>`;
+    snap.forEach(d=>{
+      const data=d.data();
+      const opt=document.createElement("option");
+      opt.value=d.id;
+      opt.innerText=data.chatId || "Guest";
+      userSelect.appendChild(opt);
+    });
+  });
+
+  // ------- Give / Reset Stars & Cash --------
+  document.getElementById("adminGiveStarsBtn")?.addEventListener("click", async ()=>{
+    const amount = parseInt(prompt("Stars to give:","100"))||0;
+    if(amount<=0) return;
+    const uid = userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{stars: increment(amount)});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{stars: increment(amount)}));
+      await batch.commit();
+    }
+  });
+
+  document.getElementById("adminResetStarsBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Reset stars to 0?")) return;
+    const uid=userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{stars:0});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{stars:0}));
+      await batch.commit();
+    }
+  });
+
+  document.getElementById("adminGiveCashBtn")?.addEventListener("click", async ()=>{
+    const amount=parseInt(prompt("Cash to give:","1000"))||0;
+    if(amount<=0) return;
+    const uid = userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{cash: increment(amount)});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash: increment(amount)}));
+      await batch.commit();
+    }
+  });
+
+  document.getElementById("adminResetCashBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Reset cash to 0?")) return;
+    const uid=userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{cash:0});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash:0}));
+      await batch.commit();
+    }
+  });
+
+  // ------- Clear Messages --------
+  document.getElementById("adminClearMessagesBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Clear ALL messages in this room?")) return;
+    const snapMsgs = await getDocs(collection(db, CHAT_COLLECTION));
+    const batch = writeBatch(db);
+    snapMsgs.forEach(m=> batch.delete(doc(db, CHAT_COLLECTION, m.id)));
+    await batch.commit();
+    if(messagesEl) messagesEl.innerHTML="";
+  });
+
+  // ------- Delete Msg / Kick / Block / Timeout -------
+  document.getElementById("adminDeleteMsgBtn")?.addEventListener("click", async ()=>{
+    const msgId = prompt("Enter message ID to delete:");
+    if(!msgId) return;
+    await deleteDoc(doc(db, CHAT_COLLECTION, msgId));
+    lastMessagesArray = lastMessagesArray.filter(m=> m.id!==msgId);
+    renderMessagesFromArray(lastMessagesArray);
+  });
+
+  document.getElementById("adminKickUserBtn")?.addEventListener("click", async ()=>{
+    const uid = userSelect.value;
+    if(!uid) return alert("Select a user to kick");
+    await rtdbSet(rtdbRef(rtdb, `kicked/${ROOM_ID}/${uid}`), true);
+    alert("User kicked (block from chat) until refresh");
+  });
+
+  document.getElementById("adminBlockSendBtn")?.addEventListener("click", ()=>{
+    window.chatBlocked = !window.chatBlocked;
+    alert(window.chatBlocked?"Send/Buzz blocked":"Send/Buzz unblocked");
+  });
+
+  document.getElementById("adminSetTimeoutBtn")?.addEventListener("click", ()=>{
+    const sec=parseInt(prompt("Set chat timeout seconds per user:","10"))||0;
+    window.chatTimeoutSec=sec;
+    alert(`Users can now only send one message every ${sec} seconds`);
+  });
+
+}
+
+/* ---------- Send/Buzz handler with timeout & block ---------- */
+const lastSentTime = {}; // tracks per-user last message
+
+async function handleSendMessage(content){
+  if(!currentUser) return;
+  const uid = currentUser.uid;
+
+  // Blocked globally
+  if(window.chatBlocked){
+    alert("Chat send/buzz is currently blocked by admin!");
+    return;
+  }
+
+  // Timeout per user
+  const now = Date.now();
+  const timeoutSec = window.chatTimeoutSec || 0;
+  if(timeoutSec > 0 && lastSentTime[uid]){
+    const diffSec = (now - lastSentTime[uid]) / 1000;
+    if(diffSec < timeoutSec){
+      alert(`You must wait ${Math.ceil(timeoutSec - diffSec)} more seconds before sending again.`);
+      return;
+    }
+  }
+
+  // Send message
+  await addDoc(collection(db, CHAT_COLLECTION), {
+    uid,
+    chatId: currentUser.chatId,
+    content,
+    timestamp: serverTimestamp()
+  });
+
+  lastSentTime[uid] = now;
+}
+/* ---------- Video navigation (fixed) ---------- */
+/* ---------- Video navigation (fixed) ---------- */
+const videoPlayer = document.getElementById("videoPlayer");
+const videos = [
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
+];
+let currentVideoIndex = 0;
+
+function loadVideo(index) {
+  if (!videoPlayer) return;
+  if (index < 0) index = videos.length - 1;
+  if (index >= videos.length) index = 0;
+  currentVideoIndex = index;
+  videoPlayer.src = videos[currentVideoIndex];
+  videoPlayer.muted = true;
+  videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+}
+
+// prev/next click
+document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+// toggle mute on click
+videoPlayer?.addEventListener("click", () => { 
+  if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; 
+});
+
+loadVideo(0);
+
+// ---------- Auto fade logic ----------
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("video-container");
+  const prevBtn = document.getElementById("prev");
+  const nextBtn = document.getElementById("next");
+  if (!container || !prevBtn || !nextBtn) return;
+
+  // Transition setup
+  prevBtn.style.transition = "opacity 0.6s ease";
+  nextBtn.style.transition = "opacity 0.6s ease";
+
+  // Show at start
+  prevBtn.style.opacity = "1";
+  nextBtn.style.opacity = "1";
+
+  let hideTimeout;
+
+  function showButtons() {
+    prevBtn.style.opacity = "1";
+    nextBtn.style.opacity = "1";
+    prevBtn.style.pointerEvents = "auto";
+    nextBtn.style.pointerEvents = "auto";
+
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      prevBtn.style.opacity = "0";
+      nextBtn.style.opacity = "0";
+      prevBtn.style.pointerEvents = "none";
+      nextBtn.style.pointerEvents = "none";
+    }, 3000); // auto-hide after 3s
+  }
+
+  // Desktop: show on hover
+  container.addEventListener("mouseenter", showButtons);
+  container.addEventListener("mousemove", showButtons);
+  container.addEventListener("mouseleave", () => {
+    prevBtn.style.opacity = "0";
+    nextBtn.style.opacity = "0";
+  });
+
+  // Mobile: show on tap
+  container.addEventListener("click", showButtons);
+
+  // Initial auto-hide
+  hideTimeout = setTimeout(() => {
+    prevBtn.style.opacity = "0";
+    nextBtn.style.opacity = "0";
+    prevBtn.style.pointerEvents = "none";
+    nextBtn.style.pointerEvents = "none";
+  }, 3000);
+});
+</script>
