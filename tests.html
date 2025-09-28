@@ -102,6 +102,17 @@
 
   #prevBtn { left: 10px; }
   #nextBtn { right: 10px; }
+  
+  .arrow {
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.arrow.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+  
 /* overall layout */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
@@ -1297,4 +1308,28 @@ document.addEventListener("DOMContentLoaded", () => {
     nextBtn.style.pointerEvents = "none";
   }, 3000);
 });
+const video = document.getElementById("videoPlayer");
+const navButtons = document.querySelectorAll(".arrow");
+let fadeTimeout;
+
+// hide nav buttons after 5.3s
+function scheduleHideButtons() {
+  clearTimeout(fadeTimeout);
+  fadeTimeout = setTimeout(() => {
+    navButtons.forEach(btn => btn.classList.add("hidden"));
+  }, 5300);
+}
+
+// show nav buttons immediately when video touched/clicked
+function showButtons() {
+  navButtons.forEach(btn => btn.classList.remove("hidden"));
+  scheduleHideButtons();
+}
+
+// Start the cycle when page loads
+scheduleHideButtons();
+
+// Listen for clicks/taps on the video
+video.addEventListener("click", showButtons);
+video.addEventListener("touchstart", showButtons);
 </script>
