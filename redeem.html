@@ -12,6 +12,9 @@
     background: #000;
     color: #fff;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
 
   h1 {
@@ -40,13 +43,22 @@
     flex-direction: column;
     align-items: center;
     padding: 0 20px;
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+  }
+
+  label {
+    align-self: flex-start;
+    margin: 5px 0 2px 0;
+    font-size: 0.9rem;
+    color: #ccc;
   }
 
   input {
     width: 100%;
-    max-width: 300px;
     padding: 12px;
-    margin: 8px 0;
+    margin-bottom: 10px;
     border-radius: 10px;
     border: none;
     font-size: 1rem;
@@ -116,6 +128,27 @@
     background: linear-gradient(45deg, #66ccff, #3399ff);
   }
 
+  /* Footer */
+  footer {
+    margin-top: auto;
+    padding: 15px;
+    background: #111;
+    color: #888;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+
+  footer a {
+    color: #66ccff;
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    text-decoration: underline;
+  }
+
   /* Responsive Text */
   @media (max-width: 400px) {
     h1 { font-size: 2.5rem; }
@@ -130,17 +163,28 @@
 <h1>乂丨乂丨</h1>
 <h2>Get paid hosting with CUBE</h2>
 
-<!-- Placeholder Image -->
 <img src="https://via.placeholder.com/150" alt="Placeholder Image">
 
 <!-- Signup/Login Form -->
 <form id="signupForm">
-  <input type="text" id="name" placeholder="Name" required />
-  <input type="date" id="dob" placeholder="DOB" required />
-  <input type="tel" id="phone" placeholder="Phone Number" required />
-  <input type="email" id="email" placeholder="Email Address" required />
-  <input type="text" id="bankName" placeholder="Bank Name" required />
-  <input type="text" id="accountNumber" placeholder="Account Number" required />
+  <label for="name">Name</label>
+  <input type="text" id="name" placeholder="Enter your name" required />
+
+  <label for="dob">Date of Birth</label>
+  <input type="date" id="dob" required />
+
+  <label for="phone">Phone Number</label>
+  <input type="tel" id="phone" placeholder="Enter your phone" required />
+
+  <label for="email">Email Address</label>
+  <input type="email" id="email" placeholder="Enter your email" required />
+
+  <label for="bankName">Bank Name</label>
+  <input type="text" id="bankName" placeholder="Enter your bank name" required />
+
+  <label for="accountNumber">Account Number</label>
+  <input type="text" id="accountNumber" placeholder="Enter your account number" required />
+
   <button type="submit" id="submitBtn">Sign Up / Login</button>
 </form>
 
@@ -159,12 +203,17 @@
   </div>
 </div>
 
+<footer>
+  <a href="#">Terms</a>
+  <a href="#">Privacy</a>
+  <a href="#">Contact</a>
+</footer>
+
 <script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // ---------------- Firebase Config ----------------
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_AUTH_DOMAIN",
