@@ -35,8 +35,20 @@ header {
   padding: 1rem;
 }
 
-#user-info div {
-  margin: 0.2rem 0;
+#username {
+  font-weight: bold;
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 0.3rem;
+  text-shadow: 0 0 8px #ff33cc, 0 0 16px #ff33cc;
+}
+
+#stars-count {
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 1rem;
 }
 
 .shop-grid {
@@ -48,19 +60,19 @@ header {
 
 .product-card {
   background: var(--card-bg);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.3s;
   position: relative;
+  box-shadow: 0 0 8px rgba(255,51,204,0.6);
 }
 
 .product-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(255,51,204,0.5);
+  box-shadow: 0 0 20px rgba(255,51,204,0.8);
 }
 
 .product-card img {
@@ -96,38 +108,25 @@ header {
   color: var(--accent);
   font-weight: bold;
   margin-bottom: 0.5rem;
+  text-shadow: 0 0 4px #fff, 0 0 8px #ff33cc;
 }
 
-.buy-btn {
+.buy-btn, #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
   border: none;
-  padding: 0.6rem;
+  padding: 0.6rem 1rem;
   cursor: pointer;
   font-weight: bold;
   width: 90%;
   margin: 0 auto 1rem auto;
-  border-radius: 5px;
-  transition: background 0.2s;
-}
-
-.buy-btn:hover {
-  background: #ff66d6;
-}
-
-#home-btn {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  padding: 0.8rem 2rem;
-  font-size: 1rem;
-  font-weight: bold;
   border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
+  text-shadow: 0 0 5px #fff, 0 0 10px #ff33cc;
+  box-shadow: 0 0 5px #ff33cc, 0 0 10px #ff33cc;
 }
 
-#home-btn:hover {
+.buy-btn:hover, #home-btn:hover {
   background: #ff66d6;
 }
 </style>
@@ -137,13 +136,8 @@ header {
 <header>乂丨乂丨Redeem</header>
 
 <div id="user-info">
-  <div id="username" style="font-weight:bold; font-size:1.5rem;"></div>
-  <div id="stars-count" style="font-size:1rem; font-weight:bold; margin-top:0.5rem;">0 ⭐️</div>
-</div>
-  </div>
-  <div style="font-size:0.9rem; font-weight:bold;">
-    Stars Balance: <span id="stars-count">0</span>
-  </div>
+  <div id="username">Guest</div>
+  <div id="stars-count">0 ⭐️</div>
 </div>
 
 <div class="shop-grid" id="shop-items"></div>
@@ -154,9 +148,10 @@ header {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -173,21 +168,30 @@ const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const db = getFirestore(app);
 
+// Elements
 const starsCountEl = document.getElementById('stars-count');
 const usernameEl = document.getElementById('username');
 const shopItemsEl = document.getElementById('shop-items');
 
+// URL UID
 const urlParams = new URLSearchParams(window.location.search);
 const uid = urlParams.get('uid');
 if (!uid) alert("User not signed in!");
 
-// Random color generator
+// Random neon color
 function randomColor() {
   const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3'];
   return colors[Math.floor(Math.random()*colors.length)];
 }
 
-// Render product card
+// Example products (IDs must match Firestore "shopItems")
+const shopItems = [
+  { id: "1", name: "Host Gig", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 50 },
+  { id: "2", name: "VIP Access to CUBE", cost: 20, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 8 },
+  { id: "3", name: "10gb Internet Data", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 15 }
+];
+
+// Render product
 function createProductCard(item) {
   const card = document.createElement('div');
   card.classList.add('product-card');
@@ -203,7 +207,7 @@ function createProductCard(item) {
   const buyBtn = card.querySelector('.buy-btn');
   buyBtn.addEventListener('click', async () => {
     const userRef = doc(db, "users", uid);
-    const shopRef = doc(db, "shopItems", item.id.toString());
+    const shopRef = doc(db, "shopItems", item.id);
 
     const [userSnap, shopSnap] = await Promise.all([getDoc(userRef), getDoc(shopRef)]);
     const userData = userSnap.data();
@@ -234,13 +238,13 @@ function createProductCard(item) {
   return card;
 }
 
-// Render shop items
+// Render shop
 function renderShop(items) {
   shopItemsEl.innerHTML = '';
   items.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-// Load user and listen
+// Load user
 async function loadUser() {
   const userRef = doc(db, "users", uid);
   const snap = await getDoc(userRef);
@@ -256,14 +260,13 @@ async function loadUser() {
   });
 }
 
-// Listen to shop items for real-time stock updates
+// Listen shop items for stock updates
 function listenShop() {
   const shopCollectionRef = collection(db, "shopItems");
   onSnapshot(shopCollectionRef, snapshot => {
     const items = [];
     snapshot.forEach(doc => {
       items.push({ id: doc.id, ...doc.data() });
-      // Update stock badge if already rendered
       const badge = document.getElementById(`stock-${doc.id}`);
       if(badge) badge.innerText = `${doc.data().available} left`;
     });
@@ -276,3 +279,6 @@ listenShop();
 
 document.getElementById('home-btn').addEventListener('click', () => window.location.href='/');
 </script>
+
+</body>
+</html>
