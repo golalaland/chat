@@ -112,40 +112,30 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
 #center{flex:1;display:flex;flex-direction:column;gap:6px;}
 
-/* Sticky video wrapper */
-#videoPlayerWrapper {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  width: 320px;
-  height: 180px;
+/* The whole video section */
+#videoWrapper {
+  position: sticky;
+  top: 0;
   z-index: 999;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  background: #111;
-  overflow: hidden; /* important for rounded corners */
+  width: 100%;
+  background: black; /* full black background */
 }
 
-/* iframe container */
-#videoPlayer {
+/* Full responsive container */
+#videoContainer {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+}
+
+/* The iframe itself */
+#videoContainer iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  background: #000;
 }
-
-#videoPlayer iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  pointer-events: none;  /* disables fullscreen clicks */
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-#videoPlayer iframe[src*="mediadelivery"] {
-  opacity: 1;
-}
-
 
 /* 🔥 Message bubble */
 .msg {
@@ -355,13 +345,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">✨</div>
     <div id="center">
- <div id="videoPlayer">
-  <iframe
-    src="https://iframe.mediadelivery.net/play/501214/ed6202e6-c377-4ce8-b35f-66833c796e55?autoplay=true&loop=true&muted=true&controls=false"
-    loading="lazy"
-    allow="autoplay"
-    style="width:100%; height:100%; border:0;">
-  </iframe>
+<div id="videoWrapper">
+  <div id="videoContainer">
+    <iframe
+      src="https://iframe.mediadelivery.net/play/501214/ed6202e6-c377-4ce8-b35f-66833c796e55?autoplay=true&loop=true&muted=true&controls=false"
+      loading="lazy"
+      allow="autoplay"
+      style="width:100%; height:100%; border:0;">
+    </iframe>
+  </div>
 </div>
 
   <button class="arrow" id="prev">&#10094;</button>
