@@ -76,6 +76,8 @@ button:hover{
 #payBtn{
   background:linear-gradient(45deg,#ff66aa,#ff3399);
 }
+
+/* VIP Perks Tabs */
 #vipPerks{
   text-align:center;
   max-width:400px;
@@ -84,14 +86,28 @@ button:hover{
   background:#111;
   border-radius:15px;
 }
-#vipPerks h3{
-  color:#ff66aa;
+.tabButtons{
+  display:flex;
+  justify-content:center;
+  gap:10px;
   margin-bottom:15px;
 }
-#vipPerks p{
+.tabBtn{
+  padding:10px 20px;
+  background:#222;
+  border:none;
+  border-radius:10px;
+  color:#fff;
+  cursor:pointer;
+  transition:0.2s;
+}
+.tabBtn:hover{background:#ff66aa;}
+.tabContent{
   color:#ccc;
+  text-align:center;
   line-height:1.6;
 }
+
 footer{
   margin-top:auto;
   padding:15px;
@@ -104,6 +120,7 @@ footer{
 }
 footer a{color:#66ccff; text-decoration:none;}
 footer a:hover{text-decoration:underline;}
+
 @media(max-width:400px){
   h1{font-size:1.6rem;}
   h2{font-size:0.95rem;}
@@ -115,7 +132,7 @@ footer a:hover{text-decoration:underline;}
 <body>
 
 <h1>VIP TAB</h1>
-<h2 id="subHeader">Join VIP Tab — chat, connect, unlock exclusive perks and rewards</h2>
+<h2 id="subHeader">You’re on <span id="vipUsername">{username}</span>’s VIP Tab</h2>
 <img src="https://via.placeholder.com/400x200" id="girlImage" alt="Girl Image">
 
 <form id="vipForm">
@@ -127,13 +144,16 @@ footer a:hover{text-decoration:underline;}
 </form>
 
 <div id="vipPerks">
-  <h3>Perks of Joining VIP</h3>
-  <p>Direct chat & personal connection with <span id="perkGirlName">the host</span><br>
-     Unlock premium content & behind-the-scenes media<br>
-     VIP badges & status in the community<br>
-     Access to exclusive events & rewards<br>
-     Early notifications & special surprises
-  </p>
+  <div class="tabButtons">
+    <button class="tabBtn" onclick="openTab('tab1')">Perks 1</button>
+    <button class="tabBtn" onclick="openTab('tab2')">Perks 2</button>
+  </div>
+  <div id="tab1" class="tabContent">
+    <p>Perks content 1 goes here...</p>
+  </div>
+  <div id="tab2" class="tabContent" style="display:none;">
+    <p>Perks content 2 goes here...</p>
+  </div>
 </div>
 
 <footer>
@@ -170,9 +190,9 @@ if(girlCode){
     if(!snapshot.empty){
       const data = snapshot.docs[0].data();
       document.getElementById("subHeader").textContent = 
-        `Join ${data.name}'s VIP Tab — chat, connect, unlock exclusive perks and rewards`;
+        `You’re on ${data.name}'s VIP Tab`;
       document.getElementById("girlImage").src = data.photoURL || "https://via.placeholder.com/400x200";
-      document.getElementById("perkGirlName").textContent = data.name;
+      document.getElementById("vipUsername").textContent = data.name;
     }
   });
 }
@@ -222,6 +242,12 @@ document.getElementById("payBtn").addEventListener("click", function(){
   });
   handler.openIframe();
 });
+
+// Tab switch
+function openTab(tabId){
+  document.querySelectorAll('.tabContent').forEach(tc=>tc.style.display='none');
+  document.getElementById(tabId).style.display='block';
+}
 </script>
 </body>
 </html>
