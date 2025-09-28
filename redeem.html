@@ -16,10 +16,15 @@ body{
   min-height:100vh;
 }
 h1{
-  font-size:1.8rem;
-  letter-spacing:2px;
+  font-size:2rem;
+  letter-spacing:3px;
   margin-top:20px;
   color:#ff66aa;
+}
+h2{
+  font-size:1rem;
+  color:#ccc;
+  margin:5px 0 20px 0;
 }
 img#girlImage{
   width:100%;
@@ -71,6 +76,33 @@ button:hover{
 #payBtn{
   background:linear-gradient(45deg,#ff66aa,#ff3399);
 }
+#vipPerks{
+  text-align:left;
+  max-width:400px;
+  margin:30px auto;
+  padding:15px;
+  background:#111;
+  border-radius:15px;
+}
+#vipPerks h3{
+  color:#ff66aa;
+  margin-bottom:15px;
+}
+#vipPerks ul{
+  list-style:none;
+  padding:0;
+}
+#vipPerks li{
+  margin-bottom:10px;
+  padding-left:20px;
+  position:relative;
+}
+#vipPerks li::before{
+  content:"⭐";
+  position:absolute;
+  left:0;
+  color:#ff66aa;
+}
 footer{
   margin-top:auto;
   padding:15px;
@@ -85,6 +117,7 @@ footer a{color:#66ccff; text-decoration:none;}
 footer a:hover{text-decoration:underline;}
 @media(max-width:400px){
   h1{font-size:1.6rem;}
+  h2{font-size:0.95rem;}
   input{font-size:0.95rem;padding:10px;}
   button{font-size:0.95rem;padding:10px 25px;}
 }
@@ -92,7 +125,8 @@ footer a:hover{text-decoration:underline;}
 </head>
 <body>
 
-<h1 id="headerText">Join VIP Club – ₦2,999/week</h1>
+<h1>VIP TAB</h1>
+<h2 id="subHeader">Join VIP Tab — chat, connect, unlock exclusive perks and rewards</h2>
 <img src="https://via.placeholder.com/400x200" id="girlImage" alt="Girl Image">
 
 <form id="vipForm">
@@ -100,8 +134,19 @@ footer a:hover{text-decoration:underline;}
   <input type="text" id="userName" placeholder="Enter your name" required>
   <label for="userEmail">Email</label>
   <input type="email" id="userEmail" placeholder="Enter your email" required>
-  <button type="button" id="payBtn">Pay & Join VIP</button>
+  <button type="button" id="payBtn">Pay ₦2,999 & Join VIP</button>
 </form>
+
+<div id="vipPerks">
+  <h3>Perks of Joining VIP</h3>
+  <ul>
+    <li>Direct chat & personal connection with <span id="perkGirlName">the host</span></li>
+    <li>Unlock premium content & behind-the-scenes media</li>
+    <li>VIP badges & status in the community</li>
+    <li>Access to exclusive events & rewards</li>
+    <li>Early notifications & special surprises</li>
+  </ul>
+</div>
 
 <footer>
   <a href="#">Terms</a>
@@ -129,15 +174,17 @@ const db = firebase.firestore();
 
 // Get referral code from URL
 const urlParams = new URLSearchParams(window.location.search);
-const girlCode = urlParams.get('ref'); // links back to the inviting girl
+const girlCode = urlParams.get('ref');
 
-// Optionally, fetch girl’s name & photo dynamically
+// Fetch girl data dynamically
 if(girlCode){
   db.collection("girls").where("referralCode","==",girlCode).get().then(snapshot=>{
     if(!snapshot.empty){
       const data = snapshot.docs[0].data();
-      document.getElementById("headerText").textContent = `Join ${data.name}'s VIP Club – ₦2,999/week`;
+      document.getElementById("subHeader").textContent = 
+        `Join ${data.name}'s VIP Tab — chat, connect, unlock exclusive perks and rewards`;
       document.getElementById("girlImage").src = data.photoURL || "https://via.placeholder.com/400x200";
+      document.getElementById("perkGirlName").textContent = data.name;
     }
   });
 }
@@ -161,7 +208,6 @@ document.getElementById("payBtn").addEventListener("click", function(){
     metadata: {custom_fields:[{display_name:"Referral Code", variable_name:"referral", value:girlCode}]},
     callback: function(response){
       console.log("Payment success:", response.reference);
-      // Record VIP user in Firestore
       db.collection("vipUsers").add({
         name:name,
         email:email,
