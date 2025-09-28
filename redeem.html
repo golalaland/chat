@@ -17,7 +17,7 @@ body {
 }
 h1 { font-size:2rem; letter-spacing:5px; margin-top:20px; color:#ff66aa; }
 h2 { font-size:1rem; color:#ccc; margin:5px 0 20px 0; }
-img#logo { display:block; margin:0 auto 20px auto; width:120px; height:120px; border-radius:20px; }
+img#logo { display:block; margin:0 auto 20px auto; width:40%; max-width:200px; border-radius:20px; object-fit:contain; }
 form { display:flex; flex-direction:column; align-items:center; padding:0 20px; width:100%; max-width:350px; margin:0 auto; }
 label { align-self:flex-start; margin:5px 0 2px 0; font-size:0.9rem; color:#ccc; }
 input { width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:none; font-size:1rem; }
@@ -39,8 +39,8 @@ footer a:hover { text-decoration:underline; }
 </head>
 <body>
 
-<h1>乂丨乂丨</h1>
-<h2>Get paid hosting with CUBE</h2>
+<h1 id="pageLogo">乂丨乂丨</h1>
+<h2 id="pageSubtext">Get paid hosting with CUBE</h2>
 <img src="https://res.cloudinary.com/dekxhwh6l/image/upload/v1759080044/IMG_5078_xe9mpb.png" alt="Placeholder Image" id="logo">
 
 <!-- SIGN UP FORM -->
@@ -123,12 +123,14 @@ const db = firebase.firestore();
 document.getElementById("showLogin").addEventListener("click", e=>{
   e.preventDefault();
   document.getElementById("signupForm").style.display="none";
-  document.getElementById("loginForm").style.display="block";
+  document.getElementById("loginForm").style.display="flex";
+  document.getElementById("pageSubtext").textContent = "Login to your CUBE account";
 });
 document.getElementById("showSignup").addEventListener("click", e=>{
   e.preventDefault();
   document.getElementById("loginForm").style.display="none";
-  document.getElementById("signupForm").style.display="block";
+  document.getElementById("signupForm").style.display="flex";
+  document.getElementById("pageSubtext").textContent = "Get paid hosting with CUBE";
 });
 
 // Age check
