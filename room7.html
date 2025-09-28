@@ -829,7 +829,7 @@ setInterval(async () => {
       await updateDoc(userRef, { stars: next });
     }
   }catch(e){ /* ignore periodic errors */ }
-}, 60000);
+}, 10000);
 
 /* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
 /* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
