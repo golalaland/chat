@@ -137,8 +137,9 @@ header {
 <header>乂丨乂丨Redeem</header>
 
 <div id="user-info">
-  <div style="font-weight:bold; font-size:1.3rem; background:#000; color:#fff; display:inline-block; padding:0.2rem 0.5rem; border-radius:4px;">
-    CHATID: <span id="chat-id">---</span>
+  <div id="username" style="font-weight:bold; font-size:1.5rem;"></div>
+  <div id="stars-count" style="font-size:1rem; font-weight:bold; margin-top:0.5rem;">0 ⭐️</div>
+</div>
   </div>
   <div style="font-size:0.9rem; font-weight:bold;">
     Stars Balance: <span id="stars-count">0</span>
@@ -153,7 +154,7 @@ header {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, increment } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -167,68 +168,111 @@ const firebaseConfig = {
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 
-// Initialize Firebase once
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const db = getFirestore(app);
 
 const starsCountEl = document.getElementById('stars-count');
-const chatIdEl = document.getElementById('chat-id');
+const usernameEl = document.getElementById('username');
 const shopItemsEl = document.getElementById('shop-items');
 
-// Get UID from URL
 const urlParams = new URLSearchParams(window.location.search);
 const uid = urlParams.get('uid');
-
 if (!uid) alert("User not signed in!");
 
-// Shop products
-const shopItems = [
-  { id: 1, name: "Host Gig", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 50 },
-  { id: 2, name: "VIP Access to CUBE", cost: 20, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 8 },
-  { id: 3, name: "10gb Internet Data", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 15 }
-];
+// Random color generator
+function randomColor() {
+  const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3'];
+  return colors[Math.floor(Math.random()*colors.length)];
+}
 
+// Render product card
 function createProductCard(item) {
   const card = document.createElement('div');
   card.classList.add('product-card');
   card.innerHTML = `
     <img src="${item.img}" alt="${item.name}">
-    <div class="availability-badge">${item.available} left</div>
+    <div class="availability-badge" id="stock-${item.id}">${item.available} left</div>
     <div class="product-info">
       <div class="product-name">${item.name}</div>
-      <div class="product-cost">${item.cost} ⭐</div>
+      <div class="product-cost">${item.cost} ⭐️</div>
       <button class="buy-btn">Buy</button>
     </div>
   `;
   const buyBtn = card.querySelector('.buy-btn');
-  buyBtn.addEventListener('click', () => alert(`Buying ${item.name} for ${item.cost} ⭐`));
+  buyBtn.addEventListener('click', async () => {
+    const userRef = doc(db, "users", uid);
+    const shopRef = doc(db, "shopItems", item.id.toString());
+
+    const [userSnap, shopSnap] = await Promise.all([getDoc(userRef), getDoc(shopRef)]);
+    const userData = userSnap.data();
+    const shopData = shopSnap.data();
+
+    if(userData.stars < item.cost) return alert("Not enough stars!");
+    if(shopData.available <= 0) return alert("Out of stock!");
+
+    // Deduct stars
+    await updateDoc(userRef, { stars: userData.stars - item.cost });
+
+    // Deduct stock
+    await updateDoc(shopRef, { available: shopData.available - 1 });
+
+    // Log order
+    const ordersRef = collection(db, "orders");
+    await addDoc(ordersRef, {
+      uid,
+      username: userData.chatId || "Guest",
+      itemId: item.id,
+      itemName: item.name,
+      cost: item.cost,
+      timestamp: new Date()
+    });
+
+    alert(`Purchased ${item.name}!`);
+  });
   return card;
 }
 
-function renderShop() {
+// Render shop items
+function renderShop(items) {
   shopItemsEl.innerHTML = '';
-  shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
+  items.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-// Load user data from Firestore
+// Load user and listen
 async function loadUser() {
   const userRef = doc(db, "users", uid);
   const snap = await getDoc(userRef);
   if (!snap.exists()) return alert("User data not found!");
   const data = snap.data();
-  chatIdEl.innerText = data.chatId || "---";
-  starsCountEl.innerText = data.stars || 0;
+  usernameEl.innerText = data.chatId || "Guest";
+  usernameEl.style.color = randomColor();
+  starsCountEl.innerText = `${data.stars || 0} ⭐️`;
 
-  onSnapshot(userRef, (docSnap) => {
-    if (!docSnap.exists()) return;
-    starsCountEl.innerText = docSnap.data().stars || 0;
+  onSnapshot(userRef, docSnap => {
+    const d = docSnap.data();
+    starsCountEl.innerText = `${d.stars || 0} ⭐️`;
   });
 }
 
-renderShop();
-loadUser();
+// Listen to shop items for real-time stock updates
+function listenShop() {
+  const shopCollectionRef = collection(db, "shopItems");
+  onSnapshot(shopCollectionRef, snapshot => {
+    const items = [];
+    snapshot.forEach(doc => {
+      items.push({ id: doc.id, ...doc.data() });
+      // Update stock badge if already rendered
+      const badge = document.getElementById(`stock-${doc.id}`);
+      if(badge) badge.innerText = `${doc.data().available} left`;
+    });
+    renderShop(items);
+  });
+}
 
-document.getElementById('home-btn').addEventListener('click', () => window.location.href = '/');
+loadUser();
+listenShop();
+
+document.getElementById('home-btn').addEventListener('click', () => window.location.href='/');
 </script>
