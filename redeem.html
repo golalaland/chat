@@ -15,9 +15,9 @@ body {
   flex-direction:column;
   min-height:100vh;
 }
-h1 { font-size:2.5rem; letter-spacing:5px; margin-top:20px; color:#ff66aa; }
-h2 { font-size:1.1rem; color:#ccc; margin:5px 0 20px 0; }
-img { width:120px; height:120px; border-radius:20px; margin-bottom:20px; }
+h1 { font-size:2rem; letter-spacing:5px; margin-top:20px; color:#ff66aa; }
+h2 { font-size:1rem; color:#ccc; margin:5px 0 20px 0; }
+img#logo { display:block; margin:0 auto 20px auto; width:120px; height:120px; border-radius:20px; }
 form { display:flex; flex-direction:column; align-items:center; padding:0 20px; width:100%; max-width:350px; margin:0 auto; }
 label { align-self:flex-start; margin:5px 0 2px 0; font-size:0.9rem; color:#ccc; }
 input { width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:none; font-size:1rem; }
@@ -34,14 +34,14 @@ button:hover { transform:scale(1.05); box-shadow:0 0 15px #ff66aa; }
 footer { margin-top:auto; padding:15px; background:#111; color:#888; font-size:0.9rem; display:flex; justify-content:center; gap:15px; }
 footer a { color:#66ccff; text-decoration:none; }
 footer a:hover { text-decoration:underline; }
-@media(max-width:400px){h1{font-size:2rem;} h2{font-size:1rem;} input{font-size:0.95rem;padding:10px;} button{font-size:0.95rem;padding:10px 25px;}}
+@media(max-width:400px){h1{font-size:1.8rem;} h2{font-size:0.95rem;} input{font-size:0.95rem;padding:10px;} button{font-size:0.95rem;padding:10px 25px;}}
 </style>
 </head>
 <body>
 
 <h1>乂丨乂丨</h1>
 <h2>Get paid hosting with CUBE</h2>
-<img src="https://via.placeholder.com/150" alt="Placeholder Image">
+<img src="https://res.cloudinary.com/dekxhwh6l/image/upload/v1759080044/IMG_5078_xe9mpb.png" alt="Placeholder Image" id="logo">
 
 <!-- SIGN UP FORM -->
 <form id="signupForm">
@@ -61,6 +61,10 @@ footer a:hover { text-decoration:underline; }
   <label for="accountNumber">Account Number</label>
   <input type="text" id="accountNumber" placeholder="Enter your account number" required />
   <button type="submit" id="signupBtn">Sign Up</button>
+  <p style="color:#ccc; margin-top:10px;">
+    Already have an account? 
+    <a href="#" id="showLogin" style="color:#ff66aa;">Login</a>
+  </p>
 </form>
 
 <!-- LOGIN FORM -->
@@ -71,6 +75,10 @@ footer a:hover { text-decoration:underline; }
   <label for="loginPassword">Password</label>
   <input type="password" id="loginPassword" placeholder="Enter your password" required />
   <button type="button" id="loginBtn">Login</button>
+  <p style="color:#ccc; margin-top:10px;">
+    Don't have an account? 
+    <a href="#" id="showSignup" style="color:#ff66aa;">Sign Up</a>
+  </p>
 </form>
 
 <!-- DASHBOARD -->
@@ -111,13 +119,25 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Toggle forms
+document.getElementById("showLogin").addEventListener("click", e=>{
+  e.preventDefault();
+  document.getElementById("signupForm").style.display="none";
+  document.getElementById("loginForm").style.display="block";
+});
+document.getElementById("showSignup").addEventListener("click", e=>{
+  e.preventDefault();
+  document.getElementById("loginForm").style.display="none";
+  document.getElementById("signupForm").style.display="block";
+});
+
 // Age check
-function isAdult(dob) {
-  const birthDate = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if(m<0 || (m===0 && today.getDate()<birthDate.getDate())) age--;
+function isAdult(dob){
+  const birthDate=new Date(dob);
+  const today=new Date();
+  let age=today.getFullYear()-birthDate.getFullYear();
+  const m=today.getMonth()-birthDate.getMonth();
+  if(m<0||(m===0&&today.getDate()<birthDate.getDate())) age--;
   return age>=18;
 }
 
@@ -135,9 +155,9 @@ function copyLink(){
   alert("Referral link copied!");
 }
 
-// Show dashboard with real-time updates
+// Show dashboard
 async function showDashboard(uid){
-  const userDocRef = db.collection("girls").doc(uid);
+  const userDocRef=db.collection("girls").doc(uid);
   userDocRef.onSnapshot(docSnap=>{
     if(!docSnap.exists) return;
     const data=docSnap.data();
@@ -217,7 +237,7 @@ document.getElementById("signupForm").addEventListener("submit",async e=>{
   }catch(error){console.error(error); alert("Error: "+error.message);}
 });
 
-// Show login form (optional toggle)
+// Login
 document.getElementById("loginBtn").addEventListener("click",async ()=>{
   const email=document.getElementById("loginEmail").value;
   const password=document.getElementById("loginPassword").value;
