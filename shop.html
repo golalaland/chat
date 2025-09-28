@@ -154,26 +154,23 @@ header {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-/* ---------- Firebase config (fixed storageBucket) ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
   projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com", // <- fixed
+  storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
   measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 
+// Initialize Firebase once
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
-const db = getFirestore(app);
-const rtdb = getDatabase(app);
-
-const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const starsCountEl = document.getElementById('stars-count');
@@ -184,16 +181,13 @@ const shopItemsEl = document.getElementById('shop-items');
 const urlParams = new URLSearchParams(window.location.search);
 const uid = urlParams.get('uid');
 
-if (!uid) {
-  alert("User not signed in!");
-}
+if (!uid) alert("User not signed in!");
 
-// Example shop items
+// Shop products
 const shopItems = [
   { id: 1, name: "Host Gig", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 50 },
   { id: 2, name: "VIP Access to CUBE", cost: 20, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 8 },
-  { id: 3, name: "10gb Internet Data", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 15 },
-  // Add other products here
+  { id: 3, name: "10gb Internet Data", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 15 }
 ];
 
 function createProductCard(item) {
@@ -208,6 +202,8 @@ function createProductCard(item) {
       <button class="buy-btn">Buy</button>
     </div>
   `;
+  const buyBtn = card.querySelector('.buy-btn');
+  buyBtn.addEventListener('click', () => alert(`Buying ${item.name} for ${item.cost} ⭐`));
   return card;
 }
 
@@ -216,33 +212,23 @@ function renderShop() {
   shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-// Load user data
+// Load user data from Firestore
 async function loadUser() {
   const userRef = doc(db, "users", uid);
   const snap = await getDoc(userRef);
-  if (!snap.exists()) {
-    alert("User data not found!");
-    return;
-  }
+  if (!snap.exists()) return alert("User data not found!");
   const data = snap.data();
   chatIdEl.innerText = data.chatId || "---";
   starsCountEl.innerText = data.stars || 0;
 
-  // Real-time updates
   onSnapshot(userRef, (docSnap) => {
     if (!docSnap.exists()) return;
-    const d = docSnap.data();
-    starsCountEl.innerText = d.stars || 0;
+    starsCountEl.innerText = docSnap.data().stars || 0;
   });
 }
 
 renderShop();
 loadUser();
 
-document.getElementById('home-btn').addEventListener('click', () => {
-  window.location.href = '/'; // replace with your homepage
-});
+document.getElementById('home-btn').addEventListener('click', () => window.location.href = '/');
 </script>
-
-</body>
-</html>
