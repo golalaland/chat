@@ -38,26 +38,27 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(255,20,147,0.3);
 }
-#videoWrapper {
-  flex-shrink: 0;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #111;
 
-  /* NEW: make sticky */
-  position: sticky;
+#videoWrapper {
+  position: sticky;    /* stays pinned while scrolling */
   top: 0;
-  z-index: 50; /* make sure it’s above messages but below popups like stars */
+  width: 100%;
+  background: black;
+  z-index: 1;
 }
 
-/* Video container inside wrapper */
 #videoContainer {
+  position: relative;
   width: 100%;
-  height: 100%;       /* fill the wrapper */
-  border-radius: 10px;
-  overflow: hidden;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+}
+
+#videoContainer iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .arrow {
