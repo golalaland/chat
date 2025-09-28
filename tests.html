@@ -926,13 +926,16 @@ requestAnimationFrame(() => {
     await setDoc(userRef, {
       chatId: generateGuestName(),
       chatIdLower: (generateGuestName()).toLowerCase(),
-      stars: 100,
+      stars: 50,
       cash: 0,
       usernameColor: randomColor(),
       lastColorDate: new Date().toISOString().split("T")[0],
       isAdmin: false,
       lastStarReset: Date.now()
     });
+    
+  // 🎉 Show popup on signup gift
+  showStarPopup("🎉 Welcome! You got +50 stars as a gift!");
     snap = await getDoc(userRef);
   }
   let userData = snap.exists()? snap.data() : {};
@@ -966,25 +969,6 @@ userDocUnsub = onSnapshot(userRef, (snap) => {
   if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
 });
 
-  // User logged in
-  const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists()) {
-    // 🆕 First time signup → give starter stars
-    const starterStars = 50;
-
-    await setDoc(userRef, {
-      chatId: null,
-      chatIdLower: null,
-      stars: starterStars,
-      cash: 0,
-      usernameColor: randomColor(),
-      createdAt: serverTimestamp()
-    });
-
-    showStarPopup(`🎉 Welcome! You got +${starterStars} stars as a gift!`);
-  }
   
   // -------- Chat ID modal for first-time users --------
   if(!userData?.chatId){
