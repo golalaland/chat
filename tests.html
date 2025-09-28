@@ -842,6 +842,31 @@ async function resetDailyCapIfNeeded(userRef, data) {
     data.lastStarDate = today;
   }
 }
+// ---------- Safe Star Earn Helper (Daily Cap Check) ----------
+async function tryGiveStar(userRef, data, amount = 1) {
+  const today = new Date().toISOString().split("T")[0];
+
+  // Daily reset safety
+  if (data.lastStarDate !== today) {
+    await resetDailyCapIfNeeded(userRef, data);
+  }
+
+  const starsToday = data.starsToday || 0;
+  if (starsToday >= DAILY_STAR_CAP) {
+    // Optional: show a popup or silent fail
+    console.log("⭐ Daily star cap reached");
+    return false;
+  }
+
+  const allowedAmount = Math.min(amount, DAILY_STAR_CAP - starsToday);
+  await updateDoc(userRef, {
+    stars: increment(allowedAmount),
+    starsToday: increment(allowedAmount),
+    lastStarDate: today
+  });
+
+  return true;
+}
 
 /* ---------- Auto-star regen (server reads/writes) ---------- */
 setInterval(async () => {
