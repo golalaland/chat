@@ -1,1230 +1,191 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Xixi</title>
-<link rel="icon" href="data:," />
+<meta charset="UTF-8">
+<title>Hive Dashboard Signup/Login</title>
 <style>
-:root {
-  --bg: #000;
-  --card: #111;
-  --muted: #aaa;
-  --accent: #FF1493;
-  --glass: rgba(255,255,255,0.03);
-}
-
-/* Navigation buttons inside video wrapper */
-#videoWrapper .nav-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  position: absolute;
-  bottom: 6px;
-  width: 100%;
-  pointer-events: auto;
-  z-index: 10;
-}
-
-#videoWrapper .nav-buttons button {
-  padding: 5px 8px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,20,147,0.3);
-  background: transparent;
-  color: var(--accent);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-#videoWrapper .nav-buttons button:hover {
-  opacity: 1;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(255,20,147,0.3);
-}
-
-/* Sticky video wrapper */
-#videoWrapper {
-  flex-shrink: 0;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #111;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-
-/* Video container inside wrapper */
-#videoContainer {
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-#videoPlayer {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Minimal swipe buttons */
-#prevBtn, #nextBtn {
-  width: 28px;
-  height: 28px;
-  font-size: 16px;
-  color: #fff;
-  background: rgba(0,0,0,0.3);
-  border: none;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  z-index: 10;
-}
-#prevBtn { left: 8px; }
-#nextBtn { right: 8px; }
-#prevBtn:hover, #nextBtn:hover {
-  transform: translateY(-50%) scale(1.1);
-}
-
-/* Overall layout */
-html, body {
-  height: 100%;
-  margin: 0;
-  font-family: 'XiXi', Inter, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #fff;
-  background: var(--bg);
-}
-
-#appWrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  gap: 10px;
-  padding: 10px;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 480px;
-}
-
-.brand {
-  font-weight: 700;
-  font-size: 24px;
-  color: var(--accent);
-  text-align: center;
-}
-
-.room-desc {
-  font-size: 11px;
-  color: var(--muted);
-  text-align: center;
-  margin-bottom: 6px;
-}
-
-#greeting {
-  font-size: 13px;
-  text-align: center;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--accent);
-}
-
-#helloText {
-  font-size: 20px;
-  font-weight: 800;
-  text-align: center;
-  margin: 6px 0;
-  color: #fff;
-  transition: color 0.2s ease;
-}
-
-#center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Fixed small sticky video player (corner overlay) */
-#videoPlayerWrapper {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  width: 320px;
-  height: 180px;
-  z-index: 999;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  background: #111;
-}
-
-#videoPlayerWrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* Guest message */
-#guestMsg {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 4px 0;
-  color: var(--accent);
-  text-align: center;
-}
-
-/* Chat messages container */
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-radius: 8px;
-  background: #000;
-  margin-bottom: 70px; /* prevent last message hiding behind input */
-  box-sizing: border-box;
-}
-
-/* Message bubble */
-.msg {
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--glass);
-  max-width: 100%;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.msg.me {
-  background: rgba(255, 20, 147, 0.06);
-}
-.msg .meta {
-  font-weight: 700;
-  font-size: 13px;
-  white-space: nowrap;
-  margin-right: 4px;
-  color: inherit;
-}
-.msg .content {
-  font-size: 13px;
-  color: #fff;
-  white-space: pre-wrap;
-  word-break: break-word;
-  display: inline-block;
-}
-
-/* Glass chat input bar */
-.send-area {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--card);
-  padding: 10px;
-  border-top: 1px solid rgba(255,255,255,0.04);
-  border-radius: 999px;
-  margin: 6px;
-  box-sizing: border-box;
-}
-.send-area input {
-  flex: 1;
-  padding: 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.06);
-  background: #0e0e0e;
-  color: #fff;
-  font-size: 16px;
-  outline: none;
-}
-.send-area input::placeholder {
-  color: var(--muted);
-}
-.send-area input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 14px rgba(255,20,147,0.12);
-}
-
-/* Send & buzz buttons */
-.send-btn {
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #000;
-  cursor: pointer;
-  font-weight: 700;
-  border: none;
-  font-size: 14px;
-}
-.buzz-btn {
-  padding: 10px 12px;
-  border-radius: 999px;
-  background: #1d1d1d;
-  color: var(--accent);
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 14px;
-  border: 1px solid rgba(255,20,147,0.18);
-}
-.buzz-btn:hover {
-  animation: buzzPulse 1.5s infinite;
-}
-@keyframes buzzPulse {
-  0% { box-shadow: 0 0 0 0 rgba(255,20,147,0.18); }
-  70% { box-shadow: 0 0 0 12px rgba(255,20,147,0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,20,147,0); }
-}
-.buzz-content {
-  font-weight: 800;
-  color: #000 !important;
-  padding: 4px 6px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-/* Profile glass bar */
-.profile {
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-}
-.profile-card {
-  background: var(--glass);
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.profile-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.profile-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.profile-name {
-  font-weight: 800;
-}
-.profile-label {
-  color: var(--accent);
-  font-weight: 800;
-  font-size: 10px;
-}
-.profile-value {
-  color: #fff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
-  font-weight: 400;
-  font-size: 11px;
-}
-.profile-value span,
-.profile-value .icon {
-  margin-left: 2px;
-}
-.profile-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-/* Small buttons */
-.small-btn {
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: var(--accent);
-  border: none;
-  color: #000;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 12px;
-  text-decoration: none;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.small-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(255,20,147,0.3);
-}
-
-/* Star popup */
-.star-popup {
-  position: fixed;
-  left: 50%;
-  top: 18%;
-  transform: translateX(-50%);
-  background: var(--card);
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.05);
-  display: none;
-  z-index: 1000;
-  color: var(--accent);
-  font-size: 13px;
-  white-space: nowrap;
-  text-align: center;
-}
-
-/* Online count */
-.onlineCount {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-/* Auth box */
-#authBox {
-  display: flex;
-  justify-content: center;
-  margin: 12px 0;
-}
-.google-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #FF69B4, #FF1493);
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(255,20,147,0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.google-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(255,20,147,0.6);
-}
-.google-btn img {
-  width: 18px;
-  height: 18px;
-  background: #fff;
-  border-radius: 4px;
-  padding: 2px;
-}
-
-/* Mobile adjustments */
-@media (max-width: 420px) {
-  .send-area input { padding: 10px; font-size: 13px; }
-  .buzz-btn, .send-btn { padding: 8px 10px; font-size: 13px; }
+  body { font-family: sans-serif; text-align: center; }
+  #signupForm input { margin: 5px; padding: 8px; width: 200px; }
+  #signupForm button { padding: 8px 20px; margin-top: 10px; }
+  #hiveDashboard { position: relative; width: 400px; height: 400px; margin: 20px auto; border: 1px solid #ccc; border-radius: 50%; }
+  .circle {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    font-weight: bold;
   }
-  </style>
+  #mainGirl { background: #ff66aa; }
+  .friendCircle { background: #66ccff; }
+</style>
 </head>
 <body>
-<audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
 
-<div id="appWrapper">
-  <div class="app">
-    <div class="brand">乂丨乂丨</div>
-    <div id="greeting">✨</div>
+<h2 id="title">Join Chatroom</h2>
 
-    <div id="center">
-      <!-- Video wrapper -->
-      <div id="videoWrapper">
-        <div id="videoContainer">
-          <video id="videoPlayer" autoplay muted playsinline></video>
-          <button id="prevBtn">&#10094;</button>
-          <button id="nextBtn">&#10095;</button>
-        </div>
-      </div>
+<form id="signupForm">
+  <input type="text" id="name" placeholder="Name" required /><br/>
+  <input type="date" id="dob" placeholder="DOB" required /><br/>
+  <input type="tel" id="phone" placeholder="Phone Number" required /><br/>
+  <input type="email" id="email" placeholder="Email Address" required /><br/>
+  <input type="text" id="bankName" placeholder="Bank Name" required /><br/>
+  <input type="text" id="accountNumber" placeholder="Account Number" required /><br/>
+  <button type="submit" id="submitBtn">Sign Up / Login</button>
+</form>
 
-      <div id="helloText" aria-live="polite">HELLO</div>
-      <div class="room-desc">
-        Own Your Vibe.
-        <span id="onlineCount" class="onlineCount"></span>
-      </div>
-
-      <div id="guestMsg"></div>
-
-      <!-- Auth box -->
-      <div id="authBox">
-        <button id="googleSignInBtn" class="google-btn">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" />
-          Sign in with Google
-        </button>
-      </div>
-
-      <!-- Chat ID Modal -->
-      <div id="chatIDModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;z-index:200;">
-        <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
-          <h3 style="margin-bottom:12px;color:var(--accent);">Choose your Chat ID</h3>
-          <input id="chatIDInput" type="text" placeholder="Your chat ID" 
-                 style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);margin-bottom:12px;font-size:16px;color:#fff;background:#111;outline:none;" />
-          <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
-        </div>
-      </div>
-
-      <!-- Messages container -->
-      <div id="messages"></div>
-
-      <!-- Send area -->
-      <div class="send-area" id="sendArea" style="display:none;">
-        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
-        <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
-        <button id="sendBtn" class="send-btn">Send</button>
-      </div>
-    </div>
-
-    <!-- Profile box -->
-    <div class="profile" id="profileBox">
-      <div class="profile-card">
-        <div class="profile-top">
-          <div class="profile-left">
-            <div id="profileName" class="profile-name">GUEST 0000</div>
-            <div>
-              <span class="profile-label">STARS COLLECTED:</span>
-              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
-            </div>
-          </div>
-          <div class="profile-actions">
-            <a id="redeemBtn" class="small-btn" href="https://xixi.live" target="_blank">Redeem</a>
-            <button id="tipBtn" class="small-btn">💵</button>
-          </div>
-        </div>
-
-        <div>
-          <span class="profile-label">CASH EARNED:</span>
-          <span class="profile-value">₦<span id="cashCount">0</span></span>
-        </div>
-
-        <div id="adminControls" style="display:none;flex-direction:column;gap:6px;margin-top:8px;">
-          <span class="profile-label">ADMIN CONTROLS:</span>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
-            <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
-            <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
-            <button class="small-btn" id="adminResetCashBtn">Reset Cash</button>
-            <button class="small-btn" id="adminClearMessagesBtn">Clear Messages</button>
-          </div>
-        </div>
-      </div>
-    </div>
+<div id="dashboard" style="display:none;">
+  <h3>Welcome <span id="dashName"></span>!</h3>
+  <p>Your referral link:</p>
+  <input type="text" id="refLink" readonly />
+  <button onclick="copyLink()">Copy Link</button>
+  
+  <p>Reward Balance: <span id="rewardBalance">0</span> ⭐</p>
+  
+  <h4>Your Hive:</h4>
+  <div id="hiveDashboard">
+    <div id="mainGirl" class="circle">Main Girl</div>
   </div>
 </div>
 
-<!-- Star popup -->
-<div class="star-popup" id="starPopup">
-  <div id="starText">You've just earned +1 star! ⭐</div>
-</div>
-<script type="module">
-/* ====== Full page JS: Firebase + UI logic (kept layout & behavior identical) ====== */
+<script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-firestore-compat.js"></script>
 
-/* ---------- Imports ---------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"; // analytics import
-import {
-  getAuth,
-  setPersistence,
-  browserLocalPersistence,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  collection,
-  addDoc,
-  serverTimestamp,
-  onSnapshot,
-  query,
-  orderBy,
-  increment
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getDatabase,
-  ref as rtdbRef,
-  set as rtdbSet,
-  onDisconnect,
-  onValue
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<script>
+  // ---------------- Firebase Config ----------------
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-/* ---------- Firebase config ---------- */
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(()=>{});
-const db = getFirestore(app);
-const rtdb = getDatabase(app);
-
-/* ---------- Room Collection (room-scoped) ---------- */
-const ROOM_ID = "room4";  // change when duplicating file
-const CHAT_COLLECTION = "messages_room4";
-
-/* ---------- State & constants ---------- */
-let currentUser = null;
-let userDocUnsub = null;
-let messagesUnsub = null;
-let usersUnsub = null;
-const BUZZ_COST = 10;
-const AUTO_STAR_ADD = 5;
-const DAILY_STAR_CAP = 500;
-
-/* ---------- Helpers ---------- */
-function generateGuestName() { 
-  return "GUEST " + Math.floor(1000 + Math.random() * 9000); 
-}
-
-function formatNumberWithCommas(n) { 
-  return new Intl.NumberFormat('en-NG').format(n || 0); 
-}
-
-function randomColor() { 
-  const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
-  return colors[Math.floor(Math.random() * colors.length)]; 
-}
-
-function showStarPopup(text) { 
-  const popup = document.getElementById("starPopup"); 
-  document.getElementById("starText").innerText = text; 
-  popup.style.display = "block"; 
-  setTimeout(() => { popup.style.display = "none"; }, 1700); 
-}
-/* ---------- One-time Chat ID modal ---------- */
-const chatIDModal = document.getElementById("chatIDModal");
-const chatIDInput = document.getElementById("chatIDInput");
-const chatIDConfirmBtn = document.getElementById("chatIDConfirmBtn");
-
-async function promptForChatIDModal(userRef, userData) {
-  if (userData.chatId) return userData.chatId; // already exists, skip
-
-  chatIDModal.style.display = "flex"; // show modal
-
-  return new Promise((resolve) => {
-    chatIDConfirmBtn.onclick = async () => {
-      let chosenID = chatIDInput.value.trim();
-      if (chosenID.length < 3) {
-        alert("Chat ID must be at least 3 characters.");
-        return;
-      }
-
-      try {
-        await updateDoc(userRef, { chatId: chosenID });
-      } catch (e) {
-        console.error("Error saving chat ID:", e);
-        alert("Failed to save. Try again.");
-        return;
-      }
-
-      chatIDModal.style.display = "none"; // hide modal
-      resolve(chosenID);
-    };
-  });
-}
-
-/* ---------- HELLO rotation (runs immediately, non-blocking) ---------- */
-const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
-let helloIndex = 0;
-const helloEl = document.getElementById("helloText");
-
-function rotateHello() {
-  if (!helloEl || helloEl.style.display === "none") return;
-  helloEl.style.opacity = '0';
-  setTimeout(() => {
-    helloEl.innerText = greetings[helloIndex++ % greetings.length];
-    helloEl.style.color = randomColor();
-    helloEl.style.opacity = '1';
-  }, 220);
-}
-
-rotateHello();
-setInterval(rotateHello, 1500);
-
-/* ---------- UI refs ---------- */
-const googleBtn = document.getElementById("googleSignInBtn");
-const authBox = document.getElementById("authBox");
-const messagesEl = document.getElementById("messages");
-const sendAreaEl = document.getElementById("sendArea");
-const messageInputEl = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const buzzBtn = document.getElementById("buzzBtn");
-const profileBoxEl = document.getElementById("profileBox");
-const profileNameEl = document.getElementById("profileName");
-const starCountEl = document.getElementById("starCount");
-const cashCountEl = document.getElementById("cashCount");
-const tipBtn = document.getElementById("tipBtn");
-const redeemBtn = document.getElementById("redeemBtn");
-const onlineCountEl = document.getElementById("onlineCount");
-
-/* ---------- Presence (room-scoped) ---------- */
-function setupPresence(user) {
-  try {
-    const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${user.uid}`);
-    rtdbSet(pRef, true).catch(() => {});
-    onDisconnect(pRef).remove().catch(() => {});
-  } catch (e) { 
-    console.warn("presence error", e); 
-  }
-}
-
-onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap => {
-  const val = snap.val() || {};
-  onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
-});
-
-/* ---------- Keep user color map (uid -> color) ---------- */
-const userColors = {}; // uid => color
-function setupUsersListener() {
-  if (usersUnsub) usersUnsub();
-  usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
-    snap.forEach(d => {
-      const data = d.data() || {};
-      userColors[d.id] = data.usernameColor || "#ffffff";
-    });
-    if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
-  });
-}
-setupUsersListener();
-
-/* ---------- daily color helper ---------- */
-async function assignDailyUsernameColor(userRef, data) {
-  const today = new Date().toISOString().split("T")[0];
-  try {
-    if (!data || !data.lastColorDate || data.lastColorDate !== today) {
-      const newColor = randomColor();
-      await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today });
-      userColors[userRef.id] = newColor;
-      return newColor;
-    }
-    userColors[userRef.id] = data.usernameColor || randomColor();
-    return data.usernameColor || randomColor();
-  } catch (e) {
-    console.warn("assignDailyUsernameColor error", e);
-    return data?.usernameColor || randomColor();
-  }
-}
-
-/* ---------- Robust Google sign-in (popup first, fallback to redirect) ---------- */
-googleBtn.addEventListener("click", async () => {
-  const provider = new GoogleAuthProvider();
-
-  try { 
-    await setPersistence(auth, browserLocalPersistence); 
-  } catch (pErr) { 
-    console.warn("persistence set failed", pErr); 
+  function generateReferralCode(name) {
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const initials = name.slice(0,3).toUpperCase();
+    return initials + randomNum;
   }
 
-  try {
-    const result = await signInWithPopup(auth, provider);
-    console.log("Signed in (popup):", result.user.uid);
-    return;
-  } catch (err) {
-    console.warn("signInWithPopup error:", err);
-    if (["auth/popup-blocked","auth/popup-closed-by-user","auth/cancelled-popup-request","auth/web-storage-unsupported"].includes(err.code)) {
-      try {
-        console.log("Falling back to redirect...");
-        await signInWithRedirect(auth, provider);
-        return;
-      } catch (rErr) {
-        console.error("signInWithRedirect failed:", rErr);
-        alert("Sign-in failed: " + (rErr.message || rErr));
-        return;
-      }
-    }
-    if (err.code === "auth/operation-not-allowed") {
-      alert("Google sign-in is disabled in Firebase. Enable it in Firebase Console -> Authentication -> Sign-in method.");
-      return;
-    }
-    if (err.code === "auth/unauthorized-domain") {
-      alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
-      return;
-    }
-    alert("Sign-in failed: " + (err.message || err));
-  }
-});
-
-/* ---------- Send + Buzz ---------- */
-// --- BUZZ feedback function ---
-function triggerBuzzFeedback() {
-  const buzzAudio = document.getElementById("buzz-sound");
-  if (buzzAudio) {
-    buzzAudio.currentTime = 0;
-    buzzAudio.play().catch(() => {});
+  function copyLink() {
+    const copyText = document.getElementById("refLink");
+    copyText.select();
+    document.execCommand("copy");
+    alert("Referral link copied!");
   }
 
-  if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
-    messageInputEl.classList.add("shake");
-    setTimeout(() => messageInputEl.classList.remove("shake"), 500);
-  } else if (navigator.vibrate) {
-    navigator.vibrate([100, 50, 100]);
-  }
-}
+  async function showDashboard(uid) {
+    const docSnap = await db.collection("girls").doc(uid).get();
+    if (!docSnap.exists()) return;
+    const data = docSnap.data();
 
-/* ---------- BUZZ BUTTON LOGIC ---------- */
-buzzBtn.addEventListener("click", async () => {
-  if (!currentUser) {
-    showStarPopup("Sign in to BUZZ");
-    return;
-  }
+    document.getElementById("dashName").textContent = data.name;
+    document.getElementById("refLink").value = `${window.location.origin}/signup.html?ref=${data.referralCode}`;
+    document.getElementById("rewardBalance").textContent = data.rewardBalance || 0;
 
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-  const userData = snap.exists() ? snap.data() : {};
-  const currentStars = userData.stars || 0;
+    // Hive layout
+    const hive = document.getElementById("hiveDashboard");
+    // Set main girl in center
+    const mainGirlDiv = document.getElementById("mainGirl");
+    mainGirlDiv.textContent = data.name;
 
-  if (currentStars < BUZZ_COST) {
-    showStarPopup("Not enough stars to create a BUZZ! 🚨");
-    return;
-  }
+    // Clear previous friend circles
+    document.querySelectorAll(".friendCircle").forEach(el => el.remove());
 
-  const txt = messageInputEl.value.trim();
-  if (!txt) {
-    showStarPopup("Type a message to BUZZ! 🚨");
-    return;
-  }
+    const friends = data.friends || [];
+    const centerX = 200, centerY = 200;
+    const radius = 120;
 
-  try {
-    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+    friends.forEach((friendId, index) => {
+      const angle = (index / friends.length) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
 
-    const color = randomColor();
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId || generateGuestName(),
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor: color
+      db.collection("girls").doc(friendId).get().then(friendDoc => {
+        if (!friendDoc.exists) return;
+        const fData = friendDoc.data();
+
+        const friendDiv = document.createElement("div");
+        friendDiv.className = "circle friendCircle";
+        friendDiv.style.left = `${x - 40}px`;
+        friendDiv.style.top = `${y - 40}px`;
+        friendDiv.textContent = fData.name;
+
+        hive.appendChild(friendDiv);
+      });
     });
 
-    messageInputEl.value = "";
-    triggerBuzzFeedback();
-  } catch (e) {
-    console.error("Error sending BUZZ:", e);
-  }
-});
-// ======= Vibration / iOS workaround & BUZZ feedback =======
-function triggerBuzzFeedbackWithShake() {
-  const buzzAudio = document.getElementById("buzz-sound");
-  if (buzzAudio) {
-    buzzAudio.currentTime = 0;
-    buzzAudio.play().catch(() => {});
+    document.getElementById("signupForm").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("title").textContent = "Hive Dashboard";
   }
 
-  if ("vibrate" in navigator) {
-    const didVibrate = navigator.vibrate([100, 50, 100]);
-    if (!didVibrate && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-      const el = document.getElementById("sendArea");
-      if (el) {
-        el.style.transition = "transform 0.05s";
-        el.style.transform = "translateX(-8px)";
-        setTimeout(() => { el.style.transform = "translateX(8px)"; }, 50);
-        setTimeout(() => { el.style.transform = "translateX(-6px)"; }, 100);
-        setTimeout(() => { el.style.transform = "translateX(6px)"; }, 150);
-        setTimeout(() => { el.style.transform = "translateX(0px)"; }, 200);
-      }
-    }
-  }
-}
-
-// ======= STAR MESSAGE VISIBILITY =======
-const starMessageEl = document.getElementById("star-message");
-
-function updateStarMessage(user) {
-  if (user) starMessageEl.style.display = "none";
-  else starMessageEl.style.display = "block";
-}
-
-// Initial check
-updateStarMessage(currentUser);
-
-// Listen for login/logout changes
-onAuthStateChanged(auth, (user) => {
-  currentUser = user;
-  updateStarMessage(user);
-});
-
-// ======= SEND BUTTON LOGIC =======
-sendBtn.addEventListener("click", async () => {
-  if (!currentUser) {
-    showStarPopup("Sign in to chat");
-    return;
-  }
-
-  const txt = messageInputEl.value.trim();
-  if (!txt) {
-    showStarPopup("Type a message first");
-    return;
-  }
-
-  try {
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId || generateGuestName(),
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null
-    });
-    messageInputEl.value = "";
-  } catch (e) {
-    console.error("Send message failed", e);
-    showStarPopup("Message failed to send");
-  }
-});
-
-// ---------- SEND MESSAGE ON ENTER KEY ----------
-messageInputEl.addEventListener("keydown", async (e) => {
-  if (e.key === "Enter") {
+  document.getElementById("signupForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    sendBtn.click();
-  }
-});
+    const name = document.getElementById("name").value;
+    const dob = document.getElementById("dob").value;
+    const phone = document.getElementById("phone").value;
+    const email = document.getElementById("email").value;
+    const bankName = document.getElementById("bankName").value;
+    const accountNumber = document.getElementById("accountNumber").value;
 
-// ---------- Tip & Redeem (placeholders) ----------
-tipBtn.addEventListener("click", () => {
-  window.open("https://your-placeholder-payment-link.com","_blank");
-  showStarPopup("Thanks! Tip clicked 💵");
-});
-redeemBtn.addEventListener("click", () => {
-  window.open("https://xixi.live","_blank");
-  showStarPopup("Redeem clicked");
-});
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
 
-// ---------- Auto-star (periodic) ----------
-setInterval(async () => {
-  if(!currentUser) return;
-  try {
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    const data = snap.exists() ? snap.data() : {};
-    const curr = data.stars || 0;
-    if(curr < DAILY_STAR_CAP){
-      const next = Math.min(curr + AUTO_STAR_ADD, DAILY_STAR_CAP);
-      await updateDoc(userRef, { stars: next });
-    }
-  } catch(e) { /* ignore periodic errors */ }
-}, 60000);
-
-// ---------- Message rendering ----------
-let lastMessagesArray = [];
-function renderMessagesFromArray(arr) {
-  messagesEl.innerHTML = "";
-  arr.forEach(item => {
-    const m = item.data;
-    const wrapper = document.createElement("div");
-    wrapper.className = "msg";
-
-    const meta = document.createElement("span");
-    meta.className = "meta";
-    meta.textContent = (m.chatId || "Guest") + ":";
-    meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
-    meta.style.marginRight = "4px";
-
-    const content = document.createElement("span");
-    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-    content.textContent = " " + (m.content || "");
-    if(m.buzzColor) content.style.background = m.buzzColor;
-    if(m.highlight) content.style.color = "#000";
-
-    wrapper.appendChild(meta);
-    wrapper.appendChild(content);
-    messagesEl.appendChild(wrapper);
-  });
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-/* ---------- Auth watcher (core) ---------- */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) return;
-
-  try {
-    // ---------- Presence ----------
-    try { setupPresence(user); } catch(e){ console.warn("presence error", e); }
-
-    // ---------- Ensure user doc exists ----------
-    const userRef = doc(db, "users", user.uid);
-    let snap = await getDoc(userRef);
-    let isNewUser = false;
-
-    if (!snap.exists()) {
-      isNewUser = true;
-      await setDoc(userRef, {
-        chatId: user.displayName || generateGuestName(),
-        stars: 100,
-        cash: 0,
-        usernameColor: randomColor(),
-        lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false,
-        lastStarReset: Date.now()
-      });
-      snap = await getDoc(userRef);
-    }
-    let userData = snap.exists() ? snap.data() : {};
-
-    // ---------- Prompt for unique Chat ID if missing ----------
-    if (isNewUser || !userData.chatId) {
-      let newChatId = null;
-      const isUniqueChatId = async (chatId) => {
-        const q = query(collection(db, "users"), where("chatId", "==", chatId));
-        const querySnap = await getDocs(q);
-        return querySnap.empty;
-      };
-      do {
-        newChatId = prompt("Enter a unique chat ID:")?.trim();
-        if (!newChatId) { alert("Chat ID cannot be empty."); continue; }
-        const unique = await isUniqueChatId(newChatId);
-        if (!unique) { alert("This chat ID is already taken. Choose another."); newChatId = null; }
-      } while (!newChatId);
-
+    try {
+      const tempPassword = "TempPass123!";
+      let user;
       try {
-        await updateDoc(userRef, { chatId: newChatId });
-        userData.chatId = newChatId;
-      } catch(e){ console.warn("Failed to update chatId", e); }
-    }
+        const userCredential = await auth.signInWithEmailAndPassword(email, tempPassword);
+        user = userCredential.user;
+        alert("Welcome back!");
+      } catch(err) {
+        if(err.code === "auth/user-not-found") {
+          const userCredential = await auth.createUserWithEmailAndPassword(email, tempPassword);
+          user = userCredential.user;
 
-    // ---------- Daily color ----------
-    const today = new Date().toISOString().split("T")[0];
-    if (!userData.lastColorDate || userData.lastColorDate !== today) {
-      const newColor = randomColor();
-      try {
-        await updateDoc(userRef, { usernameColor: newColor, lastColorDate: today });
-        userData.usernameColor = newColor;
-      } catch(e){ console.warn("usernameColor update failed", e); }
-    }
-
-    // ---------- ADMIN CONTROLS ----------
-    const adminControlsEl = document.getElementById("adminControls");
-    const adminGiveStarsBtn = document.getElementById("adminGiveStarsBtn");
-    const adminResetStarsBtn = document.getElementById("adminResetStarsBtn");
-    const adminGiveCashBtn = document.getElementById("adminGiveCashBtn");
-    const adminResetCashBtn = document.getElementById("adminResetCashBtn");
-    const adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
-
-    if (userData.isAdmin) adminControlsEl.style.display = "flex";
-
-    adminGiveStarsBtn.onclick = async () => {
-      const amount = parseInt(prompt("Enter stars to give:", "100")) || 0;
-      if (amount > 0) {
-        await updateDoc(userRef, { stars: increment(amount) });
-        showStarPopup(`You just gave yourself +${amount} ⭐️`);
-      }
-    };
-    adminResetStarsBtn.onclick = async () => {
-      await updateDoc(userRef, { stars: 0 });
-      showStarPopup("Stars reset to 0");
-    };
-    adminGiveCashBtn.onclick = async () => {
-      const amount = parseInt(prompt("Enter cash amount:", "1000")) || 0;
-      if (amount > 0) {
-        await updateDoc(userRef, { cash: increment(amount) });
-        showStarPopup(`You just added ₦${amount}`);
-      }
-    };
-    adminResetCashBtn.onclick = async () => {
-      await updateDoc(userRef, { cash: 0 });
-      showStarPopup("Cash reset to 0");
-    };
-    adminClearMessagesBtn.onclick = async () => {
-      if (!confirm("Clear all messages in this room?")) return;
-      const snap = await getDocs(collection(db, CHAT_COLLECTION));
-      const batch = writeBatch(db);
-      snap.forEach(docSnap => batch.delete(docSnap.ref));
-      await batch.commit();
-      messagesEl.innerHTML = "";
-      showStarPopup("All messages cleared");
-    };
-
-    // ---------- Set currentUser ----------
-    currentUser = {
-      uid: user.uid,
-      chatId: userData.chatId || user.displayName || generateGuestName(),
-      stars: userData.stars || 0,
-      cash: userData.cash || 0,
-      usernameColor: userData.usernameColor || randomColor(),
-      isAdmin: userData.isAdmin || false
-    };
-
-    // ---------- Update UI ----------
-    if (helloEl) helloEl.style.display = "none";
-    const greetingEl = document.getElementById("greeting");
-    if (greetingEl) greetingEl.style.display = "none";
-    if (authBox) authBox.style.display = "none";
-    sendAreaEl.style.display = "flex";
-    profileBoxEl.style.display = "block";
-
-    profileNameEl.innerText = currentUser.chatId;
-    profileNameEl.style.color = currentUser.usernameColor;
-    starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-
-    // ---------- Listen to user doc for live updates ----------
-    if (userDocUnsub) userDocUnsub();
-    userDocUnsub = onSnapshot(userRef, (uSnap) => {
-      const d = uSnap.data() || {};
-      currentUser.stars = d.stars || 0;
-      currentUser.cash = d.cash || 0;
-      starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-      cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-      if (d.usernameColor) {
-        profileNameEl.style.color = d.usernameColor;
-        userColors[userRef.id] = d.usernameColor;
-      }
-    });
-
-    // ---------- Messages listener ----------
-    if (messagesUnsub) messagesUnsub();
-    const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
-    messagesUnsub = onSnapshot(messagesQuery, (snapshot) => {
-      snapshot.docChanges().forEach(change => {
-        const m = change.doc.data();
-        if (change.type === "added") {
-          const wrapper = document.createElement("div");
-          wrapper.className = "msg";
-          wrapper.id = change.doc.id;
-
-          const meta = document.createElement("span");
-          meta.className = "meta";
-          meta.textContent = (m.chatId || "Guest") + ":";
-          meta.style.color = (m.uid && userColors[m.uid]) ? userColors[m.uid] : '#ffffff';
-          meta.style.marginRight = "4px";
-
-          const content = document.createElement("span");
-          content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-          content.textContent = " " + (m.content || "");
-          if (m.buzzColor) content.style.background = m.buzzColor;
-          if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
-
-          wrapper.appendChild(meta);
-          wrapper.appendChild(content);
-          messagesEl.appendChild(wrapper);
-          messagesEl.scrollTop = messagesEl.scrollHeight;
-
-        } else if (change.type === "modified") {
-          const msgEl = document.getElementById(change.doc.id);
-          if (msgEl) {
-            const contentEl = msgEl.querySelector(".content");
-            contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-            contentEl.style.background = m.buzzColor || "";
-            contentEl.style.color = m.highlight ? "#000" : "";
-            contentEl.style.fontWeight = m.highlight ? "700" : "";
+          let referralCode = generateReferralCode(name);
+          let codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
+          while(!codeExists.empty) {
+            referralCode = generateReferralCode(name);
+            codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
           }
-        }
-      });
-    });
 
-  } catch (err) {
-    console.error("Auth watcher error:", err);
-  }
-});
-} else {
-    // signed out UI -> reset
-    currentUser = null;
-    if(helloEl) helloEl.style.display = "";
-    const greetingEl = document.getElementById("greeting"); if(greetingEl) greetingEl.style.display = "";
-    if(authBox) authBox.style.display = "";
-    sendAreaEl.style.display = "none";
-    profileBoxEl.style.display = "none";
-    messagesEl.innerHTML = "";
-    if(userDocUnsub){ userDocUnsub(); userDocUnsub = null; }
-    if(messagesUnsub){ messagesUnsub(); messagesUnsub = null; }
-  }
-});
-// VIDEO NAVIGATION FIXED
-const videoPlayer = document.getElementById("videoPlayer");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const videoWrapper = document.getElementById("videoWrapper");
-let fadeTimeout;
+          await db.collection("girls").doc(user.uid).set({
+            name, dob, phone, email, bankName, accountNumber,
+            referralCode,
+            referredBy: refCode || null,
+            friends: [],
+            rewardBalance: 0,
+            groupId: null
+          });
 
-// List of videos
-const videos = [
-  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
-  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/1140143_video_with_sound_xt1i7l.mp4",
-  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/some_other_video_id.mp4"
-];
+          if(refCode) {
+            const inviterQuery = await db.collection("girls").where("referralCode", "==", refCode).get();
+            if(!inviterQuery.empty) {
+              const inviterDoc = inviterQuery.docs[0];
+              await inviterDoc.ref.update({
+                friends: firebase.firestore.FieldValue.arrayUnion(user.uid)
+              });
+            }
+          }
+          alert("Signup successful!");
+        } else throw err;
+      }
 
-let currentIndex = 0;
+      await showDashboard(user.uid);
 
-// Hide buttons initially
-prevBtn.style.opacity = "0";
-nextBtn.style.opacity = "0";
-prevBtn.style.pointerEvents = "none";
-nextBtn.style.pointerEvents = "none";
-
-// Load video
-function loadVideo(index) {
-  if(index < 0) index = videos.length - 1;
-  if(index >= videos.length) index = 0;
-  currentIndex = index;
-  videoPlayer.src = videos[currentIndex];
-  videoPlayer.muted = true;
-  videoPlayer.play().catch(()=>{});
-}
-
-// Fade nav buttons
-function showNavButtons() {
-  prevBtn.style.opacity = "0.8";
-  nextBtn.style.opacity = "0.8";
-  if(fadeTimeout) clearTimeout(fadeTimeout);
-  fadeTimeout = setTimeout(() => {
-    prevBtn.style.opacity = "0";
-    nextBtn.style.opacity = "0";
-  }, 2000);
-}
-
-// Enable controls after login
-function enableVideoControls() {
-  prevBtn.style.pointerEvents = "auto";
-  nextBtn.style.pointerEvents = "auto";
-
-  prevBtn.addEventListener("click", () => loadVideo(currentIndex - 1));
-  nextBtn.addEventListener("click", () => loadVideo(currentIndex + 1));
-
-  videoWrapper.addEventListener("mousemove", showNavButtons);
-  videoWrapper.addEventListener("touchstart", showNavButtons);
-
-  prevBtn.addEventListener("mouseenter", () => prevBtn.style.opacity = "0.8");
-  nextBtn.addEventListener("mouseenter", () => nextBtn.style.opacity = "0.8");
-
-  showNavButtons();
-}
-
-// Tap to toggle mute
-videoPlayer.addEventListener("click", () => {
-  videoPlayer.muted = !videoPlayer.muted;
-});
-
-// Optional: keyboard support
-document.addEventListener("keydown", (e) => {
-  if(e.key === "ArrowLeft") loadVideo(currentIndex - 1);
-  if(e.key === "ArrowRight") loadVideo(currentIndex + 1);
-});
-
-// Initial load for all users
-loadVideo(0);
-
-// Enable nav buttons for logged-in users
-if(currentUser) enableVideoControls();
+    } catch(error) {
+      console.error(error);
+      alert("Error: " + error.message);
+    }
+  });
 </script>
 </body>
 </html>
