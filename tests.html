@@ -115,40 +115,37 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* Sticky video wrapper */
 #videoPlayerWrapper {
   position: fixed;
-  top: 10px; /* distance from top */
-  right: 10px; /* or left: 50%; transform: translateX(-50%) for center */
+  top: 10px;
+  right: 10px;
   width: 320px;
   height: 180px;
   z-index: 999;
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   background: #111;
+  overflow: hidden; /* important for rounded corners */
 }
+
+/* iframe container */
 #videoPlayer {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* or contain if you prefer full visibility */
-}
-
-#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
-
-/* messages */
-/* 🔥 Chat messages container */
-/* 🔥 Chat messages container */
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-radius: 8px;
   background: #000;
-
-  /* ✅ give space so last message never hides behind bar */
-  margin-bottom: 70px;
-  box-sizing: border-box;
 }
+
+#videoPlayer iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;  /* disables fullscreen clicks */
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#videoPlayer iframe[src*="mediadelivery"] {
+  opacity: 1;
+}
+
 
 /* 🔥 Message bubble */
 .msg {
