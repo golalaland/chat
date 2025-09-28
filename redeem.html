@@ -17,7 +17,14 @@ body {
 }
 h1 { font-size:2rem; letter-spacing:5px; margin-top:20px; color:#ff66aa; }
 h2 { font-size:1rem; color:#ccc; margin:5px 0 20px 0; }
-img#logo { display:block; margin:0 auto 20px auto; width:40%; max-width:200px; border-radius:20px; object-fit:contain; }
+img#logo {
+  display:block;
+  width:100%;      /* full width */
+  max-width:500px; /* optional max */
+  height:auto;     /* proportional height */
+  margin:0 auto 20px auto;
+  object-fit:contain;
+}
 form { display:flex; flex-direction:column; align-items:center; padding:0 20px; width:100%; max-width:350px; margin:0 auto; }
 label { align-self:flex-start; margin:5px 0 2px 0; font-size:0.9rem; color:#ccc; }
 input { width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:none; font-size:1rem; }
@@ -34,14 +41,19 @@ button:hover { transform:scale(1.05); box-shadow:0 0 15px #ff66aa; }
 footer { margin-top:auto; padding:15px; background:#111; color:#888; font-size:0.9rem; display:flex; justify-content:center; gap:15px; }
 footer a { color:#66ccff; text-decoration:none; }
 footer a:hover { text-decoration:underline; }
-@media(max-width:400px){h1{font-size:1.8rem;} h2{font-size:0.95rem;} input{font-size:0.95rem;padding:10px;} button{font-size:0.95rem;padding:10px 25px;}}
+@media(max-width:400px){
+  h1{font-size:1.8rem;} 
+  h2{font-size:0.95rem;} 
+  input{font-size:0.95rem;padding:10px;} 
+  button{font-size:0.95rem;padding:10px 25px;}
+}
 </style>
 </head>
 <body>
 
 <h1 id="pageLogo">乂丨乂丨</h1>
 <h2 id="pageSubtext">Get paid hosting with CUBE</h2>
-<img src="https://res.cloudinary.com/dekxhwh6l/image/upload/v1759080044/IMG_5078_xe9mpb.png" alt="Placeholder Image" id="logo">
+<img src="https://via.placeholder.com/500x150" alt="Placeholder Image" id="logo">
 
 <!-- SIGN UP FORM -->
 <form id="signupForm">
@@ -119,18 +131,20 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Toggle forms
+// Toggle forms and visual distinction
 document.getElementById("showLogin").addEventListener("click", e=>{
   e.preventDefault();
   document.getElementById("signupForm").style.display="none";
   document.getElementById("loginForm").style.display="flex";
   document.getElementById("pageSubtext").textContent = "Login to your CUBE account";
+  document.getElementById("loginBtn").style.background = "linear-gradient(45deg,#ff66aa,#ff3399)";
 });
 document.getElementById("showSignup").addEventListener("click", e=>{
   e.preventDefault();
   document.getElementById("loginForm").style.display="none";
   document.getElementById("signupForm").style.display="flex";
   document.getElementById("pageSubtext").textContent = "Get paid hosting with CUBE";
+  document.getElementById("signupBtn").style.background = "linear-gradient(45deg,#ff66aa,#ff3399)";
 });
 
 // Age check
