@@ -875,8 +875,21 @@ onAuthStateChanged(auth, async (user) => {
     usernameColor: userData.usernameColor || randomColor(),
     isAdmin: userData.isAdmin || false
   };
-  
+  // Stop previous listener if any
+if (userDocUnsub) userDocUnsub();
 
+// Attach new real-time listener
+userDocUnsub = onSnapshot(userRef, (snap) => {
+  if (!snap.exists()) return;
+  const data = snap.data();
+
+  currentUser.stars = data.stars || 0;
+  currentUser.cash = data.cash || 0;
+
+  if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+  if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+});
+  
   // -------- Chat ID modal for first-time users --------
   if(!userData?.chatId){
     const chosen = await promptForChatIDModal(userRef, userData);
