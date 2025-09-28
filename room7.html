@@ -5,107 +5,100 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Girls Sign Up / Login</title>
 <style>
+  /* Reset & body */
+  * { box-sizing:border-box; margin:0; padding:0; }
   body {
-    margin:0;
-    font-family: 'Segoe UI', sans-serif;
     background:#000;
     color:#fff;
+    font-family:'Segoe UI', sans-serif;
     display:flex;
     justify-content:center;
     align-items:center;
     min-height:100vh;
   }
+
+  /* Container */
   .container {
-    width: 95%;
+    width: 90%;
     max-width: 380px;
-    padding: 25px 20px;
-    background: #111;
-    border-radius: 15px;
-    box-shadow: 0 0 25px #ff1493;
-  }
-  h1 {
     text-align:center;
-    font-size:1.8rem;
-    margin-bottom: 15px;
   }
+
+  /* Logo / image */
+  .logo {
+    width:40%;
+    max-width:150px;
+    margin:0 auto 30px auto;
+    display:block;
+    border-radius:15px;
+  }
+
+  /* Form */
   form {
     display:flex;
     flex-direction:column;
+    gap:12px;
   }
-  label {
-    font-size:0.85rem;
-    margin-bottom:5px;
-    margin-top:10px;
-  }
+
   input {
-    padding:10px 12px;
-    border-radius:8px;
+    padding:12px 15px;
+    border-radius:10px;
     border:none;
     font-size:1rem;
-    margin-bottom:5px;
     background:#222;
     color:#fff;
   }
+
+  input::placeholder {
+    color:#bbb;
+  }
+
   button {
-    margin-top:15px;
+    margin-top:10px;
     padding:12px;
     border:none;
-    border-radius:8px;
-    font-weight:bold;
+    border-radius:10px;
     font-size:1rem;
+    font-weight:bold;
     cursor:pointer;
     background: linear-gradient(90deg,#ff69b4,#ff1493);
     color:#fff;
   }
+
   .toggle-link {
     margin-top:15px;
-    text-align:center;
-    color:#ff69b4;
     font-size:0.9rem;
+    color:#ff69b4;
     cursor:pointer;
   }
+
   .error {
-    font-size:0.8rem;
+    font-size:0.85rem;
     color:#f00;
-    margin-top:5px;
-    text-align:center;
   }
 </style>
 </head>
 <body>
+
 <div class="container">
+  <img src="https://via.placeholder.com/150" alt="Logo" class="logo">
   <h1 id="formTitle">Sign Up</h1>
   <form id="girlForm">
     <!-- Sign Up Fields -->
     <div id="signupFields">
-      <label for="name">Full Name</label>
-      <input type="text" id="name" placeholder="Jane Doe" required>
-
-      <label for="dob">Date of Birth</label>
+      <input type="text" id="name" placeholder="Full Name" required>
       <input type="date" id="dob" required>
-
-      <label for="phone">Phone Number</label>
-      <input type="tel" id="phone" placeholder="08012345678" required>
-
-      <label for="email">Email Address</label>
-      <input type="email" id="email" placeholder="you@example.com" required>
-
-      <label for="bank">Bank Name</label>
+      <input type="tel" id="phone" placeholder="Phone Number" required>
+      <input type="email" id="email" placeholder="Email Address" required>
       <input type="text" id="bank" placeholder="Bank Name" required>
-
-      <label for="account">Account Number</label>
-      <input type="text" id="account" placeholder="0123456789" required>
-
-      <label for="password">Password</label>
-      <input type="password" id="password" placeholder="••••••••" required>
+      <input type="text" id="account" placeholder="Account Number" required>
+      <input type="password" id="password" placeholder="Password" required>
     </div>
 
     <!-- Login Fields -->
     <div id="loginFields" style="display:none;">
-      <label for="loginEmail">Email</label>
-      <input type="email" id="loginEmail" placeholder="you@example.com" required>
-      <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" required>
+      <input type="email" id="loginEmail" placeholder="Email Address" required>
+      <input type="password" id="loginPassword" placeholder="Password" required>
     </div>
 
     <div class="error" id="errorMsg"></div>
@@ -129,6 +122,7 @@
     appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
     measurementId: "G-S77BMC266C"
   };
+
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
@@ -147,12 +141,12 @@
     isLogin = !isLogin;
     if(isLogin){
       signupFields.style.display='none';
-      loginFields.style.display='block';
+      loginFields.style.display='flex';
       formTitle.innerText = 'Log In';
       submitBtn.innerText = 'Log In';
       toggleForm.innerText = "Don't have an account? Sign Up";
     } else {
-      signupFields.style.display='block';
+      signupFields.style.display='flex';
       loginFields.style.display='none';
       formTitle.innerText = 'Sign Up';
       submitBtn.innerText = 'Sign Up';
