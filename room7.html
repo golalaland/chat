@@ -504,6 +504,7 @@ let lastMessagesArray = [];
 const BUZZ_COST = 50;
 const AUTO_STAR_ADD = 5;
 const DAILY_STAR_CAP = 500;
+const SEND_COST = 1; // cost per send
 
 /* ---------- Helpers ---------- */
 function generateGuestName(){ return "GUEST " + Math.floor(1000 + Math.random()*9000); }
@@ -714,12 +715,35 @@ function renderMessagesFromArray(arr){
 }
 
 /* ---------- SEND (normal) ---------- */
-if(sendBtn) {
+if (sendBtn) {
   sendBtn.addEventListener("click", async () => {
-    if(!currentUser) { showStarPopup("Sign in to chat"); return; }
+    if (!currentUser) { 
+      showStarPopup("Sign in to chat"); 
+      return; 
+    }
     const txt = messageInputEl?.value.trim();
-    if(!txt) { showStarPopup("Type a message first"); return; }
+    if (!txt) { 
+      showStarPopup("Type a message first"); 
+      return; 
+    }
+
+    // ⭐ check stars before sending
+    if ((currentUser.stars || 0) < SEND_COST) {
+      showStarPopup("Not enough stars to send a message");
+      return;
+    }
+
     try {
+      // deduct instantly for UI
+      currentUser.stars -= SEND_COST;
+      starCountEl.textContent = currentUser.stars;
+
+      // update in Firestore
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        stars: increment(-SEND_COST)
+      });
+
+      // send the message
       await addDoc(collection(db, CHAT_COLLECTION), {
         content: txt,
         uid: currentUser.uid,
@@ -728,20 +752,28 @@ if(sendBtn) {
         highlight: false,
         buzzColor: null
       });
-      if(messageInputEl) messageInputEl.value = "";
-    } catch(e) {
+
+      if (messageInputEl) messageInputEl.value = "";
+
+    } catch (e) {
       console.error("Send failed", e);
       showStarPopup("Message failed to send");
+
+      // rollback stars if failed
+      currentUser.stars += SEND_COST;
+      starCountEl.textContent = currentUser.stars;
     }
   });
 
   // Enter => send (unless shift)
-  if(messageInputEl) messageInputEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendBtn.click();
-    }
-  });
+  if (messageInputEl) {
+    messageInputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+  }
 }
 
 /* ---------- BUZZ (typed messages only, permanent) ---------- */
