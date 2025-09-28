@@ -590,70 +590,50 @@ async function assignDailyUsernameColor(userRef, data){
 }
 
 /* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    currentUser = null;
-    if (authBox) authBox.style.display = "";
-    if (sendAreaEl) sendAreaEl.style.display = "none";
-    if (profileBoxEl) profileBoxEl.style.display = "none";
-    if (messagesEl) messagesEl.innerHTML = "";
-    if (userDocUnsub) { userDocUnsub(); userDocUnsub = null; }
-    if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
-    return;
-  }
+That’s the section yeah? 
 
-  try { 
-    setupPresence(user); 
-  } catch (e) { 
-    console.warn("presence err", e); 
-  }
+AuthStateChanged(auth, async (user) => {
+  if(!user){
+    currentUser = null;
+    if(authBox) authBox.style.display = "";
+    if(sendAreaEl) sendAreaEl.style.display = "none";
+    if(profileBoxEl) profileBoxEl.style.display = "none";
+    if(messagesEl) messagesEl.innerHTML = "";
+    if(userDocUnsub){ userDocUnsub(); userDocUnsub=null; }
+    if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }
+    return;
+  }
 
-  const userRef = doc(db, "users", user.uid);
-  let snap = await getDoc(userRef);
+  try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
-  if (!snap.exists()) {
-    const guestName = generateGuestName(); // ✅ only once
-    await setDoc(userRef, {
-      chatId: guestName,
-      chatIdLower: guestName.toLowerCase(),
-      stars: 100,
-      cash: 0,
-      usernameColor: randomColor(),
-      lastColorDate: new Date().toISOString().split("T")[0],
-      isAdmin: false,
-      lastStarReset: Date.now()
-    });
-    snap = await getDoc(userRef);
-  }
+  const userRef = doc(db, "users", user.uid);
+  let snap = await getDoc(userRef);
+  if(!snap.exists()){
+    await setDoc(userRef, {
+      chatId: generateGuestName(),
+      chatIdLower: (generateGuestName()).toLowerCase(),
+      stars: 100,
+      cash: 0,
+      usernameColor: randomColor(),
+      lastColorDate: new Date().toISOString().split("T")[0],
+      isAdmin: false,
+      lastStarReset: Date.now()
+    });
+    snap = await getDoc(userRef);
+  }
+  let userData = snap.exists()? snap.data() : {};
 
-  let userData = snap.exists() ? snap.data() : {};
-  await assignDailyUsernameColor(userRef, userData);
+  await assignDailyUsernameColor(userRef, userData);
 
-  currentUser = {
-    uid: user.uid,
-    chatId: userData.chatId || user.displayName || generateGuestName(),
-    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
-    stars: userData.stars || 0,
-    cash: userData.cash || 0,
-    usernameColor: userData.usernameColor || randomColor(),
-    isAdmin: userData.isAdmin || false
-  };
-
-  // ✅ Show chat UI right away
-  if (authBox) authBox.style.display = "none";
-  if (sendAreaEl) sendAreaEl.style.display = "";
-  if (profileBoxEl) profileBoxEl.style.display = "";
-
-  // ⭐ Start star sync after UI shows
-  if (userDocUnsub) userDocUnsub();
-  userDocUnsub = onSnapshot(userRef, (snap) => {
-    const data = snap.data();
-    if (data) {
-      currentUser.stars = data.stars || 0;
-      starCountEl.textContent = currentUser.stars;
-    }
-  });
-});
+  currentUser = {
+    uid: user.uid,
+    chatId: userData.chatId || user.displayName || generateGuestName(),
+    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
+    stars: userData.stars || 0,
+    cash: userData.cash || 0,
+    usernameColor: userData.usernameColor || randomColor(),
+    isAdmin: userData.isAdmin || false
+  };
 /* ---------- HELLO rotation ---------- */
 const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
 let helloIndex = 0;
