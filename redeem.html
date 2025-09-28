@@ -77,7 +77,7 @@ button:hover{
   background:linear-gradient(45deg,#ff66aa,#ff3399);
 }
 #vipPerks{
-  text-align:left;
+  text-align:center;
   max-width:400px;
   margin:30px auto;
   padding:15px;
@@ -88,20 +88,9 @@ button:hover{
   color:#ff66aa;
   margin-bottom:15px;
 }
-#vipPerks ul{
-  list-style:none;
-  padding:0;
-}
-#vipPerks li{
-  margin-bottom:10px;
-  padding-left:20px;
-  position:relative;
-}
-#vipPerks li::before{
-  content:"⭐";
-  position:absolute;
-  left:0;
-  color:#ff66aa;
+#vipPerks p{
+  color:#ccc;
+  line-height:1.6;
 }
 footer{
   margin-top:auto;
@@ -134,18 +123,17 @@ footer a:hover{text-decoration:underline;}
   <input type="text" id="userName" placeholder="Enter your name" required>
   <label for="userEmail">Email</label>
   <input type="email" id="userEmail" placeholder="Enter your email" required>
-  <button type="button" id="payBtn">Pay ₦2,999 & Join VIP</button>
+  <button type="button" id="payBtn">Join VIP</button>
 </form>
 
 <div id="vipPerks">
   <h3>Perks of Joining VIP</h3>
-  <ul>
-    <li>Direct chat & personal connection with <span id="perkGirlName">the host</span></li>
-    <li>Unlock premium content & behind-the-scenes media</li>
-    <li>VIP badges & status in the community</li>
-    <li>Access to exclusive events & rewards</li>
-    <li>Early notifications & special surprises</li>
-  </ul>
+  <p>Direct chat & personal connection with <span id="perkGirlName">the host</span><br>
+     Unlock premium content & behind-the-scenes media<br>
+     VIP badges & status in the community<br>
+     Access to exclusive events & rewards<br>
+     Early notifications & special surprises
+  </p>
 </div>
 
 <footer>
