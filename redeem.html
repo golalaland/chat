@@ -15,26 +15,84 @@ body{
   flex-direction:column;
   min-height:100vh;
 }
-h1{font-size:2rem; letter-spacing:5px; margin-top:20px; color:#ff66aa;}
-h2{font-size:1rem; color:#ccc; margin:5px 0 20px 0;}
-img#girlImage{width:100%; max-width:400px; height:auto; margin:0 auto 20px auto; border-radius:15px;}
-form{display:flex; flex-direction:column; align-items:center; padding:0 20px; width:100%; max-width:350px; margin:0 auto;}
-label{align-self:flex-start; margin:5px 0 2px 0; font-size:0.9rem; color:#ccc;}
-input{width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:none; font-size:1rem;}
+h1{
+  font-size:1.8rem;
+  letter-spacing:2px;
+  margin-top:20px;
+  color:#ff66aa;
+}
+img#girlImage{
+  width:100%;
+  max-width:400px;
+  height:auto;
+  margin:0 auto 20px auto;
+  border-radius:15px;
+  object-fit:cover;
+}
+form{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:0 20px;
+  width:100%;
+  max-width:350px;
+  margin:0 auto;
+}
+label{
+  align-self:flex-start;
+  margin:5px 0 2px 0;
+  font-size:0.9rem;
+  color:#ccc;
+}
+input{
+  width:100%;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:none;
+  font-size:1rem;
+}
 input:focus{outline:none; box-shadow:0 0 10px #ff66aa;}
-button{margin-top:15px; padding:12px 30px; font-size:1rem; font-weight:bold; color:#fff; border:none; border-radius:12px; cursor:pointer; transition:transform 0.2s,box-shadow 0.2s;}
-button:hover{transform:scale(1.05); box-shadow:0 0 15px #ff66aa;}
-#payBtn{background:linear-gradient(45deg,#ff66aa,#ff3399);}
-footer{margin-top:auto; padding:15px; background:#111; color:#888; font-size:0.9rem; display:flex; justify-content:center; gap:15px;}
+button{
+  margin-top:15px;
+  padding:12px 30px;
+  font-size:1rem;
+  font-weight:bold;
+  color:#fff;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s;
+}
+button:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 15px #ff66aa;
+}
+#payBtn{
+  background:linear-gradient(45deg,#ff66aa,#ff3399);
+}
+footer{
+  margin-top:auto;
+  padding:15px;
+  background:#111;
+  color:#888;
+  font-size:0.9rem;
+  display:flex;
+  justify-content:center;
+  gap:15px;
+}
 footer a{color:#66ccff; text-decoration:none;}
 footer a:hover{text-decoration:underline;}
-@media(max-width:400px){h1{font-size:1.8rem;} h2{font-size:0.95rem;} input{font-size:0.95rem;padding:10px;} button{font-size:0.95rem;padding:10px 25px;}}
+@media(max-width:400px){
+  h1{font-size:1.6rem;}
+  input{font-size:0.95rem;padding:10px;}
+  button{font-size:0.95rem;padding:10px 25px;}
+}
 </style>
 </head>
 <body>
 
-<h1>Exclusive VIP Access</h1>
-<h2 id="subText">Join [Girl's Name] VIP</h2>
+<h1 id="headerText">Join VIP Club – ₦2,999/week</h1>
 <img src="https://via.placeholder.com/400x200" id="girlImage" alt="Girl Image">
 
 <form id="vipForm">
@@ -42,8 +100,6 @@ footer a:hover{text-decoration:underline;}
   <input type="text" id="userName" placeholder="Enter your name" required>
   <label for="userEmail">Email</label>
   <input type="email" id="userEmail" placeholder="Enter your email" required>
-  <label for="amount">Amount (NGN)</label>
-  <input type="number" id="amount" placeholder="Enter amount" value="1000" required>
   <button type="button" id="payBtn">Pay & Join VIP</button>
 </form>
 
@@ -73,14 +129,26 @@ const db = firebase.firestore();
 
 // Get referral code from URL
 const urlParams = new URLSearchParams(window.location.search);
-const girlCode = urlParams.get('ref'); // this links to the inviting girl
+const girlCode = urlParams.get('ref'); // links back to the inviting girl
 
+// Optionally, fetch girl’s name & photo dynamically
+if(girlCode){
+  db.collection("girls").where("referralCode","==",girlCode).get().then(snapshot=>{
+    if(!snapshot.empty){
+      const data = snapshot.docs[0].data();
+      document.getElementById("headerText").textContent = `Join ${data.name}'s VIP Club – ₦2,999/week`;
+      document.getElementById("girlImage").src = data.photoURL || "https://via.placeholder.com/400x200";
+    }
+  });
+}
+
+// Paystack subscription
 document.getElementById("payBtn").addEventListener("click", function(){
   const name = document.getElementById("userName").value;
   const email = document.getElementById("userEmail").value;
-  const amount = parseInt(document.getElementById("amount").value) || 1000;
+  const amount = 2999; // fixed weekly subscription
 
-  if(!name || !email || amount<=0){
+  if(!name || !email){
     alert("Please fill all fields correctly.");
     return;
   }
@@ -98,7 +166,7 @@ document.getElementById("payBtn").addEventListener("click", function(){
         name:name,
         email:email,
         referredBy:girlCode || null,
-        amountPaid:amount,
+        plan:"Weekly ₦2,999",
         reference:response.reference,
         timestamp:firebase.firestore.FieldValue.serverTimestamp()
       }).then(async()=>{
@@ -111,11 +179,11 @@ document.getElementById("payBtn").addEventListener("click", function(){
             });
           }
         }
-        alert("Payment successful! Welcome to VIP.");
-      }).catch(err=>{console.error(err); alert("Error saving payment.");});
+        alert("Subscription successful! Welcome to VIP.");
+      }).catch(err=>{console.error(err); alert("Error saving subscription.");});
     },
     onClose: function(){
-      alert("Payment cancelled.");
+      alert("Subscription cancelled.");
     }
   });
   handler.openIframe();
