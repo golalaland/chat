@@ -8,9 +8,9 @@
 :root {
   --bg: #f5f5f5;
   --card-bg: #fff;
-  --accent: #ff33cc; /* neon pink */
+  --accent: #ff33cc; /* neon pink for cost and buttons */
   --text: #000;
-  --btn-bg: #ff33cc; /* neon pink button */
+  --btn-bg: #ff33cc; 
   --btn-text: #fff;
 }
 
@@ -114,6 +114,23 @@ header {
 .buy-btn:hover {
   background: #ff66d6;
 }
+
+/* Take Me Home button */
+#home-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#home-btn:hover {
+  background: #ff66d6;
+}
 </style>
 </head>
 <body>
@@ -125,11 +142,15 @@ header {
     CHATID: <span id="chat-id">12345</span>
   </div>
   <div style="font-size:0.9rem; font-weight:bold;">
-    Stars: <span style="font-weight:300;" id="stars-count">0</span>
+    Stars Balance: <span style="font-weight:300;" id="stars-count">0</span>
   </div>
 </div>
 
 <div class="shop-grid" id="shop-items"></div>
+
+<div style="text-align:center; padding:1rem;">
+  <button id="home-btn">Take Me Home</button>
+</div>
 
 <script>
 // Full 18 products with availability
@@ -217,9 +238,12 @@ async function buyItem(item, card) {
 
 renderShop();
 loadUser();
-
-// Optional: auto-refresh stars every 10 sec if spent elsewhere
 setInterval(loadUser, 10000);
+
+// Optional: "Take Me Home" button click
+document.getElementById('home-btn').addEventListener('click', () => {
+  window.location.href = '/'; // replace '/' with your home URL
+});
 </script>
 
 </body>
