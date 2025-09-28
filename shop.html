@@ -6,8 +6,8 @@
 <title>乂丨乂丨Redeem</title>
 <style>
 :root {
-  --bg: #0000;
-  --card-bg: #000;
+  --bg: #000;
+  --card-bg: #111;
   --accent: #ff33cc; /* neon pink for cost and buttons */
   --text: #fff;
   --btn-bg: #ff33cc; 
@@ -26,7 +26,7 @@ header {
   padding: 1rem 2rem;
   font-size: 1.8rem;
   font-weight: bold;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #333;
   text-align: center;
 }
 
@@ -50,17 +50,17 @@ header {
   background: var(--card-bg);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   transition: transform 0.2s, box-shadow 0.2s;
-  position: relative; /* needed for badge */
+  position: relative;
 }
 
 .product-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 15px rgba(255,51,204,0.5);
 }
 
 .product-card img {
@@ -115,7 +115,6 @@ header {
   background: #ff66d6;
 }
 
-/* Take Me Home button */
 #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -139,10 +138,10 @@ header {
 
 <div id="user-info">
   <div style="font-weight:bold; font-size:1.3rem; background:#000; color:#fff; display:inline-block; padding:0.2rem 0.5rem; border-radius:4px;">
-    CHATID: <span id="chat-id">12345</span>
+    CHATID: <span id="chat-id">---</span>
   </div>
   <div style="font-size:0.9rem; font-weight:bold;">
-    Stars Balance: <span style="font-weight:300;" id="stars-count">0</span>
+    Stars Balance: <span id="stars-count">0</span>
   </div>
 </div>
 
@@ -152,31 +151,38 @@ header {
   <button id="home-btn">Take Me Home</button>
 </div>
 
-<script>
-// Full 18 products with availability
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const starsCountEl = document.getElementById('stars-count');
+const chatIdEl = document.getElementById('chat-id');
+const shopItemsEl = document.getElementById('shop-items');
+
+// Get UID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const uid = urlParams.get('uid');
+
+if (!uid) {
+  alert("User not signed in!");
+}
+
+// Example shop items
 const shopItems = [
   { id: 1, name: "Host Gig", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 50 },
   { id: 2, name: "VIP Access to CUBE", cost: 20, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 8 },
   { id: 3, name: "10gb Internet Data", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 15 },
-  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150", available: 5 },
-  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150", available: 10 },
-  { id: 6, name: "Chat Highlight", cost: 40, img: "https://via.placeholder.com/150", available: 6 },
-  { id: 7, name: "Profile Frame", cost: 25, img: "https://via.placeholder.com/150", available: 14 },
-  { id: 8, name: "VIP Emote", cost: 15, img: "https://via.placeholder.com/150", available: 20 },
-  { id: 9, name: "Secret Room Pass", cost: 200, img: "https://via.placeholder.com/150", available: 2 },
-  { id: 10, name: "Daily Booster", cost: 35, img: "https://via.placeholder.com/150", available: 7 },
-  { id: 11, name: "Exclusive Wallpaper", cost: 45, img: "https://via.placeholder.com/150", available: 9 },
-  { id: 12, name: "VIP Badge Animation", cost: 60, img: "https://via.placeholder.com/150", available: 4 },
-  { id: 13, name: "Gift Pack", cost: 55, img: "https://via.placeholder.com/150", available: 11 },
-  { id: 14, name: "Mystery Box", cost: 70, img: "https://via.placeholder.com/150", available: 3 },
-  { id: 15, name: "Lucky Spin Token", cost: 80, img: "https://via.placeholder.com/150", available: 5 },
-  { id: 16, name: "Custom Chat Theme", cost: 90, img: "https://via.placeholder.com/150", available: 6 },
-  { id: 17, name: "Flash Spotlight", cost: 120, img: "https://via.placeholder.com/150", available: 2 },
-  { id: 18, name: "Ultra VIP Pass", cost: 250, img: "https://via.placeholder.com/150", available: 1 }
+  // Add other products here
 ];
-
-const starsCountEl = document.getElementById('stars-count');
-const shopItemsEl = document.getElementById('shop-items');
 
 function createProductCard(item) {
   const card = document.createElement('div');
@@ -190,10 +196,6 @@ function createProductCard(item) {
       <button class="buy-btn">Buy</button>
     </div>
   `;
-  
-  const buyBtn = card.querySelector('.buy-btn');
-  buyBtn.addEventListener('click', () => buyItem(item, card));
-  
   return card;
 }
 
@@ -202,47 +204,31 @@ function renderShop() {
   shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-// Load stars from chatroom backend
+// Load user data
 async function loadUser() {
-  try {
-    const res = await fetch('/api/user'); // replace with your backend endpoint
-    const data = await res.json();
-    starsCountEl.innerText = data.stars;
-  } catch(err) {
-    console.error("Failed to load user:", err);
+  const userRef = doc(db, "users", uid);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) {
+    alert("User data not found!");
+    return;
   }
-}
+  const data = snap.data();
+  chatIdEl.innerText = data.chatId || "---";
+  starsCountEl.innerText = data.stars || 0;
 
-// Buy product and update stars
-async function buyItem(item, card) {
-  try {
-    const res = await fetch('/api/buy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itemId: item.id })
-    });
-    const result = await res.json();
-    if(result.success) {
-      starsCountEl.innerText = result.starsLeft;
-      card.style.transform = "scale(1.05)";
-      setTimeout(() => card.style.transform = "scale(1)", 200);
-      if(navigator.vibrate) navigator.vibrate(100);
-      alert(`Purchased ${item.name}!`);
-    } else {
-      alert(result.message);
-    }
-  } catch(err) {
-    console.error("Purchase failed:", err);
-  }
+  // Real-time updates
+  onSnapshot(userRef, (docSnap) => {
+    if (!docSnap.exists()) return;
+    const d = docSnap.data();
+    starsCountEl.innerText = d.stars || 0;
+  });
 }
 
 renderShop();
 loadUser();
-setInterval(loadUser, 10000);
 
-// Optional: "Take Me Home" button click
 document.getElementById('home-btn').addEventListener('click', () => {
-  window.location.href = '/'; // replace '/' with your home URL
+  window.location.href = '/'; // replace with your homepage
 });
 </script>
 
