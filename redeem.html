@@ -3,194 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cube Signup/Login</title>
+<title>CUBE Sign Up / Login</title>
 <style>
-  body {
-    margin: 0;
-    font-family: 'Helvetica Neue', sans-serif;
-    background: #000;
-    color: #fff;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  h1 {
-    font-size: 2.5rem;  /* Reduced size */
-    letter-spacing: 5px;
-    margin-top: 20px;
-    color: #ff66aa;
-  }
-
-  h2 {
-    font-size: 1.1rem;
-    color: #ccc;
-    margin: 5px 0 20px 0; /* Closer to logo */
-  }
-
-  img {
-    width: 120px;  /* Smaller logo */
-    height: 120px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-  }
-
-  form {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 20px;
-    width: 100%;
-    max-width: 350px;
-    margin: 0 auto;
-  }
-
-  label {
-    align-self: flex-start;
-    margin: 5px 0 2px 0;
-    font-size: 0.9rem;
-    color: #ccc;
-  }
-
-  input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    border-radius: 10px;
-    border: none;
-    font-size: 1rem;
-  }
-
-  input:focus {
-    outline: none;
-    box-shadow: 0 0 10px #ff66aa;
-  }
-
-  button {
-    margin-top: 15px;
-    padding: 12px 30px;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #fff;
-    background: linear-gradient(45deg, #ff66aa, #ff3399); /* Gradient pink */
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px #ff66aa;
-  }
-
-  #hiveDashboard {
-    position: relative;
-    width: 90vw;
-    max-width: 400px;
-    height: 90vw;
-    max-height: 400px;
-    margin: 20px auto;
-    border-radius: 50%;
-    background: #111;
-    border: 2px solid #333;
-  }
-
-  .circle {
-    position: absolute;
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s;
-  }
-
-  .circle:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 15px #ff66aa;
-  }
-
-  #mainGirl {
-    background: linear-gradient(45deg, #ff66aa, #ff99cc);
-  }
-
-  .friendCircle {
-    background: linear-gradient(45deg, #66ccff, #3399ff);
-  }
-
-  footer {
-    margin-top: auto;
-    padding: 15px;
-    background: #111;
-    color: #888;
-    font-size: 0.9rem;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-  }
-
-  footer a {
-    color: #66ccff;
-    text-decoration: none;
-  }
-
-  footer a:hover {
-    text-decoration: underline;
-  }
-
-  @media (max-width: 400px) {
-    h1 { font-size: 2rem; }
-    h2 { font-size: 1rem; }
-    input { font-size: 0.95rem; padding: 10px; }
-    button { font-size: 0.95rem; padding: 10px 25px; }
-  }
+body {
+  margin:0;
+  font-family:'Helvetica Neue',sans-serif;
+  background:#000;
+  color:#fff;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+h1 { font-size:2.5rem; letter-spacing:5px; margin-top:20px; color:#ff66aa; }
+h2 { font-size:1.1rem; color:#ccc; margin:5px 0 20px 0; }
+img { width:120px; height:120px; border-radius:20px; margin-bottom:20px; }
+form { display:flex; flex-direction:column; align-items:center; padding:0 20px; width:100%; max-width:350px; margin:0 auto; }
+label { align-self:flex-start; margin:5px 0 2px 0; font-size:0.9rem; color:#ccc; }
+input { width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:none; font-size:1rem; }
+input:focus { outline:none; box-shadow:0 0 10px #ff66aa; }
+button { margin-top:15px; padding:12px 30px; font-size:1rem; font-weight:bold; color:#fff; border:none; border-radius:12px; cursor:pointer; transition:transform 0.2s,box-shadow 0.2s; }
+button:hover { transform:scale(1.05); box-shadow:0 0 15px #ff66aa; }
+#signupBtn { background:linear-gradient(45deg,#ff66aa,#ff3399); }
+#loginBtn { background:linear-gradient(45deg,#66ccff,#3399ff); }
+#hiveDashboard { position:relative; width:90vw; max-width:400px; height:90vw; max-height:400px; margin:20px auto; border-radius:50%; background:#111; border:2px solid #333; }
+.circle { position:absolute; width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; font-weight:bold; cursor:pointer; transition:transform 0.2s; }
+.circle:hover { transform:scale(1.2); box-shadow:0 0 15px #ff66aa; }
+#mainGirl { background:linear-gradient(45deg,#ff66aa,#ff99cc); }
+.friendCircle { background:linear-gradient(45deg,#66ccff,#3399ff); }
+footer { margin-top:auto; padding:15px; background:#111; color:#888; font-size:0.9rem; display:flex; justify-content:center; gap:15px; }
+footer a { color:#66ccff; text-decoration:none; }
+footer a:hover { text-decoration:underline; }
+@media(max-width:400px){h1{font-size:2rem;} h2{font-size:1rem;} input{font-size:0.95rem;padding:10px;} button{font-size:0.95rem;padding:10px 25px;}}
 </style>
 </head>
 <body>
 
 <h1>乂丨乂丨</h1>
 <h2>Get paid hosting with CUBE</h2>
-
 <img src="https://via.placeholder.com/150" alt="Placeholder Image">
 
+<!-- SIGN UP FORM -->
 <form id="signupForm">
+  <h3>Sign Up</h3>
   <label for="name">Name</label>
   <input type="text" id="name" placeholder="Enter your name" required />
-
   <label for="dob">Date of Birth</label>
   <input type="date" id="dob" required />
-
   <label for="phone">Phone Number</label>
   <input type="tel" id="phone" placeholder="Enter your phone" required />
-
   <label for="email">Email Address</label>
   <input type="email" id="email" placeholder="Enter your email" required />
-
+  <label for="password">Password</label>
+  <input type="password" id="password" placeholder="Set a password" required />
   <label for="bankName">Bank Name</label>
   <input type="text" id="bankName" placeholder="Enter your bank name" required />
-
   <label for="accountNumber">Account Number</label>
   <input type="text" id="accountNumber" placeholder="Enter your account number" required />
-
-  <button type="submit" id="submitBtn">Sign Up / Login</button>
+  <button type="submit" id="signupBtn">Sign Up</button>
 </form>
 
+<!-- LOGIN FORM -->
+<form id="loginForm" style="display:none;">
+  <h3>Login</h3>
+  <label for="loginEmail">Email</label>
+  <input type="email" id="loginEmail" placeholder="Enter your email" required />
+  <label for="loginPassword">Password</label>
+  <input type="password" id="loginPassword" placeholder="Enter your password" required />
+  <button type="button" id="loginBtn">Login</button>
+</form>
+
+<!-- DASHBOARD -->
 <div id="dashboard" style="display:none;">
   <h3>Welcome <span id="dashName"></span>!</h3>
   <p>Your referral link:</p>
   <input type="text" id="refLink" readonly style="width:80%; max-width:300px; margin-bottom:15px;">
   <button onclick="copyLink()">Copy Link</button>
-  
   <p>Stars Collected: <span id="rewardBalance">0</span> ⭐</p>
   <p>Cash Earned: $<span id="cashEarned">0.00</span></p>
-  
   <h4>Your Hive:</h4>
   <div id="hiveDashboard">
     <div id="mainGirl" class="circle">Main Girl</div>
@@ -217,134 +107,125 @@ const firebaseConfig = {
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
   measurementId: "G-S77BMC266C"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-function generateReferralCode(name) {
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
-  const initials = name.slice(0,3).toUpperCase();
-  return initials + randomNum;
+// Age check
+function isAdult(dob) {
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if(m<0 || (m===0 && today.getDate()<birthDate.getDate())) age--;
+  return age>=18;
 }
 
-function copyLink() {
-  const copyText = document.getElementById("refLink");
+// Referral code generator
+function generateReferralCode(name){
+  const randomNum=Math.floor(1000+Math.random()*9000);
+  const initials=name.slice(0,3).toUpperCase();
+  return initials+randomNum;
+}
+
+function copyLink(){
+  const copyText=document.getElementById("refLink");
   copyText.select();
   document.execCommand("copy");
   alert("Referral link copied!");
 }
 
-async function showDashboard(uid) {
+// Show dashboard with real-time updates
+async function showDashboard(uid){
   const userDocRef = db.collection("girls").doc(uid);
-
-  // Real-time listener for stars/cash/friends
-  userDocRef.onSnapshot(docSnap => {
+  userDocRef.onSnapshot(docSnap=>{
     if(!docSnap.exists) return;
-    const data = docSnap.data();
+    const data=docSnap.data();
+    document.getElementById("dashName").textContent=data.name;
+    document.getElementById("refLink").value=`${window.location.origin}/signup.html?ref=${data.referralCode}`;
+    document.getElementById("rewardBalance").textContent=data.rewardBalance||0;
+    document.getElementById("cashEarned").textContent=(data.cashEarned||0).toFixed(2);
 
-    document.getElementById("dashName").textContent = data.name;
-    document.getElementById("refLink").value = `${window.location.origin}/signup.html?ref=${data.referralCode}`;
-    document.getElementById("rewardBalance").textContent = data.rewardBalance || 0;
-    document.getElementById("cashEarned").textContent = (data.cashEarned || 0).toFixed(2);
-
-    // Hive
-    const hive = document.getElementById("hiveDashboard");
-    const mainGirlDiv = document.getElementById("mainGirl");
-    mainGirlDiv.textContent = data.name;
-
-    document.querySelectorAll(".friendCircle").forEach(el => el.remove());
-
-    const friends = data.friends || [];
-    const centerX = hive.offsetWidth / 2;
-    const centerY = hive.offsetHeight / 2;
-    const radius = centerX - 70;
-
-    friends.forEach((friendId, index) => {
-      const angle = (index / friends.length) * 2 * Math.PI;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-
-      db.collection("girls").doc(friendId).get().then(friendDoc => {
+    // Hive layout
+    const hive=document.getElementById("hiveDashboard");
+    const mainGirlDiv=document.getElementById("mainGirl");
+    mainGirlDiv.textContent=data.name;
+    document.querySelectorAll(".friendCircle").forEach(el=>el.remove());
+    const friends=data.friends||[];
+    const centerX=hive.offsetWidth/2;
+    const centerY=hive.offsetHeight/2;
+    const radius=centerX-70;
+    friends.forEach((friendId,index)=>{
+      const angle=(index/friends.length)*2*Math.PI;
+      const x=centerX+radius*Math.cos(angle);
+      const y=centerY+radius*Math.sin(angle);
+      db.collection("girls").doc(friendId).get().then(friendDoc=>{
         if(!friendDoc.exists) return;
-        const fData = friendDoc.data();
-
-        const friendDiv = document.createElement("div");
-        friendDiv.className = "circle friendCircle";
-        friendDiv.style.left = `${x - 35}px`;
-        friendDiv.style.top = `${y - 35}px`;
-        friendDiv.textContent = fData.name;
-
+        const fData=friendDoc.data();
+        const friendDiv=document.createElement("div");
+        friendDiv.className="circle friendCircle";
+        friendDiv.style.left=`${x-35}px`;
+        friendDiv.style.top=`${y-35}px`;
+        friendDiv.textContent=fData.name;
         hive.appendChild(friendDiv);
       });
     });
   });
-
-  document.getElementById("signupForm").style.display = "none";
-  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("signupForm").style.display="none";
+  document.getElementById("loginForm").style.display="none";
+  document.getElementById("dashboard").style.display="block";
 }
 
-document.getElementById("signupForm").addEventListener("submit", async e => {
+// Sign Up
+document.getElementById("signupForm").addEventListener("submit",async e=>{
   e.preventDefault();
-  const name = document.getElementById("name").value;
-  const dob = document.getElementById("dob").value;
-  const phone = document.getElementById("phone").value;
-  const email = document.getElementById("email").value;
-  const bankName = document.getElementById("bankName").value;
-  const accountNumber = document.getElementById("accountNumber").value;
+  const name=document.getElementById("name").value;
+  const dob=document.getElementById("dob").value;
+  if(!isAdult(dob)){alert("You must be 18 or older to sign up."); return;}
+  const phone=document.getElementById("phone").value;
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  const bankName=document.getElementById("bankName").value;
+  const accountNumber=document.getElementById("accountNumber").value;
+  const urlParams=new URLSearchParams(window.location.search);
+  const refCode=urlParams.get('ref');
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const refCode = urlParams.get('ref');
-
-  try {
-    const tempPassword = "TempPass123!";
-    let user;
-
-    try {
-      const userCredential = await auth.signInWithEmailAndPassword(email, tempPassword);
-      user = userCredential.user;
-      alert("Welcome back!");
-    } catch(err) {
-      if(err.code === "auth/user-not-found") {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, tempPassword);
-        user = userCredential.user;
-
-        let referralCode = generateReferralCode(name);
-        let codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
-        while(!codeExists.empty) {
-          referralCode = generateReferralCode(name);
-          codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
-        }
-
-        await db.collection("girls").doc(user.uid).set({
-          name, dob, phone, email, bankName, accountNumber,
-          referralCode,
-          referredBy: refCode || null,
-          friends: [],
-          rewardBalance: 0,
-          cashEarned: 0,
-          groupId: null
-        });
-
-        if(refCode) {
-          const inviterQuery = await db.collection("girls").where("referralCode", "==", refCode).get();
-          if(!inviterQuery.empty) {
-            const inviterDoc = inviterQuery.docs[0];
-            await inviterDoc.ref.update({
-              friends: firebase.firestore.FieldValue.arrayUnion(user.uid)
-            });
-          }
-        }
-        alert("Signup successful!");
-      } else throw err;
+  try{
+    const userCredential=await auth.createUserWithEmailAndPassword(email,password);
+    const user=userCredential.user;
+    let referralCode=generateReferralCode(name);
+    let codeExists=await db.collection("girls").where("referralCode","==",referralCode).get();
+    while(!codeExists.empty){
+      referralCode=generateReferralCode(name);
+      codeExists=await db.collection("girls").where("referralCode","==",referralCode).get();
     }
+    await db.collection("girls").doc(user.uid).set({
+      name,dob,phone,email,bankName,accountNumber,
+      referralCode,referredBy:refCode||null,
+      friends:[],rewardBalance:0,cashEarned:0,groupId:null
+    });
+    // Add to inviter's friends array
+    if(refCode){
+      const inviterQuery=await db.collection("girls").where("referralCode","==",refCode).get();
+      if(!inviterQuery.empty){
+        const inviterDoc=inviterQuery.docs[0];
+        await inviterDoc.ref.update({ friends:firebase.firestore.FieldValue.arrayUnion(user.uid) });
+      }
+    }
+    alert("Sign-up successful!");
+    showDashboard(user.uid);
+  }catch(error){console.error(error); alert("Error: "+error.message);}
+});
 
-    await showDashboard(user.uid);
-
-  } catch(error) {
-    console.error(error);
-    alert("Error: " + error.message);
-  }
+// Show login form (optional toggle)
+document.getElementById("loginBtn").addEventListener("click",async ()=>{
+  const email=document.getElementById("loginEmail").value;
+  const password=document.getElementById("loginPassword").value;
+  try{
+    const userCredential=await auth.signInWithEmailAndPassword(email,password);
+    const user=userCredential.user;
+    showDashboard(user.uid);
+  }catch(error){console.error(error); alert("Login failed: "+error.message);}
 });
 </script>
 </body>
