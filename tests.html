@@ -830,71 +830,69 @@ if(buzzBtn) {
 }
 
 /* ---------- Auto-star regen (server reads/writes) ---------- */
-/* ---------- Auto-star regen (transactional, per-user daily cap) ---------- */
-setInterval(async () => {
-  if (!currentUser) return;
+/* ---------- Helper: Auto-star Regen (per-user daily cap) ---------- */
+function startAutoStarRegen(uid) {
+  const userRef = doc(db, "users", uid);
+  setInterval(async () => {
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(userRef);
+        if (!snap.exists()) return;
 
-  const userRef = doc(db, "users", currentUser.uid);
+        const data = snap.data();
+        let daily = data.dailyStarsEarned || 0;
+        if (data.lastStarDate !== today) daily = 0;
 
-  try {
-    await runTransaction(db, async (tx) => {
-      const userSnap = await tx.get(userRef);
-      if (!userSnap.exists()) return;
-      const data = userSnap.data() || {};
+        if (daily >= DAILY_STAR_CAP) return;
 
-      const today = new Date().toISOString().split("T")[0];
-      let daily = data.dailyStarsEarned || 0;
-
-      // If lastStarDate is not today, treat as a fresh day for this transaction
-      if (data.lastStarDate !== today) {
-        daily = 0;
-      }
-
-      if (daily >= DAILY_STAR_CAP) return; // cap reached for today
-
-      // Only award up to the remaining daily allowance
-      const award = Math.min(AUTO_STAR_ADD, DAILY_STAR_CAP - daily);
-      tx.update(userRef, {
-        stars: increment(award),
-        dailyStarsEarned: increment(award),
-        lastStarDate: today
+        const award = Math.min(AUTO_STAR_ADD, DAILY_STAR_CAP - daily);
+        tx.update(userRef, {
+          stars: increment(award),
+          dailyStarsEarned: increment(award),
+          lastStarDate: today
+        });
       });
-    });
-  } catch (e) {
-    // silent fail ok (but you can log in dev)
-    console.warn("auto-star transaction failed", e);
-  }
-}, 60000); // run every 60s (tune as desired)
+    } catch (e) {
+      console.warn("auto-star transaction failed", e);
+    }
+  }, 60000);
+}
 
-
-/* ---------- Auth watcher (core) + admin controls + messages listener ---------- */
+/* ---------- Core Auth Watcher ---------- */
 onAuthStateChanged(auth, async (user) => {
-  if(!user){
+  const subtitleEl = document.querySelector('.room-subtitle');
+  const roomSubtitleEl = document.getElementById("roomSubtitle");
+
+  // --- Handle signed-out state ---
+  if (!user) {
     currentUser = null;
-    if(authBox) authBox.style.display = "";
-    if(sendAreaEl) sendAreaEl.style.display = "none";
-    if(profileBoxEl) profileBoxEl.style.display = "none";
-    if(messagesEl) messagesEl.innerHTML = "";
-    if(userDocUnsub){ userDocUnsub(); userDocUnsub=null; }
-    if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }
+    if (authBox) authBox.style.display = "";
+    if (sendAreaEl) sendAreaEl.style.display = "none";
+    if (profileBoxEl) profileBoxEl.style.display = "none";
+    if (messagesEl) messagesEl.innerHTML = "";
+    if (userDocUnsub) { userDocUnsub(); userDocUnsub = null; }
+    if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+
+    if (subtitleEl) subtitleEl.classList.remove('hidden');
+    if (roomSubtitleEl) roomSubtitleEl.style.display = "block";
     return;
   }
-requestAnimationFrame(() => {
-  const roomSubtitleEl = document.getElementById("roomSubtitle");
-  if (roomSubtitleEl) {
-    if (!user) {
-      roomSubtitleEl.style.display = "block";
-    } else {
-      roomSubtitleEl.style.display = "none";
-    }
-  }
-});
 
-  try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
+  // --- Handle signed-in state ---
+  if (authBox) authBox.style.display = "none";
+  if (sendAreaEl) sendAreaEl.style.display = "";
+  if (profileBoxEl) profileBoxEl.style.display = "";
+  if (subtitleEl) subtitleEl.classList.add('hidden');
+  if (roomSubtitleEl) roomSubtitleEl.style.display = "none";
+
+  try { setupPresence(user); } catch (e) { console.warn("presence err", e); }
 
   const userRef = doc(db, "users", user.uid);
   let snap = await getDoc(userRef);
- if (!snap.exists()) {
+
+  // --- Create new user doc if first time ---
+  if (!snap.exists()) {
     const guestName = generateGuestName();
     const today = new Date().toISOString().split("T")[0];
     await setDoc(userRef, {
@@ -911,56 +909,45 @@ requestAnimationFrame(() => {
     snap = await getDoc(userRef);
   }
 
-  // ✅ Start the auto-star interval ONLY after user is confirmed
+  // --- Begin auto-star regen safely ---
   startAutoStarRegen(user.uid);
-});
-  
-  let userData = snap.exists()? snap.data() : {};
 
+  const userData = snap.data() || {};
   await assignDailyUsernameColor(userRef, userData);
 
   currentUser = {
     uid: user.uid,
     chatId: userData.chatId || user.displayName || generateGuestName(),
-    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
+    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase(),
     stars: userData.stars || 0,
     cash: userData.cash || 0,
     usernameColor: userData.usernameColor || randomColor(),
     isAdmin: userData.isAdmin || false
   };
-  // Stop previous listener if any
-if (userDocUnsub) userDocUnsub();
 
-// Attach new real-time listener
-userDocUnsub = onSnapshot(userRef, (snap) => {
-  if (!snap.exists()) return;
-  const data = snap.data();
+  // --- Stop previous listener if any ---
+  if (userDocUnsub) userDocUnsub();
 
-  currentUser.stars = data.stars || 0;
-  currentUser.cash = data.cash || 0;
+  // --- Real-time listener for user updates ---
+  userDocUnsub = onSnapshot(userRef, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    currentUser.stars = data.stars || 0;
+    currentUser.cash = data.cash || 0;
 
-  if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-  if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-});
-  
-  // -------- Chat ID modal for first-time users --------
-  if(!userData?.chatId){
+    if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+  });
+
+  // --- Prompt for chat ID if missing ---
+  if (!userData?.chatId) {
     const chosen = await promptForChatIDModal(userRef, userData);
-    if(chosen){
+    if (chosen) {
       currentUser.chatId = chosen;
       currentUser.chatIdLower = chosen.toLowerCase();
     }
   }
-  const subtitleEl = document.querySelector('.room-subtitle');
-
-if (subtitleEl) {
-  if (user) {
-    subtitleEl.classList.add('hidden');
-  } else {
-    subtitleEl.classList.remove('hidden');
-  }
-}
-
+});
 
   // -------- UI updates --------
   if(authBox) authBox.style.display = "none";
