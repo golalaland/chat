@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cube Signup/Login</title>
 <style>
-  /* ===== Global ===== */
   body {
     margin: 0;
     font-family: 'Helvetica Neue', sans-serif;
@@ -18,26 +17,25 @@
   }
 
   h1 {
-    font-size: 3rem;
+    font-size: 2.5rem;  /* Reduced size */
     letter-spacing: 5px;
     margin-top: 20px;
     color: #ff66aa;
   }
 
   h2 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: #ccc;
-    margin-bottom: 20px;
+    margin: 5px 0 20px 0; /* Closer to logo */
   }
 
   img {
-    width: 150px;
-    height: 150px;
+    width: 120px;  /* Smaller logo */
+    height: 120px;
     border-radius: 20px;
     margin-bottom: 20px;
   }
 
-  /* ===== Form ===== */
   form {
     display: flex;
     flex-direction: column;
@@ -75,7 +73,7 @@
     font-size: 1rem;
     font-weight: bold;
     color: #fff;
-    background: linear-gradient(45deg, #ff66aa, #6600ff);
+    background: linear-gradient(45deg, #ff66aa, #ff3399); /* Gradient pink */
     border: none;
     border-radius: 12px;
     cursor: pointer;
@@ -87,7 +85,6 @@
     box-shadow: 0 0 15px #ff66aa;
   }
 
-  /* ===== Dashboard Hive ===== */
   #hiveDashboard {
     position: relative;
     width: 90vw;
@@ -128,7 +125,6 @@
     background: linear-gradient(45deg, #66ccff, #3399ff);
   }
 
-  /* Footer */
   footer {
     margin-top: auto;
     padding: 15px;
@@ -149,9 +145,8 @@
     text-decoration: underline;
   }
 
-  /* Responsive Text */
   @media (max-width: 400px) {
-    h1 { font-size: 2.5rem; }
+    h1 { font-size: 2rem; }
     h2 { font-size: 1rem; }
     input { font-size: 0.95rem; padding: 10px; }
     button { font-size: 0.95rem; padding: 10px 25px; }
@@ -165,7 +160,6 @@
 
 <img src="https://via.placeholder.com/150" alt="Placeholder Image">
 
-<!-- Signup/Login Form -->
 <form id="signupForm">
   <label for="name">Name</label>
   <input type="text" id="name" placeholder="Enter your name" required />
@@ -188,14 +182,14 @@
   <button type="submit" id="submitBtn">Sign Up / Login</button>
 </form>
 
-<!-- Dashboard -->
 <div id="dashboard" style="display:none;">
   <h3>Welcome <span id="dashName"></span>!</h3>
   <p>Your referral link:</p>
   <input type="text" id="refLink" readonly style="width:80%; max-width:300px; margin-bottom:15px;">
   <button onclick="copyLink()">Copy Link</button>
   
-  <p>Reward Balance: <span id="rewardBalance">0</span> ⭐</p>
+  <p>Stars Collected: <span id="rewardBalance">0</span> ⭐</p>
+  <p>Cash Earned: $<span id="cashEarned">0.00</span></p>
   
   <h4>Your Hive:</h4>
   <div id="hiveDashboard">
@@ -214,37 +208,47 @@
 <script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-firestore-compat.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
+};
 
-  function generateReferralCode(name) {
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const initials = name.slice(0,3).toUpperCase();
-    return initials + randomNum;
-  }
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  function copyLink() {
-    const copyText = document.getElementById("refLink");
-    copyText.select();
-    document.execCommand("copy");
-    alert("Referral link copied!");
-  }
+function generateReferralCode(name) {
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  const initials = name.slice(0,3).toUpperCase();
+  return initials + randomNum;
+}
 
-  async function showDashboard(uid) {
-    const docSnap = await db.collection("girls").doc(uid).get();
-    if (!docSnap.exists()) return;
+function copyLink() {
+  const copyText = document.getElementById("refLink");
+  copyText.select();
+  document.execCommand("copy");
+  alert("Referral link copied!");
+}
+
+async function showDashboard(uid) {
+  const userDocRef = db.collection("girls").doc(uid);
+
+  // Real-time listener for stars/cash/friends
+  userDocRef.onSnapshot(docSnap => {
+    if(!docSnap.exists) return;
     const data = docSnap.data();
 
     document.getElementById("dashName").textContent = data.name;
     document.getElementById("refLink").value = `${window.location.origin}/signup.html?ref=${data.referralCode}`;
     document.getElementById("rewardBalance").textContent = data.rewardBalance || 0;
+    document.getElementById("cashEarned").textContent = (data.cashEarned || 0).toFixed(2);
 
+    // Hive
     const hive = document.getElementById("hiveDashboard");
     const mainGirlDiv = document.getElementById("mainGirl");
     mainGirlDiv.textContent = data.name;
@@ -262,7 +266,7 @@
       const y = centerY + radius * Math.sin(angle);
 
       db.collection("girls").doc(friendId).get().then(friendDoc => {
-        if (!friendDoc.exists) return;
+        if(!friendDoc.exists) return;
         const fData = friendDoc.data();
 
         const friendDiv = document.createElement("div");
@@ -274,72 +278,74 @@
         hive.appendChild(friendDiv);
       });
     });
+  });
 
-    document.getElementById("signupForm").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-    document.getElementById("title").textContent = "Hive Dashboard";
-  }
+  document.getElementById("signupForm").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+}
 
-  document.getElementById("signupForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("name").value;
-    const dob = document.getElementById("dob").value;
-    const phone = document.getElementById("phone").value;
-    const email = document.getElementById("email").value;
-    const bankName = document.getElementById("bankName").value;
-    const accountNumber = document.getElementById("accountNumber").value;
+document.getElementById("signupForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = document.getElementById("name").value;
+  const dob = document.getElementById("dob").value;
+  const phone = document.getElementById("phone").value;
+  const email = document.getElementById("email").value;
+  const bankName = document.getElementById("bankName").value;
+  const accountNumber = document.getElementById("accountNumber").value;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
+  const urlParams = new URLSearchParams(window.location.search);
+  const refCode = urlParams.get('ref');
+
+  try {
+    const tempPassword = "TempPass123!";
+    let user;
 
     try {
-      const tempPassword = "TempPass123!";
-      let user;
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, tempPassword);
+      const userCredential = await auth.signInWithEmailAndPassword(email, tempPassword);
+      user = userCredential.user;
+      alert("Welcome back!");
+    } catch(err) {
+      if(err.code === "auth/user-not-found") {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, tempPassword);
         user = userCredential.user;
-        alert("Welcome back!");
-      } catch(err) {
-        if(err.code === "auth/user-not-found") {
-          const userCredential = await auth.createUserWithEmailAndPassword(email, tempPassword);
-          user = userCredential.user;
 
-          let referralCode = generateReferralCode(name);
-          let codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
-          while(!codeExists.empty) {
-            referralCode = generateReferralCode(name);
-            codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
+        let referralCode = generateReferralCode(name);
+        let codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
+        while(!codeExists.empty) {
+          referralCode = generateReferralCode(name);
+          codeExists = await db.collection("girls").where("referralCode", "==", referralCode).get();
+        }
+
+        await db.collection("girls").doc(user.uid).set({
+          name, dob, phone, email, bankName, accountNumber,
+          referralCode,
+          referredBy: refCode || null,
+          friends: [],
+          rewardBalance: 0,
+          cashEarned: 0,
+          groupId: null
+        });
+
+        if(refCode) {
+          const inviterQuery = await db.collection("girls").where("referralCode", "==", refCode).get();
+          if(!inviterQuery.empty) {
+            const inviterDoc = inviterQuery.docs[0];
+            await inviterDoc.ref.update({
+              friends: firebase.firestore.FieldValue.arrayUnion(user.uid)
+            });
           }
-
-          await db.collection("girls").doc(user.uid).set({
-            name, dob, phone, email, bankName, accountNumber,
-            referralCode,
-            referredBy: refCode || null,
-            friends: [],
-            rewardBalance: 0,
-            groupId: null
-          });
-
-          if(refCode) {
-            const inviterQuery = await db.collection("girls").where("referralCode", "==", refCode).get();
-            if(!inviterQuery.empty) {
-              const inviterDoc = inviterQuery.docs[0];
-              await inviterDoc.ref.update({
-                friends: firebase.firestore.FieldValue.arrayUnion(user.uid)
-              });
-            }
-          }
-          alert("Signup successful!");
-        } else throw err;
-      }
-
-      await showDashboard(user.uid);
-
-    } catch(error) {
-      console.error(error);
-      alert("Error: " + error.message);
+        }
+        alert("Signup successful!");
+      } else throw err;
     }
-  });
+
+    await showDashboard(user.uid);
+
+  } catch(error) {
+    console.error(error);
+    alert("Error: " + error.message);
+  }
+});
 </script>
 </body>
 </html>
