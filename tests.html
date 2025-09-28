@@ -965,6 +965,26 @@ userDocUnsub = onSnapshot(userRef, (snap) => {
   if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
   if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
 });
+
+  // User logged in
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    // 🆕 First time signup → give starter stars
+    const starterStars = 50;
+
+    await setDoc(userRef, {
+      chatId: null,
+      chatIdLower: null,
+      stars: starterStars,
+      cash: 0,
+      usernameColor: randomColor(),
+      createdAt: serverTimestamp()
+    });
+
+    showStarPopup(`🎉 Welcome! You got +${starterStars} stars as a gift!`);
+  }
   
   // -------- Chat ID modal for first-time users --------
   if(!userData?.chatId){
