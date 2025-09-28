@@ -7,98 +7,105 @@
 <style>
   body {
     margin:0;
-    font-family: Arial, sans-serif;
-    background: #000;
-    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    background:#000;
+    color:#fff;
     display:flex;
     justify-content:center;
     align-items:center;
     min-height:100vh;
   }
   .container {
-    width: 90%;
-    max-width: 400px;
+    width: 95%;
+    max-width: 380px;
+    padding: 25px 20px;
     background: #111;
-    padding: 30px;
     border-radius: 15px;
-    box-shadow: 0 0 20px #ff1493;
+    box-shadow: 0 0 25px #ff1493;
   }
   h1 {
     text-align:center;
-    margin-bottom: 20px;
+    font-size:1.8rem;
+    margin-bottom: 15px;
+  }
+  form {
+    display:flex;
+    flex-direction:column;
   }
   label {
-    display:block;
-    margin-top:15px;
-    font-size:0.9rem;
+    font-size:0.85rem;
+    margin-bottom:5px;
+    margin-top:10px;
   }
   input {
-    width:100%;
-    padding:10px;
-    margin-top:5px;
-    border:none;
+    padding:10px 12px;
     border-radius:8px;
+    border:none;
     font-size:1rem;
+    margin-bottom:5px;
+    background:#222;
+    color:#fff;
   }
   button {
-    width:100%;
-    padding:15px;
-    margin-top:20px;
+    margin-top:15px;
+    padding:12px;
     border:none;
     border-radius:8px;
-    font-size:1rem;
     font-weight:bold;
+    font-size:1rem;
     cursor:pointer;
     background: linear-gradient(90deg,#ff69b4,#ff1493);
     color:#fff;
   }
   .toggle-link {
-    text-align:center;
     margin-top:15px;
+    text-align:center;
     color:#ff69b4;
-    cursor:pointer;
     font-size:0.9rem;
+    cursor:pointer;
   }
   .error {
-    color:#f00;
     font-size:0.8rem;
+    color:#f00;
     margin-top:5px;
+    text-align:center;
   }
 </style>
 </head>
 <body>
-
 <div class="container">
   <h1 id="formTitle">Sign Up</h1>
   <form id="girlForm">
+    <!-- Sign Up Fields -->
     <div id="signupFields">
       <label for="name">Full Name</label>
-      <input type="text" id="name" required>
+      <input type="text" id="name" placeholder="Jane Doe" required>
 
       <label for="dob">Date of Birth</label>
       <input type="date" id="dob" required>
 
       <label for="phone">Phone Number</label>
-      <input type="tel" id="phone" required>
+      <input type="tel" id="phone" placeholder="08012345678" required>
 
       <label for="email">Email Address</label>
-      <input type="email" id="email" required>
+      <input type="email" id="email" placeholder="you@example.com" required>
 
       <label for="bank">Bank Name</label>
-      <input type="text" id="bank" required>
+      <input type="text" id="bank" placeholder="Bank Name" required>
 
       <label for="account">Account Number</label>
-      <input type="text" id="account" required>
+      <input type="text" id="account" placeholder="0123456789" required>
 
       <label for="password">Password</label>
-      <input type="password" id="password" required>
+      <input type="password" id="password" placeholder="••••••••" required>
     </div>
 
+    <!-- Login Fields -->
     <div id="loginFields" style="display:none;">
-      <label for="loginEmail">Email Address</label>
-      <input type="email" id="loginEmail" required>
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" required>
       <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" required>
+      <input type="password" id="loginPassword" placeholder="••••••••" required>
     </div>
 
     <div class="error" id="errorMsg"></div>
@@ -122,7 +129,6 @@
     appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
     measurementId: "G-S77BMC266C"
   };
-
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
@@ -160,7 +166,6 @@
     errorMsg.innerText = '';
 
     if(isLogin){
-      // LOGIN
       const email = document.getElementById('loginEmail').value;
       const password = document.getElementById('loginPassword').value;
       try{
@@ -170,7 +175,6 @@
         errorMsg.innerText = err.message;
       }
     }else{
-      // SIGN UP
       const name = document.getElementById('name').value;
       const dob = document.getElementById('dob').value;
       const phone = document.getElementById('phone').value;
@@ -179,7 +183,6 @@
       const account = document.getElementById('account').value;
       const password = document.getElementById('password').value;
 
-      // Check age ≥ 18
       const dobDate = new Date(dob);
       const ageDifMs = Date.now() - dobDate.getTime();
       const ageDate = new Date(ageDifMs);
