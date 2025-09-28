@@ -850,6 +850,8 @@ setInterval(async () => {
     const userRef = doc(db, "users", currentUser.uid);
     const snap = await getDoc(userRef);
     const data = snap.exists() ? snap.data() : {};
+    // 🧠 Daily reset check (NEW)
+    await resetDailyCapIfNeeded(userRef, data);
     const curr = data.stars || 0;
     if(curr < DAILY_STAR_CAP){
       const next = Math.min(curr + AUTO_STAR_ADD, DAILY_STAR_CAP);
