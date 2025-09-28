@@ -589,54 +589,71 @@ async function assignDailyUsernameColor(userRef, data){
   }
 }
 
-/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
 /* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
-async function promptForChatIDModal(userRef, userData){
-  if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
-  if(userData?.chatId) return userData.chatId;
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    currentUser = null;
+    if (authBox) authBox.style.display = "";
+    if (sendAreaEl) sendAreaEl.style.display = "none";
+    if (profileBoxEl) profileBoxEl.style.display = "none";
+    if (messagesEl) messagesEl.innerHTML = "";
+    if (userDocUnsub) { userDocUnsub(); userDocUnsub = null; }
+    if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+    return;
+  }
 
-  chatIDInput.value = "";
-  chatIDModal.style.display = "flex";
-  if(sendAreaEl) sendAreaEl.style.display = "none"; // hide typing area until chosen
+  try { 
+    setupPresence(user); 
+  } catch (e) { 
+    console.warn("presence err", e); 
+  }
 
-  return new Promise((resolve) => {
-    chatIDConfirmBtn.onclick = async () => {
-      const chosenID = chatIDInput.value.trim();
-      if (chosenID.length < 3 || chosenID.length > 12) {
-        alert("Chat ID must be between 3 and 12 characters.");
-        return;
-      }
+  const userRef = doc(db, "users", user.uid);
+  let snap = await getDoc(userRef);
 
-      const normalized = chosenID.toLowerCase();
-      try {
-        const q = query(collection(db, "users"), where("chatIdLower", "==", normalized));
-        const snap = await getDocs(q);
-        // allow if the only match is the current user
-        let conflict = false;
-        snap.forEach(docSnap => {
-          if(docSnap.id !== userRef.id) conflict = true;
-        });
-        if (conflict) {
-          alert("This Chat ID is already taken (case-insensitive). Please choose another.");
-          return;
-        }
+  if (!snap.exists()) {
+    const guestName = generateGuestName(); // ✅ only once
+    await setDoc(userRef, {
+      chatId: guestName,
+      chatIdLower: guestName.toLowerCase(),
+      stars: 100,
+      cash: 0,
+      usernameColor: randomColor(),
+      lastColorDate: new Date().toISOString().split("T")[0],
+      isAdmin: false,
+      lastStarReset: Date.now()
+    });
+    snap = await getDoc(userRef);
+  }
 
-        // save both original and normalized
-        await updateDoc(userRef, { chatId: chosenID, chatIdLower: normalized });
-      } catch (e) {
-        console.error("Error saving chat ID:", e);
-        alert("Failed to save. Try again.");
-        return;
-      }
+  let userData = snap.exists() ? snap.data() : {};
+  await assignDailyUsernameColor(userRef, userData);
 
-      chatIDModal.style.display = "none";
-      if(sendAreaEl) sendAreaEl.style.display = "flex";
-      location.reload(); // 🔥 refresh so it reflects instantly
-      resolve(chosenID);
-    };
+  currentUser = {
+    uid: user.uid,
+    chatId: userData.chatId || user.displayName || generateGuestName(),
+    chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
+    stars: userData.stars || 0,
+    cash: userData.cash || 0,
+    usernameColor: userData.usernameColor || randomColor(),
+    isAdmin: userData.isAdmin || false
+  };
+
+  // ✅ Show chat UI right away
+  if (authBox) authBox.style.display = "none";
+  if (sendAreaEl) sendAreaEl.style.display = "";
+  if (profileBoxEl) profileBoxEl.style.display = "";
+
+  // ⭐ Start star sync after UI shows
+  if (userDocUnsub) userDocUnsub();
+  userDocUnsub = onSnapshot(userRef, (snap) => {
+    const data = snap.data();
+    if (data) {
+      currentUser.stars = data.stars || 0;
+      starCountEl.textContent = currentUser.stars;
+    }
   });
-}
-
+});
 /* ---------- HELLO rotation ---------- */
 const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
 let helloIndex = 0;
