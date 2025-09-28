@@ -920,6 +920,16 @@ userDocUnsub = onSnapshot(userRef, (snap) => {
       currentUser.chatIdLower = chosen.toLowerCase();
     }
   }
+  const subtitleEl = document.querySelector('.room-subtitle');
+
+if (subtitleEl) {
+  if (user) {
+    subtitleEl.classList.add('hidden');
+  } else {
+    subtitleEl.classList.remove('hidden');
+  }
+}
+
 
   // -------- UI updates --------
   if(authBox) authBox.style.display = "none";
