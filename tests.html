@@ -901,6 +901,9 @@ requestAnimationFrame(() => {
     snap = await getDoc(userRef);
   }
   let userData = snap.exists()? snap.data() : {};
+    // 🧠 Daily star cap reset check (NEW)
+  await resetDailyCapIfNeeded(userRef, userData);
+
 
   await assignDailyUsernameColor(userRef, userData);
 
