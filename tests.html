@@ -988,6 +988,7 @@ if (subtitleEl) {
   }
 }
 
+// Add this AFTER your current auth + Firestore setup
 const redeemBtn = document.getElementById("redeemBtn");
 
 redeemBtn?.addEventListener("click", () => {
@@ -995,10 +996,10 @@ redeemBtn?.addEventListener("click", () => {
     showStarPopup("Sign in first to redeem!");
     return;
   }
-  // Pass a flag to indicate automatic login in the shop page
+
+  // Send them to shop page with their UID in the URL
   window.location.href = `/shop.html?uid=${auth.currentUser.uid}`;
 });
-
 
   // -------- UI updates --------
   if(authBox) authBox.style.display = "none";
