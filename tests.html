@@ -487,7 +487,16 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 /* ---------- Firebase config (fixed storageBucket) ---------- */
-
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com", // <- fixed
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -885,23 +894,27 @@ requestAnimationFrame(() => {
 
   const userRef = doc(db, "users", user.uid);
   let snap = await getDoc(userRef);
-if(!snap.exists()){
-  const guestName = generateGuestName();
-  const today = new Date().toISOString().split("T")[0];
-  await setDoc(userRef, {
-    chatId: guestName,
-    chatIdLower: guestName.toLowerCase(),
-    stars: 100,
-    cash: 0,
-    usernameColor: randomColor(),
-    lastColorDate: today,
-    isAdmin: false,
-    dailyStarsEarned: 0,    // track daily earned separately
-    lastStarDate: today     // YYYY-MM-DD
-  });
-  snap = await getDoc(userRef);
-}
+ if (!snap.exists()) {
+    const guestName = generateGuestName();
+    const today = new Date().toISOString().split("T")[0];
+    await setDoc(userRef, {
+      chatId: guestName,
+      chatIdLower: guestName.toLowerCase(),
+      stars: 100,
+      cash: 0,
+      usernameColor: randomColor(),
+      lastColorDate: today,
+      isAdmin: false,
+      dailyStarsEarned: 0,
+      lastStarDate: today
+    });
+    snap = await getDoc(userRef);
+  }
 
+  // ✅ Start the auto-star interval ONLY after user is confirmed
+  startAutoStarRegen(user.uid);
+});
+  
   let userData = snap.exists()? snap.data() : {};
 
   await assignDailyUsernameColor(userRef, userData);
