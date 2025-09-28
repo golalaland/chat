@@ -844,6 +844,16 @@ onAuthStateChanged(auth, async (user) => {
     if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }
     return;
   }
+requestAnimationFrame(() => {
+  const roomSubtitleEl = document.getElementById("roomSubtitle");
+  if (roomSubtitleEl) {
+    if (!user) {
+      roomSubtitleEl.style.display = "block";
+    } else {
+      roomSubtitleEl.style.display = "none";
+    }
+  }
+});
 
   try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
 
