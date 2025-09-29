@@ -901,20 +901,29 @@ window.addEventListener("DOMContentLoaded", () => {
   let currentUser = null;
 
   // ---------- UI update ----------
-  function showAppUI(user) {
-    const authBox = document.getElementById("authBox");
-    const emailWrapper = document.getElementById("emailAuthWrapper");
-    const sendArea = document.getElementById("sendArea");
-    const profileBox = document.getElementById("profileBox");
+function showAppUI(user) {
+  // Hide login/auth sections
+  const authBox = document.getElementById("authBox");
+  const emailAuthWrapper = document.getElementById("emailAuthWrapper");
+  if (authBox) authBox.style.display = "none";
+  if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
 
-    if (authBox) authBox.style.display = "none";
-    if (emailWrapper) emailWrapper.style.display = "none";
-    if (sendArea) sendArea.style.display = "flex";
-    if (profileBox) profileBox.style.display = "flex";
+  // Show main app UI
+  const sendArea = document.getElementById("sendArea");
+  const profileBox = document.getElementById("profileBox");
+  if (sendArea) sendArea.style.display = "flex";
+  if (profileBox) profileBox.style.display = "flex";
 
-    usernameDisplay.textContent = user.chatId || user.email || "User";
-    starsDisplay.textContent = `Stars: ${user.stars || 0} ⭐️`;
+  currentUser = user;
 
+  // Safely update user info in the UI
+  const usernameEl = document.getElementById("usernameDisplay");
+  const starsEl = document.getElementById("starsDisplay");
+  if (usernameEl) usernameEl.textContent = user.email || user.name || "VIP User";
+  if (starsEl) starsEl.textContent = `Stars Balance: ${user.stars ?? 50} ⭐️`;
+
+  console.log(`Logged in as ${user.email || user.name}`);
+}
     // Show Change Chat ID button if not used yet
     if (!localStorage.getItem("chatIdChanged")) {
       changeChatBtn.style.display = "block";
