@@ -213,6 +213,10 @@ startStarEarning(currentUser.uid);
     if(currentUser.chatId.startsWith("GUEST")) {
       await promptForChatID(userRef, data);
     }
+    
+// Hide login fields
+const emailAuthWrapper = document.getElementById("emailAuthWrapper");
+if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
 
     // UI updates
     if (refs.authBox) refs.authBox.style.display = "none";
