@@ -93,6 +93,11 @@ setupUsersListener();
 /* ---------- Render messages ---------- */
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
+
+  const messagesEl = refs.messagesEl;
+  const isAtBottom = messagesEl.scrollHeight - messagesEl.scrollTop <= messagesEl.clientHeight + 50; 
+  // small buffer to detect "almost bottom"
+
   arr.forEach(item => {
     const m = item.data;
     const wrapper = document.createElement("div");
@@ -113,11 +118,17 @@ function renderMessagesFromArray(arr){
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
-    refs.messagesEl.appendChild(wrapper);
+    messagesEl.appendChild(wrapper);
   });
-  if(refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-}
 
+  // Only scroll if user is at (or near) the bottom
+  if (isAtBottom) {
+    messagesEl.scrollTo({
+      top: messagesEl.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
+}
 /* ---------- Attach messages listener ---------- */
 function attachMessagesListener(){
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
