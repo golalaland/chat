@@ -756,12 +756,7 @@ if (googleBtn) {
     }
   });
 }
-const googleBtn = document.getElementById("googleSignInBtn");
-if (googleBtn) {
-  googleBtn.addEventListener("click", () => {
-    alert("🚫 Google sign-in list is full.\n✅ Use VIP email access below.");
-  });
-}
+
 /* ---------- Message rendering (full redraw helper) ---------- */
 function renderMessagesFromArray(arr){
   if(!messagesEl) return;
