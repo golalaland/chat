@@ -94,8 +94,8 @@ setupUsersListener();
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
 
-  const container = refs.messagesEl;
-  const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 30;
+  // Check if user is near the bottom before new messages
+  const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
 
   arr.forEach(item => {
     const m = item.data;
@@ -117,8 +117,14 @@ function renderMessagesFromArray(arr){
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
-    container.appendChild(wrapper);
+    refs.messagesEl.appendChild(wrapper);
   });
+
+  // Always scroll if sending yourself a message
+  if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
+    refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+  }
+}
 
   // Auto-scroll only if near bottom
   if (isNearBottom) {
