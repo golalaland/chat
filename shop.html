@@ -174,7 +174,7 @@ header {
 <script type="module">
 // ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -186,7 +186,6 @@ const firebaseConfig = {
   measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -233,29 +232,35 @@ function createProductCard(item){
 }
 function renderShop(){ shopItemsEl.innerHTML=''; shopItems.forEach(i=>shopItemsEl.appendChild(createProductCard(i))); }
 
-// ---------- Auto-load VIP user ----------
+// ---------- Auto-load VIP user with real-time updates ----------
 let currentUser = null;
 async function loadCurrentUser(){
   const vipSession = JSON.parse(localStorage.getItem('vipUser'));
   if(!vipSession?.email) return;
-  const uid = vipSession.email.replace(/[.#$[\]]/g, ','); // same sanitizeKey
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ','); // sanitizeKey
   const userRef = doc(db, 'users', uid);
+  
   const snap = await getDoc(userRef);
   if(!snap.exists()) return;
-  const data = snap.data();
-  currentUser = {
-    uid,
-    chatId: data.chatId || 'Guest',
-    stars: data.stars || 0,
-    cash: data.cash || 0
-  };
-  usernameEl.textContent = currentUser.chatId;
-  starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+  
+  currentUser = { uid, ...snap.data() };
+  usernameEl.textContent = currentUser.chatId || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+  
   renderShop();
+
+  // Real-time listener for stars/cash changes
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    currentUser.stars = data.stars || 0;
+    currentUser.cash = data.cash || 0;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+  });
 }
 
-// ---------- Init ----------
 loadCurrentUser();
 </script>
 
