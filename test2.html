@@ -143,8 +143,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 
-/* messages */
-/* 🔥 Chat messages container */
 /* 🔥 Chat messages container */
 #messages {
   flex: 1;
@@ -661,7 +659,6 @@ async function assignDailyUsernameColor(userRef, data){
   }
 }
 
-/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
 /* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
 async function promptForChatIDModal(userRef, userData){
   if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
@@ -785,7 +782,6 @@ function renderMessagesFromArray(arr){
   });
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
-
 
 /* ---------- SEND (normal) ---------- */
 if (sendBtn) {
@@ -1145,7 +1141,6 @@ userDocUnsub = onSnapshot(userRef, (snap) => {
   if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
   if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
 });
-
   
   // -------- Chat ID modal for first-time users --------
   if(!userData?.chatId){
