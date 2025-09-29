@@ -358,37 +358,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-#emailLoginWrapper {
+#emailAuthWrapper {
   display: flex;
-  flex-direction: column;       /* stack vertically */
-  align-items: center;          /* center horizontally */
-  gap: 8px;                     /* space between input & button */
-  margin-top: 10px;
+  flex-direction: column;
+  align-items: center; /* centers horizontally */
+  gap: 10px;           /* spacing between input and button */
+  margin-top: 12px;    /* space from above text */
   width: 100%;
-  max-width: 320px;             /* mobile-optimized */
 }
 
-#emailLoginWrapper input.auth-input {
-  width: 100%;                  /* fill container */
+#emailAuthWrapper input.auth-input {
+  width: 90%;          /* smaller than full width, responsive */
+  max-width: 320px;
   padding: 12px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background-color: #111;
+  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #0e0e0e;
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
-  box-sizing: border-box;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-in-out;
 }
 
-#emailLoginWrapper input.auth-input:focus {
+#emailAuthWrapper input.auth-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(255,20,147,0.2);
-}
-
-#emailLoginWrapper button.google-btn {
-  width: 100%;                 /* match input width */
-  justify-content: center;      /* center text/icon */
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 </style>
 </head>
@@ -419,7 +413,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         </button>
       </div>
       <!-- New Whitelist Email button -->
-<div id="emailLoginWrapper">
+<div id="emailAuthWrapper">
   <input type="email" id="emailInput" placeholder="Enter your email" class="auth-input">
   <button id="whitelistLoginBtn" class="google-btn">Login with Email</button>
 </div>      
