@@ -86,7 +86,6 @@ setupUsersListener();
 /* ---------- Render messages ---------- */
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
-  refs.messagesEl.innerHTML = "";
   arr.forEach(item => {
     const m = item.data;
     const wrapper = document.createElement("div");
@@ -109,7 +108,7 @@ function renderMessagesFromArray(arr){
     wrapper.appendChild(content);
     refs.messagesEl.appendChild(wrapper);
   });
-  refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+  if(refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
 }
 
 /* ---------- Attach messages listener ---------- */
@@ -193,10 +192,28 @@ window.addEventListener("DOMContentLoaded", () => {
     redeemBtn: document.getElementById("redeemBtn"),
     onlineCountEl: document.getElementById("onlineCount"),
     adminControlsEl: document.getElementById("adminControls"),
-    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn")
+    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
+    chatIDModal: document.getElementById("chatIDModal"),
+    chatIDInput: document.getElementById("chatIDInput"),
+    chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
   };
+  if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  // Send message
+  /* ---------- Hello text rotation ---------- */
+  const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
+  let helloIndex = 0;
+  const helloEl = document.getElementById("helloText");
+  setInterval(()=>{
+    if(!helloEl) return;
+    helloEl.style.opacity='0';
+    setTimeout(()=>{
+      helloEl.innerText = greetings[helloIndex++ % greetings.length];
+      helloEl.style.color = randomColor();
+      helloEl.style.opacity='1';
+    },220);
+  },1500);
+
+  /* ---------- Send & Buzz ---------- */
   refs.sendBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to chat");
     const txt = refs.messageInputEl?.value.trim();
@@ -214,7 +231,6 @@ window.addEventListener("DOMContentLoaded", () => {
     refs.messageInputEl.value = "";
   });
 
-  // Buzz
   refs.buzzBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to BUZZ");
     const txt = refs.messageInputEl?.value.trim();
@@ -233,14 +249,14 @@ window.addEventListener("DOMContentLoaded", () => {
     showStarPopup("BUZZ sent!");
   });
 
-  // Video nav & fade logic
+  /* ---------- Video nav & fade ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
   const container = document.querySelector(".video-container");
-  const navButtons = [prevBtn, nextBtn].filter(Boolean);
+  const navButtons = [prevBtn,nextBtn].filter(Boolean);
 
-  if (videoPlayer && navButtons.length) {
+  if(videoPlayer && navButtons.length){
     const videos = [
       "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
       "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
@@ -251,9 +267,9 @@ window.addEventListener("DOMContentLoaded", () => {
     function loadVideo(index){
       if(index<0) index = videos.length-1;
       if(index>=videos.length) index = 0;
-      currentVideoIndex = index;
-      videoPlayer.src = videos[currentVideoIndex];
-      videoPlayer.muted = true;
+      currentVideoIndex=index;
+      videoPlayer.src=videos[currentVideoIndex];
+      videoPlayer.muted=true;
       videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
     }
 
@@ -267,19 +283,14 @@ window.addEventListener("DOMContentLoaded", () => {
     function showButtons(){
       navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
       clearTimeout(hideTimeout);
-      hideTimeout = setTimeout(()=>{
-        navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; });
-      }, 3000);
+      hideTimeout=setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); },3000);
     }
-
     navButtons.forEach(btn=>{ btn.style.transition="opacity 0.6s"; btn.style.opacity="0"; btn.style.pointerEvents="none"; });
-
     container?.addEventListener("mouseenter", showButtons);
     container?.addEventListener("mousemove", showButtons);
     container?.addEventListener("mouseleave", ()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); });
     container?.addEventListener("click", showButtons);
 
-    // Load first video
     loadVideo(0);
   }
 
