@@ -1,6 +1,6 @@
-// --------- FIREBASE SETUP ----------
+/// --------- FIREBASE SETUP ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -11,11 +11,13 @@ const firebaseConfig = {
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
   measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// DOM elements
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-balance');
 const cashEl = document.getElementById('cash-balance');
@@ -28,33 +30,41 @@ if (!uid) {
   alert("No user ID detected!");
 }
 
+// Firestore refs
+const userRef = doc(db, "users", uid);
+const ordersRef = collection(db, "orders"); // new collection for purchases
+
 // Random color for username
 function randomColor() {
   const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// Load user & listen for live updates
+// Load user info
 async function loadUser() {
-  const userRef = doc(db, "users", uid);
-
-  onSnapshot(userRef, snap => {
-    if (!snap.exists()) {
-      usernameEl.innerText = "Guest";
-      starsEl.innerText = "Stars: 0 ⭐️";
-      cashEl.innerText = "Cash: ₦0";
-      return;
-    }
-
-    const data = snap.data();
-    usernameEl.innerText = data.chatId || "Guest";
-    usernameEl.style.color = randomColor();
-    starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
-    cashEl.innerText = `Cash: ₦${data.cash || 0}`;
-  });
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) {
+    usernameEl.innerText = "Guest";
+    starsEl.innerText = "Stars: 0 ⭐️";
+    cashEl.innerText = "Cash: ₦0";
+    return;
+  }
+  const data = snap.data();
+  usernameEl.innerText = data.chatId || "Guest";
+  usernameEl.style.color = data.usernameColor || "#ffffff";
+  starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
+  cashEl.innerText = `Cash: ₦${data.cash || 0}`;
 }
 
-// Example shop items
+// Watch for live changes to user stars & cash
+onSnapshot(userRef, snap => {
+  if (!snap.exists()) return;
+  const data = snap.data();
+  starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
+  cashEl.innerText = `Cash: ₦${data.cash || 0}`;
+});
+
+// Shop items
 const shopItems = [
   { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
   { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
@@ -82,13 +92,33 @@ function renderShop() {
   shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-// Dummy buy logic
+// Purchase logic
 async function buyItem(item) {
-  alert(`Purchased ${item.name}! (Demo logic)`);
-  // Here you would update Firestore user stars/cash & create order record
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) return alert("User not found!");
+  
+  const data = snap.data();
+  const userStars = data.stars || 0;
+  
+  if (userStars < item.cost) return alert("Not enough stars!");
+  
+  // Deduct stars
+  await updateDoc(userRef, { stars: userStars - item.cost });
+  
+  // Log order
+  await addDoc(ordersRef, {
+    userId: uid,
+    itemId: item.id,
+    itemName: item.name,
+    cost: item.cost,
+    timestamp: new Date(),
+    fulfilled: false
+  });
+  
+  alert(`Purchased ${item.name}!`);
 }
 
-// Initial load
+// Initialize
 loadUser();
 renderShop();
 
