@@ -3,61 +3,75 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Redeem Shop</title>
+<title>乂丨乂丨Redeem</title>
 <style>
+:root {
+  --bg: #000;
+  --card-bg: #111;
+  --text: #fff;
+  --btn-bg: #ff33cc; 
+  --btn-text: #fff;
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #000;
-  color: #fff;
-  text-align: center;
+  background: var(--bg);
+  color: var(--text);
 }
 
 header {
-  padding: 1rem 0;
+  background: var(--card-bg);
+  padding: 1rem;
   font-size: 1.8rem;
   font-weight: bold;
   border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+#user-info {
+  text-align: center;
+  padding: 1rem;
 }
 
 #username {
   font-weight: bold;
   font-size: 1.5rem;
-  margin-top: 1rem;
 }
 
 #stars-count {
+  margin-top: 0.5rem;
   font-weight: bold;
-  font-size: 1.1rem;
-  margin: 0.5rem 0 1rem 0;
 }
 
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
-  padding: 1rem 2rem;
+  padding: 1rem;
 }
 
 .product-card {
-  background: #111;
+  background: var(--card-bg);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
-  padding-bottom: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #222;
 }
 
 .product-card img {
   width: 100%;
-  height: 150px;
+  height: 120px;
   object-fit: cover;
+  border-radius: 6px;
 }
 
 .product-info {
-  padding: 0.5rem;
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
 .product-name {
@@ -66,61 +80,49 @@ header {
 }
 
 .product-cost {
-  font-weight: bold;
   margin-bottom: 0.5rem;
 }
 
 .buy-btn {
-  background: #444;
-  color: #fff;
+  background: var(--btn-bg);
+  color: var(--btn-text);
   border: none;
   padding: 0.5rem;
   cursor: pointer;
-  font-weight: bold;
-  width: 90%;
-  margin: 0 auto;
+  width: 100%;
   border-radius: 5px;
+  font-weight: bold;
 }
 
 .buy-btn:hover {
-  background: #666;
-}
-
-.availability-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #333;
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: bold;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  background: #ff66d6;
 }
 
 #home-btn {
-  background: #444;
-  color: #fff;
+  background: var(--btn-bg);
+  color: var(--btn-text);
   border: none;
   padding: 0.8rem 2rem;
   font-size: 1rem;
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
-  margin: 1rem 0;
+  margin: 1rem auto;
+  display: block;
 }
-
 #home-btn:hover {
-  background: #666;
+  background: #ff66d6;
 }
 </style>
 </head>
 <body>
 
-<header>Redeem Shop</header>
+<header>乂丨乂丨Redeem</header>
 
-<div id="username">Loading...</div>
-<div id="stars-count">0 ⭐️</div>
+<div id="user-info">
+  <div id="username">Loading...</div>
+  <div id="stars-count">0 ⭐️</div>
+</div>
 
 <div class="shop-grid" id="shop-items"></div>
 
@@ -128,9 +130,10 @@ header {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, onSnapshot, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -138,56 +141,58 @@ const firebaseConfig = {
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
+const db = getFirestore(app);
 
-const urlParams = new URLSearchParams(window.location.search);
-const uid = urlParams.get('uid');
-if (!uid) alert("User not signed in!");
-
+// Elements
 const usernameEl = document.getElementById('username');
 const starsCountEl = document.getElementById('stars-count');
 const shopItemsEl = document.getElementById('shop-items');
 
+// Get UID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const uid = urlParams.get('uid');
+if (!uid) alert("User not signed in!");
+
+// Random color for username
 function randomColor() {
   const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3'];
   return colors[Math.floor(Math.random()*colors.length)];
 }
 
-// Default products
-const defaultShopItems = [
-  { id: 1, name: "Host Gig", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 50 },
-  { id: 2, name: "VIP Access", cost: 20, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 8 },
-  { id: 3, name: "10GB Data", cost: 500, img: "https://res.cloudinary.com/dekxhwh6l/image/upload/v1759059729/IMG_4519_u5poyb.jpg", available: 15 },
-];
+// Load user info
+async function loadUser() {
+  const userRef = doc(db, "users", uid);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) return alert("User data not found!");
+  const data = snap.data();
+  usernameEl.innerText = data.chatId || "Guest";
+  usernameEl.style.color = randomColor();
+  starsCountEl.innerText = `${data.stars || 0} ⭐️`;
 
-// Ensure Firestore shop items exist
-async function ensureShopItems() {
-  const shopCollectionRef = collection(db, "shopItems");
-  const snap = await getDocs(shopCollectionRef);
-  if (snap.empty) {
-    for (const item of defaultShopItems) {
-      await setDoc(doc(db, "shopItems", item.id.toString()), item);
-    }
-  }
+  // Real-time update
+  onSnapshot(userRef, docSnap => {
+    const d = docSnap.data();
+    starsCountEl.innerText = `${d.stars || 0} ⭐️`;
+  });
 }
 
-// Create product card
+// Render product card
 function createProductCard(item) {
   const card = document.createElement('div');
   card.classList.add('product-card');
   card.innerHTML = `
     <img src="${item.img}" alt="${item.name}">
-    <div class="availability-badge" id="stock-${item.id}">${item.available} left</div>
     <div class="product-info">
       <div class="product-name">${item.name}</div>
       <div class="product-cost">${item.cost} ⭐️</div>
+      <div>Stock: <span id="stock-${item.id}">${item.available}</span></div>
       <button class="buy-btn">Buy</button>
     </div>
   `;
@@ -195,7 +200,6 @@ function createProductCard(item) {
   buyBtn.addEventListener('click', async () => {
     const userRef = doc(db, "users", uid);
     const shopRef = doc(db, "shopItems", item.id.toString());
-
     const [userSnap, shopSnap] = await Promise.all([getDoc(userRef), getDoc(shopRef)]);
     const userData = userSnap.data();
     const shopData = shopSnap.data();
@@ -225,44 +229,22 @@ function createProductCard(item) {
   return card;
 }
 
-// Render shop items
-function renderShop(items) {
-  shopItemsEl.innerHTML = '';
-  items.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
-}
-
-// Load user
-async function loadUser() {
-  const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return alert("User data not found!");
-  const data = snap.data();
-  usernameEl.innerText = data.chatId || "Guest";
-  usernameEl.style.color = randomColor();
-  starsCountEl.innerText = `${data.stars || 0} ⭐️`;
-
-  // Real-time updates
-  onSnapshot(userRef, docSnap => {
-    const d = docSnap.data();
-    starsCountEl.innerText = `${d.stars || 0} ⭐️`;
-  });
-}
-
-// Listen shop items
-async function listenShop() {
+// Listen to shop items collection
+function listenShop() {
   const shopCollectionRef = collection(db, "shopItems");
   onSnapshot(shopCollectionRef, snapshot => {
-    const items = [];
-    snapshot.forEach(doc => {
-      items.push({ id: doc.id, ...doc.data() });
-      const badge = document.getElementById(`stock-${doc.id}`);
-      if(badge) badge.innerText = `${doc.data().available} left`;
+    shopItemsEl.innerHTML = '';
+    snapshot.forEach(docSnap => {
+      const item = { id: docSnap.id, ...docSnap.data() };
+      shopItemsEl.appendChild(createProductCard(item));
+
+      // Update stock in real-time
+      const badge = document.getElementById(`stock-${docSnap.id}`);
+      if(badge) badge.innerText = item.available;
     });
-    renderShop(items);
   });
 }
 
-await ensureShopItems();
 loadUser();
 listenShop();
 
