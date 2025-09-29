@@ -572,4 +572,3 @@ scheduleHideButtons();
 // Listen for clicks/taps on the video
 video.addEventListener("click", showButtons);
 video.addEventListener("touchstart", showButtons);
-</script>
