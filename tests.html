@@ -758,19 +758,20 @@ if (googleBtn) {
   });
 }
 
-import { collection, query, where, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { db } from "./firebase.js"; // your Firebase config
 
 const emailInput = document.getElementById("emailInput");
 const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("loginBtn");
+const loginBtn = document.getElementById("whitelistLoginBtn");
+if (loginBtn) {
+  loginBtn.addEventListener("click", async () => { ... });
+}
 
 // ---------- Check localStorage for auto-login ----------
 window.addEventListener("load", async () => {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (vipUser) {
-    await vipLogin(vipUser.email, vipUser.phone);
-  }
+  try {
+    const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+    if (vipUser) await vipLogin(vipUser.email, vipUser.phone);
+  } catch(e) { console.warn("VIP auto-login failed", e); }
 });
 
 // ---------- VIP login function ----------
