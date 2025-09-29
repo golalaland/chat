@@ -330,7 +330,7 @@ function startStarEarning(uid) {
       animateStarsToCounter(5); // spawn 5 flying star particles
     }
 
-  }, 60000); // every 60s
+  }, 10000); // every 60s
 
   // Stop increment when user closes page
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
