@@ -512,9 +512,13 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
+  getAuth,
   setPersistence,
   browserLocalPersistence,
+  onAuthStateChanged,
+  GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
