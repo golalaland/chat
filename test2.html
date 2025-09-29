@@ -509,8 +509,14 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 </div>
   
 <script type="module">
-/* ---------- Imports (Firebase v10) ---------- */
+  /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  setPersistence,
+  browserLocalPersistence,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
   doc,
@@ -526,7 +532,8 @@ import {
   increment,
   getDocs,
   writeBatch,
-  where
+  where,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase,
@@ -536,12 +543,12 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* ---------- Firebase config (fixed storageBucket) ---------- */
+/* ---------- Firebase config ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
   projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com", // <- fixed
+  storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
   measurementId: "G-S77BMC266C",
@@ -549,6 +556,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
@@ -573,31 +582,16 @@ function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format
 function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
 function showStarPopup(text){ const popup = document.getElementById("starPopup"); const starText = document.getElementById("starText"); if (!popup || !starText) return; starText.innerText = text; popup.style.display = "block"; setTimeout(()=>{ popup.style.display = "none"; }, 1700); }
 
-/* ---------- UI refs (will be assigned when DOM is ready) ---------- */
-let authBox = null;
-let messagesEl = null;
-let sendAreaEl = null;
-let messageInputEl = null;
-let sendBtn = null;
-let buzzBtn = null;
-let profileBoxEl = null;
-let profileNameEl = null;
-let starCountEl = null;
-let cashCountEl = null;
-let tipBtn = null;
-let redeemBtn = null;
-let onlineCountEl = null;
-
-let adminControlsEl = null;
-let adminGiveStarsBtn = null;
-let adminResetStarsBtn = null;
-let adminGiveCashBtn = null;
-let adminResetCashBtn = null;
-let adminClearMessagesBtn = null;
-
-let chatIDModal = null;
-let chatIDInput = null;
-let chatIDConfirmBtn = null;
+/* ---------- Deferred DOM refs (assigned on DOMContentLoaded) ---------- */
+let refs = {
+  googleBtn: null, authBox: null, messagesEl: null, sendAreaEl: null,
+  messageInputEl: null, sendBtn: null, buzzBtn: null, profileBoxEl: null,
+  profileNameEl: null, starCountEl: null, cashCountEl: null, tipBtn: null,
+  redeemBtn: null, onlineCountEl: null, adminControlsEl: null,
+  adminGiveStarsBtn: null, adminResetStarsBtn: null, adminGiveCashBtn: null,
+  adminResetCashBtn: null, adminClearMessagesBtn: null,
+  chatIDModal: null, chatIDInput: null, chatIDConfirmBtn: null
+};
 
 /* ---------- Presence (room-scoped) ---------- */
 function setupPresence(user){
@@ -609,14 +603,13 @@ function setupPresence(user){
   }catch(e){ console.warn("presence error", e); }
 }
 if (rtdb) {
-  // update online count when DOM later assigns onlineCountEl, this still updates underlying RTDB
   onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
     const val = snap.val() || {};
-    if (onlineCountEl) onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
+    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
   });
 }
 
-/* ---------- Keep user color map (uid -> color) ---------- */
+/* ---------- Keep user color map ---------- */
 const userColors = {};
 function setupUsersListener(){
   if(usersUnsub) usersUnsub();
@@ -628,8 +621,7 @@ function setupUsersListener(){
     if(lastMessagesArray?.length) renderMessagesFromArray(lastMessagesArray);
   });
 }
-// Start this immediately — it doesn't require DOM.
-setupUsersListener();
+setupUsersListener(); // non-blocking
 
 /* ---------- Daily color helper ---------- */
 async function assignDailyUsernameColor(userRef, data){
@@ -649,18 +641,18 @@ async function assignDailyUsernameColor(userRef, data){
   }
 }
 
-/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
+/* ---------- Chat ID modal ---------- */
 async function promptForChatIDModal(userRef, userData){
-  if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
+  if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
   if(userData?.chatId) return userData.chatId;
 
-  chatIDInput.value = "";
-  chatIDModal.style.display = "flex";
-  if(sendAreaEl) sendAreaEl.style.display = "none"; // hide typing area until chosen
+  refs.chatIDInput.value = "";
+  refs.chatIDModal.style.display = "flex";
+  if(refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
 
   return new Promise((resolve) => {
-    chatIDConfirmBtn.onclick = async () => {
-      const chosenID = chatIDInput.value.trim();
+    refs.chatIDConfirmBtn.onclick = async () => {
+      const chosenID = refs.chatIDInput.value.trim();
       if (chosenID.length < 3 || chosenID.length > 12) {
         alert("Chat ID must be between 3 and 12 characters.");
         return;
@@ -670,7 +662,6 @@ async function promptForChatIDModal(userRef, userData){
       try {
         const q = query(collection(db, "users"), where("chatIdLower", "==", normalized));
         const snap = await getDocs(q);
-        // allow if the only match is the current user
         let conflict = false;
         snap.forEach(docSnap => {
           if(docSnap.id !== userRef.id) conflict = true;
@@ -680,7 +671,6 @@ async function promptForChatIDModal(userRef, userData){
           return;
         }
 
-        // save both original and normalized
         await updateDoc(userRef, { chatId: chosenID, chatIdLower: normalized });
       } catch (e) {
         console.error("Error saving chat ID:", e);
@@ -688,9 +678,9 @@ async function promptForChatIDModal(userRef, userData){
         return;
       }
 
-      chatIDModal.style.display = "none";
-      if(sendAreaEl) sendAreaEl.style.display = "flex";
-      location.reload(); // 🔥 refresh so it reflects instantly
+      refs.chatIDModal.style.display = "none";
+      if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+      location.reload();
       resolve(chosenID);
     };
   });
@@ -717,10 +707,10 @@ function rotateHello(){
 rotateHello();
 helloInterval = setInterval(rotateHello, 1500);
 
-/* ---------- Message rendering (full redraw helper) ---------- */
+/* ---------- Message rendering ---------- */
 function renderMessagesFromArray(arr){
-  if(!messagesEl) return;
-  messagesEl.innerHTML = "";
+  if(!refs.messagesEl) return;
+  refs.messagesEl.innerHTML = "";
   arr.forEach(item => {
     const m = item.data;
     const wrapper = document.createElement("div");
@@ -741,12 +731,12 @@ function renderMessagesFromArray(arr){
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
-    messagesEl.appendChild(wrapper);
+    refs.messagesEl.appendChild(wrapper);
   });
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
 }
 
-/* ---------- Helper: Attach messages listener (shared) ---------- */
+/* ---------- Messages listener (shared) ---------- */
 function attachMessagesListener(){
   if(messagesUnsub) messagesUnsub();
   const messagesQuery = query(collection(db, CHAT_COLLECTION), orderBy("timestamp","asc"));
@@ -755,7 +745,7 @@ function attachMessagesListener(){
       const m = change.doc.data();
       if (change.type === "added") {
         lastMessagesArray.push({ id: change.doc.id, data: m });
-        if(messagesEl){
+        if(refs.messagesEl){
           const wrapper = document.createElement("div");
           wrapper.className = "msg";
           wrapper.id = change.doc.id;
@@ -774,8 +764,8 @@ function attachMessagesListener(){
 
           wrapper.appendChild(meta);
           wrapper.appendChild(content);
-          messagesEl.appendChild(wrapper);
-          messagesEl.scrollTop = messagesEl.scrollHeight;
+          refs.messagesEl.appendChild(wrapper);
+          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
         }
       } else if (change.type === "modified") {
         const msgEl = document.getElementById(change.doc.id);
@@ -794,10 +784,57 @@ function attachMessagesListener(){
   });
 }
 
-/* ---------- Core: handle sign-in by uid (email used as uid) ---------- */
-async function handleSignInWithUID(uid){
-  try {
-    // uid is the email used as doc id for users collection
+/* ---------- Daily star helpers ---------- */
+async function resetDailyCapIfNeeded(userRef, data) {
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  if (data.lastStarDate !== today) {
+    await updateDoc(userRef, {
+      starsToday: 0,
+      lastStarDate: today
+    });
+    data.starsToday = 0;
+    data.lastStarDate = today;
+  }
+}
+async function tryGiveStar(userRef, data, amount = 1) {
+  const today = new Date().toISOString().split("T")[0];
+  if (data.lastStarDate !== today) {
+    await resetDailyCapIfNeeded(userRef, data);
+  }
+  const starsToday = data.starsToday || 0;
+  if (starsToday >= DAILY_STAR_CAP) {
+    console.log("⭐ Daily star cap reached");
+    return false;
+  }
+  const allowedAmount = Math.min(amount, DAILY_STAR_CAP - starsToday);
+  await updateDoc(userRef, {
+    stars: increment(allowedAmount),
+    starsToday: increment(allowedAmount),
+    lastStarDate: today
+  });
+  return true;
+}
+
+/* ---------- Auto-star regen ---------- */
+setInterval(async () => {
+  if(!currentUser) return;
+  try{
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const data = snap.exists() ? snap.data() : {};
+    await resetDailyCapIfNeeded(userRef, data);
+    const curr = data.stars || 0;
+    if(curr < DAILY_STAR_CAP){
+      const next = Math.min(curr + AUTO_STAR_ADD, DAILY_STAR_CAP);
+      await updateDoc(userRef, { stars: next });
+    }
+  }catch(e){ /* ignore periodic errors */ }
+}, 10000);
+
+/* ---------- Core: boot function (run for any logged-in user) ---------- */
+async function bootForUser(uid, displayName = null){
+  try{
+    // presence
     setupPresence({ uid });
 
     const userRef = doc(db, "users", uid);
@@ -815,22 +852,18 @@ async function handleSignInWithUID(uid){
         email: uid,
         createdAt: new Date()
       });
-
-      // 🎉 Show popup on signup gift
       showStarPopup("🎉 Welcome! You got +50 stars as a gift!");
       snap = await getDoc(userRef);
     }
     let userData = snap.exists()? snap.data() : {};
 
-    // Daily star cap reset check
     await resetDailyCapIfNeeded(userRef, userData);
-
     await assignDailyUsernameColor(userRef, userData);
 
-    // Set global currentUser object
+    // set currentUser object
     currentUser = {
       uid: uid,
-      chatId: userData.chatId || userData.email || generateGuestName(),
+      chatId: userData.chatId || displayName || generateGuestName(),
       chatIdLower: userData.chatIdLower || (userData.chatId || "").toLowerCase() || null,
       stars: userData.stars || 0,
       cash: userData.cash || 0,
@@ -838,22 +871,20 @@ async function handleSignInWithUID(uid){
       isAdmin: userData.isAdmin || false
     };
 
-    // Stop previous listener if any
+    // stop previous user listener
     if (userDocUnsub) userDocUnsub();
 
-    // Attach new real-time listener for user doc
+    // attach real-time user doc listener
     userDocUnsub = onSnapshot(userRef, (snap) => {
       if (!snap.exists()) return;
       const data = snap.data();
-
       currentUser.stars = data.stars || 0;
       currentUser.cash = data.cash || 0;
-
-      if (starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-      if (cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+      if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+      if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
     });
 
-    // Chat ID modal for first-time users
+    // Chat ID modal for first time users
     if(!userData?.chatId){
       const chosen = await promptForChatIDModal(userRef, userData);
       if(chosen){
@@ -863,83 +894,81 @@ async function handleSignInWithUID(uid){
     }
 
     // UI updates
-    if(authBox) authBox.style.display = "none";
-    if(sendAreaEl) sendAreaEl.style.display = "flex";
-    if(profileBoxEl) profileBoxEl.style.display = "block";
-    if(profileNameEl){
-      profileNameEl.innerText = currentUser.chatId;
-      profileNameEl.style.color = currentUser.usernameColor;
+    if(refs.authBox) refs.authBox.style.display = "none";
+    if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+    if(refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
+    if(refs.profileNameEl){
+      refs.profileNameEl.innerText = currentUser.chatId;
+      refs.profileNameEl.style.color = currentUser.usernameColor;
     }
-    if(starCountEl) starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if(cashCountEl) cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    if(refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if(refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
 
     // Admin controls
-    if(adminControlsEl){
+    if(refs.adminControlsEl){
       if(currentUser.isAdmin){
-        adminControlsEl.style.display = "flex";
+        refs.adminControlsEl.style.display = "flex";
         setupAdminControls();
       } else {
-        adminControlsEl.style.display = "none";
-      }
-    }
-    if(adminControlsEl) {
-      if(currentUser.isAdmin){
-        adminControlsEl.style.display = "flex";
-        const adminUserSelectContainer = document.getElementById("adminUserSelectContainer");
-        if (adminUserSelectContainer) adminUserSelectContainer.style.display = "block";
-        setupAdminControls();
-      } else {
-        const adminUserSelectContainer = document.getElementById("adminUserSelectContainer");
-        if (adminUserSelectContainer) adminUserSelectContainer.style.display = "none";
-        adminControlsEl.style.display = "none";
+        refs.adminControlsEl.style.display = "none";
       }
     }
 
-    // Start / attach messages listener
+    // Attach messages listener
     attachMessagesListener();
 
   } catch (e) {
-    console.error("handleSignInWithUID error:", e);
+    console.error("bootForUser error:", e);
     alert("Sign-in failed. Check console.");
   }
 }
 
-/* ---------- JS snippet: DOMContentLoaded wiring for whitelist login & UI listeners ---------- */
+/* ---------- Keep onAuthStateChanged so Firebase auth still works if used ---------- */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    currentUser = null;
+    if(refs.authBox) refs.authBox.style.display = "";
+    if(refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
+    if(refs.profileBoxEl) refs.profileBoxEl.style.display = "none";
+    if(refs.messagesEl) refs.messagesEl.innerHTML = "";
+    if(userDocUnsub){ userDocUnsub(); userDocUnsub=null; }
+    if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }
+    return;
+  }
+  await bootForUser(user.uid, user.displayName || null);
+});
+
+/* ---------- DOM ready: wire UI, whitelist login, event handlers ---------- */
 window.addEventListener("DOMContentLoaded", () => {
-  // assign DOM refs now
-  authBox = document.getElementById("authBox");
-  messagesEl = document.getElementById("messages");
-  sendAreaEl = document.getElementById("sendArea");
-  messageInputEl = document.getElementById("messageInput");
-  sendBtn = document.getElementById("sendBtn");
-  buzzBtn = document.getElementById("buzzBtn");
-  profileBoxEl = document.getElementById("profileBox");
-  profileNameEl = document.getElementById("profileName");
-  starCountEl = document.getElementById("starCount");
-  cashCountEl = document.getElementById("cashCount");
-  tipBtn = document.getElementById("tipBtn");
-  redeemBtn = document.getElementById("redeemBtn");
-  onlineCountEl = document.getElementById("onlineCount");
+  // assign DOM refs
+  refs.googleBtn = document.getElementById("googleSignInBtn"); // may be unused but kept
+  refs.authBox = document.getElementById("authBox");
+  refs.messagesEl = document.getElementById("messages");
+  refs.sendAreaEl = document.getElementById("sendArea");
+  refs.messageInputEl = document.getElementById("messageInput");
+  refs.sendBtn = document.getElementById("sendBtn");
+  refs.buzzBtn = document.getElementById("buzzBtn");
+  refs.profileBoxEl = document.getElementById("profileBox");
+  refs.profileNameEl = document.getElementById("profileName");
+  refs.starCountEl = document.getElementById("starCount");
+  refs.cashCountEl = document.getElementById("cashCount");
+  refs.tipBtn = document.getElementById("tipBtn");
+  refs.redeemBtn = document.getElementById("redeemBtn");
+  refs.onlineCountEl = document.getElementById("onlineCount");
 
-  adminControlsEl = document.getElementById("adminControls");
-  adminGiveStarsBtn = document.getElementById("adminGiveStarsBtn");
-  adminResetStarsBtn = document.getElementById("adminResetStarsBtn");
-  adminGiveCashBtn = document.getElementById("adminGiveCashBtn");
-  adminResetCashBtn = document.getElementById("adminResetCashBtn");
-  adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
+  refs.adminControlsEl = document.getElementById("adminControls");
+  refs.adminGiveStarsBtn = document.getElementById("adminGiveStarsBtn");
+  refs.adminResetStarsBtn = document.getElementById("adminResetStarsBtn");
+  refs.adminGiveCashBtn = document.getElementById("adminGiveCashBtn");
+  refs.adminResetCashBtn = document.getElementById("adminResetCashBtn");
+  refs.adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
 
-  chatIDModal = document.getElementById("chatIDModal");
-  chatIDInput = document.getElementById("chatIDInput");
-  chatIDConfirmBtn = document.getElementById("chatIDConfirmBtn");
-  if(chatIDInput) chatIDInput.setAttribute("maxlength","12");
+  refs.chatIDModal = document.getElementById("chatIDModal");
+  refs.chatIDInput = document.getElementById("chatIDInput");
+  refs.chatIDConfirmBtn = document.getElementById("chatIDConfirmBtn");
+  if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  // rebind presence online count (update text now if snapshot already fired)
-  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
-    const val = snap.val() || {};
-    if (onlineCountEl) onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
-  });
-
-  // ---------- DOM elements for whitelist login flow ----------
+  // whitelist DOMs
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
@@ -947,31 +976,27 @@ window.addEventListener("DOMContentLoaded", () => {
   const usernameDisplay = document.getElementById("usernameDisplay");
   const starsDisplay = document.getElementById("starsDisplay");
 
-  // ---------- attach send/buzz listeners now that elements exist ----------
-  if (sendBtn) {
-    sendBtn.addEventListener("click", async () => {
-      if (!currentUser) { 
-        showStarPopup("Sign in to chat"); 
-        return; 
-      }
-      const txt = messageInputEl?.value.trim();
-      if (!txt) { 
-        showStarPopup("Type a message first"); 
-        return; 
-      }
+  // ensure online count updates reflect current snapshot
+  if (rtdb && refs.onlineCountEl) {
+    onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
+      const val = snap.val() || {};
+      refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
+    });
+  }
 
-      if ((currentUser.stars || 0) < SEND_COST) {
-        showStarPopup("Not enough stars to send a message");
-        return;
-      }
+  // SEND binding
+  if (refs.sendBtn) {
+    refs.sendBtn.addEventListener("click", async () => {
+      if (!currentUser) { showStarPopup("Sign in to chat"); return; }
+      const txt = refs.messageInputEl?.value.trim();
+      if (!txt) { showStarPopup("Type a message first"); return; }
+      if ((currentUser.stars || 0) < SEND_COST) { showStarPopup("Not enough stars to send a message"); return; }
 
       try {
         currentUser.stars -= SEND_COST;
-        if (starCountEl) starCountEl.textContent = currentUser.stars;
+        if (refs.starCountEl) refs.starCountEl.textContent = currentUser.stars;
 
-        await updateDoc(doc(db, "users", currentUser.uid), {
-          stars: increment(-SEND_COST)
-        });
+        await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
 
         await addDoc(collection(db, CHAT_COLLECTION), {
           content: txt,
@@ -982,31 +1007,31 @@ window.addEventListener("DOMContentLoaded", () => {
           buzzColor: null
         });
 
-        if (messageInputEl) messageInputEl.value = "";
+        if (refs.messageInputEl) refs.messageInputEl.value = "";
 
       } catch (e) {
         console.error("Send failed", e);
         showStarPopup("Message failed to send");
         currentUser.stars += SEND_COST;
-        if (starCountEl) starCountEl.textContent = currentUser.stars;
+        if (refs.starCountEl) refs.starCountEl.textContent = currentUser.stars;
       }
     });
 
-    // Enter => send (unless shift)
-    if (messageInputEl) {
-      messageInputEl.addEventListener("keydown", (e) => {
+    if (refs.messageInputEl) {
+      refs.messageInputEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
-          sendBtn.click();
+          refs.sendBtn.click();
         }
       });
     }
   }
 
-  if (buzzBtn) {
-    buzzBtn.addEventListener("click", async () => {
+  // BUZZ binding
+  if (refs.buzzBtn) {
+    refs.buzzBtn.addEventListener("click", async () => {
       if (!currentUser) { showStarPopup("Sign in to BUZZ"); return; }
-      const txt = messageInputEl?.value.trim();
+      const txt = refs.messageInputEl?.value.trim();
       if (!txt) { showStarPopup("Type a message to BUZZ! 🚨"); return; }
 
       try {
@@ -1027,7 +1052,7 @@ window.addEventListener("DOMContentLoaded", () => {
           buzzColor: color
         });
 
-        if(messageInputEl) messageInputEl.value = "";
+        if(refs.messageInputEl) refs.messageInputEl.value = "";
         const audio = document.getElementById("buzz-sound");
         if (audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
         if (navigator.vibrate) navigator.vibrate([100,50,100]);
@@ -1039,34 +1064,21 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ---------- Redeem binding ----------
-  if (redeemBtn) {
-    redeemBtn.addEventListener("click", () => {
-      if (!currentUser) {
-        showStarPopup("Sign in first to redeem!");
-        return;
-      }
+  // Redeem binding
+  if (refs.redeemBtn) {
+    refs.redeemBtn.addEventListener("click", () => {
+      if (!currentUser) { showStarPopup("Sign in first to redeem!"); return; }
       window.location.href = `/chat/shop.html?uid=${encodeURIComponent(currentUser.uid)}`;
     });
   }
 
-  // ---------- Video controls binding ----------
+  // Video bindings (prev/next/mute)
   const videoPlayer = document.getElementById("videoPlayer");
-  const prevBtn = document.getElementById("prev");
-  const nextBtn = document.getElementById("next");
-  const video = videoPlayer;
-  const navButtons = document.querySelectorAll(".arrow");
+  document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+  document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+  videoPlayer?.addEventListener("click", () => { videoPlayer.muted = !videoPlayer.muted; });
 
-  // Set up video nav handlers if present
-  if (prevBtn) prevBtn.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
-  if (nextBtn) nextBtn.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
-  if (videoPlayer) {
-    videoPlayer.addEventListener("click", () => { videoPlayer.muted = !videoPlayer.muted; });
-    videoPlayer.addEventListener("click", showButtons);
-    videoPlayer.addEventListener("touchstart", showButtons);
-  }
-
-  // ---------- whitelist login / auto-login wiring ----------
+  // Whitelist login logic
   async function vipLoginLocal(email, phone) {
     try {
       const q = query(
@@ -1075,11 +1087,11 @@ window.addEventListener("DOMContentLoaded", () => {
         where("phone", "==", phone)
       );
       const querySnapshot = await getDocs(q);
-
       if (!querySnapshot.empty) {
         const vipUser = { email, phone };
         localStorage.setItem("vipUser", JSON.stringify(vipUser));
-        await handleSignInWithUID(email);
+        // boot the same initialization used by Firebase Auth users
+        await bootForUser(email, null);
         // small UI update
         if (usernameDisplay) usernameDisplay.textContent = currentUser.chatId || currentUser.uid;
         if (starsDisplay) starsDisplay.textContent = `Stars: ${currentUser.stars || 0} ⭐️`;
@@ -1104,22 +1116,20 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Auto-login
+  // Auto-login VIP if present
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
   if (vipUser && vipUser.email && vipUser.phone) {
-    vipLoginLocal(vipUser.email, vipUser.phone);
+    vipLoginLocal(vipUser.email, vipUser.phone); // non-blocking
   }
 
-  // Change Chat ID once
+  // Change Chat ID
   if (changeChatBtn) {
     changeChatBtn.addEventListener("click", async () => {
       if (!currentUser) return;
       const newChatId = prompt("Enter new chat ID:");
       if (!newChatId) return;
-
       const userRef = doc(db, "users", currentUser.uid);
       await updateDoc(userRef, { chatId: newChatId, chatIdLower: newChatId.toLowerCase() });
-
       currentUser.chatId = newChatId;
       if (usernameDisplay) usernameDisplay.textContent = newChatId;
       changeChatBtn.style.display = "none";
@@ -1128,63 +1138,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 }); // end DOMContentLoaded
 
-/* ---------- Daily Star Cap Reset Helper (unchanged) ---------- */
-async function resetDailyCapIfNeeded(userRef, data) {
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-
-  if (data.lastStarDate !== today) {
-    await updateDoc(userRef, {
-      starsToday: 0,
-      lastStarDate: today
-    });
-    data.starsToday = 0;
-    data.lastStarDate = today;
-  }
-}
-/* ---------- Safe Star Earn Helper (Daily Cap Check) ---------- */
-async function tryGiveStar(userRef, data, amount = 1) {
-  const today = new Date().toISOString().split("T")[0];
-
-  // Daily reset safety
-  if (data.lastStarDate !== today) {
-    await resetDailyCapIfNeeded(userRef, data);
-  }
-
-  const starsToday = data.starsToday || 0;
-  if (starsToday >= DAILY_STAR_CAP) {
-    // Optional: show a popup or silent fail
-    console.log("⭐ Daily star cap reached");
-    return false;
-  }
-
-  const allowedAmount = Math.min(amount, DAILY_STAR_CAP - starsToday);
-  await updateDoc(userRef, {
-    stars: increment(allowedAmount),
-    starsToday: increment(allowedAmount),
-    lastStarDate: today
-  });
-
-  return true;
-}
-
-/* ---------- Auto-star regen (server reads/writes) ---------- */
-setInterval(async () => {
-  if(!currentUser) return;
-  try{
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    const data = snap.exists() ? snap.data() : {};
-    // 🧠 Daily reset check (NEW)
-    await resetDailyCapIfNeeded(userRef, data);
-    const curr = data.stars || 0;
-    if(curr < DAILY_STAR_CAP){
-      const next = Math.min(curr + AUTO_STAR_ADD, DAILY_STAR_CAP);
-      await updateDoc(userRef, { stars: next });
-    }
-  }catch(e){ /* ignore periodic errors */ }
-}, 10000);
-
-/* ---------- Admin functions (unchanged, they query DOM when needed) ---------- */
+/* ---------- Admin functions (same as before) ---------- */
 function setupAdminControls(){
   const userSelect = document.getElementById("adminUserSelect");
   const userSearch = document.getElementById("adminUserSearch");
@@ -1220,7 +1174,6 @@ function setupAdminControls(){
     });
   });
 
-  // ... rest unchanged (admin buttons perform queries when clicked) ...
   document.getElementById("adminGiveStarsBtn")?.addEventListener("click", async ()=>{
     const amount = parseInt(prompt("Stars to give:","100"))||0;
     if(amount<=0) return;
@@ -1248,23 +1201,75 @@ function setupAdminControls(){
     }
   });
 
-  // ... keep the rest of the admin handlers as before ...
+  document.getElementById("adminGiveCashBtn")?.addEventListener("click", async ()=>{
+    const amount=parseInt(prompt("Cash to give:","1000"))||0;
+    if(amount<=0) return;
+    const uid = userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{cash: increment(amount)});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash: increment(amount)}));
+      await batch.commit();
+    }
+  });
+
+  document.getElementById("adminResetCashBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Reset cash to 0?")) return;
+    const uid=userSelect.value;
+    if(uid){
+      await updateDoc(doc(db,"users",uid),{cash:0});
+    } else {
+      const snap = await getDocs(collection(db,"users"));
+      const batch = writeBatch(db);
+      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash:0}));
+      await batch.commit();
+    }
+  });
+
+  document.getElementById("adminClearMessagesBtn")?.addEventListener("click", async ()=>{
+    if(!confirm("Clear ALL messages in this room?")) return;
+    const snapMsgs = await getDocs(collection(db, CHAT_COLLECTION));
+    const batch = writeBatch(db);
+    snapMsgs.forEach(m=> batch.delete(doc(db, CHAT_COLLECTION, m.id)));
+    await batch.commit();
+    if(refs.messagesEl) refs.messagesEl.innerHTML="";
+  });
+
+  document.getElementById("adminDeleteMsgBtn")?.addEventListener("click", async ()=>{
+    const msgId = prompt("Enter message ID to delete:");
+    if(!msgId) return;
+    await deleteDoc(doc(db, CHAT_COLLECTION, msgId));
+    lastMessagesArray = lastMessagesArray.filter(m=> m.id!==msgId);
+    renderMessagesFromArray(lastMessagesArray);
+  });
+
+  document.getElementById("adminKickUserBtn")?.addEventListener("click", async ()=>{
+    const uid = userSelect.value;
+    if(!uid) return alert("Select a user to kick");
+    await rtdbSet(rtdbRef(rtdb, `kicked/${ROOM_ID}/${uid}`), true);
+    alert("User kicked (block from chat) until refresh");
+  });
+
+  document.getElementById("adminBlockSendBtn")?.addEventListener("click", ()=>{
+    window.chatBlocked = !window.chatBlocked;
+    alert(window.chatBlocked?"Send/Buzz blocked":"Send/Buzz unblocked");
+  });
+
+  document.getElementById("adminSetTimeoutBtn")?.addEventListener("click", ()=>{
+    const sec=parseInt(prompt("Set chat timeout seconds per user:","10"))||0;
+    window.chatTimeoutSec=sec;
+    alert(`Users can now only send one message every ${sec} seconds`);
+  });
 }
 
-/* ---------- Send/Buzz handler with timeout & block (shared helper) ---------- */
+/* ---------- Send/Buzz helper with timeout/block ---------- */
 const lastSentTime = {}; // tracks per-user last message
-
 async function handleSendMessage(content){
   if(!currentUser) return;
   const uid = currentUser.uid;
-
-  // Blocked globally
-  if(window.chatBlocked){
-    alert("Chat send/buzz is currently blocked by admin!");
-    return;
-  }
-
-  // Timeout per user
+  if(window.chatBlocked){ alert("Chat send/buzz is currently blocked by admin!"); return; }
   const now = Date.now();
   const timeoutSec = window.chatTimeoutSec || 0;
   if(timeoutSec > 0 && lastSentTime[uid]){
@@ -1274,25 +1279,21 @@ async function handleSendMessage(content){
       return;
     }
   }
-
-  // Send message
   await addDoc(collection(db, CHAT_COLLECTION), {
     uid,
     chatId: currentUser.chatId,
     content,
     timestamp: serverTimestamp()
   });
-
   lastSentTime[uid] = now;
 }
 
-/* ---------- Video navigation (unchanged arrays & helpers) ---------- */
+/* ---------- Video helpers ---------- */
 const videos = [
   "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
   "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
   "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"];
 let currentVideoIndex = 0;
-
 function loadVideo(index) {
   const videoPlayer = document.getElementById("videoPlayer");
   if (!videoPlayer) return;
@@ -1303,34 +1304,24 @@ function loadVideo(index) {
   videoPlayer.muted = true;
   videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
 }
-
-// nav helpers used by bindings
 document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
 document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
-
-// toggle mute on click (if video present at time of binding)
 document.getElementById("videoPlayer")?.addEventListener("click", () => {
-  const v = document.getElementById("videoPlayer");
-  if (v) v.muted = !v.muted;
+  const v = document.getElementById("videoPlayer"); if (v) v.muted = !v.muted;
 });
-
 loadVideo(0);
 
-/* ---------- Auto fade / showButtons logic (keeps behavior) ---------- */
+/* ---------- Simple nav button auto-hide ---------- */
 function scheduleHideButtons() {
   const navButtons = document.querySelectorAll(".arrow");
   navButtons.forEach(btn => btn.classList.add("hidden"));
-  // a simple re-schedule approach (original used timeouts bound to window)
   setTimeout(() => {
     navButtons.forEach(btn => btn.classList.add("hidden"));
   }, 5300);
 }
-
 function showButtons() {
   const navButtons = document.querySelectorAll(".arrow");
   navButtons.forEach(btn => btn.classList.remove("hidden"));
   scheduleHideButtons();
 }
-
-// initial schedule
 scheduleHideButtons();
