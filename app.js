@@ -171,21 +171,33 @@ async function promptForChatID(userRef, userData){
 /* ---------- Login ---------- */
 async function loginWhitelist(email, phone) {
   try {
+    // Check whitelist
     const q = query(collection(db, "whitelist"), where("email","==",email), where("phone","==",phone));
     const snap = await getDocs(q);
-    if (snap.empty) { alert("You’re not on the whitelist."); return false; }
+    if (snap.empty) {
+      alert("You’re not on the whitelist.");
+      return false;
+    }
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
     let docSnap = await getDoc(userRef);
+
+    // Create user if missing
     if (!docSnap.exists()) {
       const guestName = generateGuestName();
       await setDoc(userRef, {
         chatId: guestName,
         chatIdLower: guestName.toLowerCase(),
-        stars: 50, cash:0, usernameColor: randomColor(),
-        lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false, email, phone, createdAt: new Date()
+        stars: 50,
+        starsToday: 0,
+        lastStarDate: new Date().toISOString().split("T")[0],
+        cash: 0,
+        usernameColor: randomColor(),
+        isAdmin: false,
+        email,
+        phone,
+        createdAt: new Date()
       });
       showStarPopup("🎉 Your account created with 50 stars!");
       docSnap = await getDoc(userRef);
@@ -194,7 +206,8 @@ async function loginWhitelist(email, phone) {
     const data = docSnap.data() || {};
     currentUser = {
       uid: uidKey,
-      email, phone,
+      email,
+      phone,
       chatId: data.chatId || email,
       chatIdLower: data.chatIdLower || (data.chatId || "").toLowerCase(),
       stars: data.stars || 0,
@@ -203,9 +216,12 @@ async function loginWhitelist(email, phone) {
       isAdmin: data.isAdmin || false
     };
 
+    // Setup presence, messages, and star earning
     setupPresence(currentUser);
     attachMessagesListener();
-startStarEarning(currentUser.uid);
+
+    try { startStarEarning(currentUser.uid); } catch(e){ console.warn("star earning init failed", e); }
+
     // Persist session
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
@@ -218,92 +234,71 @@ startStarEarning(currentUser.uid);
 const emailAuthWrapper = document.getElementById("emailAuthWrapper");
 if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
 
-    // UI updates
+       // UI updates
     if (refs.authBox) refs.authBox.style.display = "none";
     if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
     if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if (refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
+    if (refs.profileNameEl) {
+      refs.profileNameEl.innerText = currentUser.chatId;
+      refs.profileNameEl.style.color = currentUser.usernameColor;
+    }
     if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
     if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
     if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
 
     return true;
 
-  } catch(e){ console.error("login error", e); alert("Login failed"); return false; }
+  } catch(e) {
+    console.error("Login error:", e);
+    alert("Login failed. Try again.");
+    return false;
+  }
 }
-
 
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-
   const userRef = doc(db, "users", uid);
 
-  // Live sync stars + daily reset
+  // Live sync stars + UI updates
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.data();
-    const today = new Date().toISOString().split("T")[0];
-
-    // Reset daily stars if new day
-    if (data.lastStarDate !== today) {
-      updateDoc(userRef, { starsToday: 0, lastStarDate: today }).catch(()=>{});
-    }
-
-    // Update UI whenever stars change
     currentUser.stars = data.stars || 0;
+
     if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    // 🎉 Milestone popup every 1,000 stars
+    // Milestone popup every 1,000 stars
     if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
       showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
     }
   });
 
-  // Increment stars every 60s, only if online
-  setInterval(async () => {
-    if (!navigator.onLine) return; // stop incrementing if offline
-
+  // Increment stars every 60s if online
+  const starInterval = setInterval(async () => {
+    if (!navigator.onLine) return; // STOP if offline
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
 
     const data = snap.data();
     const today = new Date().toISOString().split("T")[0];
-    const starsToday = data.starsToday || 0;
 
-    // Reset daily stars if new day
+    // Reset daily starsToday if new day
     if (data.lastStarDate !== today) {
       await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
       return;
     }
 
-    // Add 10 stars if under daily cap
-    if (starsToday < 200) {
+    if ((data.starsToday || 0) < 200) {
       await updateDoc(userRef, {
         stars: increment(10),
-        starsToday: increment(10),
-        lastStarDate: today
+        starsToday: increment(10)
       });
     }
-  }, 60000); // every 60 seconds
-}
+  }, 60000); // every 60s
 
-  // Start incrementing only when page is visible
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && !intervalId) {
-      intervalId = setInterval(updateStars, 60000);
-      updateStars(); // immediate first run
-    } else if (document.visibilityState === "hidden" && intervalId) {
-      clearInterval(intervalId);
-      intervalId = null;
-    }
-  });
-
-  // Also start immediately if page is already visible
-  if (document.visibilityState === "visible") {
-    intervalId = setInterval(updateStars, 60000);
-    updateStars();
-  }
+  // Stop increment when user closes page
+  window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
 /* ---------- DOMContentLoaded ---------- */
