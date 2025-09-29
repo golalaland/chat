@@ -130,14 +130,24 @@ function renderMessagesFromArray(arr, isSentByUser = false){
   }
 }
 /* ---------- Attach messages listener ---------- */
-function attachMessagesListener(){
+function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
+
   onSnapshot(q, snapshot => {
     snapshot.docChanges().forEach(change => {
-      const m = change.doc.data();
       if (change.type === "added") {
-        lastMessagesArray.push({ id: change.doc.id, data: m });
-        renderMessagesFromArray([ { id: change.doc.id, data: m } ]);
+        const msgData = change.doc.data();
+        const isSentByUser = currentUser && msgData.uid === currentUser.uid;
+
+        lastMessagesArray.push({ id: change.doc.id, data: msgData });
+
+        // Render new message
+        renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
+
+        // Auto-scroll only if the message is sent by current user
+        if (refs.messagesEl && isSentByUser) {
+          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+        }
       }
     });
   });
