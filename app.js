@@ -202,7 +202,7 @@ async function loginWhitelist(email, phone) {
 
     setupPresence(currentUser);
     attachMessagesListener();
-
+startStarEarning(currentUser.uid);
     // Persist session
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
@@ -223,6 +223,57 @@ async function loginWhitelist(email, phone) {
     return true;
 
   } catch(e){ console.error("login error", e); alert("Login failed"); return false; }
+}
+
+
+/* ---------- Stars auto-earning ---------- */
+function startStarEarning(uid) {
+  if (!uid) return;
+
+  const userRef = doc(db, "users", uid);
+
+  // Live sync stars + reset daily
+  onSnapshot(userRef, snap => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const today = new Date().toISOString().split("T")[0];
+
+    // Reset if new day
+    if (data.lastStarDate !== today) {
+      updateDoc(userRef, { starsToday: 0, lastStarDate: today }).catch(()=>{});
+    }
+
+    // Update UI whenever stars change
+    currentUser.stars = data.stars || 0;
+    if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+    // 🎉 Milestone popup every 1,000 stars
+    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
+      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
+    }
+  });
+
+  // Increment every 60s if under cap
+  setInterval(async () => {
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const today = new Date().toISOString().split("T")[0];
+    const starsToday = data.starsToday || 0;
+
+    if (data.lastStarDate !== today) {
+      await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
+      return;
+    }
+
+    if (starsToday < 200) {
+      await updateDoc(userRef, {
+        stars: increment(10),
+        starsToday: increment(10),
+        lastStarDate: today
+      });
+    }
+  }, 60000); // 60 seconds
 }
 
 /* ---------- DOMContentLoaded ---------- */
