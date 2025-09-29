@@ -286,10 +286,10 @@ if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
 }
 
 // Update Redeem button dynamically with current user's UID
-function updateRedeemLink() {
-  if (refs.redeemBtn && currentUser?.uid) {
-    refs.redeemBtn.href = `https://golalaland.github.io/chat/shop.html?uid=${currentUser.uid}`;
-  }
+// Show redeem button with personalized link
+if (refs.redeemBtn && currentUser) {
+  refs.redeemBtn.href = `https://golalaland.github.io/chat/shop.html?uid=${currentUser.uid}`;
+  refs.redeemBtn.style.display = "inline-block"; // make it visible
 }
 
 // Call this right after login
