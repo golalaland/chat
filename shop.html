@@ -25,7 +25,7 @@ body {
 header {
   background: var(--card-bg);
   padding: 1rem 2rem;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: bold;
   border-bottom: 1px solid #ddd;
 }
@@ -36,19 +36,13 @@ header {
 
 #user-info #username {
   font-weight: bold;
-  font-size: 1.5rem;
-  display: inline-block;
-  padding: 0.3rem 0.6rem;
-  border-radius: 5px;
-  background: #000;
-  color: #fff;
+  font-size: 1.3rem;
 }
 
-#user-info #stars-count {
-  display: block;
+#user-info .balance {
   font-size: 1rem;
   font-weight: bold;
-  margin-top: 0.5rem;
+  margin-top: 0.3rem;
 }
 
 .shop-grid {
@@ -150,7 +144,8 @@ header {
 
 <div id="user-info">
   <div id="username">USERNAME</div>
-  <div id="stars-count">0 ⭐️</div>
+  <div class="balance" id="stars-count">Stars Balance: 0 ⭐️</div>
+  <div class="balance" id="cash-count">Cash Balance: ₦0</div>
 </div>
 
 <div class="shop-grid" id="shop-items">
@@ -160,6 +155,17 @@ header {
 <div style="text-align:center; padding:1rem;">
   <button id="home-btn">Take Me Home</button>
 </div>
+
+<script>
+// Random color generator for username
+function randomColor() {
+  const colors = ['#ff33cc','#33ccff','#ffcc33','#66cc66','#ff6666','#9966ff'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Apply random color on reload
+document.getElementById('username').style.color = randomColor();
+</script>
 
 </body>
 </html>
