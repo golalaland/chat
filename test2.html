@@ -1123,23 +1123,6 @@ requestAnimationFrame(() => {
     }
   }
 });
-
-  try{ setupPresence(user); }catch(e){ console.warn("presence err", e); }
-
-  const userRef = doc(db, "users", user.uid);
-  let snap = await getDoc(userRef);
-  if(!snap.exists()){
-    await setDoc(userRef, {
-      chatId: generateGuestName(),
-      chatIdLower: (generateGuestName()).toLowerCase(),
-      stars: 50,
-      cash: 0,
-      usernameColor: randomColor(),
-      lastColorDate: new Date().toISOString().split("T")[0],
-      isAdmin: false,
-      lastStarReset: Date.now()
-    });
-    
   // 🎉 Show popup on signup gift
   showStarPopup("🎉 Welcome! You got +50 stars as a gift!");
     snap = await getDoc(userRef);
