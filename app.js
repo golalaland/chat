@@ -91,13 +91,15 @@ function setupUsersListener(){
 setupUsersListener();
 
 /* ---------- Render messages ---------- */
+let scrollPending = false;
+
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
 
-  // Check if user is near the bottom before new messages
-  const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
-
   arr.forEach(item => {
+    // Skip if message already exists in DOM
+    if (document.getElementById(item.id)) return;
+
     const m = item.data;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
@@ -120,21 +122,15 @@ function renderMessagesFromArray(arr){
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // Always scroll if sending yourself a message
-  if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
-    refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-  }
-}
-
-  // Auto-scroll only if near bottom
-  if (isNearBottom) {
-    container.scrollTop = container.scrollHeight;
-  }
-}
-  // scroll after DOM updates
-  if(refs.messagesEl){
+  // Only scroll once per frame if needed
+  if (!scrollPending) {
+    scrollPending = true;
     requestAnimationFrame(() => {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
+      if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
+        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      }
+      scrollPending = false;
     });
   }
 }
