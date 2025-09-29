@@ -661,7 +661,6 @@ async function assignDailyUsernameColor(userRef, data){
   }
 }
 
-/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
 /* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
 async function promptForChatIDModal(userRef, userData){
   if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
@@ -997,16 +996,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.warn("VIP auto-login failed", e);
   }
 });
-
-  // ---------- Login button ----------
-  if (loginBtn) {
-    loginBtn.addEventListener("click", async () => {
-      const email = emailInput.value.trim().toLowerCase();
-      const phone = phoneInput.value.replace(/\s+/g, "");
-      if (!email || !phone) return alert("Enter both email and phone.");
-      await vipLogin(email, phone);
-    });
-  }
 
   // ---------- Auto-login ----------
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
