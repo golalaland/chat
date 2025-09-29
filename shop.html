@@ -1,3 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>乂丨乂丨Redeem</title>
+<style>
+:root {
+  --bg: #f5f5f5;
+  --card-bg: #fff;
+  --accent: #ff33cc; 
+  --text: #000;
+  --btn-bg: #ff33cc; 
+  --btn-text: #fff;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  background: var(--card-bg);
+  padding: 1rem 2rem;
+  font-size: 1.8rem;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+
+#user-info {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.profile-card {
+  background: var(--card-bg);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  text-align: center;
+  min-width: 280px;
+}
+
+#username {
+  font-weight: bold;
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
+}
+
+.balances {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.balance-item {
+  text-align: center;
+}
+
+.balance-label {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.2rem;
+}
+
+.balance-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1rem 2rem;
+}
+
+.product-card {
+  background: var(--card-bg);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.product-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.availability-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  z-index: 2;
+}
+
+.product-info {
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.product-name {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.product-cost {
+  color: var(--accent);
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.buy-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.6rem;
+  cursor: pointer;
+  font-weight: bold;
+  width: 90%;
+  margin: 0 auto 1rem auto;
+  border-radius: 5px;
+  transition: background 0.2s;
+}
+
+.buy-btn:hover {
+  background: #ff66d6;
+}
+
+#home-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: block;
+  margin: 1rem auto;
+}
+
+#home-btn:hover {
+  background: #ff66d6;
+}
+</style>
+</head>
+<body>
+
+<header>乂丨乂丨Redeem</header>
+
+<div id="user-info">
+  <div class="profile-card">
+    <div id="username">Guest</div>
+    <div class="balances">
+      <div class="balance-item">
+        <div class="balance-label">Stars Balance</div>
+        <div class="balance-value" id="stars-count">0 ⭐️</div>
+      </div>
+      <div class="balance-item">
+        <div class="balance-label">Cash Balance</div>
+        <div class="balance-value" id="cash-count">₦0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shop-grid" id="shop-items"></div>
+
+<button id="home-btn">Take Me Home</button>
+
+<script type="module">
+// ---------- Firebase imports ----------
+import { getFirestore, collection, getDocs, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ---------- Assume app.js already initialized Firebase ----------
+const db = getFirestore();
+
+// ---------- References ----------
+const shopItemsEl = document.getElementById('shop-items');
+const starsCountEl = document.getElementById('stars-count');
+const cashCountEl = document.getElementById('cash-count');
+const usernameEl = document.getElementById('username');
+
+// ---------- Placeholder shop items in Firestore ----------
+const SHOP_COLLECTION = "ShopItems";
+
+// ---------- Render product cards ----------
+function createProductCard(item, user) {
+  const card = document.createElement('div');
+  card.classList.add('product-card');
+  card.innerHTML = `
+    <img src="${item.img}" alt="${item.name}">
+    <div class="availability-badge">${item.available} left</div>
+    <div class="product-info">
+      <div class="product-name">${item.name}</div>
+      <div class="product-cost">${item.cost} ⭐️</div>
+      <button class="buy-btn">Buy</button>
+    </div>
+  `;
+
 import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const db = getFirestore();
 
