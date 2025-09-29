@@ -304,7 +304,7 @@ function startStarEarning(uid) {
   });
 
   // Increment stars every 60s if online
-  const starInterval = setInterval(async () => {
+  starInterval = setInterval(async () => {
     if (!navigator.onLine) return; // STOP if offline
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
@@ -318,17 +318,19 @@ function startStarEarning(uid) {
       return;
     }
 
-    if (starsToday < 200) {
-  await updateDoc(userRef, {
-    stars: increment(10),
-    starsToday: increment(10),
-    lastStarDate: today
-  });
+    const starsToday = data.starsToday || 0; // ⚡ fix here
 
-  animateStarsToCounter(5); // spawn 5 flying star particles
-}
+    if (starsToday < 200) {
+      await updateDoc(userRef, {
+        stars: increment(10),
+        starsToday: increment(10),
+        lastStarDate: today
+      });
+
+      animateStarsToCounter(5); // spawn 5 flying star particles
     }
-  }, 10000); // every 60s
+
+  }, 60000); // every 60s
 
   // Stop increment when user closes page
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
