@@ -467,3 +467,28 @@ window.addEventListener("DOMContentLoaded", () => {
       showStarPopup("Chat cleared!");
     });
   }
+
+  // Video nav / fade logic (from your snippet)
+  const video = document.getElementById("videoPlayer");
+  const navButtons = Array.from(document.querySelectorAll(".arrow"));
+  let fadeTimeout;
+
+  function scheduleHideButtons() {
+    clearTimeout(fadeTimeout);
+    fadeTimeout = setTimeout(() => {
+      navButtons.forEach(btn => btn.classList.add("hidden"));
+    }, 5300);
+  }
+  function showButtons() {
+    navButtons.forEach(btn => btn.classList.remove("hidden"));
+    scheduleHideButtons();
+  }
+  scheduleHideButtons();
+  if (video) {
+    video.addEventListener("click", showButtons);
+    video.addEventListener("touchstart", showButtons);
+  }
+
+}); // end DOMContentLoaded
+
+
