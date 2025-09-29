@@ -758,6 +758,105 @@ if (googleBtn) {
   });
 }
 
+// ---------- DOM elements ----------
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
+
+let currentUser = null; // unified current user object
+
+// ---------- Unified UI update ----------
+function showAppUI(user) {
+  document.getElementById("authBox").style.display = "none";
+  document.getElementById("emailAuthWrapper").style.display = "none";
+  document.getElementById("sendArea").style.display = "flex";
+  document.getElementById("profileBox").style.display = "flex";
+
+  currentUser = user;
+  console.log(`Logged in as ${user.email || user.displayName}`);
+}
+
+// ---------- VIP login function ----------
+async function vipLogin(email, phone) {
+  try {
+    const q = query(
+      collection(db, "whitelist"),
+      where("email", "==", email),
+      where("phone", "==", phone)
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const userRef = doc(db, "users", email);
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          email,
+          phone,
+          stars: 50,
+          cash: 0,
+          createdAt: new Date()
+        });
+      }
+
+      const vipUser = { email, phone };
+      localStorage.setItem("vipUser", JSON.stringify(vipUser));
+
+      showAppUI(vipUser);
+      return true;
+    } else {
+      alert("Sorry, you are not on the VIP whitelist.");
+      return false;
+    }
+  } catch (err) {
+    console.error("Whitelist check error:", err);
+    alert("Something went wrong. Try again.");
+    return false;
+  }
+}
+
+// ---------- VIP login button click ----------
+if (loginBtn) {
+  loginBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim().toLowerCase();
+    const phone = phoneInput.value.replace(/\s+/g, "");
+    if (!email || !phone) {
+      alert("Enter both email and phone number.");
+      return;
+    }
+    await vipLogin(email, phone);
+  });
+}
+
+// ---------- VIP auto-login ----------
+window.addEventListener("load", async () => {
+  try {
+    if (!currentUser) {
+      const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+      if (vipUser && vipUser.email && vipUser.phone) {
+        await vipLogin(vipUser.email, vipUser.phone);
+      }
+    }
+  } catch (e) {
+    console.warn("VIP auto-login failed", e);
+  }
+});
+
+// ---------- Google Sign-In ----------
+function onGoogleSignIn(googleUser) {
+  const profile = googleUser.getBasicProfile();
+  const user = {
+    email: profile.getEmail(),
+    name: profile.getName(),
+    id: profile.getId()
+  };
+
+  // Save VIP localStorage only if you want cross-login storage
+  // localStorage.setItem("vipUser", JSON.stringify({ email: user.email, phone: "" }));
+
+  showAppUI(user);
+}
+
 
 /* ---------- Message rendering (full redraw helper) ---------- */
 function renderMessagesFromArray(arr){
@@ -787,6 +886,7 @@ function renderMessagesFromArray(arr){
   });
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
+
 
 /* ---------- SEND (normal) ---------- */
 if (sendBtn) {
