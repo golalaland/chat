@@ -393,11 +393,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">✨</div>
     <div id="center">
-   <!-- Video container -->
-<div id="video-container" style="position: relative; width: 640px; max-width: 100%; margin: auto;">
-  <video id="videoPlayer" width="100%" autoplay muted loop style="cursor: pointer;"></video>
-  <button id="prev" class="arrow" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%);">◀</button>
-  <button id="next" class="arrow" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">▶</button>
+    <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+<div id="videoWrapper">
+  <video id="videoPlayer" muted playsinline></video>
+  <button class="arrow" id="prev">&#10094;</button>
+  <button class="arrow" id="next">&#10095;</button>
 </div>
       <div id="helloText" aria-live="polite">HELLO</div>
       <div class="room-desc">Chat. Own your vibe.
