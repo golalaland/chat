@@ -258,37 +258,45 @@ if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
   }
 }
 
-/* ---------- Smooth live stars ---------- */
-function setupSmoothStars(uid) {
-  if (!uid || !refs.starCountEl) return;
+/* ---------- Stars auto-earning with smooth UI ---------- */
+function startStarEarning(uid) {
+  if (!uid) return;
   const userRef = doc(db, "users", uid);
-  let displayedStars = currentUser.stars || 0;
 
-  // Update UI smoothly
-  function updateDisplay(target) {
+  // Smooth star display state
+  let displayedStars = 0;
+
+  // Smooth animation function
+  function updateStarDisplay(target) {
+    if (!refs.starCountEl) return;
     const diff = target - displayedStars;
-    if (Math.abs(diff) < 1) return displayedStars = target;
-    displayedStars += diff * 0.2; // adjust speed here
-    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
-    requestAnimationFrame(() => updateDisplay(target));
+    if (diff === 0) return;
+    const step = Math.ceil(diff / 5); // animate in 5 frames
+    displayedStars += step;
+    if (displayedStars > target) displayedStars = target;
+    refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
+    if (displayedStars !== target) requestAnimationFrame(() => updateStarDisplay(target));
   }
 
+  // Live Firestore sync
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
-    const newStars = snap.data().stars || 0;
+    const data = snap.data();
+    const targetStars = data.stars || 0;
 
-    // Animate toward new value
-    updateDisplay(newStars);
+    // Update displayed number smoothly
+    updateStarDisplay(targetStars);
 
-    // Optional: milestone popup
-    if (newStars > 0 && newStars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(newStars)} stars!`);
+    currentUser.stars = targetStars;
+
+    // Milestone popup every 1,000 stars
+    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
+      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
     }
   });
-}
 
   // Increment stars every 60s if online
-  const starInterval = setInterval(async () => {
+  starInterval = setInterval(async () => {
     if (!navigator.onLine) return; // STOP if offline
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
@@ -310,7 +318,7 @@ function setupSmoothStars(uid) {
     }
   }, 60000); // every 60s
 
-  // Stop increment when user closes page
+  // Stop interval on page unload
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
