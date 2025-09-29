@@ -446,7 +446,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
   </div>
 </div>
-   <div id="center">
   <div id="messages"></div>
 </div>
 
@@ -926,49 +925,61 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- VIP login ----------
-  async function vipLogin(email, phone) {
-    try {
-      const q = query(
-        collection(db, "whitelist"),
-        where("email", "==", email),
-        where("phone", "==", phone)
-      );
-      const querySnapshot = await getDocs(q);
+async function vipLogin(email, phone) {
+  try {
+    console.log("Attempting VIP login with:", { email, phone });
 
-      if (!querySnapshot.empty) {
-        const userRef = doc(db, "users", email);
-        const snap = await getDoc(userRef);
-        if (!snap.exists()) {
-          await setDoc(userRef, {
-            email,
-            phone,
-            chatId: generateGuestName(),
-            stars: 50,
-            cash: 0,
-            createdAt: new Date()
-          });
-        }
-
-        const vipUser = {
-          email,
-          phone,
-          chatId: snap.exists() ? snap.data().chatId : generateGuestName(),
-          stars: snap.exists() ? snap.data().stars : 50
-        };
-        localStorage.setItem("vipUser", JSON.stringify(vipUser));
-        showAppUI(vipUser);
-        return true;
-      } else {
-        alert("Sorry, you are not on the VIP whitelist.");
-        return false;
-      }
-    } catch (err) {
-      console.error("Whitelist check error:", err);
-      alert("Something went wrong. Try again.");
+    if (!email || !phone) {
+      alert("Email or phone is empty!");
+      console.warn("Empty email or phone:", { email, phone });
       return false;
     }
-  }
 
+    const q = query(
+      collection(db, "whitelist"),
+      where("email", "==", email),
+      where("phone", "==", phone)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      alert("Sorry, you are not on the VIP whitelist.");
+      console.warn("No matching whitelist entry for:", { email, phone });
+      return false;
+    }
+
+    console.log("Whitelist entry found, checking user doc...");
+
+    const userRef = doc(db, "users", email);
+    const snap = await getDoc(userRef);
+
+    if (!snap.exists()) {
+      console.log("No user doc found, creating new one...");
+      await setDoc(userRef, {
+        email,
+        phone,
+        stars: 50,
+        cash: 0,
+        createdAt: new Date()
+      });
+    } else {
+      console.log("User doc already exists:", snap.data());
+    }
+
+    const vipUser = { email, phone };
+    localStorage.setItem("vipUser", JSON.stringify(vipUser));
+
+    showAppUI(vipUser);
+    console.log("Login successful for:", vipUser);
+    return true;
+
+  } catch (err) {
+    console.error("VIP login error:", err);
+    alert("Something went wrong. Check console for details.");
+    return false;
+  }
+}
   // ---------- Login button ----------
   if (loginBtn) {
     loginBtn.addEventListener("click", async () => {
