@@ -93,6 +93,10 @@ setupUsersListener();
 /* ---------- Render messages ---------- */
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
+
+  const container = refs.messagesEl;
+  const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 30;
+
   arr.forEach(item => {
     const m = item.data;
     const wrapper = document.createElement("div");
@@ -113,9 +117,14 @@ function renderMessagesFromArray(arr){
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
-    refs.messagesEl.appendChild(wrapper);
+    container.appendChild(wrapper);
   });
 
+  // Auto-scroll only if near bottom
+  if (isNearBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
   // scroll after DOM updates
   if(refs.messagesEl){
     requestAnimationFrame(() => {
