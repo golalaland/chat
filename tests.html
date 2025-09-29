@@ -927,53 +927,43 @@ window.addEventListener("DOMContentLoaded", () => {
   // ---------- VIP login ----------
 async function vipLogin(email, phone) {
   try {
-    console.log("Attempting VIP login with:", { email, phone });
-
-    if (!email || !phone) {
-      alert("Email or phone is empty!");
-      console.warn("Empty email or phone:", { email, phone });
-      return false;
-    }
-
     const q = query(
       collection(db, "whitelist"),
       where("email", "==", email),
       where("phone", "==", phone)
     );
-
     const querySnapshot = await getDocs(q);
 
-    if (querySnapshot.empty) {
+    if (!querySnapshot.empty) {
+      // Use email as doc ID since no Auth UID exists
+      const userRef = doc(db, "users", email);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          chatId: generateGuestName(),
+          chatIdLower: (generateGuestName()).toLowerCase(),
+          stars: 50,
+          cash: 0,
+          usernameColor: randomColor(),
+          lastColorDate: new Date().toISOString().split("T")[0],
+          isAdmin: false,
+          lastStarReset: Date.now(),
+          email,
+          phone,
+          createdAt: new Date()
+        });
+      }
+
+      const vipUser = { email, phone };
+      localStorage.setItem("vipUser", JSON.stringify(vipUser));
+
+      showAppUI(vipUser);
+      return true;
+    } else {
       alert("Sorry, you are not on the VIP whitelist.");
-      console.warn("No matching whitelist entry for:", { email, phone });
       return false;
     }
-
-    console.log("Whitelist entry found, checking user doc...");
-
-    const userRef = doc(db, "users", email);
-    const snap = await getDoc(userRef);
-
-    if (!snap.exists()) {
-      console.log("No user doc found, creating new one...");
-      await setDoc(userRef, {
-        email,
-        phone,
-        stars: 50,
-        cash: 0,
-        createdAt: new Date()
-      });
-    } else {
-      console.log("User doc already exists:", snap.data());
-    }
-
-    const vipUser = { email, phone };
-    localStorage.setItem("vipUser", JSON.stringify(vipUser));
-
-    showAppUI(vipUser);
-    console.log("Login successful for:", vipUser);
-    return true;
-
   } catch (err) {
     console.error("VIP login error:", err);
     alert("Something went wrong. Check console for details.");
