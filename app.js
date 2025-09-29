@@ -245,6 +245,15 @@ async function loginWhitelist(email, phone) {
       usernameColor: data.usernameColor || randomColor(),
       isAdmin: data.isAdmin || false
     };
+    
+    // Update Redeem button dynamically with current user's UID
+// Show redeem button with personalized link
+if (refs.redeemBtn && currentUser) {
+  refs.redeemBtn.href = `https://golalaland.github.io/chat/shop.html?uid=${currentUser.uid}`;
+  refs.redeemBtn.style.display = "inline-block"; // make it visible
+}
+
+
 
     // Setup presence, messages, and star earning
     setupPresence(currentUser);
@@ -285,12 +294,6 @@ if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
   }
 }
 
-// Update Redeem button dynamically with current user's UID
-// Show redeem button with personalized link
-if (refs.redeemBtn && currentUser) {
-  refs.redeemBtn.href = `https://golalaland.github.io/chat/shop.html?uid=${currentUser.uid}`;
-  refs.redeemBtn.style.display = "inline-block"; // make it visible
-}
 
 // Call this right after login
 updateRedeemLink();
@@ -395,17 +398,19 @@ window.addEventListener("DOMContentLoaded", () => {
       const phone = (phoneInput.value||"").trim();
       if(!email || !phone){ alert("Enter your email and phone to get access"); return; }
 
-      await loginWhitelist(email, phone);
+      const success = await loginWhitelist(email, phone);
+      if(success) updateRedeemLink();  // <-- Add this line here
     });
-  }
+}
 
   /* ---------- Auto-login from session ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if(vipUser?.email && vipUser?.phone){
-    (async ()=>{
-      await loginWhitelist(vipUser.email, vipUser.phone);
-    })();
-  }
+if(vipUser?.email && vipUser?.phone){
+  (async ()=>{
+    const success = await loginWhitelist(vipUser.email, vipUser.phone);
+    if(success) updateRedeemLink(); // ✅ Update redeem button here too
+  })();
+}
 
   /* ---------- Send & Buzz ---------- */
   refs.sendBtn?.addEventListener("click", async ()=>{
