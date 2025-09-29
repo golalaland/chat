@@ -8,7 +8,7 @@
 :root {
   --bg: #f5f5f5;
   --card-bg: #fff;
-  --accent: #ff33cc; /* accent for cost/buttons */
+  --accent: #ff33cc; 
   --text: #000;
   --btn-bg: #ff33cc; 
   --btn-text: #fff;
@@ -19,32 +19,63 @@ body {
   font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  text-align: center;
 }
 
+/* Header */
 header {
   background: var(--card-bg);
   padding: 1rem 2rem;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: bold;
   border-bottom: 1px solid #ddd;
+  text-align: center;
 }
 
+/* Profile card */
 #user-info {
+  display: flex;
+  justify-content: center;
   padding: 1rem;
 }
 
-#user-info #username {
+.profile-card {
+  background: var(--card-bg);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  text-align: center;
+  min-width: 280px;
+}
+
+#username {
   font-weight: bold;
   font-size: 1.3rem;
+  margin-bottom: 0.8rem;
 }
 
-#user-info .balance {
-  font-size: 1rem;
+.balances {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.balance-item {
+  text-align: center;
+}
+
+.balance-label {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.2rem;
+}
+
+.balance-value {
+  font-size: 1.1rem;
   font-weight: bold;
-  margin-top: 0.3rem;
 }
 
+/* Shop grid */
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -60,8 +91,8 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
 .product-card:hover {
@@ -81,10 +112,11 @@ header {
   right: 8px;
   background: var(--accent);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: bold;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
+  z-index: 2;
 }
 
 .product-info {
@@ -94,7 +126,7 @@ header {
 
 .product-name {
   font-weight: bold;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
 }
 
 .product-cost {
@@ -120,6 +152,7 @@ header {
   background: #ff66d6;
 }
 
+/* Take Me Home button */
 #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -129,8 +162,9 @@ header {
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
-  margin: 1rem 0;
   transition: background 0.2s;
+  display: block;
+  margin: 1rem auto;
 }
 
 #home-btn:hover {
@@ -143,28 +177,58 @@ header {
 <header>乂丨乂丨Redeem</header>
 
 <div id="user-info">
-  <div id="username">USERNAME</div>
-  <div class="balance" id="stars-count">Stars Balance: 0 ⭐️</div>
-  <div class="balance" id="cash-count">Cash Balance: ₦0</div>
+  <div class="profile-card">
+    <div id="username">Guest</div>
+    <div class="balances">
+      <div class="balance-item">
+        <div class="balance-label">Stars Balance</div>
+        <div class="balance-value" id="stars-count">0 ⭐️</div>
+      </div>
+      <div class="balance-item">
+        <div class="balance-label">Cash Balance</div>
+        <div class="balance-value" id="cash-count">₦0</div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="shop-grid" id="shop-items">
-  <!-- Product cards will be injected here -->
-</div>
+<div class="shop-grid" id="shop-items"></div>
 
-<div style="text-align:center; padding:1rem;">
-  <button id="home-btn">Take Me Home</button>
-</div>
+<button id="home-btn">Take Me Home</button>
 
 <script>
-// Random color generator for username
-function randomColor() {
-  const colors = ['#ff33cc','#33ccff','#ffcc33','#66cc66','#ff6666','#9966ff'];
-  return colors[Math.floor(Math.random() * colors.length)];
+// Placeholder products for layout
+const shopItems = [
+  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
+  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
+  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 },
+  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150", available: 5 },
+  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150", available: 10 }
+];
+
+const shopItemsEl = document.getElementById('shop-items');
+
+function createProductCard(item) {
+  const card = document.createElement('div');
+  card.classList.add('product-card');
+  card.innerHTML = `
+    <img src="${item.img}" alt="${item.name}">
+    <div class="availability-badge">${item.available} left</div>
+    <div class="product-info">
+      <div class="product-name">${item.name}</div>
+      <div class="product-cost">${item.cost} ⭐️</div>
+      <button class="buy-btn">Buy</button>
+    </div>
+  `;
+  return card;
 }
 
-// Apply random color on reload
-document.getElementById('username').style.color = randomColor();
+function renderShop() {
+  shopItemsEl.innerHTML = '';
+  shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
+}
+
+renderShop();
 </script>
 
 </body>
