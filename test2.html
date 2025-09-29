@@ -730,6 +730,33 @@ function rotateHello(){
 rotateHello();
 helloInterval = setInterval(rotateHello, 1500);
 
+/* ---------- Robust Google sign-in (popup then redirect) ---------- */
+if (googleBtn) {
+  googleBtn.addEventListener("click", async () => {
+    const provider = new GoogleAuthProvider();
+    try { await setPersistence(auth, browserLocalPersistence); } catch (pErr) { console.warn("persistence set failed", pErr); }
+    try {
+      await signInWithPopup(auth, provider);
+      return;
+    } catch (err) {
+      console.warn("signInWithPopup error:", err);
+      if (["auth/popup-blocked","auth/popup-closed-by-user","auth/cancelled-popup-request","auth/web-storage-unsupported"].includes(err.code)) {
+        try { await signInWithRedirect(auth, provider); return; }
+        catch (rErr) { console.error("redirect failed", rErr); alert("Sign-in failed: " + (rErr.message || rErr)); return; }
+      }
+      if (err.code === "auth/operation-not-allowed") {
+        alert("Enable Google sign-in in Firebase Console -> Authentication -> Sign-in method.");
+        return;
+      }
+      if (err.code === "auth/unauthorized-domain") {
+        alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
+        return;
+      }
+      alert("Sign-in failed: " + (err.message || err));
+    }
+  });
+}
+
 /* ---------- Message rendering (full redraw helper) ---------- */
 function renderMessagesFromArray(arr){
   if(!messagesEl) return;
@@ -977,6 +1004,18 @@ async function vipLogin(email, phone) {
       localStorage.setItem("chatIdChanged", "true");
     });
   }
+
+  // ---------- Google Sign-In ----------
+  window.onGoogleSignIn = function(googleUser) {
+    const profile = googleUser.getBasicProfile();
+    const user = {
+      email: profile.getEmail(),
+      name: profile.getName(),
+      chatId: profile.getEmail() // fallback for username display
+    };
+    showAppUI(user);
+  };
+});
 // ---------- Daily Star Cap Reset Helper ----------
 async function resetDailyCapIfNeeded(userRef, data) {
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
