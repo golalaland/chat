@@ -900,40 +900,35 @@ window.addEventListener("DOMContentLoaded", () => {
 
   let currentUser = null;
 
-  // ---------- UI update ----------
+// ---------- DOM elements ----------
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
+
+let currentUser = null; // unified current user object
+
+// ---------- Unified UI update ----------
 function showAppUI(user) {
-  // Hide login/auth sections
+  // safely get elements
   const authBox = document.getElementById("authBox");
   const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-  if (authBox) authBox.style.display = "none";
-  if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
-
-  // Show main app UI
   const sendArea = document.getElementById("sendArea");
   const profileBox = document.getElementById("profileBox");
+  const usernameDisplay = document.getElementById("usernameDisplay");
+  const starsDisplay = document.getElementById("starsDisplay");
+
+  if (authBox) authBox.style.display = "none";
+  if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
   if (sendArea) sendArea.style.display = "flex";
   if (profileBox) profileBox.style.display = "flex";
+  if (usernameDisplay) usernameDisplay.textContent = user.email || user.displayName || "VIP User";
+  if (starsDisplay) starsDisplay.textContent = `Stars Balance: ${user.stars ?? 0} ⭐️`;
 
   currentUser = user;
-
-  // Safely update user info in the UI
-  const usernameEl = document.getElementById("usernameDisplay");
-  const starsEl = document.getElementById("starsDisplay");
-  if (usernameEl) usernameEl.textContent = user.email || user.name || "VIP User";
-  if (starsEl) starsEl.textContent = `Stars Balance: ${user.stars ?? 50} ⭐️`;
-
-  console.log(`Logged in as ${user.email || user.name}`);
+  console.log(`Logged in as ${user.email || user.displayName}`);
 }
-    // Show Change Chat ID button if not used yet
-    if (!localStorage.getItem("chatIdChanged")) {
-      changeChatBtn.style.display = "block";
-    }
 
-    currentUser = user;
-    console.log(`Logged in as ${user.email || user.chatId}`);
-  }
-
-  // ---------- VIP login ----------
+// ---------- VIP login function ----------
 async function vipLogin(email, phone) {
   try {
     const q = query(
@@ -944,27 +939,23 @@ async function vipLogin(email, phone) {
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      // Use email as doc ID since no Auth UID exists
-      const userRef = doc(db, "users", email);
+      // Check if user doc exists, if not create it
+      const userRef = doc(db, "users", email); // using email as doc ID
       const snap = await getDoc(userRef);
-
       if (!snap.exists()) {
         await setDoc(userRef, {
           chatId: generateGuestName(),
-          chatIdLower: (generateGuestName()).toLowerCase(),
+          chatIdLower: generateGuestName().toLowerCase(),
           stars: 50,
           cash: 0,
           usernameColor: randomColor(),
           lastColorDate: new Date().toISOString().split("T")[0],
           isAdmin: false,
-          lastStarReset: Date.now(),
-          email,
-          phone,
-          createdAt: new Date()
+          lastStarReset: Date.now()
         });
       }
 
-      const vipUser = { email, phone };
+      const vipUser = { email, phone, stars: 50 }; // include stars for display
       localStorage.setItem("vipUser", JSON.stringify(vipUser));
 
       showAppUI(vipUser);
@@ -979,6 +970,34 @@ async function vipLogin(email, phone) {
     return false;
   }
 }
+
+// ---------- VIP login button click ----------
+if (loginBtn) {
+  loginBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim().toLowerCase();
+    const phone = phoneInput.value.replace(/\s+/g, "");
+    if (!email || !phone) {
+      alert("Enter both email and phone number.");
+      return;
+    }
+    await vipLogin(email, phone);
+  });
+}
+
+// ---------- VIP auto-login ----------
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    if (!currentUser) {
+      const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+      if (vipUser && vipUser.email && vipUser.phone) {
+        await vipLogin(vipUser.email, vipUser.phone);
+      }
+    }
+  } catch (e) {
+    console.warn("VIP auto-login failed", e);
+  }
+});
+
   // ---------- Login button ----------
   if (loginBtn) {
     loginBtn.addEventListener("click", async () => {
