@@ -413,12 +413,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         </button>
       </div>
       <!-- New Whitelist Email button -->
+<<!-- VIP Access Login Wrapper -->
 <div id="emailAuthWrapper">
-  <input type="email" id="emailInput" placeholder="Enter your email" class="auth-input">
-<button id="whitelistLoginBtn" class="google-btn">
-  <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
-  Login with Email
-</button>
+  <!-- Phone Number Input -->
+  <input 
+    type="tel" 
+    id="phoneInput" 
+    placeholder="+234 Enter your phone number" 
+    class="auth-input" 
+    pattern="\+\d{1,4}\d{6,15}"
+  >
+
+  <!-- Email Input -->
+  <input 
+    type="email" 
+    id="emailInput" 
+    placeholder="Enter your email" 
+    class="auth-input"
+  >
+
+  <!-- VIP Access Button -->
+  <button id="whitelistLoginBtn" class="google-btn">
+    <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
+    VIP Access
+  </button>
+</div>
 
 <!-- Chat ID Modal -->
 <div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
