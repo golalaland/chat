@@ -1,6 +1,6 @@
-/// --------- FIREBASE SETUP ----------
+// --------- FIREBASE SETUP ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, onSnapshot, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Firebase config
 const firebaseConfig = {
@@ -11,64 +11,64 @@ const firebaseConfig = {
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
   measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// DOM elements
+// --------- DOM ELEMENTS ----------
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-balance');
 const cashEl = document.getElementById('cash-balance');
 const shopItemsEl = document.getElementById('shop-items');
 const homeBtn = document.getElementById('home-btn');
 
-// Deep link: ?uid=USER_ID
+// --------- GET UID FROM URL ----------
 const uid = new URLSearchParams(window.location.search).get('uid');
 if (!uid) {
   alert("No user ID detected!");
 }
 
-// Firestore refs
-const userRef = doc(db, "users", uid);
-const ordersRef = collection(db, "orders"); // new collection for purchases
-
-// Random color for username
+// --------- HELPER FUNCTIONS ----------
 function randomColor() {
-  const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3'];
+  const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3','#ffa500','#00ced1'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// Load user info
+// --------- LOAD USER DATA ----------
+let currentUserRef = doc(db, "users", uid);
+
 async function loadUser() {
-  const snap = await getDoc(userRef);
+  const snap = await getDoc(currentUserRef);
   if (!snap.exists()) {
     usernameEl.innerText = "Guest";
     starsEl.innerText = "Stars: 0 ⭐️";
     cashEl.innerText = "Cash: ₦0";
     return;
   }
+
   const data = snap.data();
   usernameEl.innerText = data.chatId || "Guest";
-  usernameEl.style.color = data.usernameColor || "#ffffff";
+  usernameEl.style.color = data.usernameColor || randomColor();
   starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
   cashEl.innerText = `Cash: ₦${data.cash || 0}`;
 }
 
-// Watch for live changes to user stars & cash
-onSnapshot(userRef, snap => {
+// --------- LIVE UPDATES ----------
+onSnapshot(currentUserRef, (snap) => {
   if (!snap.exists()) return;
   const data = snap.data();
+  usernameEl.innerText = data.chatId || "Guest";
+  usernameEl.style.color = data.usernameColor || randomColor();
   starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
   cashEl.innerText = `Cash: ₦${data.cash || 0}`;
 });
 
-// Shop items
+// --------- SHOP ITEMS ----------
 const shopItems = [
-  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
-  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
-  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 }
+  { id: "VIP_PASS_1", name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
+  { id: "GLOW_BADGE_1", name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
+  { id: "EMOJI_PACK_1", name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 }
 ];
 
 function createProductCard(item) {
@@ -83,7 +83,7 @@ function createProductCard(item) {
       <button class="buy-btn">Buy</button>
     </div>
   `;
-  card.querySelector('.buy-btn').addEventListener('click', () => buyItem(item));
+  card.querySelector('.buy-btn').addEventListener('click', () => buyItem(item, card));
   return card;
 }
 
@@ -92,35 +92,35 @@ function renderShop() {
   shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-// Purchase logic
-async function buyItem(item) {
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return alert("User not found!");
-  
+// --------- BUY LOGIC ----------
+async function buyItem(item, card) {
+  const snap = await getDoc(currentUserRef);
   const data = snap.data();
-  const userStars = data.stars || 0;
-  
-  if (userStars < item.cost) return alert("Not enough stars!");
-  
+  if ((data.stars || 0) < item.cost) {
+    alert(`Not enough stars to buy ${item.name}`);
+    return;
+  }
+
   // Deduct stars
-  await updateDoc(userRef, { stars: userStars - item.cost });
-  
-  // Log order
-  await addDoc(ordersRef, {
-    userId: uid,
+  await updateDoc(currentUserRef, {
+    stars: (data.stars || 0) - item.cost
+  });
+
+  // Log purchase in a subcollection
+  const purchaseRef = collection(currentUserRef, "purchases");
+  await addDoc(purchaseRef, {
     itemId: item.id,
     itemName: item.name,
     cost: item.cost,
-    timestamp: new Date(),
-    fulfilled: false
+    timestamp: serverTimestamp()
   });
-  
+
   alert(`Purchased ${item.name}!`);
 }
 
-// Initialize
+// --------- INITIAL LOAD ---------
 loadUser();
 renderShop();
 
-// Home button
+// --------- HOME BUTTON ----------
 homeBtn.addEventListener('click', () => window.location.href='/');
