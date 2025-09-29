@@ -6,9 +6,10 @@
 <title>乂丨乂丨Redeem</title>
 <style>
 :root {
-  --bg: #000;
-  --card-bg: #111;
-  --text: #fff;
+  --bg: #f5f5f5;
+  --card-bg: #fff;
+  --accent: #ff33cc; /* neon pink for cost and buttons */
+  --text: #000;
   --btn-bg: #ff33cc; 
   --btn-text: #fff;
 }
@@ -22,10 +23,10 @@ body {
 
 header {
   background: var(--card-bg);
-  padding: 1rem;
+  padding: 1rem 2rem;
   font-size: 1.8rem;
   font-weight: bold;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #ddd;
   text-align: center;
 }
 
@@ -34,52 +35,66 @@ header {
   padding: 1rem;
 }
 
-#username {
-  font-weight: bold;
-  font-size: 1.5rem;
-}
-
-#stars-count {
-  margin-top: 0.5rem;
-  font-weight: bold;
+#user-info div {
+  margin: 0.2rem 0;
 }
 
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
-  padding: 1rem;
+  padding: 1rem 2rem;
 }
 
 .product-card {
   background: var(--card-bg);
   border-radius: 10px;
   overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 0.5rem;
-  border: 1px solid #222;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative; /* needed for badge */
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
 .product-card img {
   width: 100%;
-  height: 120px;
+  height: 150px;
   object-fit: cover;
-  border-radius: 6px;
+}
+
+.availability-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  z-index: 2;
 }
 
 .product-info {
-  margin-top: 0.5rem;
+  padding: 0.8rem;
   text-align: center;
 }
 
 .product-name {
   font-weight: bold;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
 }
 
 .product-cost {
+  color: var(--accent);
+  font-weight: bold;
   margin-bottom: 0.5rem;
 }
 
@@ -87,17 +102,20 @@ header {
   background: var(--btn-bg);
   color: var(--btn-text);
   border: none;
-  padding: 0.5rem;
+  padding: 0.6rem;
   cursor: pointer;
-  width: 100%;
-  border-radius: 5px;
   font-weight: bold;
+  width: 90%;
+  margin: 0 auto 1rem auto;
+  border-radius: 5px;
+  transition: background 0.2s;
 }
 
 .buy-btn:hover {
   background: #ff66d6;
 }
 
+/* Take Me Home button */
 #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -107,9 +125,9 @@ header {
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
-  margin: 1rem auto;
-  display: block;
+  transition: background 0.2s;
 }
+
 #home-btn:hover {
   background: #ff66d6;
 }
@@ -120,135 +138,112 @@ header {
 <header>乂丨乂丨Redeem</header>
 
 <div id="user-info">
-  <div id="username">Loading...</div>
-  <div id="stars-count">0 ⭐️</div>
+  <div style="font-weight:bold; font-size:1.3rem; background:#000; color:#fff; display:inline-block; padding:0.2rem 0.5rem; border-radius:4px;">
+    CHATID: <span id="chat-id">12345</span>
+  </div>
+  <div style="font-size:0.9rem; font-weight:bold;">
+    Stars Balance: <span style="font-weight:300;" id="stars-count">0</span>
+  </div>
 </div>
 
 <div class="shop-grid" id="shop-items"></div>
 
-<button id="home-btn">Take Me Home</button>
+<div style="text-align:center; padding:1rem;">
+  <button id="home-btn">Take Me Home</button>
+</div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, onSnapshot, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+<script>
+// Full 18 products with availability
+const shopItems = [
+  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
+  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
+  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 },
+  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150", available: 5 },
+  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150", available: 10 },
+  { id: 6, name: "Chat Highlight", cost: 40, img: "https://via.placeholder.com/150", available: 6 },
+  { id: 7, name: "Profile Frame", cost: 25, img: "https://via.placeholder.com/150", available: 14 },
+  { id: 8, name: "VIP Emote", cost: 15, img: "https://via.placeholder.com/150", available: 20 },
+  { id: 9, name: "Secret Room Pass", cost: 200, img: "https://via.placeholder.com/150", available: 2 },
+  { id: 10, name: "Daily Booster", cost: 35, img: "https://via.placeholder.com/150", available: 7 },
+  { id: 11, name: "Exclusive Wallpaper", cost: 45, img: "https://via.placeholder.com/150", available: 9 },
+  { id: 12, name: "VIP Badge Animation", cost: 60, img: "https://via.placeholder.com/150", available: 4 },
+  { id: 13, name: "Gift Pack", cost: 55, img: "https://via.placeholder.com/150", available: 11 },
+  { id: 14, name: "Mystery Box", cost: 70, img: "https://via.placeholder.com/150", available: 3 },
+  { id: 15, name: "Lucky Spin Token", cost: 80, img: "https://via.placeholder.com/150", available: 5 },
+  { id: 16, name: "Custom Chat Theme", cost: 90, img: "https://via.placeholder.com/150", available: 6 },
+  { id: 17, name: "Flash Spotlight", cost: 120, img: "https://via.placeholder.com/150", available: 2 },
+  { id: 18, name: "Ultra VIP Pass", cost: 250, img: "https://via.placeholder.com/150", available: 1 }
+];
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(()=>{});
-const db = getFirestore(app);
-
-// Elements
-const usernameEl = document.getElementById('username');
 const starsCountEl = document.getElementById('stars-count');
 const shopItemsEl = document.getElementById('shop-items');
 
-// Get UID from URL
-const urlParams = new URLSearchParams(window.location.search);
-const uid = urlParams.get('uid');
-if (!uid) alert("User not signed in!");
-
-// Random color for username
-function randomColor() {
-  const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3'];
-  return colors[Math.floor(Math.random()*colors.length)];
-}
-
-// Load user info
-async function loadUser() {
-  const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return alert("User data not found!");
-  const data = snap.data();
-  usernameEl.innerText = data.chatId || "Guest";
-  usernameEl.style.color = randomColor();
-  starsCountEl.innerText = `${data.stars || 0} ⭐️`;
-
-  // Real-time update
-  onSnapshot(userRef, docSnap => {
-    const d = docSnap.data();
-    starsCountEl.innerText = `${d.stars || 0} ⭐️`;
-  });
-}
-
-// Render product card
 function createProductCard(item) {
   const card = document.createElement('div');
   card.classList.add('product-card');
   card.innerHTML = `
     <img src="${item.img}" alt="${item.name}">
+    <div class="availability-badge">${item.available} left</div>
     <div class="product-info">
       <div class="product-name">${item.name}</div>
-      <div class="product-cost">${item.cost} ⭐️</div>
-      <div>Stock: <span id="stock-${item.id}">${item.available}</span></div>
+      <div class="product-cost">${item.cost} ⭐</div>
       <button class="buy-btn">Buy</button>
     </div>
   `;
+  
   const buyBtn = card.querySelector('.buy-btn');
-  buyBtn.addEventListener('click', async () => {
-    const userRef = doc(db, "users", uid);
-    const shopRef = doc(db, "shopItems", item.id.toString());
-    const [userSnap, shopSnap] = await Promise.all([getDoc(userRef), getDoc(shopRef)]);
-    const userData = userSnap.data();
-    const shopData = shopSnap.data();
-
-    if(userData.stars < item.cost) return alert("Not enough stars!");
-    if(shopData.available <= 0) return alert("Out of stock!");
-
-    // Deduct stars
-    await updateDoc(userRef, { stars: userData.stars - item.cost });
-
-    // Deduct stock
-    await updateDoc(shopRef, { available: shopData.available - 1 });
-
-    // Log order
-    const ordersRef = collection(db, "orders");
-    await addDoc(ordersRef, {
-      uid,
-      username: userData.chatId || "Guest",
-      itemId: item.id,
-      itemName: item.name,
-      cost: item.cost,
-      timestamp: new Date()
-    });
-
-    alert(`Purchased ${item.name}!`);
-  });
+  buyBtn.addEventListener('click', () => buyItem(item, card));
+  
   return card;
 }
 
-// Listen to shop items collection
-function listenShop() {
-  const shopCollectionRef = collection(db, "shopItems");
-  onSnapshot(shopCollectionRef, snapshot => {
-    shopItemsEl.innerHTML = '';
-    snapshot.forEach(docSnap => {
-      const item = { id: docSnap.id, ...docSnap.data() };
-      shopItemsEl.appendChild(createProductCard(item));
-
-      // Update stock in real-time
-      const badge = document.getElementById(`stock-${docSnap.id}`);
-      if(badge) badge.innerText = item.available;
-    });
-  });
+function renderShop() {
+  shopItemsEl.innerHTML = '';
+  shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-loadUser();
-listenShop();
+// Load stars from chatroom backend
+async function loadUser() {
+  try {
+    const res = await fetch('/api/user'); // replace with your backend endpoint
+    const data = await res.json();
+    starsCountEl.innerText = data.stars;
+  } catch(err) {
+    console.error("Failed to load user:", err);
+  }
+}
 
-document.getElementById('home-btn').addEventListener('click', () => window.location.href='/');
+// Buy product and update stars
+async function buyItem(item, card) {
+  try {
+    const res = await fetch('/api/buy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: item.id })
+    });
+    const result = await res.json();
+    if(result.success) {
+      starsCountEl.innerText = result.starsLeft;
+      card.style.transform = "scale(1.05)";
+      setTimeout(() => card.style.transform = "scale(1)", 200);
+      if(navigator.vibrate) navigator.vibrate(100);
+      alert(`Purchased ${item.name}!`);
+    } else {
+      alert(result.message);
+    }
+  } catch(err) {
+    console.error("Purchase failed:", err);
+  }
+}
+
+renderShop();
+loadUser();
+setInterval(loadUser, 10000);
+
+// Optional: "Take Me Home" button click
+document.getElementById('home-btn').addEventListener('click', () => {
+  window.location.href = '/'; // replace '/' with your home URL
+});
 </script>
 
 </body>
