@@ -1,24 +1,29 @@
-// shop.js
+// --------- SHOP.JS ----------
+import { doc, getDoc, updateDoc, collection, addDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-// Assumes app.js already initialized Firebase
-const db = getFirestore();
-
+// Grab UI elements
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-balance');
 const cashEl = document.getElementById('cash-balance');
 const shopItemsEl = document.getElementById('shop-items');
 
-let currentUserListener = null;
-
-// Example shop items
+// Example shop items (replace with Firestore later if you want)
 const shopItems = [
-  { id: "vip-pass", name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
-  { id: "glow-badge", name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
-  { id: "emoji-pack", name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 }
+  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
+  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
+  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 }
 ];
 
+// Show current user info
+function updateUserDisplay() {
+  if (!window.currentUser) return;
+  usernameEl.innerText = window.currentUser.chatId || "Guest";
+  usernameEl.style.color = window.currentUser.usernameColor || "#fff";
+  starsEl.innerText = `Stars: ${window.currentUser.stars || 0} ⭐️`;
+  cashEl.innerText = `Cash: ₦${window.currentUser.cash || 0}`;
+}
+
+// Create a shop card
 function createProductCard(item) {
   const card = document.createElement('div');
   card.classList.add('product-card');
@@ -35,63 +40,60 @@ function createProductCard(item) {
   return card;
 }
 
+// Render all shop items
 function renderShop() {
   shopItemsEl.innerHTML = '';
   shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
+// Buy logic
 async function buyItem(item) {
-  if (!window.currentUser) {
-    alert("Please log in first!");
-    return;
-  }
+  if (!window.currentUser) return alert("You must be logged in to buy!");
+  if (window.currentUser.stars < item.cost) return alert("Not enough stars!");
 
-  const userRef = doc(db, "users", window.currentUser.uid);
-  const userSnap = await userRef.get?.() || await getDoc(userRef);
-  const userData = userSnap.data();
-
-  if ((userData.stars || 0) < item.cost) {
-    alert("Not enough stars to buy this item!");
-    return;
-  }
+  const userRef = doc(window.db, "users", window.currentUser.uid);
 
   // Deduct stars
-  await updateDoc(userRef, { stars: (userData.stars || 0) - item.cost });
+  await updateDoc(userRef, { stars: increment(-item.cost) });
 
-  // Log order
-  await addDoc(collection(db, "shopOrders"), {
+  // Log the purchase in Firestore
+  await addDoc(collection(window.db, "purchases"), {
     uid: window.currentUser.uid,
-    email: window.currentUser.email,
     itemId: item.id,
     itemName: item.name,
     cost: item.cost,
-    timestamp: serverTimestamp(),
-    fulfilled: false
+    timestamp: new Date()
   });
 
-  alert(`Purchased ${item.name}!`);
+  // Update local user display
+  window.currentUser.stars -= item.cost;
+  updateUserDisplay();
+  alert(`✅ You purchased: ${item.name}`);
 }
 
-// Update user display reactively
-function listenToCurrentUser() {
-  if (!window.currentUser) return;
-
-  const userRef = doc(db, "users", window.currentUser.uid);
-
-  if (currentUserListener) currentUserListener(); // remove old listener
-  currentUserListener = onSnapshot(userRef, snap => {
-    const data = snap.data() || {};
-    usernameEl.innerText = data.chatId || "Guest";
-    starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
-    cashEl.innerText = `Cash: ₦${data.cash || 0}`;
+// Keep stars and cash live
+function listenToCurrentUser(user) {
+  const userRef = doc(window.db, "users", user.uid);
+  onSnapshot(userRef, snap => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    window.currentUser.stars = data.stars || 0;
+    window.currentUser.cash = data.cash || 0;
+    updateUserDisplay();
   });
 }
 
-// Wait a tiny moment to ensure app.js has set window.currentUser
-const waitForUser = setInterval(() => {
-  if (window.currentUser) {
-    clearInterval(waitForUser);
-    listenToCurrentUser();
-    renderShop();
+// Initialize shop once currentUser is ready
+function initShop() {
+  if (!window.currentUser) {
+    console.warn("Shop: waiting for user...");
+    setTimeout(initShop, 500); // wait and retry
+    return;
   }
-}, 200);
+  updateUserDisplay();
+  renderShop();
+  listenToCurrentUser(window.currentUser);
+}
+
+// Start the shop
+initShop();
