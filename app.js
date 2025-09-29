@@ -444,92 +444,41 @@ window.addEventListener("DOMContentLoaded", () => {
     },220);
   },1500);
 
- /* ---------- Video nav & safe loop ---------- */
+/* ---------- Minimal Safe Video Nav & Loop ---------- */
 const videoPlayer = document.getElementById("videoPlayer");
 const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
-const container = document.querySelector(".video-container");
-const navButtons = [prevBtn, nextBtn].filter(Boolean);
 
-if (videoPlayer && navButtons.length) {
+if (videoPlayer) {
   const videos = [
     "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
     "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
     "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
   ];
-
   let currentVideoIndex = 0;
-  const lastTime = Array(videos.length).fill(0); // last playback position per video
 
   function loadVideo(index) {
     if (index < 0) index = videos.length - 1;
     if (index >= videos.length) index = 0;
     currentVideoIndex = index;
-
-    // Only change src if different to avoid reload flicker
-    if (videoPlayer.src !== videos[currentVideoIndex]) {
-      videoPlayer.src = videos[currentVideoIndex];
-      videoPlayer.muted = true;
-
-      videoPlayer.addEventListener("loadedmetadata", function resumeTime() {
-        videoPlayer.currentTime = lastTime[currentVideoIndex] || 0;
-        videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
-        videoPlayer.removeEventListener("loadedmetadata", resumeTime);
-      });
-    }
+    videoPlayer.src = videos[currentVideoIndex];
+    videoPlayer.currentTime = 0;
+    videoPlayer.muted = true;
+    videoPlayer.play().catch(() => {});
   }
 
-  // Auto-loop when video ends
+  // Auto-loop to next video
   videoPlayer.addEventListener("ended", () => {
     loadVideo(currentVideoIndex + 1);
   });
 
-  // Save current time periodically
-  setInterval(() => {
-    lastTime[currentVideoIndex] = videoPlayer.currentTime;
-  }, 1000);
-
-  // Nav buttons
   prevBtn?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
   nextBtn?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
 
-  // Mute toggle
+  // Toggle mute
   videoPlayer.addEventListener("click", () => {
     videoPlayer.muted = !videoPlayer.muted;
   });
 
-  // Fade nav buttons
-  let hideTimeout;
-  function showButtons() {
-    navButtons.forEach(btn => {
-      btn.style.opacity = "1";
-      btn.style.pointerEvents = "auto";
-    });
-    clearTimeout(hideTimeout);
-    hideTimeout = setTimeout(() => {
-      navButtons.forEach(btn => {
-        btn.style.opacity = "0";
-        btn.style.pointerEvents = "none";
-      });
-    }, 3000);
-  }
-
-  navButtons.forEach(btn => {
-    btn.style.transition = "opacity 0.6s";
-    btn.style.opacity = "0";
-    btn.style.pointerEvents = "none";
-  });
-
-  container?.addEventListener("mouseenter", showButtons);
-  container?.addEventListener("mousemove", showButtons);
-  container?.addEventListener("mouseleave", () => {
-    navButtons.forEach(btn => {
-      btn.style.opacity = "0";
-      btn.style.pointerEvents = "none";
-    });
-  });
-  container?.addEventListener("click", showButtons);
-
-  // Start first video
   loadVideo(currentVideoIndex);
 }
