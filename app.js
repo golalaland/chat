@@ -444,60 +444,77 @@ window.addEventListener("DOMContentLoaded", () => {
     },220);
   },1500);
 
-  /* ---------- Video nav, fade & looping ---------- */
-/* ---------- Video nav, fade & looping safely ---------- */
+ /* ---------- Video nav & fade with looping & resume ---------- */
 const videoPlayer = document.getElementById("videoPlayer");
 const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
 const container = document.querySelector(".video-container");
-const navButtons = [prevBtn,nextBtn].filter(Boolean);
+const navButtons = [prevBtn, nextBtn].filter(Boolean);
 
-if(videoPlayer && navButtons.length){
+if (videoPlayer && navButtons.length) {
   const videos = [
     "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
     "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
     "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
   ];
 
-  let savedIndex = parseInt(localStorage.getItem("lastVideoIndex"));
-  let currentVideoIndex = (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < videos.length) ? savedIndex : 0;
+  let currentVideoIndex = 0;
+  let lastTime = 0; // stores last playback time
 
-  function loadVideo(index, preserveTime = false){
-    if(index < 0) index = videos.length - 1;
-    if(index >= videos.length) index = 0;
+  function loadVideo(index, resumeTime = 0) {
+    if (index < 0) index = videos.length - 1;
+    if (index >= videos.length) index = 0;
     currentVideoIndex = index;
 
-    if (!preserveTime) videoPlayer.currentTime = 0;
-    videoPlayer.src = videos[currentVideoIndex];
-    videoPlayer.muted = true;
-    videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
+    // Only change src if different video
+    if (videoPlayer.src !== videos[currentVideoIndex]) {
+      videoPlayer.src = videos[currentVideoIndex];
+    }
 
-    localStorage.setItem("lastVideoIndex", currentVideoIndex);
+    videoPlayer.muted = true;
+    videoPlayer.currentTime = resumeTime;
+    videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
   }
 
-  prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
-  nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
-
-  videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
-
-  // Loop without reloading source
-  videoPlayer.addEventListener("ended", () => {
-    videoPlayer.currentTime = 0;
-    videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
+  // Next / Prev handlers
+  prevBtn?.addEventListener("click", () => {
+    lastTime = videoPlayer.currentTime;
+    loadVideo(currentVideoIndex - 1, lastTime);
+  });
+  nextBtn?.addEventListener("click", () => {
+    lastTime = videoPlayer.currentTime;
+    loadVideo(currentVideoIndex + 1, lastTime);
   });
 
-  let hideTimeout;
-  function showButtons(){
-    navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
-    clearTimeout(hideTimeout);
-    hideTimeout=setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); },3000);
-  }
+  // Loop video automatically
+  videoPlayer.addEventListener("ended", () => {
+    loadVideo(currentVideoIndex, 0); // restart same video from 0
+  });
 
-  navButtons.forEach(btn=>{ btn.style.transition="opacity 0.6s"; btn.style.opacity="0"; btn.style.pointerEvents="none"; });
+  // Toggle mute on click
+  videoPlayer.addEventListener("click", () => { videoPlayer.muted = !videoPlayer.muted; });
+
+  // Nav button fade
+  let hideTimeout;
+  function showButtons() {
+    navButtons.forEach(btn => { btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; });
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      navButtons.forEach(btn => { btn.style.opacity = "0"; btn.style.pointerEvents = "none"; });
+    }, 3000);
+  }
+  navButtons.forEach(btn => {
+    btn.style.transition = "opacity 0.6s";
+    btn.style.opacity = "0";
+    btn.style.pointerEvents = "none";
+  });
   container?.addEventListener("mouseenter", showButtons);
   container?.addEventListener("mousemove", showButtons);
-  container?.addEventListener("mouseleave", ()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); });
+  container?.addEventListener("mouseleave", () => {
+    navButtons.forEach(btn => { btn.style.opacity = "0"; btn.style.pointerEvents = "none"; });
+  });
   container?.addEventListener("click", showButtons);
 
-  loadVideo(currentVideoIndex);
+  // Load initial video
+  loadVideo(0);
 }
