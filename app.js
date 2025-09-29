@@ -573,5 +573,3 @@ scheduleHideButtons();
 video.addEventListener("click", showButtons);
 video.addEventListener("touchstart", showButtons);
 </script>
-</body>
-</html>
