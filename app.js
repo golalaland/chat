@@ -91,12 +91,8 @@ function setupUsersListener(){
 setupUsersListener();
 
 /* ---------- Render messages ---------- */
-function renderMessagesFromArray(arr){
+function renderMessagesFromArray(arr, isSentByUser = false){
   if (!refs.messagesEl) return;
-
-  const messagesEl = refs.messagesEl;
-  const isAtBottom = messagesEl.scrollHeight - messagesEl.scrollTop <= messagesEl.clientHeight + 50; 
-  // small buffer to detect "almost bottom"
 
   arr.forEach(item => {
     const m = item.data;
@@ -118,14 +114,18 @@ function renderMessagesFromArray(arr){
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
-    messagesEl.appendChild(wrapper);
+    refs.messagesEl.appendChild(wrapper);
   });
 
-  // Only scroll if user is at (or near) the bottom
-  if (isAtBottom) {
-    messagesEl.scrollTo({
-      top: messagesEl.scrollHeight,
-      behavior: 'smooth'
+  // Scroll behavior
+  if (!refs.messagesEl) return;
+  const isNearBottom = refs.messagesEl.scrollTop + refs.messagesEl.clientHeight >= refs.messagesEl.scrollHeight - 50;
+
+  if (isSentByUser || isNearBottom) {
+    // Instant scroll if user sent it, otherwise smooth scroll if near bottom
+    refs.messagesEl.scrollTo({
+      top: refs.messagesEl.scrollHeight,
+      behavior: isSentByUser ? "auto" : "smooth"
     });
   }
 }
@@ -383,21 +383,24 @@ window.addEventListener("DOMContentLoaded", () => {
 
   /* ---------- Send & Buzz ---------- */
   refs.sendBtn?.addEventListener("click", async ()=>{
-    if (!currentUser) return showStarPopup("Sign in to chat");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message first");
-    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+  if (!currentUser) return showStarPopup("Sign in to chat");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message first");
+  if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = currentUser.stars;
+  currentUser.stars -= SEND_COST;
+  refs.starCountEl.textContent = currentUser.stars;
 
-    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
-    await addDoc(collection(db,CHAT_COLLECTION), {
-      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-      timestamp: serverTimestamp(), highlight:false, buzzColor:null
-    });
-    refs.messageInputEl.value = "";
+  await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
+    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+    timestamp: serverTimestamp(), highlight:false, buzzColor:null
   });
+  refs.messageInputEl.value = "";
+
+  // Render instantly and scroll straight down
+  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+});
 
   refs.buzzBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to BUZZ");
