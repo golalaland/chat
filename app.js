@@ -61,10 +61,8 @@ let refs = {};
 /* ---------- Presence ---------- */
 function setupPresence(user){
   if(!rtdb) return;
-
   const userKey = user.uid;
   const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${userKey}`);
-
   rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(()=>{});
   onDisconnect(pRef).remove().catch(()=>{});
 
@@ -175,9 +173,10 @@ async function loginWhitelist(email, phone){
 
     let docSnap = await getDoc(userRef);
     if(!docSnap.exists()){
+      const guestName = generateGuestName();
       await setDoc(userRef, {
-        chatId: generateGuestName(),
-        chatIdLower: generateGuestName().toLowerCase(),
+        chatId: guestName,
+        chatIdLower: guestName.toLowerCase(),
         stars: 50,
         cash: 0,
         usernameColor: randomColor(),
@@ -246,7 +245,7 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- VIP Access / whitelist login button ---------- */
+  /* ---------- VIP login ---------- */
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
@@ -257,8 +256,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const phone = (phoneInput.value||"").trim();
       if(!email || !phone){ alert("Enter both email and phone"); return; }
 
-      const loggedIn = await loginWhitelist(email, phone);
-      if(!loggedIn) return;
+      await loginWhitelist(email, phone);
     });
   }
 
@@ -295,7 +293,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const userRef = doc(db,"users",currentUser.uid);
     const snap = await getDoc(userRef);
-    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars to create BUZZ!");
+    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
 
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
     await addDoc(collection(db,CHAT_COLLECTION), {
@@ -303,10 +301,22 @@ window.addEventListener("DOMContentLoaded", () => {
       timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
     });
     refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent🚨!");
+    showStarPopup("BUZZ sent!");
   });
 
-});
+  /* ---------- Hello text rotation ---------- */
+  const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
+  let helloIndex = 0;
+  const helloEl = document.getElementById("helloText");
+  setInterval(()=>{
+    if(!helloEl) return;
+    helloEl.style.opacity='0';
+    setTimeout(()=>{
+      helloEl.innerText = greetings[helloIndex++ % greetings.length];
+      helloEl.style.color = randomColor();
+      helloEl.style.opacity='1';
+    },220);
+  },1500);
 
   /* ---------- Video nav & fade ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
