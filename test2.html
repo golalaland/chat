@@ -607,11 +607,6 @@ const adminGiveCashBtn = document.getElementById("adminGiveCashBtn");
 const adminResetCashBtn = document.getElementById("adminResetCashBtn");
 const adminClearMessagesBtn = document.getElementById("adminClearMessagesBtn");
 const googleBtn = document.getElementById("googleSignInBtn");
-if (googleBtn) {
-  googleBtn.addEventListener("click", () => {
-    alert("🚫 Google sign-in list is full.\n✅ Use VIP email access below.");
-  });
-}
 
 /* ---------- Chat ID modal refs ---------- */
 const chatIDModal = document.getElementById("chatIDModal");
@@ -904,98 +899,6 @@ window.addEventListener("DOMContentLoaded", () => {
     console.log(`Logged in as ${user.email || user.chatId}`);
   }
 
-  // ---------- VIP login ----------
-async function vipLogin(email, phone) {
-  try {
-    const q = query(
-      collection(db, "whitelist"),
-      where("email", "==", email),
-      where("phone", "==", phone)
-    );
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      // Use email as doc ID since no Auth UID exists
-      const userRef = doc(db, "users", email);
-      const snap = await getDoc(userRef);
-
-      if (!snap.exists()) {
-        await setDoc(userRef, {
-          chatId: generateGuestName(),
-          chatIdLower: (generateGuestName()).toLowerCase(),
-          stars: 50,
-          cash: 0,
-          usernameColor: randomColor(),
-          lastColorDate: new Date().toISOString().split("T")[0],
-          isAdmin: false,
-          lastStarReset: Date.now(),
-          email,
-          phone,
-          createdAt: new Date()
-        });
-      }
-
-      const vipUser = { email, phone };
-      localStorage.setItem("vipUser", JSON.stringify(vipUser));
-
-      showAppUI(vipUser);
-      return true;
-    } else {
-      alert("Sorry, you are not on the VIP whitelist.");
-      return false;
-    }
-  } catch (err) {
-    console.error("VIP login error:", err);
-    alert("Something went wrong. Check console for details.");
-    return false;
-  }
-}
-  // ---------- Login button ----------
-  if (loginBtn) {
-    loginBtn.addEventListener("click", async () => {
-      const email = emailInput.value.trim().toLowerCase();
-      const phone = phoneInput.value.replace(/\s+/g, "");
-      if (!email || !phone) return alert("Enter both email and phone.");
-      await vipLogin(email, phone);
-    });
-  }
-
-  // ---------- Auto-login ----------
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (vipUser && vipUser.email && vipUser.phone) {
-    vipLogin(vipUser.email, vipUser.phone); // async non-blocking
-  }
-
-  // ---------- Change Chat ID once ----------
-  if (changeChatBtn) {
-    changeChatBtn.addEventListener("click", async () => {
-      if (!currentUser) return;
-      const newChatId = prompt("Enter new chat ID:");
-      if (!newChatId) return;
-
-      // update Firestore user doc
-      const userRef = doc(db, "users", currentUser.email);
-      await updateDoc(userRef, { chatId: newChatId });
-
-      // update local state + hide button
-      currentUser.chatId = newChatId;
-      usernameDisplay.textContent = newChatId;
-      changeChatBtn.style.display = "none";
-      localStorage.setItem("chatIdChanged", "true");
-    });
-  }
-
-  // ---------- Google Sign-In ----------
-  window.onGoogleSignIn = function(googleUser) {
-    const profile = googleUser.getBasicProfile();
-    const user = {
-      email: profile.getEmail(),
-      name: profile.getName(),
-      chatId: profile.getEmail() // fallback for username display
-    };
-    showAppUI(user);
-  };
-});
 // ---------- Daily Star Cap Reset Helper ----------
 async function resetDailyCapIfNeeded(userRef, data) {
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
