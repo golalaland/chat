@@ -13,12 +13,14 @@
   --btn-bg: #ff33cc; 
   --btn-text: #fff;
 }
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
+
 header {
   background: var(--card-bg);
   padding: 1rem 2rem;
@@ -27,11 +29,13 @@ header {
   border-bottom: 1px solid #ddd;
   text-align: center;
 }
+
 #user-info {
   display: flex;
   justify-content: center;
   padding: 1rem;
 }
+
 .profile-card {
   background: var(--card-bg);
   padding: 1rem 2rem;
@@ -40,35 +44,42 @@ header {
   text-align: center;
   min-width: 280px;
 }
+
 #username {
   font-weight: bold;
   font-size: 1.3rem;
   margin-bottom: 0.8rem;
 }
+
 .balances {
   display: flex;
   justify-content: center;
   gap: 2rem;
   flex-wrap: wrap;
 }
+
 .balance-item {
   text-align: center;
 }
+
 .balance-label {
   font-size: 0.9rem;
   color: #555;
   margin-bottom: 0.2rem;
 }
+
 .balance-value {
   font-size: 1.1rem;
   font-weight: bold;
 }
+
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   padding: 1rem 2rem;
 }
+
 .product-card {
   background: var(--card-bg);
   border-radius: 10px;
@@ -80,15 +91,18 @@ header {
   transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
 }
+
 .product-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
+
 .product-card img {
   width: 100%;
   height: 150px;
   object-fit: cover;
 }
+
 .availability-badge {
   position: absolute;
   top: 8px;
@@ -101,19 +115,23 @@ header {
   border-radius: 4px;
   z-index: 2;
 }
+
 .product-info {
   padding: 0.8rem;
   text-align: center;
 }
+
 .product-name {
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
+
 .product-cost {
   color: var(--accent);
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
+
 .buy-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -126,9 +144,11 @@ header {
   border-radius: 5px;
   transition: background 0.2s;
 }
+
 .buy-btn:hover {
   background: #ff66d6;
 }
+
 #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -142,9 +162,45 @@ header {
   display: block;
   margin: 1rem auto;
 }
+
 #home-btn:hover {
   background: #ff66d6;
 }
+
+/* VIP login overlay */
+#vip-login-overlay {
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.6);
+  display:flex; justify-content:center; align-items:center;
+  z-index: 9999;
+}
+
+#vip-login-box {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 12px;
+  display:flex; flex-direction:column;
+  gap:0.8rem;
+}
+
+#vip-login-box input {
+  padding: 0.6rem;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+
+#vip-login-box button {
+  padding: 0.6rem;
+  border:none;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-weight:bold;
+  cursor:pointer;
+  border-radius:6px;
+}
+
+#vip-login-box button:hover { background:#ff66d6; }
 </style>
 </head>
 <body>
@@ -169,13 +225,24 @@ header {
 
 <div class="shop-grid" id="shop-items"></div>
 
-<button id="home-btn" onclick="location.href='index.html'">Home</button>
+<button id="home-btn">Take Me Home</button>
+
+<!-- VIP Login Overlay -->
+<div id="vip-login-overlay">
+  <div id="vip-login-box">
+    <input type="email" id="vip-email" placeholder="Email" />
+    <input type="text" id="vip-phone" placeholder="Phone" />
+    <button id="vip-login-btn">Login</button>
+  </div>
+</div>
 
 <script type="module">
-// ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore, doc, collection, getDocs, updateDoc, addDoc, increment, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// ---------- Firebase Config ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -183,86 +250,128 @@ const firebaseConfig = {
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- Shop Items ----------
-const shopItems = [
-  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
-  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
-  { id: 3, name: "Redeem Cash Balance", cost: 10, img: "https://via.placeholder.com/150", available: 15 },
-  { id: 4, name: "Host Gig Reward", cost: 500, img: "https://via.placeholder.com/150", available: 5 },
-  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150", available: 10 }
-];
-
-// ---------- DOM Refs ----------
-const usernameEl = document.getElementById('username');
-const starsEl = document.getElementById('stars-count');
-const cashEl = document.getElementById('cash-count');
-const shopItemsEl = document.getElementById('shop-items');
-
-// ---------- Utilities ----------
-function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
-function createProductCard(item){
-  const card = document.createElement('div');
-  card.className = 'product-card';
-  card.innerHTML = `
-    <img src="${item.img}" alt="${item.name}">
-    <div class="availability-badge">${item.available} left</div>
-    <div class="product-info">
-      <div class="product-name">${item.name}</div>
-      <div class="product-cost">${item.cost} ⭐️</div>
-      <button class="buy-btn">Buy</button>
-    </div>
-  `;
-  const btn = card.querySelector('.buy-btn');
-  btn.addEventListener('click', async ()=>{
-    if(!currentUser){ alert("Not logged in"); return; }
-    if(currentUser.stars < item.cost){ alert("Not enough stars"); return; }
-    currentUser.stars -= item.cost;
-    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    const userRef = doc(db, 'users', currentUser.uid);
-    await updateDoc(userRef, { stars: increment(-item.cost) });
-    alert(`Purchased ${item.name}!`);
-  });
-  return card;
-}
-function renderShop(){ shopItemsEl.innerHTML=''; shopItems.forEach(i=>shopItemsEl.appendChild(createProductCard(i))); }
-
-// ---------- Auto-load VIP user with real-time updates ----------
 let currentUser = null;
-async function loadCurrentUser(){
-  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
-  if(!vipSession?.email) return;
-  const uid = vipSession.email.replace(/[.#$[\]]/g, ','); // sanitizeKey
-  const userRef = doc(db, 'users', uid);
-  
-  const snap = await getDoc(userRef);
-  if(!snap.exists()) return;
-  
-  currentUser = { uid, ...snap.data() };
-  usernameEl.textContent = currentUser.chatId || 'Guest';
-  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
-  
-  renderShop();
 
-  // Real-time listener for stars/cash changes
-  onSnapshot(userRef, docSnap => {
-    const data = docSnap.data();
-    if(!data) return;
-    currentUser.stars = data.stars || 0;
-    currentUser.cash = data.cash || 0;
-    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+// ---------- VIP Login ----------
+const loginOverlay = document.getElementById("vip-login-overlay");
+const loginBtn = document.getElementById("vip-login-btn");
+const emailInput = document.getElementById("vip-email");
+const phoneInput = document.getElementById("vip-phone");
+
+loginBtn.addEventListener("click", async ()=>{
+  const email = (emailInput.value||"").trim().toLowerCase();
+  const phone = (phoneInput.value||"").trim();
+  if(!email || !phone){ alert("Enter email and phone"); return; }
+
+  // Look for whitelist entry
+  const qSnap = await getDocs(collection(db,"whitelist"));
+  let found = false;
+  qSnap.forEach(d=>{
+    const data = d.data();
+    if(data.email===email && data.phone===phone) found=true;
+  });
+
+  if(!found){ alert("Not on whitelist"); return; }
+
+  // Setup user doc
+  const uidKey = email.replace(/[.#$[\]]/g,",");
+  const userRef = doc(db,"users",uidKey);
+  let userSnap = await getDocs(collection(db,"users"));
+  let userExists = false;
+  try{
+    const uSnap = await doc(db,"users",uidKey).get();
+    if(uSnap.exists()) userExists=true;
+  }catch(e){}
+
+  if(!userExists){
+    await updateDoc(userRef,{
+      email, phone,
+      stars:50,
+      cash:0,
+      createdAt: serverTimestamp()
+    }).catch(async ()=>{
+      await addDoc(collection(db,"users"),{
+        email, phone,
+        stars:50,
+        cash:0,
+        createdAt: serverTimestamp()
+      });
+    });
+  }
+
+  currentUser={uid: uidKey, email, phone, stars:50, cash:0};
+  document.getElementById("username").textContent=email;
+  document.getElementById("stars-count").textContent=`${currentUser.stars} ⭐️`;
+  loginOverlay.style.display="none";
+
+  loadShop();
+});
+
+// ---------- Load Shop Items ----------
+const shopItemsEl = document.getElementById("shop-items");
+
+async function loadShop(){
+  shopItemsEl.innerHTML="Loading...";
+
+  const shopSnap = await getDocs(collection(db,"ShopItems"));
+  shopItemsEl.innerHTML="";
+
+  shopSnap.forEach(d=>{
+    const item = d.data();
+    const card = document.createElement("div");
+    card.classList.add("product-card");
+    card.innerHTML=`
+      <img src="${item.img}" alt="${item.name}">
+      <div class="availability-badge">${item.available} left</div>
+      <div class="product-info">
+        <div class="product-name">${item.name}</div>
+        <div class="product-cost">${item.cost} ⭐️</div>
+        <button class="buy-btn">Buy</button>
+      </div>
+    `;
+
+    // Buy button
+    const buyBtn = card.querySelector(".buy-btn");
+    buyBtn.addEventListener("click", async ()=>{
+      if(!currentUser) return alert("Login first!");
+      if((currentUser.stars||0) < item.cost) return alert("Not enough stars");
+
+      // Deduct stars
+      currentUser.stars -= item.cost;
+      document.getElementById("stars-count").textContent=`${currentUser.stars} ⭐️`;
+      await updateDoc(doc(db,"users",currentUser.uid),{stars:increment(-item.cost)});
+
+      // Record purchase
+      await addDoc(collection(db,"Purchases"),{
+        uid:currentUser.uid,
+        email:currentUser.email,
+        phone:currentUser.phone,
+        itemId:item.id,
+        itemName:item.name,
+        itemCost:item.cost,
+        timestamp:serverTimestamp(),
+        fulfilled:false
+      });
+
+      // Update stock
+      if(item.available>0){
+        item.available--;
+        await updateDoc(doc(db,"ShopItems",d.id),{available:item.available});
+        card.querySelector(".availability-badge").textContent=`${item.available} left`;
+      }
+
+      alert(`You bought ${item.name}! 🎉`);
+    });
+
+    shopItemsEl.appendChild(card);
   });
 }
-
-loadCurrentUser();
 </script>
-
 </body>
 </html>
