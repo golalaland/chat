@@ -445,6 +445,7 @@ window.addEventListener("DOMContentLoaded", () => {
   },1500);
 
   /* ---------- Video nav, fade & looping ---------- */
+/* ---------- Video nav, fade & looping safely ---------- */
 const videoPlayer = document.getElementById("videoPlayer");
 const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
@@ -458,33 +459,33 @@ if(videoPlayer && navButtons.length){
     "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
   ];
 
-  // Start from last played or first video
   let savedIndex = parseInt(localStorage.getItem("lastVideoIndex"));
   let currentVideoIndex = (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < videos.length) ? savedIndex : 0;
 
-  function loadVideo(index){
+  function loadVideo(index, preserveTime = false){
     if(index < 0) index = videos.length - 1;
     if(index >= videos.length) index = 0;
     currentVideoIndex = index;
 
+    if (!preserveTime) videoPlayer.currentTime = 0;
     videoPlayer.src = videos[currentVideoIndex];
     videoPlayer.muted = true;
     videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
 
-    // Save the current video for persistence
     localStorage.setItem("lastVideoIndex", currentVideoIndex);
   }
 
   prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
   nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
 
-  // Mute/unmute on click
   videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
 
-  // Loop the current video
-  videoPlayer.addEventListener("ended", () => loadVideo(currentVideoIndex));
+  // Loop without reloading source
+  videoPlayer.addEventListener("ended", () => {
+    videoPlayer.currentTime = 0;
+    videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
+  });
 
-  // Fade nav buttons logic
   let hideTimeout;
   function showButtons(){
     navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
@@ -498,6 +499,5 @@ if(videoPlayer && navButtons.length){
   container?.addEventListener("mouseleave", ()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); });
   container?.addEventListener("click", showButtons);
 
-  // Load initial video
   loadVideo(currentVideoIndex);
 }
