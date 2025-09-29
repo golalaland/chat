@@ -1302,61 +1302,6 @@ function setupAdminControls(){
     });
   });
 
-  // ------- Give / Reset Stars & Cash --------
-  document.getElementById("adminGiveStarsBtn")?.addEventListener("click", async ()=>{
-    const amount = parseInt(prompt("Stars to give:","100"))||0;
-    if(amount<=0) return;
-    const uid = userSelect.value;
-    if(uid){
-      await updateDoc(doc(db,"users",uid),{stars: increment(amount)});
-    } else {
-      const snap = await getDocs(collection(db,"users"));
-      const batch = writeBatch(db);
-      snap.forEach(u=> batch.update(doc(db,"users",u.id),{stars: increment(amount)}));
-      await batch.commit();
-    }
-  });
-
-  document.getElementById("adminResetStarsBtn")?.addEventListener("click", async ()=>{
-    if(!confirm("Reset stars to 0?")) return;
-    const uid=userSelect.value;
-    if(uid){
-      await updateDoc(doc(db,"users",uid),{stars:0});
-    } else {
-      const snap = await getDocs(collection(db,"users"));
-      const batch = writeBatch(db);
-      snap.forEach(u=> batch.update(doc(db,"users",u.id),{stars:0}));
-      await batch.commit();
-    }
-  });
-
-  document.getElementById("adminGiveCashBtn")?.addEventListener("click", async ()=>{
-    const amount=parseInt(prompt("Cash to give:","1000"))||0;
-    if(amount<=0) return;
-    const uid = userSelect.value;
-    if(uid){
-      await updateDoc(doc(db,"users",uid),{cash: increment(amount)});
-    } else {
-      const snap = await getDocs(collection(db,"users"));
-      const batch = writeBatch(db);
-      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash: increment(amount)}));
-      await batch.commit();
-    }
-  });
-
-  document.getElementById("adminResetCashBtn")?.addEventListener("click", async ()=>{
-    if(!confirm("Reset cash to 0?")) return;
-    const uid=userSelect.value;
-    if(uid){
-      await updateDoc(doc(db,"users",uid),{cash:0});
-    } else {
-      const snap = await getDocs(collection(db,"users"));
-      const batch = writeBatch(db);
-      snap.forEach(u=> batch.update(doc(db,"users",u.id),{cash:0}));
-      await batch.commit();
-    }
-  });
-
   // ------- Clear Messages --------
   document.getElementById("adminClearMessagesBtn")?.addEventListener("click", async ()=>{
     if(!confirm("Clear ALL messages in this room?")) return;
@@ -1511,7 +1456,6 @@ document.addEventListener("DOMContentLoaded", () => {
     nextBtn.style.pointerEvents = "none";
   }, 3000);
 });
-const video = document.getElementById("videoPlayer");
 const navButtons = document.querySelectorAll(".arrow");
 let fadeTimeout;
 
