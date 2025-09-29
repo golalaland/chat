@@ -199,6 +199,74 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
+  /* ---------- ChatID modal for first-time users ---------- */
+async function promptForChatID(userRef, userData){
+  if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
+  if (userData?.chatId) return userData.chatId;
+
+  refs.chatIDInput.value = "";
+  refs.chatIDModal.style.display = "flex";
+  if (refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
+
+  return new Promise(resolve => {
+    refs.chatIDConfirmBtn.onclick = async () => {
+      const chosenID = refs.chatIDInput.value.trim();
+      if (chosenID.length < 3 || chosenID.length > 12) {
+        alert("Chat ID must be 3-12 characters");
+        return;
+      }
+      const normalized = chosenID.toLowerCase();
+      try {
+        const q = query(collection(db,"users"), where("chatIdLower","==",normalized));
+        const snap = await getDocs(q);
+        let conflict = false;
+        snap.forEach(docSnap => { if(docSnap.id !== userRef.id) conflict=true; });
+        if(conflict){ alert("This Chat ID is taken"); return; }
+
+        await updateDoc(userRef,{ chatId: chosenID, chatIdLower: normalized });
+      } catch(e){ console.error(e); alert("Failed to save. Try again."); return; }
+
+      refs.chatIDModal.style.display = "none";
+      if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+      location.reload(); // reload page to reflect new ChatID
+      resolve(chosenID);
+    };
+  });
+}
+
+/* ---------- VIP Access / whitelist login button ---------- */
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
+
+if(loginBtn){
+  loginBtn.addEventListener("click", async ()=>{
+    const email = (emailInput.value||"").trim().toLowerCase();
+    const phone = (phoneInput.value||"").trim();
+    if(!email || !phone){ alert("Enter both email and phone"); return; }
+
+    const loggedIn = await loginWhitelist(email, phone);
+    if(!loggedIn) return;
+
+    const userRef = doc(db,"users",email);
+    const snap = await getDoc(userRef);
+    await promptForChatID(userRef, snap.exists() ? snap.data() : {});
+  });
+}
+
+// Auto-login if VIP info stored
+const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+if(vipUser?.email && vipUser?.phone){
+  (async ()=>{
+    const loggedIn = await loginWhitelist(vipUser.email, vipUser.phone);
+    if(!loggedIn) return;
+    const userRef = doc(db,"users",vipUser.email);
+    const snap = await getDoc(userRef);
+    await promptForChatID(userRef, snap.exists() ? snap.data() : {});
+  })();
+}
+
+
   /* ---------- Hello text rotation ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
   let helloIndex = 0;
