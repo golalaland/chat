@@ -468,27 +468,67 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Video nav / fade logic (from your snippet)
-  const video = document.getElementById("videoPlayer");
-  const navButtons = Array.from(document.querySelectorAll(".arrow"));
-  let fadeTimeout;
+/* ---------- Video navigation & fade logic ---------- */
+const videoPlayer = document.getElementById("videoPlayer");
+const navButtons = Array.from(document.querySelectorAll(".arrow"));
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+const videos = [
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+  "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
+  "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
+];
+let currentVideoIndex = 0;
+let fadeTimeout;
 
-  function scheduleHideButtons() {
-    clearTimeout(fadeTimeout);
-    fadeTimeout = setTimeout(() => {
-      navButtons.forEach(btn => btn.classList.add("hidden"));
-    }, 5300);
-  }
-  function showButtons() {
-    navButtons.forEach(btn => btn.classList.remove("hidden"));
-    scheduleHideButtons();
-  }
+// ---------------- Load / switch videos ----------------
+function loadVideo(index) {
+  if (!videoPlayer) return;
+  if (index < 0) index = videos.length - 1;
+  if (index >= videos.length) index = 0;
+  currentVideoIndex = index;
+  videoPlayer.src = videos[currentVideoIndex];
+  videoPlayer.muted = true;
+  videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
+}
+
+// Prev/Next button handlers
+prevBtn?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+nextBtn?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+// Click on video toggles mute
+videoPlayer?.addEventListener("click", () => {
+  if (videoPlayer) videoPlayer.muted = !videoPlayer.muted;
+  showNavButtons(); // show buttons on click
+});
+
+// ---------------- Auto fade logic ----------------
+function scheduleHideButtons() {
+  clearTimeout(fadeTimeout);
+  fadeTimeout = setTimeout(() => {
+    navButtons.forEach(btn => btn.classList.add("hidden"));
+  }, 3000); // hide after 3s
+}
+
+function showNavButtons() {
+  navButtons.forEach(btn => btn.classList.remove("hidden"));
   scheduleHideButtons();
-  if (video) {
-    video.addEventListener("click", showButtons);
-    video.addEventListener("touchstart", showButtons);
-  }
+}
 
-}); // end DOMContentLoaded
+// Desktop: show on hover / move
+const container = document.getElementById("video-container");
+if (container) {
+  container.addEventListener("mouseenter", showNavButtons);
+  container.addEventListener("mousemove", showNavButtons);
+  container.addEventListener("mouseleave", () => {
+    navButtons.forEach(btn => btn.classList.add("hidden"));
+  });
 
+  // Mobile / general tap
+  container.addEventListener("click", showNavButtons);
+}
+
+// Start initial video and fade cycle
+loadVideo(0);
+scheduleHideButtons();
 
