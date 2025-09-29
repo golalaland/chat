@@ -259,7 +259,7 @@ window.addEventListener("DOMContentLoaded", () => {
     loginBtn.addEventListener("click", async ()=>{
       const email = (emailInput.value||"").trim().toLowerCase();
       const phone = (phoneInput.value||"").trim();
-      if(!email || !phone){ alert("Enter both email and phone"); return; }
+      if(!email || !phone){ alert("Enter your email and phone to get access"); return; }
 
       await loginWhitelist(email, phone);
     });
@@ -278,7 +278,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!currentUser) return showStarPopup("Sign in to chat");
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
-    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars");
+    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = currentUser.stars;
