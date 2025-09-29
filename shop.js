@@ -1,71 +1,22 @@
-// --------- FIREBASE SETUP ----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, getDoc, onSnapshot, collection, addDoc, updateDoc, increment, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// shop.js
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-};
+import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Assumes app.js already initialized Firebase
+const db = getFirestore();
 
-// --------- DOM ELEMENTS ----------
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-balance');
 const cashEl = document.getElementById('cash-balance');
 const shopItemsEl = document.getElementById('shop-items');
-const homeBtn = document.getElementById('home-btn');
 
-// --------- USER SETUP ----------
-const uid = new URLSearchParams(window.location.search).get('uid');
-if (!uid) {
-  alert("No user ID detected! Please open shop from chat.");
-}
+let currentUserListener = null;
 
-let currentUser = null;
-
-// Random color for username
-function randomColor() {
-  const colors = ['#ff33cc','#33ffcc','#ffcc33','#66f','#f66','#3f3'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
-// --------- LOAD USER WITH REAL-TIME UPDATES ----------
-async function loadUser(uid) {
-  const userRef = doc(db, "users", uid);
-
-  onSnapshot(userRef, (snap) => {
-    if (!snap.exists()) {
-      usernameEl.innerText = "Guest";
-      starsEl.innerText = "Stars: 0 ⭐️";
-      cashEl.innerText = "₦0";
-      return;
-    }
-
-    const data = snap.data();
-    currentUser = { uid, ...data };
-
-    usernameEl.innerText = data.chatId || "Guest";
-    usernameEl.style.color = data.usernameColor || randomColor();
-    starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
-    cashEl.innerText = `₦${data.cash || 0}`;
-  });
-}
-
-// --------- SHOP ITEMS ----------
+// Example shop items
 const shopItems = [
-  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
-  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
-  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 }
+  { id: "vip-pass", name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
+  { id: "glow-badge", name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
+  { id: "emoji-pack", name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 }
 ];
 
 function createProductCard(item) {
@@ -80,7 +31,6 @@ function createProductCard(item) {
       <button class="buy-btn">Buy</button>
     </div>
   `;
-
   card.querySelector('.buy-btn').addEventListener('click', () => buyItem(item));
   return card;
 }
@@ -90,40 +40,58 @@ function renderShop() {
   shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
 }
 
-// --------- BUY LOGIC WITH FIRESTORE ----------
 async function buyItem(item) {
-  if (!currentUser) return alert("No user loaded.");
-  if ((currentUser.stars || 0) < item.cost) {
-    return alert(`Not enough stars to buy ${item.name}!`);
+  if (!window.currentUser) {
+    alert("Please log in first!");
+    return;
   }
 
-  const userRef = doc(db, "users", currentUser.uid);
+  const userRef = doc(db, "users", window.currentUser.uid);
+  const userSnap = await userRef.get?.() || await getDoc(userRef);
+  const userData = userSnap.data();
 
-  try {
-    // Deduct stars
-    await updateDoc(userRef, { stars: increment(-item.cost) });
-
-    // Log order
-    await addDoc(collection(db, "orders"), {
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      itemId: item.id,
-      itemName: item.name,
-      cost: item.cost,
-      timestamp: serverTimestamp()
-    });
-
-    alert(`✅ Purchased ${item.name}!`);
-
-  } catch (e) {
-    console.error("Purchase failed:", e);
-    alert("Purchase failed. Try again.");
+  if ((userData.stars || 0) < item.cost) {
+    alert("Not enough stars to buy this item!");
+    return;
   }
+
+  // Deduct stars
+  await updateDoc(userRef, { stars: (userData.stars || 0) - item.cost });
+
+  // Log order
+  await addDoc(collection(db, "shopOrders"), {
+    uid: window.currentUser.uid,
+    email: window.currentUser.email,
+    itemId: item.id,
+    itemName: item.name,
+    cost: item.cost,
+    timestamp: serverTimestamp(),
+    fulfilled: false
+  });
+
+  alert(`Purchased ${item.name}!`);
 }
 
-// --------- HOME BUTTON ----------
-homeBtn?.addEventListener('click', () => window.location.href = '/');
+// Update user display reactively
+function listenToCurrentUser() {
+  if (!window.currentUser) return;
 
-// --------- INITIALIZE SHOP ----------
-loadUser(uid);
-renderShop();
+  const userRef = doc(db, "users", window.currentUser.uid);
+
+  if (currentUserListener) currentUserListener(); // remove old listener
+  currentUserListener = onSnapshot(userRef, snap => {
+    const data = snap.data() || {};
+    usernameEl.innerText = data.chatId || "Guest";
+    starsEl.innerText = `Stars: ${data.stars || 0} ⭐️`;
+    cashEl.innerText = `Cash: ₦${data.cash || 0}`;
+  });
+}
+
+// Wait a tiny moment to ensure app.js has set window.currentUser
+const waitForUser = setInterval(() => {
+  if (window.currentUser) {
+    clearInterval(waitForUser);
+    listenToCurrentUser();
+    renderShop();
+  }
+}, 200);
