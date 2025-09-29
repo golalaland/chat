@@ -34,6 +34,9 @@ const CHAT_COLLECTION = "messages_room5";
 let currentUser = null;
 let lastMessagesArray = [];
 
+// ⭐ ADD THIS LINE HERE
+let starInterval = null;
+
 /* ---------- Constants ---------- */
 const BUZZ_COST = 50;
 const SEND_COST = 1;
@@ -229,51 +232,53 @@ startStarEarning(currentUser.uid);
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-
   const userRef = doc(db, "users", uid);
+  let intervalId = null;
 
-  // Live sync stars + reset daily
-  onSnapshot(userRef, snap => {
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const today = new Date().toISOString().split("T")[0];
+  function updateStars() {
+    getDoc(userRef).then(snap => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const today = new Date().toISOString().split("T")[0];
 
-    // Reset if new day
-    if (data.lastStarDate !== today) {
-      updateDoc(userRef, { starsToday: 0, lastStarDate: today }).catch(()=>{});
-    }
+      if (data.lastStarDate !== today) {
+        updateDoc(userRef, { starsToday: 0, lastStarDate: today }).catch(()=>{});
+        return;
+      }
 
-    // Update UI whenever stars change
-    currentUser.stars = data.stars || 0;
-    if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+      if ((data.starsToday || 0) < 200) {
+        updateDoc(userRef, {
+          stars: increment(10),
+          starsToday: increment(10),
+          lastStarDate: today
+        });
+      }
 
-    // 🎉 Milestone popup every 1,000 stars
-    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
+      currentUser.stars = data.stars || 0;
+      if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+      if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
+        showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
+      }
+    });
+  }
+
+  // Start incrementing only when page is visible
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !intervalId) {
+      intervalId = setInterval(updateStars, 60000);
+      updateStars(); // immediate first run
+    } else if (document.visibilityState === "hidden" && intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
     }
   });
 
-  // Increment every 60s if under cap
-  setInterval(async () => {
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const today = new Date().toISOString().split("T")[0];
-    const starsToday = data.starsToday || 0;
-
-    if (data.lastStarDate !== today) {
-      await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
-      return;
-    }
-
-    if (starsToday < 200) {
-      await updateDoc(userRef, {
-        stars: increment(10),
-        starsToday: increment(10),
-        lastStarDate: today
-      });
-    }
-  }, 60000); // 60 seconds
+  // Also start immediately if page is already visible
+  if (document.visibilityState === "visible") {
+    intervalId = setInterval(updateStars, 60000);
+    updateStars();
+  }
 }
 
 /* ---------- DOMContentLoaded ---------- */
