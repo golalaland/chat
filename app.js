@@ -335,7 +335,7 @@ function startStarEarning(uid) {
       return;
     }
 
-    if ((data.starsToday || 0) < 200) {
+    if ((data.starsToday || 0) < 250) {
       await updateDoc(userRef, {
         stars: increment(10),
         starsToday: increment(10)
