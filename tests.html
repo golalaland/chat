@@ -762,37 +762,58 @@ if (googleBtn) {
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
 
-  // Example whitelist (replace with Firestore or your DB)
-  const whitelist = [
-    { email: "vip@example.com", phone: "+2348012345678" },
-    { email: "flash@xixi.live", phone: "+2348098765432" }
-  ];
+  import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore"; 
+import { db } from "./firebase.js"; // your initialized Firestore
 
-  loginBtn.addEventListener("click", () => {
-    const email = emailInput.value.trim().toLowerCase();
-    const phone = phoneInput.value.replace(/\s+/g, ""); // remove spaces
+loginBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim().toLowerCase();
+  const phone = phoneInput.value.replace(/\s+/g, ""); // remove spaces
 
-    if (!email || !phone) {
-      alert("Enter both email and phone number.");
-      return;
-    }
+  if (!email || !phone) {
+    alert("Enter both email and phone number.");
+    return;
+  }
 
-    const matchedUser = whitelist.find(user =>
-      user.email.toLowerCase() === email && user.phone === phone
+  try {
+    // Query Firestore whitelist collection
+    const q = query(
+      collection(db, "whitelist"),
+      where("email", "==", email),
+      where("phone", "==", phone)
     );
+    const querySnapshot = await getDocs(q);
 
-    if (matchedUser) {
+    if (!querySnapshot.empty) {
+      // VIP found ✅
       alert(`Welcome VIP! Logged in as ${email}`);
-      // 🔹 Place your login logic here:
-      // e.g., show chat area, hide auth box, set user session, etc.
+
+      // 🔹 Your login logic here
       document.getElementById("authBox").style.display = "none";
       document.getElementById("emailAuthWrapper").style.display = "none";
       document.getElementById("sendArea").style.display = "flex";
       document.getElementById("profileBox").style.display = "flex";
+
+      // Optional: create user doc if doesn't exist
+      const userRef = doc(db, "users", email); // use email as UID
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          email,
+          phone,
+          stars: 50, // starter stars
+          cash: 0,
+          createdAt: new Date()
+        });
+      }
     } else {
       alert("Sorry, you are not on the VIP whitelist.");
     }
-  });
+  } catch (err) {
+    console.error("Whitelist check error:", err);
+    alert("Something went wrong. Try again.");
+  }
+});
+
 /* ---------- Message rendering (full redraw helper) ---------- */
 function renderMessagesFromArray(arr){
   if(!messagesEl) return;
