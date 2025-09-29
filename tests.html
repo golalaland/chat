@@ -889,7 +889,132 @@ if(buzzBtn) {
     }
   });
 }
-  
+// JS snippet
+window.addEventListener("DOMContentLoaded", () => {
+  // DOM elements
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
+  const changeChatBtn = document.getElementById("changeChatIdBtn");
+  const usernameDisplay = document.getElementById("usernameDisplay");
+  const starsDisplay = document.getElementById("starsDisplay");
+
+  let currentUser = null;
+
+  // ---------- UI update ----------
+  function showAppUI(user) {
+    const authBox = document.getElementById("authBox");
+    const emailWrapper = document.getElementById("emailAuthWrapper");
+    const sendArea = document.getElementById("sendArea");
+    const profileBox = document.getElementById("profileBox");
+
+    if (authBox) authBox.style.display = "none";
+    if (emailWrapper) emailWrapper.style.display = "none";
+    if (sendArea) sendArea.style.display = "flex";
+    if (profileBox) profileBox.style.display = "flex";
+
+    usernameDisplay.textContent = user.chatId || user.email || "User";
+    starsDisplay.textContent = `Stars: ${user.stars || 0} ⭐️`;
+
+    // Show Change Chat ID button if not used yet
+    if (!localStorage.getItem("chatIdChanged")) {
+      changeChatBtn.style.display = "block";
+    }
+
+    currentUser = user;
+    console.log(`Logged in as ${user.email || user.chatId}`);
+  }
+
+  // ---------- VIP login ----------
+  async function vipLogin(email, phone) {
+    try {
+      const q = query(
+        collection(db, "whitelist"),
+        where("email", "==", email),
+        where("phone", "==", phone)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userRef = doc(db, "users", email);
+        const snap = await getDoc(userRef);
+        if (!snap.exists()) {
+          await setDoc(userRef, {
+            email,
+            phone,
+            chatId: generateGuestName(),
+            stars: 50,
+            cash: 0,
+            createdAt: new Date()
+          });
+        }
+
+        const vipUser = {
+          email,
+          phone,
+          chatId: snap.exists() ? snap.data().chatId : generateGuestName(),
+          stars: snap.exists() ? snap.data().stars : 50
+        };
+        localStorage.setItem("vipUser", JSON.stringify(vipUser));
+        showAppUI(vipUser);
+        return true;
+      } else {
+        alert("Sorry, you are not on the VIP whitelist.");
+        return false;
+      }
+    } catch (err) {
+      console.error("Whitelist check error:", err);
+      alert("Something went wrong. Try again.");
+      return false;
+    }
+  }
+
+  // ---------- Login button ----------
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim().toLowerCase();
+      const phone = phoneInput.value.replace(/\s+/g, "");
+      if (!email || !phone) return alert("Enter both email and phone.");
+      await vipLogin(email, phone);
+    });
+  }
+
+  // ---------- Auto-login ----------
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if (vipUser && vipUser.email && vipUser.phone) {
+    vipLogin(vipUser.email, vipUser.phone); // async non-blocking
+  }
+
+  // ---------- Change Chat ID once ----------
+  if (changeChatBtn) {
+    changeChatBtn.addEventListener("click", async () => {
+      if (!currentUser) return;
+      const newChatId = prompt("Enter new chat ID:");
+      if (!newChatId) return;
+
+      // update Firestore user doc
+      const userRef = doc(db, "users", currentUser.email);
+      await updateDoc(userRef, { chatId: newChatId });
+
+      // update local state + hide button
+      currentUser.chatId = newChatId;
+      usernameDisplay.textContent = newChatId;
+      changeChatBtn.style.display = "none";
+      localStorage.setItem("chatIdChanged", "true");
+    });
+  }
+
+  // ---------- Google Sign-In ----------
+  window.onGoogleSignIn = function(googleUser) {
+    const profile = googleUser.getBasicProfile();
+    const user = {
+      email: profile.getEmail(),
+      name: profile.getName(),
+      chatId: profile.getEmail() // fallback for username display
+    };
+    showAppUI(user);
+  };
+});
 // ---------- Daily Star Cap Reset Helper ----------
 async function resetDailyCapIfNeeded(userRef, data) {
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
