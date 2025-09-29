@@ -91,9 +91,8 @@ function setupUsersListener(){
 setupUsersListener();
 
 /* ---------- Render messages ---------- */
-function renderMessagesFromArray(arr, isSentByUser = false){
+function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
-
   arr.forEach(item => {
     const m = item.data;
     const wrapper = document.createElement("div");
@@ -117,18 +116,14 @@ function renderMessagesFromArray(arr, isSentByUser = false){
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // Scroll behavior
-  if (!refs.messagesEl) return;
-  const isNearBottom = refs.messagesEl.scrollTop + refs.messagesEl.clientHeight >= refs.messagesEl.scrollHeight - 50;
-
-  if (isSentByUser || isNearBottom) {
-    // Instant scroll if user sent it, otherwise smooth scroll if near bottom
-    refs.messagesEl.scrollTo({
-      top: refs.messagesEl.scrollHeight,
-      behavior: isSentByUser ? "auto" : "smooth"
+  // scroll after DOM updates
+  if(refs.messagesEl){
+    requestAnimationFrame(() => {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
     });
   }
 }
+
 /* ---------- Attach messages listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
