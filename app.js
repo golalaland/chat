@@ -60,15 +60,15 @@ let refs = {};
 
 /* ---------- Presence ---------- */
 function setupPresence(user){
-  if(!rtdb) return;
-  const userKey = user.uid;
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${userKey}`);
-  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(()=>{});
+  if (!rtdb) return;
+  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
+  rtdbSet(pRef, { online:true, chatId:user.chatId, email:user.email }).catch(()=>{});
   onDisconnect(pRef).remove().catch(()=>{});
-
+}
+if (rtdb){
   onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
     const val = snap.val() || {};
-    if(refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
+    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
   });
 }
 
@@ -112,7 +112,7 @@ function renderMessagesFromArray(arr){
   if(refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
 }
 
-/* ---------- Messages listener ---------- */
+/* ---------- Attach messages listener ---------- */
 function attachMessagesListener(){
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
   onSnapshot(q, snapshot => {
@@ -129,7 +129,7 @@ function attachMessagesListener(){
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
   if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
-  if(userData?.chatId) return userData.chatId;
+  if(userData?.chatId && !userData.chatId.startsWith("GUEST")) return userData.chatId;
 
   refs.chatIDInput.value = "";
   refs.chatIDModal.style.display = "flex";
@@ -138,7 +138,10 @@ async function promptForChatID(userRef, userData){
   return new Promise(resolve=>{
     refs.chatIDConfirmBtn.onclick = async ()=>{
       const chosenID = refs.chatIDInput.value.trim();
-      if(chosenID.length < 3 || chosenID.length > 12){ alert("Chat ID must be 3-12 characters"); return; }
+      if(chosenID.length < 3 || chosenID.length > 12){ 
+        alert("Chat ID must be 3-12 characters"); 
+        return; 
+      }
 
       const normalized = chosenID.toLowerCase();
       try{
@@ -156,35 +159,30 @@ async function promptForChatID(userRef, userData){
 
       refs.chatIDModal.style.display = "none";
       if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+      showStarPopup(`Welcome ${currentUser.chatId}! 🎉`);
       resolve(chosenID);
     };
   });
 }
 
-/* ---------- Login with whitelist ---------- */
-async function loginWhitelist(email, phone){
+/* ---------- Login ---------- */
+async function loginWhitelist(email, phone) {
   try {
     const q = query(collection(db, "whitelist"), where("email","==",email), where("phone","==",phone));
     const snap = await getDocs(q);
-    if(snap.empty){ alert("You’re not on the whitelist."); return false; }
+    if (snap.empty) { alert("You’re not on the whitelist."); return false; }
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
-
     let docSnap = await getDoc(userRef);
-    if(!docSnap.exists()){
+    if (!docSnap.exists()) {
       const guestName = generateGuestName();
       await setDoc(userRef, {
         chatId: guestName,
         chatIdLower: guestName.toLowerCase(),
-        stars: 50,
-        cash: 0,
-        usernameColor: randomColor(),
+        stars: 50, cash:0, usernameColor: randomColor(),
         lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false,
-        email,
-        phone,
-        createdAt: new Date()
+        isAdmin: false, email, phone, createdAt: new Date()
       });
       showStarPopup("🎉 Your account created with 50 stars!");
       docSnap = await getDoc(userRef);
@@ -193,27 +191,34 @@ async function loginWhitelist(email, phone){
     const data = docSnap.data() || {};
     currentUser = {
       uid: uidKey,
-      chatId: data.chatId,
-      chatIdLower: data.chatIdLower,
+      email, phone,
+      chatId: data.chatId || email,
+      chatIdLower: data.chatIdLower || (data.chatId || "").toLowerCase(),
       stars: data.stars || 0,
       cash: data.cash || 0,
       usernameColor: data.usernameColor || randomColor(),
-      isAdmin: data.isAdmin || false,
-      email
+      isAdmin: data.isAdmin || false
     };
 
     setupPresence(currentUser);
     attachMessagesListener();
-    await promptForChatID(userRef, data);
+
+    // Persist session
+    localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
+
+    // One-time ChatID modal
+    if(currentUser.chatId.startsWith("GUEST")) {
+      await promptForChatID(userRef, data);
+    }
 
     // UI updates
-    if(refs.authBox) refs.authBox.style.display = "none";
-    if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-    if(refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if(refs.profileNameEl){ refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
-    if(refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if(refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if(refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
+    if (refs.authBox) refs.authBox.style.display = "none";
+    if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+    if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
+    if (refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
+    if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
 
     return true;
 
@@ -245,7 +250,7 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- VIP login ---------- */
+  /* ---------- VIP login button ---------- */
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
@@ -260,7 +265,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Auto-login if VIP info stored
+  /* ---------- Auto-login from session ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
   if(vipUser?.email && vipUser?.phone){
     (async ()=>{
@@ -347,7 +352,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
 
-    // Auto-hide nav
     let hideTimeout;
     function showButtons(){
       navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
