@@ -468,26 +468,110 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Video nav / fade logic (from your snippet)
-  const video = document.getElementById("videoPlayer");
-  const navButtons = Array.from(document.querySelectorAll(".arrow"));
-  let fadeTimeout;
+/* ---------- Video navigation (fixed) ---------- */
+const videoPlayer = document.getElementById("videoPlayer");
+const videos = [
+  "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+  "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
+  "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"];
+let currentVideoIndex = 0;
 
-  function scheduleHideButtons() {
-    clearTimeout(fadeTimeout);
-    fadeTimeout = setTimeout(() => {
-      navButtons.forEach(btn => btn.classList.add("hidden"));
-    }, 5300);
-  }
+function loadVideo(index) {
+  if (!videoPlayer) return;
+  if (index < 0) index = videos.length - 1;
+  if (index >= videos.length) index = 0;
+  currentVideoIndex = index;
+  videoPlayer.src = videos[currentVideoIndex];
+  videoPlayer.muted = true;
+  videoPlayer.play().catch(() => { console.warn("Autoplay blocked"); });
+}
+
+// prev/next click
+document.getElementById("prev")?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+document.getElementById("next")?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+// toggle mute on click
+videoPlayer?.addEventListener("click", () => { 
+  if(videoPlayer) videoPlayer.muted = !videoPlayer.muted; 
+});
+
+loadVideo(0);
+
+// ---------- Auto fade logic ----------
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("video-container");
+  const prevBtn = document.getElementById("prev");
+  const nextBtn = document.getElementById("next");
+  if (!container || !prevBtn || !nextBtn) return;
+
+  // Transition setup
+  prevBtn.style.transition = "opacity 0.6s ease";
+  nextBtn.style.transition = "opacity 0.6s ease";
+
+  // Show at start
+  prevBtn.style.opacity = "1";
+  nextBtn.style.opacity = "1";
+
+  let hideTimeout;
+
   function showButtons() {
-    navButtons.forEach(btn => btn.classList.remove("hidden"));
-    scheduleHideButtons();
+    prevBtn.style.opacity = "1";
+    nextBtn.style.opacity = "1";
+    prevBtn.style.pointerEvents = "auto";
+    nextBtn.style.pointerEvents = "auto";
+
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      prevBtn.style.opacity = "0";
+      nextBtn.style.opacity = "0";
+      prevBtn.style.pointerEvents = "none";
+      nextBtn.style.pointerEvents = "none";
+    }, 3000); // auto-hide after 3s
   }
+
+  // Desktop: show on hover
+  container.addEventListener("mouseenter", showButtons);
+  container.addEventListener("mousemove", showButtons);
+  container.addEventListener("mouseleave", () => {
+    prevBtn.style.opacity = "0";
+    nextBtn.style.opacity = "0";
+  });
+
+  // Mobile: show on tap
+  container.addEventListener("click", showButtons);
+
+  // Initial auto-hide
+  hideTimeout = setTimeout(() => {
+    prevBtn.style.opacity = "0";
+    nextBtn.style.opacity = "0";
+    prevBtn.style.pointerEvents = "none";
+    nextBtn.style.pointerEvents = "none";
+  }, 3000);
+});
+const video = document.getElementById("videoPlayer");
+const navButtons = document.querySelectorAll(".arrow");
+let fadeTimeout;
+
+// hide nav buttons after 5.3s
+function scheduleHideButtons() {
+  clearTimeout(fadeTimeout);
+  fadeTimeout = setTimeout(() => {
+    navButtons.forEach(btn => btn.classList.add("hidden"));
+  }, 5300);
+}
+
+// show nav buttons immediately when video touched/clicked
+function showButtons() {
+  navButtons.forEach(btn => btn.classList.remove("hidden"));
   scheduleHideButtons();
-  if (video) {
-    video.addEventListener("click", showButtons);
-    video.addEventListener("touchstart", showButtons);
-  }
+}
 
-}); // end DOMContentLoaded
+// Start the cycle when page loads
+scheduleHideButtons();
 
+// Listen for clicks/taps on the video
+video.addEventListener("click", showButtons);
+video.addEventListener("touchstart", showButtons);
+</script>
+</body>
+</html>
