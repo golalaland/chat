@@ -301,6 +301,40 @@ function startStarEarning(uid) {
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
+// ---------- Star animation ----------
+function animateStars(originEl, count = 1) {
+  if (!originEl) return;
+
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement("div");
+    star.className = "floating-star";
+    star.innerText = "⭐️";
+
+    // Position at button/input
+    const rect = originEl.getBoundingClientRect();
+    star.style.position = "fixed";
+    star.style.left = `${rect.left + rect.width/2}px`;
+    star.style.top = `${rect.top}px`;
+    star.style.pointerEvents = "none";
+    star.style.fontSize = `${12 + Math.random()*12}px`;
+    star.style.opacity = 1;
+    star.style.transition = "transform 1s ease-out, opacity 1s ease-out";
+
+    document.body.appendChild(star);
+
+    // Animate to top of screen
+    setTimeout(() => {
+      const xMove = (Math.random() - 0.5) * 100; // horizontal drift
+      const yMove = -150 - Math.random()*100;    // vertical float
+      star.style.transform = `translate(${xMove}px, ${yMove}px) rotate(${Math.random()*360}deg)`;
+      star.style.opacity = 0;
+    }, 10);
+
+    // Remove after animation
+    setTimeout(() => star.remove(), 1100);
+  }
+}
+
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
 
