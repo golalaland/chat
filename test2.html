@@ -923,7 +923,6 @@ window.addEventListener("DOMContentLoaded", () => {
   // ---------- VIP login ----------
 async function vipLogin(email, phone) {
   try {
-    // 1. Check whitelist
     const q = query(
       collection(db, "whitelist"),
       where("email", "==", email),
@@ -936,28 +935,17 @@ async function vipLogin(email, phone) {
       return false;
     }
 
-    // 2. Sign in anonymously (Firebase Auth)
+    // sign in anonymously so Firebase rules are happy
     const result = await signInAnonymously(auth);
-    const uid = result.user.uid;
+    await finishLogin(result.user, { email, phone, isVIP: true });
+    return true;
 
-    // 3. Ensure user doc exists
-    const userRef = doc(db, "users", uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-      await setDoc(userRef, {
-        chatId: generateGuestName(),
-        chatIdLower: (generateGuestName()).toLowerCase(),
-        stars: 50,
-        cash: 0,
-        usernameColor: randomColor(),
-        lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false,
-        email,
-        phone,
-        isVIP: true,
-        createdAt: new Date()
-      });
-    }
+  } catch (err) {
+    console.error("VIP login error:", err);
+    alert("Something went wrong. Check console for details.");
+    return false;
+  }
+}
 
     // 4. Store VIP info locally (optional)
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
@@ -1095,6 +1083,36 @@ onAuthStateChanged(auth, async (user) => {
     if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }
     return;
   }
+  let currentUser = null; // unified current user object
+
+// ---------- Shared login finisher ----------
+async function finishLogin(user, extraData = {}) {
+  try {
+    const uid = user.uid || user.email; // Google gives email, Firebase anon gives uid
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+
+    if (!snap.exists()) {
+      await setDoc(userRef, {
+        chatId: generateGuestName(),
+        chatIdLower: generateGuestName().toLowerCase(),
+        stars: 50,
+        cash: 0,
+        usernameColor: randomColor(),
+        lastColorDate: new Date().toISOString().split("T")[0],
+        isAdmin: false,
+        createdAt: new Date(),
+        ...extraData
+      });
+    }
+
+    currentUser = { uid, ...snap.data(), ...extraData };
+    showAppUI(currentUser);
+
+  } catch (err) {
+    console.error("Finish login error:", err);
+  }
+}
 requestAnimationFrame(() => {
   const roomSubtitleEl = document.getElementById("roomSubtitle");
   if (roomSubtitleEl) {
