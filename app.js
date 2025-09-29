@@ -59,33 +59,6 @@ function showStarPopup(text){
 }
 function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 
-// <- Animate stars call js 
-function animateStarsToCounter(count = 5) {
-  if (!refs.starCountEl) return;
-  const counterRect = refs.starCountEl.getBoundingClientRect();
-
-  for (let i = 0; i < count; i++) {
-    const particle = document.createElement("div");
-    particle.className = "star-particle";
-    
-    particle.style.left = (window.innerWidth / 2 + (Math.random() * 100 - 50)) + "px";
-    particle.style.top = (window.innerHeight - 50 + Math.random() * 20 - 10) + "px";
-
-    document.body.appendChild(particle);
-
-    requestAnimationFrame(() => {
-      particle.style.left = counterRect.left + counterRect.width/2 + "px";
-      particle.style.top = counterRect.top + counterRect.height/2 + "px";
-      particle.style.transform = "scale(0.2)";
-      particle.style.opacity = "0";
-    });
-
-    setTimeout(() => {
-      particle.remove();
-    }, 600);
-  }
-}
-
 
 /* ---------- UI refs ---------- */
 let refs = {};
@@ -326,9 +299,6 @@ function startStarEarning(uid) {
         starsToday: increment(10),
         lastStarDate: today
       });
-
-      animateStarsToCounter(5); // spawn 5 flying star particles
-    }
 
   }, 60000); // every 60s
 
