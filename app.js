@@ -4,7 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot, query, orderBy, increment, getDocs, writeBatch, where
+  onSnapshot, query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
@@ -53,21 +53,24 @@ function showStarPopup(text){
   popup.style.display = "block";
   setTimeout(()=>{ popup.style.display = "none"; }, 1700);
 }
+function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 
 /* ---------- UI refs ---------- */
 let refs = {};
 
 /* ---------- Presence ---------- */
 function setupPresence(user){
-  if (!rtdb) return;
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${user.uid}`);
-  rtdbSet(pRef, true).catch(()=>{});
+  if(!rtdb) return;
+
+  const userKey = user.uid;
+  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${userKey}`);
+
+  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(()=>{});
   onDisconnect(pRef).remove().catch(()=>{});
-}
-if (rtdb){
+
   onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
     const val = snap.val() || {};
-    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
+    if(refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
   });
 }
 
@@ -111,7 +114,7 @@ function renderMessagesFromArray(arr){
   if(refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
 }
 
-/* ---------- Attach messages listener ---------- */
+/* ---------- Messages listener ---------- */
 function attachMessagesListener(){
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
   onSnapshot(q, snapshot => {
@@ -125,22 +128,64 @@ function attachMessagesListener(){
   });
 }
 
-/* ---------- Login ---------- */
-async function loginWhitelist(email, phone) {
-  try {
-    const q = query(collection(db, "whitelist"), where("email","==",email),where("phone","==",phone));
-    const snap = await getDocs(q);
-    if (snap.empty) { alert("You’re not on the whitelist."); return false; }
+/* ---------- ChatID modal ---------- */
+async function promptForChatID(userRef, userData){
+  if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
+  if(userData?.chatId) return userData.chatId;
 
-    const userRef = doc(db, "users", email);
+  refs.chatIDInput.value = "";
+  refs.chatIDModal.style.display = "flex";
+  if(refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
+
+  return new Promise(resolve=>{
+    refs.chatIDConfirmBtn.onclick = async ()=>{
+      const chosenID = refs.chatIDInput.value.trim();
+      if(chosenID.length < 3 || chosenID.length > 12){ alert("Chat ID must be 3-12 characters"); return; }
+
+      const normalized = chosenID.toLowerCase();
+      try{
+        const q = query(collection(db,"users"), where("chatIdLower","==",normalized));
+        const snap = await getDocs(q);
+        let conflict = false;
+        snap.forEach(docSnap => { if(docSnap.id !== userRef.id) conflict = true; });
+        if(conflict){ alert("This Chat ID is taken"); return; }
+
+        await updateDoc(userRef, { chatId: chosenID, chatIdLower: normalized });
+        currentUser.chatId = chosenID;
+        currentUser.chatIdLower = normalized;
+
+      } catch(e){ console.error(e); alert("Failed to save ChatID"); return; }
+
+      refs.chatIDModal.style.display = "none";
+      if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+      resolve(chosenID);
+    };
+  });
+}
+
+/* ---------- Login with whitelist ---------- */
+async function loginWhitelist(email, phone){
+  try {
+    const q = query(collection(db, "whitelist"), where("email","==",email), where("phone","==",phone));
+    const snap = await getDocs(q);
+    if(snap.empty){ alert("You’re not on the whitelist."); return false; }
+
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
+
     let docSnap = await getDoc(userRef);
-    if (!docSnap.exists()) {
+    if(!docSnap.exists()){
       await setDoc(userRef, {
         chatId: generateGuestName(),
         chatIdLower: generateGuestName().toLowerCase(),
-        stars: 50, cash:0, usernameColor: randomColor(),
+        stars: 50,
+        cash: 0,
+        usernameColor: randomColor(),
         lastColorDate: new Date().toISOString().split("T")[0],
-        isAdmin: false, email, phone, createdAt: new Date()
+        isAdmin: false,
+        email,
+        phone,
+        createdAt: new Date()
       });
       showStarPopup("🎉 Your account created with 50 stars!");
       docSnap = await getDoc(userRef);
@@ -148,27 +193,29 @@ async function loginWhitelist(email, phone) {
 
     const data = docSnap.data() || {};
     currentUser = {
-      uid: email,
-      chatId: data.chatId || email,
-      chatIdLower: data.chatIdLower || (data.chatId || "").toLowerCase(),
+      uid: uidKey,
+      chatId: data.chatId,
+      chatIdLower: data.chatIdLower,
       stars: data.stars || 0,
       cash: data.cash || 0,
       usernameColor: data.usernameColor || randomColor(),
-      isAdmin: data.isAdmin || false
+      isAdmin: data.isAdmin || false,
+      email
     };
 
-    setupPresence({ uid: currentUser.uid });
+    setupPresence(currentUser);
     attachMessagesListener();
+    await promptForChatID(userRef, data);
 
     // UI updates
-    if (refs.authBox) refs.authBox.style.display = "none";
-    if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-    if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if (refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
-    if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    if(refs.authBox) refs.authBox.style.display = "none";
+    if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+    if(refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
+    if(refs.profileNameEl){ refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
+    if(refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if(refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    if(refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
 
-    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
     return true;
 
   } catch(e){ console.error("login error", e); alert("Login failed"); return false; }
@@ -199,87 +246,29 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- ChatID modal for first-time users ---------- */
-async function promptForChatID(userRef, userData){
-  if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
-  if (userData?.chatId) return userData.chatId;
+  /* ---------- VIP Access / whitelist login button ---------- */
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
 
-  refs.chatIDInput.value = "";
-  refs.chatIDModal.style.display = "flex";
-  if (refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
+  if(loginBtn){
+    loginBtn.addEventListener("click", async ()=>{
+      const email = (emailInput.value||"").trim().toLowerCase();
+      const phone = (phoneInput.value||"").trim();
+      if(!email || !phone){ alert("Enter both email and phone"); return; }
 
-  return new Promise(resolve => {
-    refs.chatIDConfirmBtn.onclick = async () => {
-      const chosenID = refs.chatIDInput.value.trim();
-      if (chosenID.length < 3 || chosenID.length > 12) {
-        alert("Chat ID must be 3-12 characters");
-        return;
-      }
-      const normalized = chosenID.toLowerCase();
-      try {
-        const q = query(collection(db,"users"), where("chatIdLower","==",normalized));
-        const snap = await getDocs(q);
-        let conflict = false;
-        snap.forEach(docSnap => { if(docSnap.id !== userRef.id) conflict=true; });
-        if(conflict){ alert("This Chat ID is taken"); return; }
+      const loggedIn = await loginWhitelist(email, phone);
+      if(!loggedIn) return;
+    });
+  }
 
-        await updateDoc(userRef,{ chatId: chosenID, chatIdLower: normalized });
-      } catch(e){ console.error(e); alert("Failed to save. Try again."); return; }
-
-      refs.chatIDModal.style.display = "none";
-      if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-      location.reload(); // reload page to reflect new ChatID
-      resolve(chosenID);
-    };
-  });
-}
-
-/* ---------- VIP Access / whitelist login button ---------- */
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
-
-if(loginBtn){
-  loginBtn.addEventListener("click", async ()=>{
-    const email = (emailInput.value||"").trim().toLowerCase();
-    const phone = (phoneInput.value||"").trim();
-    if(!email || !phone){ alert("Enter both email and phone"); return; }
-
-    const loggedIn = await loginWhitelist(email, phone);
-    if(!loggedIn) return;
-
-    const userRef = doc(db,"users",email);
-    const snap = await getDoc(userRef);
-    await promptForChatID(userRef, snap.exists() ? snap.data() : {});
-  });
-}
-
-// Auto-login if VIP info stored
-const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-if(vipUser?.email && vipUser?.phone){
-  (async ()=>{
-    const loggedIn = await loginWhitelist(vipUser.email, vipUser.phone);
-    if(!loggedIn) return;
-    const userRef = doc(db,"users",vipUser.email);
-    const snap = await getDoc(userRef);
-    await promptForChatID(userRef, snap.exists() ? snap.data() : {});
-  })();
-}
-
-
-  /* ---------- Hello text rotation ---------- */
-  const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
-  let helloIndex = 0;
-  const helloEl = document.getElementById("helloText");
-  setInterval(()=>{
-    if(!helloEl) return;
-    helloEl.style.opacity='0';
-    setTimeout(()=>{
-      helloEl.innerText = greetings[helloIndex++ % greetings.length];
-      helloEl.style.color = randomColor();
-      helloEl.style.opacity='1';
-    },220);
-  },1500);
+  // Auto-login if VIP info stored
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if(vipUser?.email && vipUser?.phone){
+    (async ()=>{
+      await loginWhitelist(vipUser.email, vipUser.phone);
+    })();
+  }
 
   /* ---------- Send & Buzz ---------- */
   refs.sendBtn?.addEventListener("click", async ()=>{
@@ -306,7 +295,7 @@ if(vipUser?.email && vipUser?.phone){
 
     const userRef = doc(db,"users",currentUser.uid);
     const snap = await getDoc(userRef);
-    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
+    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars to create BUZZ!");
 
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
     await addDoc(collection(db,CHAT_COLLECTION), {
@@ -314,8 +303,10 @@ if(vipUser?.email && vipUser?.phone){
       timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
     });
     refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent!");
+    showStarPopup("BUZZ sent🚨!");
   });
+
+});
 
   /* ---------- Video nav & fade ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
