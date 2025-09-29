@@ -923,6 +923,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // ---------- VIP login ----------
 async function vipLogin(email, phone) {
   try {
+    // 1. Check whitelist
     const q = query(
       collection(db, "whitelist"),
       where("email", "==", email),
@@ -930,42 +931,56 @@ async function vipLogin(email, phone) {
     );
     const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty) {
-      // Use email as doc ID since no Auth UID exists
-      const userRef = doc(db, "users", email);
-      const snap = await getDoc(userRef);
-
-      if (!snap.exists()) {
-        await setDoc(userRef, {
-          chatId: generateGuestName(),
-          chatIdLower: (generateGuestName()).toLowerCase(),
-          stars: 50,
-          cash: 0,
-          usernameColor: randomColor(),
-          lastColorDate: new Date().toISOString().split("T")[0],
-          isAdmin: false,
-          lastStarReset: Date.now(),
-          email,
-          phone,
-          createdAt: new Date()
-        });
-      }
-
-      const vipUser = { email, phone };
-      localStorage.setItem("vipUser", JSON.stringify(vipUser));
-
-      showAppUI(vipUser);
-      return true;
-    } else {
-      alert("Sorry, you are not on the VIP whitelist.");
+    if (querySnapshot.empty) {
+      alert("❌ Sorry, you are not on the VIP whitelist.");
       return false;
     }
+
+    // 2. Sign in anonymously (Firebase Auth)
+    const result = await signInAnonymously(auth);
+    const uid = result.user.uid;
+
+    // 3. Ensure user doc exists
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) {
+      await setDoc(userRef, {
+        chatId: generateGuestName(),
+        chatIdLower: (generateGuestName()).toLowerCase(),
+        stars: 50,
+        cash: 0,
+        usernameColor: randomColor(),
+        lastColorDate: new Date().toISOString().split("T")[0],
+        isAdmin: false,
+        email,
+        phone,
+        isVIP: true,
+        createdAt: new Date()
+      });
+    }
+
+    // 4. Store VIP info locally (optional)
+    localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
+
+    // ✅ Done — Firebase `onAuthStateChanged` will trigger automatically
+    return true;
+
   } catch (err) {
     console.error("VIP login error:", err);
     alert("Something went wrong. Check console for details.");
     return false;
   }
 }
+
+// Example button handler
+document.getElementById("vipLoginBtn")?.addEventListener("click", async () => {
+  const email = document.getElementById("vipEmail").value.trim();
+  const phone = document.getElementById("vipPhone").value.trim();
+  if (!email || !phone) return alert("Please enter both email and phone");
+
+  await vipLogin(email, phone);
+});
+  
   // ---------- Login button ----------
   if (loginBtn) {
     loginBtn.addEventListener("click", async () => {
