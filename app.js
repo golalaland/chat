@@ -5,7 +5,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot, query, orderBy, increment, getDocs, where
+  onSnapshot
+  , query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
@@ -257,24 +258,34 @@ if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
   }
 }
 
-/* ---------- Stars auto-earning ---------- */
-function startStarEarning(uid) {
-  if (!uid) return;
+/* ---------- Smooth live stars ---------- */
+function setupSmoothStars(uid) {
+  if (!uid || !refs.starCountEl) return;
   const userRef = doc(db, "users", uid);
+  let displayedStars = currentUser.stars || 0;
 
-  // Live sync stars + UI updates
+  // Update UI smoothly
+  function updateDisplay(target) {
+    const diff = target - displayedStars;
+    if (Math.abs(diff) < 1) return displayedStars = target;
+    displayedStars += diff * 0.2; // adjust speed here
+    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
+    requestAnimationFrame(() => updateDisplay(target));
+  }
+
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
-    const data = snap.data();
-    currentUser.stars = data.stars || 0;
+    const newStars = snap.data().stars || 0;
 
-    if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    // Animate toward new value
+    updateDisplay(newStars);
 
-    // Milestone popup every 1,000 stars
-    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
+    // Optional: milestone popup
+    if (newStars > 0 && newStars % 1000 === 0) {
+      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(newStars)} stars!`);
     }
   });
+}
 
   // Increment stars every 60s if online
   const starInterval = setInterval(async () => {
