@@ -444,7 +444,7 @@ window.addEventListener("DOMContentLoaded", () => {
     },220);
   },1500);
 
- /* ---------- Video nav & fade with looping & resume ---------- */
+ /* ---------- Video nav & safe loop ---------- */
 const videoPlayer = document.getElementById("videoPlayer");
 const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
@@ -459,62 +459,77 @@ if (videoPlayer && navButtons.length) {
   ];
 
   let currentVideoIndex = 0;
-  let lastTime = 0; // stores last playback time
+  const lastTime = Array(videos.length).fill(0); // last playback position per video
 
-  function loadVideo(index, resumeTime = 0) {
+  function loadVideo(index) {
     if (index < 0) index = videos.length - 1;
     if (index >= videos.length) index = 0;
     currentVideoIndex = index;
 
-    // Only change src if different video
+    // Only change src if different to avoid reload flicker
     if (videoPlayer.src !== videos[currentVideoIndex]) {
       videoPlayer.src = videos[currentVideoIndex];
-    }
+      videoPlayer.muted = true;
 
-    videoPlayer.muted = true;
-    videoPlayer.currentTime = resumeTime;
-    videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
+      videoPlayer.addEventListener("loadedmetadata", function resumeTime() {
+        videoPlayer.currentTime = lastTime[currentVideoIndex] || 0;
+        videoPlayer.play().catch(() => console.warn("Autoplay blocked"));
+        videoPlayer.removeEventListener("loadedmetadata", resumeTime);
+      });
+    }
   }
 
-  // Next / Prev handlers
-  prevBtn?.addEventListener("click", () => {
-    lastTime = videoPlayer.currentTime;
-    loadVideo(currentVideoIndex - 1, lastTime);
-  });
-  nextBtn?.addEventListener("click", () => {
-    lastTime = videoPlayer.currentTime;
-    loadVideo(currentVideoIndex + 1, lastTime);
-  });
-
-  // Loop video automatically
+  // Auto-loop when video ends
   videoPlayer.addEventListener("ended", () => {
-    loadVideo(currentVideoIndex, 0); // restart same video from 0
+    loadVideo(currentVideoIndex + 1);
   });
 
-  // Toggle mute on click
-  videoPlayer.addEventListener("click", () => { videoPlayer.muted = !videoPlayer.muted; });
+  // Save current time periodically
+  setInterval(() => {
+    lastTime[currentVideoIndex] = videoPlayer.currentTime;
+  }, 1000);
 
-  // Nav button fade
+  // Nav buttons
+  prevBtn?.addEventListener("click", () => loadVideo(currentVideoIndex - 1));
+  nextBtn?.addEventListener("click", () => loadVideo(currentVideoIndex + 1));
+
+  // Mute toggle
+  videoPlayer.addEventListener("click", () => {
+    videoPlayer.muted = !videoPlayer.muted;
+  });
+
+  // Fade nav buttons
   let hideTimeout;
   function showButtons() {
-    navButtons.forEach(btn => { btn.style.opacity = "1"; btn.style.pointerEvents = "auto"; });
+    navButtons.forEach(btn => {
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
+    });
     clearTimeout(hideTimeout);
     hideTimeout = setTimeout(() => {
-      navButtons.forEach(btn => { btn.style.opacity = "0"; btn.style.pointerEvents = "none"; });
+      navButtons.forEach(btn => {
+        btn.style.opacity = "0";
+        btn.style.pointerEvents = "none";
+      });
     }, 3000);
   }
+
   navButtons.forEach(btn => {
     btn.style.transition = "opacity 0.6s";
     btn.style.opacity = "0";
     btn.style.pointerEvents = "none";
   });
+
   container?.addEventListener("mouseenter", showButtons);
   container?.addEventListener("mousemove", showButtons);
   container?.addEventListener("mouseleave", () => {
-    navButtons.forEach(btn => { btn.style.opacity = "0"; btn.style.pointerEvents = "none"; });
+    navButtons.forEach(btn => {
+      btn.style.opacity = "0";
+      btn.style.pointerEvents = "none";
+    });
   });
   container?.addEventListener("click", showButtons);
 
-  // Load initial video
-  loadVideo(0);
+  // Start first video
+  loadVideo(currentVideoIndex);
 }
