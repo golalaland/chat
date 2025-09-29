@@ -661,6 +661,7 @@ async function assignDailyUsernameColor(userRef, data){
   }
 }
 
+/* ---------- Chat ID modal (case-insensitive uniqueness) ---------- */
 /* ---------- Chat ID modal (case-insensitive uniqueness, reload after set) ---------- */
 async function promptForChatIDModal(userRef, userData){
   if(!chatIDModal || !chatIDInput || !chatIDConfirmBtn) return userData?.chatId || null;
@@ -730,6 +731,31 @@ rotateHello();
 helloInterval = setInterval(rotateHello, 1500);
 
 /* ---------- Robust Google sign-in (popup then redirect) ---------- */
+if (googleBtn) {
+  googleBtn.addEventListener("click", async () => {
+    const provider = new GoogleAuthProvider();
+    try { await setPersistence(auth, browserLocalPersistence); } catch (pErr) { console.warn("persistence set failed", pErr); }
+    try {
+      await signInWithPopup(auth, provider);
+      return;
+    } catch (err) {
+      console.warn("signInWithPopup error:", err);
+      if (["auth/popup-blocked","auth/popup-closed-by-user","auth/cancelled-popup-request","auth/web-storage-unsupported"].includes(err.code)) {
+        try { await signInWithRedirect(auth, provider); return; }
+        catch (rErr) { console.error("redirect failed", rErr); alert("Sign-in failed: " + (rErr.message || rErr)); return; }
+      }
+      if (err.code === "auth/operation-not-allowed") {
+        alert("Enable Google sign-in in Firebase Console -> Authentication -> Sign-in method.");
+        return;
+      }
+      if (err.code === "auth/unauthorized-domain") {
+        alert("This domain is not authorized for OAuth. Add your domain in Firebase Console -> Authentication -> Authorized domains.");
+        return;
+      }
+      alert("Sign-in failed: " + (err.message || err));
+    }
+  });
+}
 
 /* ---------- Message rendering (full redraw helper) ---------- */
 function renderMessagesFromArray(arr){
@@ -874,35 +900,31 @@ window.addEventListener("DOMContentLoaded", () => {
 
   let currentUser = null;
 
-// ---------- DOM elements ----------
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
+  // ---------- UI update ----------
+  function showAppUI(user) {
+    const authBox = document.getElementById("authBox");
+    const emailWrapper = document.getElementById("emailAuthWrapper");
+    const sendArea = document.getElementById("sendArea");
+    const profileBox = document.getElementById("profileBox");
 
-let currentUser = null; // unified current user object
+    if (authBox) authBox.style.display = "none";
+    if (emailWrapper) emailWrapper.style.display = "none";
+    if (sendArea) sendArea.style.display = "flex";
+    if (profileBox) profileBox.style.display = "flex";
 
-// ---------- Unified UI update ----------
-function showAppUI(user) {
-  // safely get elements
-  const authBox = document.getElementById("authBox");
-  const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-  const sendArea = document.getElementById("sendArea");
-  const profileBox = document.getElementById("profileBox");
-  const usernameDisplay = document.getElementById("usernameDisplay");
-  const starsDisplay = document.getElementById("starsDisplay");
+    usernameDisplay.textContent = user.chatId || user.email || "User";
+    starsDisplay.textContent = `Stars: ${user.stars || 0} ⭐️`;
 
-  if (authBox) authBox.style.display = "none";
-  if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
-  if (sendArea) sendArea.style.display = "flex";
-  if (profileBox) profileBox.style.display = "flex";
-  if (usernameDisplay) usernameDisplay.textContent = user.email || user.displayName || "VIP User";
-  if (starsDisplay) starsDisplay.textContent = `Stars Balance: ${user.stars ?? 0} ⭐️`;
+    // Show Change Chat ID button if not used yet
+    if (!localStorage.getItem("chatIdChanged")) {
+      changeChatBtn.style.display = "block";
+    }
 
-  currentUser = user;
-  console.log(`Logged in as ${user.email || user.displayName}`);
-}
+    currentUser = user;
+    console.log(`Logged in as ${user.email || user.chatId}`);
+  }
 
-// ---------- VIP login function ----------
+  // ---------- VIP login ----------
 async function vipLogin(email, phone) {
   try {
     const q = query(
@@ -913,23 +935,27 @@ async function vipLogin(email, phone) {
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      // Check if user doc exists, if not create it
-      const userRef = doc(db, "users", email); // using email as doc ID
+      // Use email as doc ID since no Auth UID exists
+      const userRef = doc(db, "users", email);
       const snap = await getDoc(userRef);
+
       if (!snap.exists()) {
         await setDoc(userRef, {
           chatId: generateGuestName(),
-          chatIdLower: generateGuestName().toLowerCase(),
+          chatIdLower: (generateGuestName()).toLowerCase(),
           stars: 50,
           cash: 0,
           usernameColor: randomColor(),
           lastColorDate: new Date().toISOString().split("T")[0],
           isAdmin: false,
-          lastStarReset: Date.now()
+          lastStarReset: Date.now(),
+          email,
+          phone,
+          createdAt: new Date()
         });
       }
 
-      const vipUser = { email, phone, stars: 50 }; // include stars for display
+      const vipUser = { email, phone };
       localStorage.setItem("vipUser", JSON.stringify(vipUser));
 
       showAppUI(vipUser);
@@ -944,8 +970,40 @@ async function vipLogin(email, phone) {
     return false;
   }
 }
+  // ---------- Login button ----------
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim().toLowerCase();
+      const phone = phoneInput.value.replace(/\s+/g, "");
+      if (!email || !phone) return alert("Enter both email and phone.");
+      await vipLogin(email, phone);
+    });
+  }
 
+  // ---------- Auto-login ----------
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if (vipUser && vipUser.email && vipUser.phone) {
+    vipLogin(vipUser.email, vipUser.phone); // async non-blocking
+  }
 
+  // ---------- Change Chat ID once ----------
+  if (changeChatBtn) {
+    changeChatBtn.addEventListener("click", async () => {
+      if (!currentUser) return;
+      const newChatId = prompt("Enter new chat ID:");
+      if (!newChatId) return;
+
+      // update Firestore user doc
+      const userRef = doc(db, "users", currentUser.email);
+      await updateDoc(userRef, { chatId: newChatId });
+
+      // update local state + hide button
+      currentUser.chatId = newChatId;
+      usernameDisplay.textContent = newChatId;
+      changeChatBtn.style.display = "none";
+      localStorage.setItem("chatIdChanged", "true");
+    });
+  }
 
   // ---------- Google Sign-In ----------
   window.onGoogleSignIn = function(googleUser) {
@@ -997,104 +1055,6 @@ async function tryGiveStar(userRef, data, amount = 1) {
   return true;
 }
 
-// ---------- DOM elements ----------
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
-
-let currentUser = null; // single source of truth
-
-// ---------- Unified UI update ----------
-function showAppUI(user) {
-  document.getElementById("authBox").style.display = "none";
-  document.getElementById("emailAuthWrapper").style.display = "none";
-  document.getElementById("sendArea").style.display = "flex";
-  document.getElementById("profileBox").style.display = "flex";
-
-  currentUser = user;
-  console.log(`Logged in as ${user.email}`);
-}
-
-// ---------- VIP login function ----------
-async function vipLogin(email, phone) {
-  try {
-    // Query whitelist
-    const q = query(
-      collection(db, "whitelist"),
-      where("email", "==", email),
-      where("phone", "==", phone)
-    );
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      // Create/get user profile
-      const userRef = doc(db, "users", email);
-      const snap = await getDoc(userRef);
-
-      if (!snap.exists()) {
-        await setDoc(userRef, {
-          email,
-          phone,
-          chatId: generateGuestName(),
-          chatIdLower: generateGuestName().toLowerCase(),
-          stars: 50,
-          cash: 0,
-          usernameColor: randomColor(),
-          lastColorDate: new Date().toISOString().split("T")[0],
-          isAdmin: false,
-          lastStarReset: Date.now(),
-          createdAt: new Date()
-        });
-      }
-
-      const vipUser = { email, phone };
-      localStorage.setItem("vipUser", JSON.stringify(vipUser));
-
-      showAppUI(vipUser);
-      return true;
-    } else {
-      alert("❌ Sorry, you are not on the VIP whitelist.");
-      return false;
-    }
-  } catch (err) {
-    console.error("VIP login error:", err);
-    alert("Something went wrong. Try again.");
-    return false;
-  }
-}
-
-// ---------- Login button click ----------
-if (loginBtn) {
-  loginBtn.addEventListener("click", async () => {
-    const email = emailInput.value.trim().toLowerCase();
-    const phone = phoneInput.value.replace(/\s+/g, "");
-    if (!email || !phone) {
-      alert("Enter both email and phone number.");
-      return;
-    }
-    await vipLogin(email, phone);
-  });
-}
-
-// ---------- VIP auto-login ----------
-window.addEventListener("load", async () => {
-  try {
-    if (!currentUser) {
-      const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-      if (vipUser && vipUser.email && vipUser.phone) {
-        await vipLogin(vipUser.email, vipUser.phone);
-      }
-    }
-  } catch (e) {
-    console.warn("VIP auto-login failed", e);
-  }
-});
-
-// ---------- Placeholder for Google (disabled) ----------
-function onGoogleSignIn() {
-  alert("🔒 Google Sign-In is disabled in this version.");
-}
-  
 /* ---------- Auto-star regen (server reads/writes) ---------- */
 setInterval(async () => {
   if(!currentUser) return;
