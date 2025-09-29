@@ -263,19 +263,20 @@ function startStarEarning(uid) {
   if (!uid) return;
   const userRef = doc(db, "users", uid);
 
-  // Smooth star display state
-  let displayedStars = 0;
+  let displayedStars = currentUser.stars || 0;
+  let animationTimeout = null;
 
-  // Smooth animation function
   function updateStarDisplay(target) {
     if (!refs.starCountEl) return;
     const diff = target - displayedStars;
-    if (diff === 0) return;
-    const step = Math.ceil(diff / 5); // animate in 5 frames
-    displayedStars += step;
-    if (displayedStars > target) displayedStars = target;
-    refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
-    if (displayedStars !== target) requestAnimationFrame(() => updateStarDisplay(target));
+    if (Math.abs(diff) < 1) {
+      displayedStars = target;
+      refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
+      return;
+    }
+    displayedStars += diff * 0.3; // smooth step
+    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
+    animationTimeout = setTimeout(() => updateStarDisplay(target), 50); // 20fps is enough
   }
 
   // Live Firestore sync
@@ -283,11 +284,11 @@ function startStarEarning(uid) {
     if (!snap.exists()) return;
     const data = snap.data();
     const targetStars = data.stars || 0;
-
-    // Update displayed number smoothly
-    updateStarDisplay(targetStars);
-
     currentUser.stars = targetStars;
+
+    // Smooth update
+    if (animationTimeout) clearTimeout(animationTimeout);
+    updateStarDisplay(targetStars);
 
     // Milestone popup every 1,000 stars
     if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
@@ -295,16 +296,15 @@ function startStarEarning(uid) {
     }
   });
 
-  // Increment stars every 60s if online
+  // Increment stars every 60s
   starInterval = setInterval(async () => {
-    if (!navigator.onLine) return; // STOP if offline
+    if (!navigator.onLine) return;
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
 
     const data = snap.data();
     const today = new Date().toISOString().split("T")[0];
 
-    // Reset daily starsToday if new day
     if (data.lastStarDate !== today) {
       await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
       return;
@@ -316,9 +316,8 @@ function startStarEarning(uid) {
         starsToday: increment(10)
       });
     }
-  }, 60000); // every 60s
+  }, 60000);
 
-  // Stop interval on page unload
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
