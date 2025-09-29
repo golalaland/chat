@@ -13,14 +13,12 @@
   --btn-bg: #ff33cc; 
   --btn-text: #fff;
 }
-
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
-
 header {
   background: var(--card-bg);
   padding: 1rem 2rem;
@@ -29,13 +27,11 @@ header {
   border-bottom: 1px solid #ddd;
   text-align: center;
 }
-
 #user-info {
   display: flex;
   justify-content: center;
   padding: 1rem;
 }
-
 .profile-card {
   background: var(--card-bg);
   padding: 1rem 2rem;
@@ -44,42 +40,35 @@ header {
   text-align: center;
   min-width: 280px;
 }
-
 #username {
   font-weight: bold;
   font-size: 1.3rem;
   margin-bottom: 0.8rem;
 }
-
 .balances {
   display: flex;
   justify-content: center;
   gap: 2rem;
   flex-wrap: wrap;
 }
-
 .balance-item {
   text-align: center;
 }
-
 .balance-label {
   font-size: 0.9rem;
   color: #555;
   margin-bottom: 0.2rem;
 }
-
 .balance-value {
   font-size: 1.1rem;
   font-weight: bold;
 }
-
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   padding: 1rem 2rem;
 }
-
 .product-card {
   background: var(--card-bg);
   border-radius: 10px;
@@ -91,18 +80,15 @@ header {
   transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
 }
-
 .product-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
-
 .product-card img {
   width: 100%;
   height: 150px;
   object-fit: cover;
 }
-
 .availability-badge {
   position: absolute;
   top: 8px;
@@ -115,23 +101,19 @@ header {
   border-radius: 4px;
   z-index: 2;
 }
-
 .product-info {
   padding: 0.8rem;
   text-align: center;
 }
-
 .product-name {
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
-
 .product-cost {
   color: var(--accent);
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
-
 .buy-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -144,11 +126,9 @@ header {
   border-radius: 5px;
   transition: background 0.2s;
 }
-
 .buy-btn:hover {
   background: #ff66d6;
 }
-
 #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -162,7 +142,6 @@ header {
   display: block;
   margin: 1rem auto;
 }
-
 #home-btn:hover {
   background: #ff66d6;
 }
@@ -190,48 +169,40 @@ header {
 
 <div class="shop-grid" id="shop-items"></div>
 
-<button id="home-btn">Take Me Home</button>
+<button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
 <script type="module">
+// ---------- Firebase ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, getDocs, getDoc, updateDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-const db = getFirestore();
-
-const shopItemsEl = document.getElementById('shop-items');
-const starsCountEl = document.getElementById('stars-count');
-const cashCountEl = document.getElementById('cash-count');
+// ---------- DOM Refs ----------
 const usernameEl = document.getElementById('username');
+const starsEl = document.getElementById('stars-count');
+const cashEl = document.getElementById('cash-count');
+const shopItemsEl = document.getElementById('shop-items');
 
-let currentUser = null;
+// ---------- Utilities ----------
+function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 
-// ---------- Load current user from localStorage ----------
-async function loadCurrentUser() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (!vipUser?.email) return;
-
-  const uidKey = vipUser.email.replace(/[.#$[\]]/g, ','); // sanitize
-  const userRef = doc(db, "users", uidKey);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return;
-
-  const data = snap.data();
-  currentUser = {
-    uid: uidKey,
-    chatId: data.chatId || "Guest",
-    stars: data.stars || 0,
-    cash: data.cash || 0
-  };
-
-  usernameEl.textContent = currentUser.chatId;
-  starsCountEl.textContent = `${currentUser.stars} ⭐️`;
-  cashCountEl.textContent = `₦${currentUser.cash}`;
-}
-
-// ---------- Render products ----------
-function createProductCard(item) {
+// ---------- Render Shop ----------
+function createProductCard(item){
   const card = document.createElement('div');
-  card.classList.add('product-card');
+  card.className = 'product-card';
   card.innerHTML = `
     <img src="${item.img}" alt="${item.name}">
     <div class="availability-badge">${item.available} left</div>
@@ -241,47 +212,76 @@ function createProductCard(item) {
       <button class="buy-btn">Buy</button>
     </div>
   `;
+  const btn = card.querySelector('.buy-btn');
+  btn.addEventListener('click', async ()=>{
+    if(!currentUser){ alert("Not logged in"); return; }
+    if(currentUser.stars < item.cost){ alert("Not enough stars"); return; }
 
-  card.querySelector('.buy-btn').addEventListener('click', async () => {
-    if (!currentUser) return alert("User not loaded");
-    if (currentUser.stars < item.cost) return alert("Not enough stars");
-
-    const userRef = doc(db, "users", currentUser.uid);
-    await updateDoc(userRef, { stars: increment(-item.cost) });
+    // Deduct stars
     currentUser.stars -= item.cost;
-    starsCountEl.textContent = `${currentUser.stars} ⭐️`;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    const userRef = doc(db, 'users', currentUser.uid);
+    await updateDoc(userRef, { stars: increment(-item.cost) });
 
-    // Record purchase
-    await updateDoc(doc(collection(userRef, "purchases")), {
-      itemId: item.id,
-      name: item.name,
-      cost: item.cost,
-      timestamp: new Date()
+    // Add purchase record
+    const purchasesRef = doc(db, 'users', currentUser.uid, 'Purchases', item.id.toString());
+    await updateDoc(purchasesRef, { 
+      name: item.name, 
+      cost: item.cost, 
+      timestamp: new Date(), 
+      img: item.img 
+    }).catch(async()=>{
+      // Create doc if it doesn't exist
+      await updateDoc(purchasesRef, { name: item.name, cost: item.cost, timestamp: new Date(), img: item.img });
     });
 
     alert(`Purchased ${item.name}!`);
   });
-
   return card;
 }
 
-// ---------- Load shop items ----------
-async function loadShop() {
-  const snap = await getDocs(collection(db, "ShopItems"));
-  shopItemsEl.innerHTML = '';
-  snap.forEach(docSnap => {
-    shopItemsEl.appendChild(createProductCard(docSnap.data()));
+async function renderShop(){
+  shopItemsEl.innerHTML='';
+  const querySnap = await getDocs(collection(db, 'ShopItems'));
+  const items = [];
+  querySnap.forEach(docSnap=>{
+    const data = docSnap.data();
+    items.push({ id: docSnap.id, ...data });
+  });
+  items.forEach(item=>shopItemsEl.appendChild(createProductCard(item)));
+}
+
+// ---------- Load current VIP user ----------
+let currentUser = null;
+async function loadCurrentUser(){
+  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
+  if(!vipSession?.email) return;
+  const uid = sanitizeKey(vipSession.email);
+  const userRef = doc(db, 'users', uid);
+
+  const snap = await getDoc(userRef);
+  if(!snap.exists()) return;
+
+  currentUser = { uid, ...snap.data() };
+  usernameEl.textContent = currentUser.chatId || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+
+  renderShop();
+
+  // Real-time listener for stars/cash changes
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    currentUser.stars = data.stars || 0;
+    currentUser.cash = data.cash || 0;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
   });
 }
 
-// ---------- Initialize ----------
-window.addEventListener("DOMContentLoaded", async () => {
-  await loadCurrentUser();
-  await loadShop();
+loadCurrentUser();
+</script>
 
-  document.getElementById('home-btn').addEventListener('click', () => {
-    window.location.href = "index.html";
-  });
-});
-</script> 
-
+</body>
+</html>
