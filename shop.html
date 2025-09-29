@@ -8,7 +8,7 @@
 :root {
   --bg: #f5f5f5;
   --card-bg: #fff;
-  --accent: #ff33cc; /* neon pink for cost and buttons */
+  --accent: #ff33cc; /* accent for cost/buttons */
   --text: #000;
   --btn-bg: #ff33cc; 
   --btn-text: #fff;
@@ -19,6 +19,7 @@ body {
   font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
+  text-align: center;
 }
 
 header {
@@ -27,16 +28,27 @@ header {
   font-size: 1.8rem;
   font-weight: bold;
   border-bottom: 1px solid #ddd;
-  text-align: center;
 }
 
 #user-info {
-  text-align: center;
   padding: 1rem;
 }
 
-#user-info div {
-  margin: 0.2rem 0;
+#user-info #username {
+  font-weight: bold;
+  font-size: 1.5rem;
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: 5px;
+  background: #000;
+  color: #fff;
+}
+
+#user-info #stars-count {
+  display: block;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
 }
 
 .shop-grid {
@@ -54,8 +66,8 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
   transition: transform 0.2s, box-shadow 0.2s;
-  position: relative; /* needed for badge */
 }
 
 .product-card:hover {
@@ -75,11 +87,10 @@ header {
   right: 8px;
   background: var(--accent);
   color: #fff;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: bold;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
-  z-index: 2;
 }
 
 .product-info {
@@ -89,7 +100,7 @@ header {
 
 .product-name {
   font-weight: bold;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .product-cost {
@@ -115,7 +126,6 @@ header {
   background: #ff66d6;
 }
 
-/* Take Me Home button */
 #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -125,6 +135,7 @@ header {
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
+  margin: 1rem 0;
   transition: background 0.2s;
 }
 
@@ -138,113 +149,17 @@ header {
 <header>乂丨乂丨Redeem</header>
 
 <div id="user-info">
-  <div style="font-weight:bold; font-size:1.3rem; background:#000; color:#fff; display:inline-block; padding:0.2rem 0.5rem; border-radius:4px;">
-    CHATID: <span id="chat-id">12345</span>
-  </div>
-  <div style="font-size:0.9rem; font-weight:bold;">
-    Stars Balance: <span style="font-weight:300;" id="stars-count">0</span>
-  </div>
+  <div id="username">USERNAME</div>
+  <div id="stars-count">0 ⭐️</div>
 </div>
 
-<div class="shop-grid" id="shop-items"></div>
+<div class="shop-grid" id="shop-items">
+  <!-- Product cards will be injected here -->
+</div>
 
 <div style="text-align:center; padding:1rem;">
   <button id="home-btn">Take Me Home</button>
 </div>
-
-<script>
-// Full 18 products with availability
-const shopItems = [
-  { id: 1, name: "VIP Pass", cost: 50, img: "https://via.placeholder.com/150", available: 12 },
-  { id: 2, name: "Glow Badge", cost: 20, img: "https://via.placeholder.com/150", available: 8 },
-  { id: 3, name: "Special Emoji Pack", cost: 10, img: "https://via.placeholder.com/150", available: 15 },
-  { id: 4, name: "Custom Avatar", cost: 100, img: "https://via.placeholder.com/150", available: 5 },
-  { id: 5, name: "Premium Sticker Set", cost: 30, img: "https://via.placeholder.com/150", available: 10 },
-  { id: 6, name: "Chat Highlight", cost: 40, img: "https://via.placeholder.com/150", available: 6 },
-  { id: 7, name: "Profile Frame", cost: 25, img: "https://via.placeholder.com/150", available: 14 },
-  { id: 8, name: "VIP Emote", cost: 15, img: "https://via.placeholder.com/150", available: 20 },
-  { id: 9, name: "Secret Room Pass", cost: 200, img: "https://via.placeholder.com/150", available: 2 },
-  { id: 10, name: "Daily Booster", cost: 35, img: "https://via.placeholder.com/150", available: 7 },
-  { id: 11, name: "Exclusive Wallpaper", cost: 45, img: "https://via.placeholder.com/150", available: 9 },
-  { id: 12, name: "VIP Badge Animation", cost: 60, img: "https://via.placeholder.com/150", available: 4 },
-  { id: 13, name: "Gift Pack", cost: 55, img: "https://via.placeholder.com/150", available: 11 },
-  { id: 14, name: "Mystery Box", cost: 70, img: "https://via.placeholder.com/150", available: 3 },
-  { id: 15, name: "Lucky Spin Token", cost: 80, img: "https://via.placeholder.com/150", available: 5 },
-  { id: 16, name: "Custom Chat Theme", cost: 90, img: "https://via.placeholder.com/150", available: 6 },
-  { id: 17, name: "Flash Spotlight", cost: 120, img: "https://via.placeholder.com/150", available: 2 },
-  { id: 18, name: "Ultra VIP Pass", cost: 250, img: "https://via.placeholder.com/150", available: 1 }
-];
-
-const starsCountEl = document.getElementById('stars-count');
-const shopItemsEl = document.getElementById('shop-items');
-
-function createProductCard(item) {
-  const card = document.createElement('div');
-  card.classList.add('product-card');
-  card.innerHTML = `
-    <img src="${item.img}" alt="${item.name}">
-    <div class="availability-badge">${item.available} left</div>
-    <div class="product-info">
-      <div class="product-name">${item.name}</div>
-      <div class="product-cost">${item.cost} ⭐</div>
-      <button class="buy-btn">Buy</button>
-    </div>
-  `;
-  
-  const buyBtn = card.querySelector('.buy-btn');
-  buyBtn.addEventListener('click', () => buyItem(item, card));
-  
-  return card;
-}
-
-function renderShop() {
-  shopItemsEl.innerHTML = '';
-  shopItems.forEach(item => shopItemsEl.appendChild(createProductCard(item)));
-}
-
-// Load stars from chatroom backend
-async function loadUser() {
-  try {
-    const res = await fetch('/api/user'); // replace with your backend endpoint
-    const data = await res.json();
-    starsCountEl.innerText = data.stars;
-  } catch(err) {
-    console.error("Failed to load user:", err);
-  }
-}
-
-// Buy product and update stars
-async function buyItem(item, card) {
-  try {
-    const res = await fetch('/api/buy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itemId: item.id })
-    });
-    const result = await res.json();
-    if(result.success) {
-      starsCountEl.innerText = result.starsLeft;
-      card.style.transform = "scale(1.05)";
-      setTimeout(() => card.style.transform = "scale(1)", 200);
-      if(navigator.vibrate) navigator.vibrate(100);
-      alert(`Purchased ${item.name}!`);
-    } else {
-      alert(result.message);
-    }
-  } catch(err) {
-    console.error("Purchase failed:", err);
-  }
-}
-
-renderShop();
-loadUser();
-setInterval(loadUser, 10000);
-
-// Optional: "Take Me Home" button click
-document.getElementById('home-btn').addEventListener('click', () => {
-  window.location.href = '/'; // replace '/' with your home URL
-});
-</script>
 
 </body>
 </html>
