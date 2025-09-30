@@ -138,6 +138,10 @@ function renderMessagesFromArray(arr){
     });
   }
 }
+refs.messagesEl.scrollTo({
+  top: refs.messagesEl.scrollHeight,
+  behavior: "smooth"
+});
 
 /* ---------- Messages listener ---------- */
 function attachMessagesListener() {
@@ -261,6 +265,7 @@ async function loginWhitelist(email, phone) {
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
+  if (starInterval) clearInterval(starInterval); // clear existing
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
