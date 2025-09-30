@@ -345,7 +345,7 @@ function createProductCard(product) {
     <div class="product-info">
       <h3 class="product-name">${product.name}</h3>
       <p class="product-cost">Cost: ${product.cost} ⭐</p>
-      <button class="buy-btn">Purchase</button>
+      <button class="buy-btn">Redeem</button>
     </div>
   `;
 
@@ -381,7 +381,7 @@ function createProductCard(product) {
     // Show confirm modal
     showConfirmModal(
       "Confirm Purchase",
-      `Are you sure you want to buy "${product.name}" for ${product.cost} stars?`,
+      `Are you sure you want to get "${product.name}" for ${product.cost} stars?`,
       async () => {
         try {
           const userRef = doc(db, "users", currentUser.uid);
@@ -418,12 +418,12 @@ function createProductCard(product) {
           });
 
           // Show success message
-          showMessageModal("Congratulations!", `"${product.name}" purchased successfully! 🎉`, 2500);
+          showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
           renderShop(); // Refresh shop
           loadCurrentUser(); // Refresh stars
         } catch (e) {
-          console.error("Purchase error:", e);
-          showMessageModal("Error!", "Purchase failed: " + e, 2500);
+          console.error("Redemption error:", e);
+          showMessageModal("Error!", "Redemption failed: " + e, 2500);
         }
       }
     );
