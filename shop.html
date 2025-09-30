@@ -201,6 +201,22 @@ const shopItemsEl = document.getElementById('shop-items');
 // ---------- Utilities ----------
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
 
+// ---------- Log Purchase ----------
+async function logPurchase(user, item) {
+  try {
+    await addDoc(collection(db, "purchases"), {
+      chatId: user.chatId,
+      email: user.email,
+      phone: user.phone,
+      itemName: item.name,
+      cost: item.cost,
+      timestamp: serverTimestamp()
+    });
+  } catch (e) {
+    console.error("Error logging purchase: ", e);
+  }
+}
+
 // ---------- Shop Rendering ----------
 function createProductCard(item){
   const card = document.createElement('div');
@@ -214,33 +230,39 @@ function createProductCard(item){
       <button class="buy-btn">Buy</button>
     </div>
   `;
+
   const btn = card.querySelector('.buy-btn');
-  btn.addEventListener('click', async ()=>{
-    if(!currentUser){ alert("Not logged in"); return; }
-    if(currentUser.stars < item.cost){ alert("Not enough stars"); return; }
+  btn.addEventListener('click', async () => {
+    if (!currentUser) { 
+      alert("Not logged in"); 
+      return; 
+    }
+    if (currentUser.stars < item.cost) { 
+      alert("Not enough stars"); 
+      return; 
+    }
 
     try {
-      const userRef = doc(db, 'users', currentUser.uid);
-
-      // Deduct stars
-      await updateDoc(userRef, { stars: increment(-item.cost) });
-
-      // Log purchase inside user/Purchases subcollection
-      const purchaseRef = doc(collection(db, 'users', currentUser.uid, 'Purchases'));
-      await setDoc(purchaseRef, {
-        itemId: item.id,
-        itemName: item.name,
-        cost: item.cost,
-        img: item.img,
-        timestamp: serverTimestamp()
+      // Deduct stars from user
+      const userRef = doc(db, "users", currentUser.uid);
+      await updateDoc(userRef, {
+        stars: increment(-item.cost)
       });
 
-      alert(`Purchased ${item.name}!`);
+      // Update local stars
+      currentUser.stars -= item.cost;
+      starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+
+      // Log purchase with email + phone
+      await logPurchase(currentUser, item);
+
+      alert(`You bought ${item.name}! ✅`);
     } catch (err) {
       console.error("Purchase failed:", err);
       alert("Error completing purchase, try again.");
     }
   });
+
   return card;
 }
 
