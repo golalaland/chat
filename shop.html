@@ -257,16 +257,17 @@ function createProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
   card.innerHTML = `
-    <img src="${product.img}" alt="${product.name}" style="width:100%;height:150px;object-fit:cover;border-radius:8px;">
-    <h3>${product.name}</h3>
-    <p>Cost: ${product.cost} ⭐</p>
-    <p>Available: ${product.available}</p>
-    <button>Purchase</button>
+    <img src="${product.img}" alt="${product.name}">
+    <div class="product-info">
+      <h3 class="product-name">${product.name}</h3>
+      <p class="product-cost">Cost: ${product.cost} ⭐</p>
+      <p class="availability">Available: ${product.available}</p>
+    </div>
+    <button class="buy-btn">Purchase</button>
   `;
 
   const btn = card.querySelector("button");
-btn.className = "buy-btn"; // <-- ADD THIS
-btn.onclick = () => {
+  btn.onclick = () => {
   if (!currentUser) {
     alert("You must be logged in to purchase.");
     return;
