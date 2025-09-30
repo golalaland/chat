@@ -242,21 +242,41 @@ function showConfirmModal(title, text, onYes) {
 function createProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
+
   card.innerHTML = `
     <img src="${product.img}" alt="${product.name}">
+    <div class="availability-badge">${product.available} left</div>
     <div class="product-info">
       <h3 class="product-name">${product.name}</h3>
       <p class="product-cost">Cost: ${product.cost} ⭐</p>
-      <p class="availability">Available: ${product.available}</p>
+      <button class="buy-btn">Purchase</button>
     </div>
-    <button class="buy-btn">Purchase</button>
   `;
 
-  const btn = card.querySelector("button");
+  // Grab elements
+  const badge = card.querySelector(".availability-badge");
+  const btn = card.querySelector(".buy-btn");
+
+  // Update badge style if sold out
+  if (product.available <= 0) {
+    badge.textContent = "Sold Out";
+    badge.style.background = "#999"; // gray out
+  }
+
+  // Purchase button logic
   btn.onclick = () => {
-    if (!currentUser) { alert("You must be logged in to purchase."); return; }
-    if (currentUser.stars < product.cost) { alert("Not enough stars!"); return; }
-    if (product.available <= 0) { alert("Out of stock!"); return; }
+    if (!currentUser) {
+      alert("You must be logged in to purchase.");
+      return;
+    }
+    if (currentUser.stars < product.cost) {
+      alert("Not enough stars!");
+      return;
+    }
+    if (product.available <= 0) {
+      alert("Out of stock!");
+      return;
+    }
 
     showConfirmModal(
       "Confirm Purchase",
@@ -269,14 +289,21 @@ function createProductCard(product) {
           await runTransaction(db, async (transaction) => {
             const userSnap = await transaction.get(userRef);
             const productSnap = await transaction.get(productRef);
+
             if (!userSnap.exists()) throw "User not found!";
             if (!productSnap.exists()) throw "Product not found!";
+
             const userData = userSnap.data();
             const productData = productSnap.data();
+
             if (userData.stars < productData.cost) throw "Not enough stars!";
             if (productData.available <= 0) throw "Out of stock!";
+
+            // update stars & stock
             transaction.update(userRef, { stars: userData.stars - productData.cost });
             transaction.update(productRef, { available: productData.available - 1 });
+
+            // log purchase
             const purchaseRef = doc(collection(db, "purchases"));
             transaction.set(purchaseRef, {
               userId: currentUser.uid,
@@ -290,8 +317,8 @@ function createProductCard(product) {
           });
 
           alert("Purchase successful!");
-          renderShop();
-          loadCurrentUser();
+          renderShop(); // refresh shop availability
+          loadCurrentUser(); // refresh stars
         } catch (e) {
           console.error("Purchase error:", e);
           alert("Purchase failed: " + e);
