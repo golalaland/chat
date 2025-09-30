@@ -140,6 +140,20 @@ header {
 #confirmNo:hover {
   background: #bbb;
 }
+/* Add this to your CSS */
+.availability-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--accent); /* pink backdrop */
+  color: #fff;               /* bold white text */
+  font-weight: bold;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  z-index: 2;
+  text-align: center;
+}
 </style>
 </head>
 <body>
@@ -244,14 +258,14 @@ function createProductCard(product) {
   card.className = "product-card";
 
   card.innerHTML = `
-    <img src="${product.img}" alt="${product.name}">
-    <div class="availability-badge">${product.available} left</div>
-    <div class="product-info">
-      <h3 class="product-name">${product.name}</h3>
-      <p class="product-cost">Cost: ${product.cost} ⭐</p>
-      <button class="buy-btn">Purchase</button>
-    </div>
-  `;
+  <img src="${product.img}" alt="${product.name}">
+  <div class="availability-badge">${product.available > 0 ? product.available + ' left' : 'Sold Out'}</div>
+  <div class="product-info">
+    <h3 class="product-name">${product.name}</h3>
+    <p class="product-cost">Cost: ${product.cost} ⭐</p>
+    <button class="buy-btn">Purchase</button>
+  </div>
+`;
 
   // Grab elements
   const badge = card.querySelector(".availability-badge");
