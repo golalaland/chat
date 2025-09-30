@@ -388,39 +388,43 @@ function createProductCard(product) {
           const productRef = doc(db, "shopItems", product.id.toString());
 
           await runTransaction(db, async (transaction) => {
-            const userSnap = await transaction.get(userRef);
-            const productSnap = await transaction.get(productRef);
+  const userSnap = await transaction.get(userRef);
+  const productSnap = await transaction.get(productRef);
 
-            if (!userSnap.exists()) throw "User not found!";
-            if (!productSnap.exists()) throw "Product not found!";
+  if (!userSnap.exists()) throw "User not found!";
+  if (!productSnap.exists()) throw "Product not found!";
 
-            const userData = userSnap.data();
-            const productData = productSnap.data();
+  const userData = userSnap.data();
+  const productData = productSnap.data();
 
-            if (userData.stars < productData.cost) throw "Not enough stars!";
-            if (productData.available <= 0) throw "Out of stock!";
+  if (userData.stars < productData.cost) throw "Not enough stars!";
+  if (productData.available <= 0) throw "Out of stock!";
 
-            // Deduct stars & stock
-            transaction.update(userRef, { stars: userData.stars - productData.cost });
-            transaction.update(productRef, { available: productData.available - 1 });
+  // Deduct stars, add cash reward, reduce stock
+  transaction.update(userRef, { 
+    stars: userData.stars - productData.cost,
+    cash: (userData.cash || 0) + (productData.cashReward || 0)
+  });
+  transaction.update(productRef, { available: productData.available - 1 });
 
-            // Log purchase
-            const purchaseRef = doc(collection(db, "purchases"));
-            transaction.set(purchaseRef, {
-              userId: currentUser.uid,
-              email: userData.email || "",
-              phone: userData.phone || "",
-              productId: product.id,
-              productName: product.name,
-              cost: product.cost,
-              timestamp: new Date()
-            });
-          });
+  // Log purchase
+  const purchaseRef = doc(collection(db, "purchases"));
+  transaction.set(purchaseRef, {
+    userId: currentUser.uid,
+    email: userData.email || "",
+    phone: userData.phone || "",
+    productId: product.id,
+    productName: product.name,
+    cost: product.cost,
+    cashReward: productData.cashReward || 0,
+    timestamp: new Date()
+  });
+});
 
-          // Show success message
-          showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
-          renderShop(); // Refresh shop
-          loadCurrentUser(); // Refresh stars
+// After transaction succeeds
+showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
+renderShop(); // refresh shop availability
+loadCurrentUser(); // refresh stars & cash
         } catch (e) {
           console.error("Redemption error:", e);
           showMessageModal("Error!", "Redemption failed: " + e, 2500);
