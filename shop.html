@@ -238,6 +238,35 @@ btn.addEventListener('click', async () => {
     alert("Error completing purchase, try again.");
   }
 });
+async function loadCurrentUser(){
+  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
+  if(!vipSession?.email) return;
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ','); // sanitize email
+  const userRef = doc(db, 'users', uid);
+
+  const snap = await getDoc(userRef);
+  if(!snap.exists()) return;
+
+  currentUser = { uid, ...snap.data() };
+
+  // Update UI
+  usernameEl.textContent = currentUser.chatId || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+
+  // 🔥 Call renderShop after user loads
+  renderShop();
+
+  // Real-time updates
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    currentUser.stars = data.stars || 0;
+    currentUser.cash = data.cash || 0;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+  });
+}
 // ---------- Load current VIP user ----------
 let currentUser = null;
 async function loadCurrentUser(){
