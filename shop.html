@@ -280,6 +280,20 @@ function animateNumber(el, from, to, duration = 600) {
   requestAnimationFrame(step);
 }
 
+// ---------- Confetti ----------
+function triggerConfetti() {
+  const confettiScript = document.createElement('script');
+  confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+  confettiScript.onload = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+  document.body.appendChild(confettiScript);
+}
+
 // ---------- Modals ----------
 const confirmModal = document.createElement("div");
 confirmModal.id = "confirmModal";
@@ -369,10 +383,8 @@ function createProductCard(product) {
       <button class="buy-btn">Redeem</button>
     </div>
   `;
-
   const badge = card.querySelector(".availability-badge");
   const btn = card.querySelector(".buy-btn");
-
   if (product.available <= 0) {
     badge.textContent = "Sold Out";
     badge.style.background = "#999";
@@ -390,7 +402,7 @@ function createProductCard(product) {
         try {
           const userRef = doc(db, "users", currentUser.uid);
           const productRef = doc(db, "shopItems", product.id.toString());
-          let newStars, newCash;
+          let newStars, newCash, redeemedCash = 0;
 
           await runTransaction(db, async (transaction) => {
             const userSnap = await transaction.get(userRef);
@@ -403,7 +415,14 @@ function createProductCard(product) {
             if (Number(productData.available) <= 0) throw "Out of stock!";
 
             newStars = Number(userData.stars) - Number(productData.cost);
-            newCash = (Number(userData.cash) || 0) + (Number(productData.cashReward) || 0);
+
+            // Special handling for "Redeem Cash Balance"
+            if (product.name === "Redeem Cash Balance") {
+              redeemedCash = Number(userData.cash || 0);
+              newCash = 0; // reset cash balance
+            } else {
+              newCash = (Number(userData.cash) || 0) + (Number(productData.cashReward) || 0);
+            }
 
             transaction.update(userRef, { stars: newStars, cash: newCash });
             transaction.update(productRef, { available: Number(productData.available) - 1 });
@@ -417,17 +436,24 @@ function createProductCard(product) {
               productName: product.name,
               cost: Number(productData.cost),
               cashReward: Number(productData.cashReward) || 0,
+              redeemedCash: redeemedCash,
               timestamp: new Date()
             });
           });
 
-          // UI updates
+          // Update UI
           currentUser.stars = newStars;
           currentUser.cash = newCash;
           animateNumber(starsEl, Number(starsEl.textContent.replace(/\D/g,'')), newStars);
           animateNumber(cashEl, Number(cashEl.textContent.replace(/\D/g,'')), newCash);
           renderShop();
-          showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
+          triggerConfetti();
+          if (redeemedCash > 0) {
+            showMessageModal("Cash Redeemed!", `You redeemed ₦${formatNumber(redeemedCash)} successfully! 🎉`, 3000);
+          } else {
+            showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
+          }
+
         } catch(e) {
           console.error("Redemption error:", e);
           showMessageModal("Error!", "Redemption failed: " + e, 2500);
