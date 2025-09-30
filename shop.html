@@ -69,14 +69,6 @@ header {
   gap: 1rem;
   padding: 1rem 2rem;
 }
-#confirmNo {
-  background: #ccc;
-  color: #333;
-}
-
-#confirmNo:hover {
-  background: #bbb;
-}
 .product-card {
   background: var(--card-bg);
   border-radius: 10px;
@@ -96,18 +88,6 @@ header {
   width: 100%;
   height: 150px;
   object-fit: cover;
-}
-.availability-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: bold;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  z-index: 2;
 }
 .product-info {
   padding: 0.8rem;
@@ -153,6 +133,13 @@ header {
 #home-btn:hover {
   background: #ff66d6;
 }
+#confirmNo {
+  background: #ccc;
+  color: #333;
+}
+#confirmNo:hover {
+  background: #bbb;
+}
 </style>
 </head>
 <body>
@@ -182,8 +169,7 @@ header {
 // ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
-  getFirestore, doc, getDoc, updateDoc, onSnapshot, increment, 
-  collection, getDocs, setDoc, serverTimestamp, addDoc, runTransaction
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -268,78 +254,59 @@ function createProductCard(product) {
 
   const btn = card.querySelector("button");
   btn.onclick = () => {
-  if (!currentUser) {
-    alert("You must be logged in to purchase.");
-    return;
-  }
-  if (currentUser.stars < product.cost) {
-    alert("Not enough stars!");
-    return;
-  }
-  if (product.available <= 0) {
-    alert("Out of stock!");
-    return;
-  }
+    if (!currentUser) { alert("You must be logged in to purchase."); return; }
+    if (currentUser.stars < product.cost) { alert("Not enough stars!"); return; }
+    if (product.available <= 0) { alert("Out of stock!"); return; }
 
-  showConfirmModal(
-    "Confirm Purchase",
-    `Are you sure you want to buy "${product.name}" for ${product.cost} stars?`,
-    async () => {
-      try {
-        const userRef = doc(db, "users", currentUser.uid);
-        const productRef = doc(db, "shopItems", product.id.toString());
+    showConfirmModal(
+      "Confirm Purchase",
+      `Are you sure you want to buy "${product.name}" for ${product.cost} stars?`,
+      async () => {
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          const productRef = doc(db, "shopItems", product.id.toString());
 
-        await runTransaction(db, async (transaction) => {
-          const userSnap = await transaction.get(userRef);
-          const productSnap = await transaction.get(productRef);
-
-          if (!userSnap.exists()) throw "User not found!";
-          if (!productSnap.exists()) throw "Product not found!";
-
-          const userData = userSnap.data();
-          const productData = productSnap.data();
-
-          if (userData.stars < productData.cost) throw "Not enough stars!";
-          if (productData.available <= 0) throw "Out of stock!";
-
-          // update stars & stock
-          transaction.update(userRef, {
-            stars: userData.stars - productData.cost
-          });
-          transaction.update(productRef, {
-            available: productData.available - 1
+          await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef);
+            const productSnap = await transaction.get(productRef);
+            if (!userSnap.exists()) throw "User not found!";
+            if (!productSnap.exists()) throw "Product not found!";
+            const userData = userSnap.data();
+            const productData = productSnap.data();
+            if (userData.stars < productData.cost) throw "Not enough stars!";
+            if (productData.available <= 0) throw "Out of stock!";
+            transaction.update(userRef, { stars: userData.stars - productData.cost });
+            transaction.update(productRef, { available: productData.available - 1 });
+            const purchaseRef = doc(collection(db, "purchases"));
+            transaction.set(purchaseRef, {
+              userId: currentUser.uid,
+              email: userData.email || "",
+              phone: userData.phone || "",
+              productId: product.id,
+              productName: product.name,
+              cost: product.cost,
+              timestamp: new Date()
+            });
           });
 
-          // log purchase
-          const purchaseRef = doc(collection(db, "purchases"));
-          transaction.set(purchaseRef, {
-            userId: currentUser.uid,
-            email: userData.email || "",
-            phone: userData.phone || "",
-            productId: product.id,
-            productName: product.name,
-            cost: product.cost,
-            timestamp: new Date()
-          });
-        });
-
-        alert("Purchase successful!");
-        renderShop(); // refresh shop availability
-        loadCurrentUser(); // refresh stars
-      } catch (e) {
-        console.error("Purchase error:", e);
-        alert("Purchase failed: " + e);
+          alert("Purchase successful!");
+          renderShop();
+          loadCurrentUser();
+        } catch (e) {
+          console.error("Purchase error:", e);
+          alert("Purchase failed: " + e);
+        }
       }
-    }
-  );
-};
+    );
+  };
+
   return card;
 }
 
 async function renderShop(){
-  shopItemsEl.innerHTML='';
-const querySnap = await getDocs(collection(db, 'shopItems'));
-  querySnap.forEach(docSnap=>{
+  shopItemsEl.innerHTML = '';
+  const querySnap = await getDocs(collection(db, 'shopItems'));
+  querySnap.forEach(docSnap => {
     const data = docSnap.data();
     const item = { id: docSnap.id, ...data };
     shopItemsEl.appendChild(createProductCard(item));
@@ -351,21 +318,15 @@ let currentUser = null;
 async function loadCurrentUser(){
   const vipSession = JSON.parse(localStorage.getItem('vipUser'));
   if(!vipSession?.email) return;
-  const uid = vipSession.email.replace(/[.#$[\]]/g, ','); // sanitize
-
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
   const userRef = doc(db, 'users', uid);
   const snap = await getDoc(userRef);
   if(!snap.exists()) return;
-
   currentUser = { uid, ...snap.data() };
   usernameEl.textContent = currentUser.chatId || 'Guest';
   starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
   cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
-
-  // Load products
   renderShop();
-
-  // Real-time listener for stars/cash
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data();
     if(!data) return;
@@ -378,6 +339,5 @@ async function loadCurrentUser(){
 
 loadCurrentUser();
 </script>
-
 </body>
 </html>
