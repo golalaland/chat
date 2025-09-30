@@ -469,7 +469,26 @@ async function loadCurrentUser(){
     cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
   });
 }
+// Animate number changes for a smooth counter effect
+function animateNumber(el, from, to, duration = 600) {
+  const start = performance.now();
 
+  function step(timestamp) {
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const value = Math.floor(from + (to - from) * progress);
+    // Keep the right formatting
+    if (el === starsEl) {
+      el.textContent = `${formatNumber(value)} ⭐️`;
+    } else if (el === cashEl) {
+      el.textContent = `₦${formatNumber(value)}`;
+    }
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
 loadCurrentUser();
 </script>
 </body>
