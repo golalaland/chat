@@ -154,6 +154,64 @@ header {
   z-index: 2;
   text-align: center;
 }
+#confirmModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#confirmModal .modal-content {
+  background: var(--card-bg);
+  padding: 20px 25px;
+  border-radius: 12px;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
+#confirmModal h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+#confirmModal p {
+  font-size: 1rem;
+  margin: 12px 0 18px 0;
+}
+
+#confirmModal button {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-weight: bold;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 0 5px;
+  transition: background 0.2s;
+  min-width: 100px; /* ensures both buttons have same width */
+}
+
+#confirmModal button:hover {
+  background: #ff66d6;
+}
+
+#confirmModal #confirmNo {
+  background: #ccc;
+  color: #333;
+}
+
+#confirmModal #confirmNo:hover {
+  background: #bbb;
+}
 </style>
 </head>
 <body>
@@ -222,11 +280,13 @@ confirmModal.style.justifyContent = "center";
 confirmModal.style.alignItems = "center";
 confirmModal.style.zIndex = "1000";
 confirmModal.innerHTML = `
-  <div style="background:#fff;padding:20px;border-radius:8px;max-width:400px;text-align:center;">
+  <div class="modal-content">
     <h3 id="confirmTitle">Confirm Purchase</h3>
     <p id="confirmText"></p>
-    <button id="confirmYes" style="margin:10px;padding:10px 20px;">Yes</button>
-    <button id="confirmNo" style="margin:10px;padding:10px 20px;">Cancel</button>
+    <div>
+      <button id="confirmYes">Yes</button>
+      <button id="confirmNo">Cancel</button>
+    </div>
   </div>
 `;
 document.body.appendChild(confirmModal);
