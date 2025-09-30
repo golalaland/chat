@@ -340,16 +340,15 @@ function createProductCard(product) {
   card.className = "product-card";
 
   card.innerHTML = `
-  <img src="${product.img}" alt="${product.name}">
-  <div class="availability-badge">${product.available > 0 ? product.available + ' left' : 'Sold Out'}</div>
-  <div class="product-info">
-    <h3 class="product-name">${product.name}</h3>
-    <p class="product-cost">Cost: ${product.cost} ⭐</p>
-    <button class="buy-btn">Purchase</button>
-  </div>
-`;
+    <img src="${product.img}" alt="${product.name}">
+    <div class="availability-badge">${product.available > 0 ? product.available + ' left' : 'Sold Out'}</div>
+    <div class="product-info">
+      <h3 class="product-name">${product.name}</h3>
+      <p class="product-cost">Cost: ${product.cost} ⭐</p>
+      <button class="buy-btn">Purchase</button>
+    </div>
+  `;
 
-  // Grab elements
   const badge = card.querySelector(".availability-badge");
   const btn = card.querySelector(".buy-btn");
 
@@ -359,20 +358,27 @@ function createProductCard(product) {
     badge.style.background = "#999"; // gray out
   }
 
-  // Purchase button logic
-if (!currentUser) {
-  showMessageModal("Oops!", "You must be logged in to purchase.");
-  return;
-}
-if (currentUser.stars < product.cost) {
-  showMessageModal("Oops!", "Not enough stars!");
-  return;
-}
-if (product.available <= 0) {
-  showMessageModal("Sold Out!", "This item is no longer available.");
-  return;
-}
+  // ✅ Button click handler
+  btn.onclick = () => {
+    // Check login
+    if (!currentUser) {
+      showMessageModal("Oops!", "You must be logged in to purchase.");
+      return;
+    }
 
+    // Check stars
+    if (currentUser.stars < product.cost) {
+      showMessageModal("Oops!", "Not enough stars!");
+      return;
+    }
+
+    // Check stock
+    if (product.available <= 0) {
+      showMessageModal("Sold Out!", "This item is no longer available.");
+      return;
+    }
+
+    // Show confirm modal
     showConfirmModal(
       "Confirm Purchase",
       `Are you sure you want to buy "${product.name}" for ${product.cost} stars?`,
@@ -394,11 +400,11 @@ if (product.available <= 0) {
             if (userData.stars < productData.cost) throw "Not enough stars!";
             if (productData.available <= 0) throw "Out of stock!";
 
-            // update stars & stock
+            // Deduct stars & stock
             transaction.update(userRef, { stars: userData.stars - productData.cost });
             transaction.update(productRef, { available: productData.available - 1 });
 
-            // log purchase
+            // Log purchase
             const purchaseRef = doc(collection(db, "purchases"));
             transaction.set(purchaseRef, {
               userId: currentUser.uid,
@@ -410,12 +416,14 @@ if (product.available <= 0) {
               timestamp: new Date()
             });
           });
-showMessageModal("Congratulations!", `"${product.name}" purchased successfully! 🎉`, 2500);
-          renderShop(); // refresh shop availability
-          loadCurrentUser(); // refresh stars
+
+          // Show success message
+          showMessageModal("Congratulations!", `"${product.name}" purchased successfully! 🎉`, 2500);
+          renderShop(); // Refresh shop
+          loadCurrentUser(); // Refresh stars
         } catch (e) {
           console.error("Purchase error:", e);
-          alert("Purchase failed: " + e);
+          showMessageModal("Error!", "Purchase failed: " + e, 2500);
         }
       }
     );
