@@ -69,6 +69,14 @@ header {
   gap: 1rem;
   padding: 1rem 2rem;
 }
+#confirmNo {
+  background: #ccc;
+  color: #333;
+}
+
+#confirmNo:hover {
+  background: #bbb;
+}
 .product-card {
   background: var(--card-bg);
   border-radius: 10px;
@@ -257,73 +265,73 @@ function createProductCard(product) {
   `;
 
   const btn = card.querySelector("button");
-  btn.onclick = () => {
-    if (!currentUser) {
-      alert("You must be logged in to purchase.");
-      return;
-    }
-    if (currentUser.stars < product.cost) {
-      alert("Not enough stars!");
-      return;
-    }
-    if (product.available <= 0) {
-      alert("Out of stock!");
-      return;
-    }
+btn.className = "buy-btn"; // <-- ADD THIS
+btn.onclick = () => {
+  if (!currentUser) {
+    alert("You must be logged in to purchase.");
+    return;
+  }
+  if (currentUser.stars < product.cost) {
+    alert("Not enough stars!");
+    return;
+  }
+  if (product.available <= 0) {
+    alert("Out of stock!");
+    return;
+  }
 
-    showConfirmModal(
-      "Confirm Purchase",
-      `Are you sure you want to buy "${product.name}" for ${product.cost} stars?`,
-      async () => {
-        try {
-          const userRef = doc(db, "users", currentUser.uid);
-          const productRef = doc(db, "shopItems", product.id.toString());
+  showConfirmModal(
+    "Confirm Purchase",
+    `Are you sure you want to buy "${product.name}" for ${product.cost} stars?`,
+    async () => {
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const productRef = doc(db, "shopItems", product.id.toString());
 
-          await runTransaction(db, async (transaction) => {
-            const userSnap = await transaction.get(userRef);
-            const productSnap = await transaction.get(productRef);
+        await runTransaction(db, async (transaction) => {
+          const userSnap = await transaction.get(userRef);
+          const productSnap = await transaction.get(productRef);
 
-            if (!userSnap.exists()) throw "User not found!";
-            if (!productSnap.exists()) throw "Product not found!";
+          if (!userSnap.exists()) throw "User not found!";
+          if (!productSnap.exists()) throw "Product not found!";
 
-            const userData = userSnap.data();
-            const productData = productSnap.data();
+          const userData = userSnap.data();
+          const productData = productSnap.data();
 
-            if (userData.stars < productData.cost) throw "Not enough stars!";
-            if (productData.available <= 0) throw "Out of stock!";
+          if (userData.stars < productData.cost) throw "Not enough stars!";
+          if (productData.available <= 0) throw "Out of stock!";
 
-            // update stars & stock
-            transaction.update(userRef, {
-              stars: userData.stars - productData.cost
-            });
-            transaction.update(productRef, {
-              available: productData.available - 1
-            });
-
-            // log purchase
-            const purchaseRef = doc(collection(db, "purchases"));
-            transaction.set(purchaseRef, {
-              userId: currentUser.uid,
-              email: userData.email || "",
-              phone: userData.phone || "",
-              productId: product.id,
-              productName: product.name,
-              cost: product.cost,
-              timestamp: new Date()
-            });
+          // update stars & stock
+          transaction.update(userRef, {
+            stars: userData.stars - productData.cost
+          });
+          transaction.update(productRef, {
+            available: productData.available - 1
           });
 
-          alert("Purchase successful!");
-          renderShop(); // refresh shop availability
-          loadCurrentUser(); // refresh stars
-        } catch (e) {
-          console.error("Purchase error:", e);
-          alert("Purchase failed: " + e);
-        }
-      }
-    );
-  };
+          // log purchase
+          const purchaseRef = doc(collection(db, "purchases"));
+          transaction.set(purchaseRef, {
+            userId: currentUser.uid,
+            email: userData.email || "",
+            phone: userData.phone || "",
+            productId: product.id,
+            productName: product.name,
+            cost: product.cost,
+            timestamp: new Date()
+          });
+        });
 
+        alert("Purchase successful!");
+        renderShop(); // refresh shop availability
+        loadCurrentUser(); // refresh stars
+      } catch (e) {
+        console.error("Purchase error:", e);
+        alert("Purchase failed: " + e);
+      }
+    }
+  );
+};
   return card;
 }
 
