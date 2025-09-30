@@ -1,4 +1,4 @@
-<!doctype html>
+shop<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -246,7 +246,7 @@ function createProductCard(item){
 
 async function renderShop(){
   shopItemsEl.innerHTML='';
-  const querySnap = await getDocs(collection(db, 'ShopItems'));
+const querySnap = await getDocs(collection(db, 'shopItems'));
   querySnap.forEach(docSnap=>{
     const data = docSnap.data();
     const item = { id: docSnap.id, ...data };
