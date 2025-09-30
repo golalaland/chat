@@ -176,7 +176,7 @@ header {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
   getFirestore, doc, getDoc, updateDoc, onSnapshot, increment, 
-  collection, getDocs, setDoc, serverTimestamp 
+  collection, getDocs, setDoc, serverTimestamp, addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -211,6 +211,13 @@ async function logPurchase(user, item) {
       itemName: item.name,
       cost: item.cost,
       timestamp: serverTimestamp()
+    });
+    console.log("Purchase logged:", {
+      chatId: user.chatId,
+      email: user.email,
+      phone: user.phone,
+      itemName: item.name,
+      cost: item.cost
     });
   } catch (e) {
     console.error("Error logging purchase: ", e);
