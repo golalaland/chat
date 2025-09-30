@@ -176,7 +176,7 @@ header {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
   getFirestore, doc, getDoc, updateDoc, onSnapshot, increment, 
-  collection, getDocs, setDoc, serverTimestamp, addDoc
+  collection, getDocs, setDoc, serverTimestamp, addDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -201,80 +201,130 @@ const shopItemsEl = document.getElementById('shop-items');
 // ---------- Utilities ----------
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
 
-// ---------- Log Purchase ----------
-async function logPurchase(user, item) {
-  try {
-    await addDoc(collection(db, "purchases"), {
-      chatId: user.chatId,
-      email: user.email,
-      phone: user.phone,
-      itemName: item.name,
-      cost: item.cost,
-      timestamp: serverTimestamp()
-    });
-    console.log("Purchase logged:", {
-      chatId: user.chatId,
-      email: user.email,
-      phone: user.phone,
-      itemName: item.name,
-      cost: item.cost
-    });
-  } catch (e) {
-    console.error("Error logging purchase: ", e);
-  }
+// ---------- Confirm Modal ----------
+const confirmModal = document.createElement("div");
+confirmModal.id = "confirmModal";
+confirmModal.style.position = "fixed";
+confirmModal.style.top = "0";
+confirmModal.style.left = "0";
+confirmModal.style.width = "100%";
+confirmModal.style.height = "100%";
+confirmModal.style.background = "rgba(0,0,0,0.6)";
+confirmModal.style.display = "none";
+confirmModal.style.justifyContent = "center";
+confirmModal.style.alignItems = "center";
+confirmModal.style.zIndex = "1000";
+confirmModal.innerHTML = `
+  <div style="background:#fff;padding:20px;border-radius:8px;max-width:400px;text-align:center;">
+    <h3 id="confirmTitle">Confirm Purchase</h3>
+    <p id="confirmText"></p>
+    <button id="confirmYes" style="margin:10px;padding:10px 20px;">Yes</button>
+    <button id="confirmNo" style="margin:10px;padding:10px 20px;">Cancel</button>
+  </div>
+`;
+document.body.appendChild(confirmModal);
+
+function showConfirmModal(title, text, onYes) {
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+  confirmModal.style.display = "flex";
+
+  const yesBtn = document.getElementById("confirmYes");
+  const noBtn = document.getElementById("confirmNo");
+
+  const cleanup = () => {
+    confirmModal.style.display = "none";
+    yesBtn.onclick = null;
+    noBtn.onclick = null;
+  };
+
+  yesBtn.onclick = () => {
+    onYes();
+    cleanup();
+  };
+  noBtn.onclick = cleanup;
 }
 
-// ---------- Shop Rendering ----------
-function createProductCard(item){
-  const card = document.createElement('div');
-  card.className = 'product-card';
+// ---------- Product Card ----------
+function createProductCard(product) {
+  const card = document.createElement("div");
+  card.className = "product-card";
   card.innerHTML = `
-    <img src="${item.img}" alt="${item.name}">
-    <div class="availability-badge">${item.available} left</div>
-    <div class="product-info">
-      <div class="product-name">${item.name}</div>
-      <div class="product-cost">${item.cost} ⭐️</div>
-      <button class="buy-btn">Buy</button>
-    </div>
+    <img src="${product.img}" alt="${product.name}" style="width:100%;height:150px;object-fit:cover;border-radius:8px;">
+    <h3>${product.name}</h3>
+    <p>Cost: ${product.cost} ⭐</p>
+    <p>Available: ${product.available}</p>
+    <button>Purchase</button>
   `;
 
-  const btn = card.querySelector('.buy-btn');
- btn.addEventListener('click', async () => {
-  if (!currentUser) { 
-    alert("Not logged in"); 
-    return; 
-  }
-  if (currentUser.stars < item.cost) { 
-    alert("Not enough stars"); 
-    return; 
-  }
+  const btn = card.querySelector("button");
+  btn.onclick = () => {
+    if (!currentUser) {
+      alert("You must be logged in to purchase.");
+      return;
+    }
+    if (currentUser.stars < product.cost) {
+      alert("Not enough stars!");
+      return;
+    }
+    if (product.available <= 0) {
+      alert("Out of stock!");
+      return;
+    }
 
-  try {
-    // Deduct stars from user
-    const userRef = doc(db, "users", currentUser.uid);
-    await updateDoc(userRef, {
-      stars: increment(-item.cost)
-    });
+    showConfirmModal(
+      "Confirm Purchase",
+      `Are you sure you want to buy "${product.name}" for ${product.cost} stars?`,
+      async () => {
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          const productRef = doc(db, "shopItems", product.id.toString());
 
-    // Update local stars
-    currentUser.stars -= item.cost;
-    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+          await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef);
+            const productSnap = await transaction.get(productRef);
 
-    // Log purchase
-    await logPurchase(currentUser, item);
+            if (!userSnap.exists()) throw "User not found!";
+            if (!productSnap.exists()) throw "Product not found!";
 
-    // 🔥 Decrement product availability
-    const productRef = doc(db, "shopItems", item.id.toString());
-    await updateDoc(productRef, {
-      available: increment(-1)
-    });
+            const userData = userSnap.data();
+            const productData = productSnap.data();
 
-    alert(`You bought ${item.name}! ✅`);
-  } catch (err) {
-    console.error("Purchase failed:", err);
-    alert("Error completing purchase, try again.");
-  }
-});
+            if (userData.stars < productData.cost) throw "Not enough stars!";
+            if (productData.available <= 0) throw "Out of stock!";
+
+            // update stars & stock
+            transaction.update(userRef, {
+              stars: userData.stars - productData.cost
+            });
+            transaction.update(productRef, {
+              available: productData.available - 1
+            });
+
+            // log purchase
+            const purchaseRef = doc(collection(db, "purchases"));
+            transaction.set(purchaseRef, {
+              userId: currentUser.uid,
+              email: userData.email || "",
+              phone: userData.phone || "",
+              productId: product.id,
+              productName: product.name,
+              cost: product.cost,
+              timestamp: new Date()
+            });
+          });
+
+          alert("Purchase successful!");
+          renderShop(); // refresh shop availability
+          loadCurrentUser(); // refresh stars
+        } catch (e) {
+          console.error("Purchase error:", e);
+          alert("Purchase failed: " + e);
+        }
+      }
+    );
+  };
+
   return card;
 }
 
