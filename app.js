@@ -138,10 +138,6 @@ function renderMessagesFromArray(arr){
     });
   }
 }
-refs.messagesEl.scrollTo({
-  top: refs.messagesEl.scrollHeight,
-  behavior: "smooth"
-});
 
 /* ---------- Messages listener ---------- */
 function attachMessagesListener() {
