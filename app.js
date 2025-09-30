@@ -355,24 +355,30 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ---------- Send & Buzz ---------- */
-  refs.sendBtn?.addEventListener("click", async ()=>{
-    if (!currentUser) return showStarPopup("Sign in to chat");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message first");
-    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+refs.sendBtn?.addEventListener("click", async ()=>{
+  if (!currentUser) return showStarPopup("Sign in to chat");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message first");
+  if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = currentUser.stars;
+  currentUser.stars -= SEND_COST;
+  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
-      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-      timestamp: serverTimestamp(), highlight:false, buzzColor:null
-    });
-    refs.messageInputEl.value = "";
-
-    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+  await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
+    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+    timestamp: serverTimestamp(), highlight:false, buzzColor:null
   });
+  refs.messageInputEl.value = "";
+
+  // RENDER MESSAGE
+  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+
+  // ⭐ FORCE SCROLL
+  if (refs.messagesEl) {
+    refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
+  }
+});
 
   refs.buzzBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to BUZZ");
