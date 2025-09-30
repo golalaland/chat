@@ -199,58 +199,45 @@ const shopItemsEl = document.getElementById('shop-items');
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
 function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 
-// ---------- Render Shop ----------
-function createProductCard(item){
-  const card = document.createElement('div');
-  card.className = 'product-card';
-  card.innerHTML = `
-    <img src="${item.img}" alt="${item.name}">
-    <div class="availability-badge">${item.available} left</div>
-    <div class="product-info">
-      <div class="product-name">${item.name}</div>
-      <div class="product-cost">${item.cost} ⭐️</div>
-      <button class="buy-btn">Buy</button>
-    </div>
-  `;
-  const btn = card.querySelector('.buy-btn');
-  btn.addEventListener('click', async ()=>{
-    if(!currentUser){ alert("Not logged in"); return; }
-    if(currentUser.stars < item.cost){ alert("Not enough stars"); return; }
+btn.addEventListener('click', async () => {
+  if (!currentUser) { 
+    alert("Not logged in"); 
+    return; 
+  }
+  if (currentUser.stars < item.cost) { 
+    alert("Not enough stars"); 
+    return; 
+  }
 
-    // Deduct stars
-    currentUser.stars -= item.cost;
-    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    const userRef = doc(db, 'users', currentUser.uid);
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    const itemRef = doc(db, "ShopItems", item.id.toString());
+
+    // Deduct stars from user
     await updateDoc(userRef, { stars: increment(-item.cost) });
 
-    // Add purchase record
-    const purchasesRef = doc(db, 'users', currentUser.uid, 'Purchases', item.id.toString());
-    await updateDoc(purchasesRef, { 
-      name: item.name, 
-      cost: item.cost, 
-      timestamp: new Date(), 
-      img: item.img 
-    }).catch(async()=>{
-      // Create doc if it doesn't exist
-      await updateDoc(purchasesRef, { name: item.name, cost: item.cost, timestamp: new Date(), img: item.img });
+    // Update local balance immediately
+    currentUser.stars -= item.cost;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+
+    // Decrement availability in ShopItems
+    await updateDoc(itemRef, { available: increment(-1) });
+
+    // Save purchase in user's Purchases subcollection
+    const purchaseRef = doc(db, "users", currentUser.uid, "Purchases", item.id.toString());
+    await setDoc(purchaseRef, {
+      name: item.name,
+      cost: item.cost,
+      img: item.img,
+      timestamp: new Date()
     });
 
-    alert(`Purchased ${item.name}!`);
-  });
-  return card;
-}
-
-async function renderShop(){
-  shopItemsEl.innerHTML='';
-  const querySnap = await getDocs(collection(db, 'ShopItems'));
-  const items = [];
-  querySnap.forEach(docSnap=>{
-    const data = docSnap.data();
-    items.push({ id: docSnap.id, ...data });
-  });
-  items.forEach(item=>shopItemsEl.appendChild(createProductCard(item)));
-}
-
+    alert(`You bought ${item.name}! ✅`);
+  } catch (err) {
+    console.error("Purchase failed:", err);
+    alert("Error completing purchase, try again.");
+  }
+});
 // ---------- Load current VIP user ----------
 let currentUser = null;
 async function loadCurrentUser(){
