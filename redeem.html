@@ -1,248 +1,277 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIP Invite</title>
+<title>Admin Dashboard</title>
 <style>
-body{
-  margin:0;
-  font-family:'Helvetica Neue',sans-serif;
-  background:#000;
-  color:#fff;
-  text-align:center;
-  display:flex;
-  flex-direction:column;
-  min-height:100vh;
+:root {
+  --bg: #f5f5f5;
+  --card-bg: #fff;
+  --accent: #ff33cc;
+  --text: #000;
+  --btn-bg: #ff33cc;
+  --btn-text: #fff;
 }
-h1{
-  font-size:2rem;
-  letter-spacing:3px;
-  margin-top:20px;
-  color:#ff66aa;
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
 }
-h2{
-  font-size:1rem;
-  color:#ccc;
-  margin:5px 0 20px 0;
+header {
+  background: var(--card-bg);
+  padding: 1rem 2rem;
+  font-size: 1.8rem;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
 }
-img#girlImage{
-  width:100%;
-  max-width:300px; /* reduced size */
-  height:auto;
-  margin:0 auto 20px auto;
-  border-radius:15px;
-  object-fit:cover;
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 1rem;
+  gap: 1rem;
 }
-form{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:0 20px;
-  width:100%;
-  max-width:350px;
-  margin:0 auto;
+.card {
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  flex: 1 1 300px;
 }
-label{
-  align-self:flex-start;
-  margin:5px 0 2px 0;
-  font-size:0.9rem;
-  color:#ccc;
+.card h3 {
+  margin-top: 0;
 }
-input{
-  width:100%;
-  padding:12px;
-  margin-bottom:10px;
-  border-radius:10px;
-  border:none;
-  font-size:1rem;
+button {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 0.3rem 0;
+  transition: background 0.2s;
 }
-input:focus{outline:none; box-shadow:0 0 10px #ff66aa;}
-button{
-  margin-top:15px;
-  padding:12px 30px;
-  font-size:1rem;
-  font-weight:bold;
-  color:#fff;
-  border:none;
-  border-radius:12px;
-  cursor:pointer;
-  transition:transform 0.2s,box-shadow 0.2s;
+button:hover {
+  background: #ff66d6;
 }
-button:hover{
-  transform:scale(1.05);
-  box-shadow:0 0 15px #ff66aa;
+input, select {
+  width: 100%;
+  padding: 0.4rem;
+  margin: 0.3rem 0 0.8rem 0;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
-#payBtn{
-  background:linear-gradient(45deg,#ff66aa,#ff3399);
+.user-list, .shop-list {
+  max-height: 300px;
+  overflow-y: auto;
 }
-
-/* VIP Perks stacked sections */
-#vipPerks{
-  max-width:400px;
-  margin:30px auto;
-  display:flex;
-  flex-direction:column;
-  gap:20px;
-}
-.perksBox{
-  background:#111;
-  border-radius:15px;
-  padding:15px;
-  text-align:center;
-}
-.perksBox h3{
-  color:#ff66aa;
-  margin-bottom:10px;
-}
-.perksBox p{
-  color:#ccc;
-  line-height:1.6;
-}
-
-footer{
-  margin-top:auto;
-  padding:15px;
-  background:#111;
-  color:#888;
-  font-size:0.9rem;
-  display:flex;
-  justify-content:center;
-  gap:15px;
-}
-footer a{color:#66ccff; text-decoration:none;}
-footer a:hover{text-decoration:underline;}
-
-@media(max-width:400px){
-  h1{font-size:1.6rem;}
-  h2{font-size:0.95rem;}
-  input{font-size:0.95rem;padding:10px;}
-  button{font-size:0.95rem;padding:10px 25px;}
+.user-item, .shop-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #eee;
 }
 </style>
 </head>
 <body>
 
-<h1>VIP TAB</h1>
-<h2 id="subHeader">You’re on <span id="vipUsername">{username}</span>’s VIP Tab</h2>
-<img src="https://via.placeholder.com/300x200" id="girlImage" alt="Girl Image">
+<header>🎛️ Admin Dashboard</header>
 
-<form id="vipForm">
-  <label for="userName">Name</label>
-  <input type="text" id="userName" placeholder="Enter your name" required>
-  <label for="userEmail">Email</label>
-  <input type="email" id="userEmail" placeholder="Enter your email" required>
-  <button type="button" id="payBtn">Join VIP</button>
-</form>
+<div class="container">
 
-<div id="vipPerks">
-  <div class="perksBox">
-    <h3>Perks Section 1</h3>
-    <p>
-      Direct chat & personal connection with {username}<br>
-      Unlock premium content & behind-the-scenes media<br>
-      VIP badges & status in the community<br>
-      Access to exclusive events & rewards<br>
-      Early notifications & special surprises
-    </p>
+  <!-- Rooms Control -->
+  <div class="card">
+    <h3>Rooms</h3>
+    <select id="roomSelect"></select>
+    <div>
+      <button id="muteRoomBtn">Toggle Mute</button>
+      <button id="slowChatBtn">Toggle Slow Chat</button>
+    </div>
   </div>
 
-  <div class="perksBox">
-    <h3>Perks Section 2</h3>
-    <p>
-      Additional perks content goes here...<br>
-      You can add more VIP benefits<br>
-      Keep content engaging and enticing
-    </p>
+  <!-- Users Management -->
+  <div class="card">
+    <h3>Users in Room</h3>
+    <div class="user-list" id="userList"></div>
   </div>
+
+  <!-- Shop Management -->
+  <div class="card">
+    <h3>Shop Items</h3>
+    <div class="shop-list" id="shopList"></div>
+    <h4>Add / Edit Item</h4>
+    <input type="text" id="productName" placeholder="Product Name">
+    <input type="text" id="productImg" placeholder="Image URL">
+    <input type="number" id="productCost" placeholder="Cost in Stars">
+    <input type="number" id="productCashReward" placeholder="Cash Reward">
+    <input type="number" id="productStock" placeholder="Available">
+    <button id="saveProductBtn">Save / Add Product</button>
+  </div>
+
 </div>
 
-<footer>
-  <a href="#">Terms</a>
-  <a href="#">Privacy</a>
-  <a href="#">Contact</a>
-</footer>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.25.0/firebase-auth-compat.js"></script>
-<script src="https://js.paystack.co/v1/inline.js"></script>
-
-<script>
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
   projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
+  storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Get referral code from URL
-const urlParams = new URLSearchParams(window.location.search);
-const girlCode = urlParams.get('ref');
+// ---------- DOM Refs ----------
+const roomSelect = document.getElementById('roomSelect');
+const muteRoomBtn = document.getElementById('muteRoomBtn');
+const slowChatBtn = document.getElementById('slowChatBtn');
+const userList = document.getElementById('userList');
+const shopList = document.getElementById('shopList');
+const productName = document.getElementById('productName');
+const productImg = document.getElementById('productImg');
+const productCost = document.getElementById('productCost');
+const productCashReward = document.getElementById('productCashReward');
+const productStock = document.getElementById('productStock');
+const saveProductBtn = document.getElementById('saveProductBtn');
 
-// Fetch girl data dynamically
-if(girlCode){
-  db.collection("girls").where("referralCode","==",girlCode).get().then(snapshot=>{
-    if(!snapshot.empty){
-      const data = snapshot.docs[0].data();
-      document.getElementById("subHeader").textContent = 
-        `You’re on ${data.name}'s VIP Tab`;
-      document.getElementById("girlImage").src = data.photoURL || "https://via.placeholder.com/300x200";
-      document.getElementById("vipUsername").textContent = data.name;
-    }
+let currentRoomId = null;
+
+// ---------- Rooms ----------
+async function loadRooms() {
+  const querySnap = await getDocs(collection(db, 'rooms'));
+  roomSelect.innerHTML = '';
+  querySnap.forEach(docSnap => {
+    const room = { id: docSnap.id, ...docSnap.data() };
+    const opt = document.createElement('option');
+    opt.value = room.id;
+    opt.textContent = room.name;
+    roomSelect.appendChild(opt);
+  });
+  if(querySnap.size > 0) {
+    currentRoomId = querySnap.docs[0].id;
+    loadUsers(currentRoomId);
+  }
+}
+roomSelect.onchange = () => {
+  currentRoomId = roomSelect.value;
+  loadUsers(currentRoomId);
+}
+
+// ---------- Users ----------
+async function loadUsers(roomId) {
+  userList.innerHTML = '';
+  const querySnap = await getDocs(collection(db, 'users'));
+  querySnap.forEach(docSnap => {
+    const u = docSnap.data();
+    const div = document.createElement('div');
+    div.className = 'user-item';
+    div.innerHTML = `<span>${u.chatId || u.email}</span>
+                     <span>
+                       <button onclick="kickUser('${docSnap.id}')">Kick</button>
+                       <button onclick="banUser('${docSnap.id}')">Ban</button>
+                     </span>`;
+    userList.appendChild(div);
+  });
+}
+window.kickUser = async (uid) => {
+  const userRef = doc(db, 'users', uid);
+  await updateDoc(userRef, { kicked: true });
+  alert('User kicked!');
+}
+window.banUser = async (uid) => {
+  const userRef = doc(db, 'users', uid);
+  await updateDoc(userRef, { banned: true });
+  alert('User banned!');
+}
+
+// ---------- Room Controls ----------
+muteRoomBtn.onclick = async () => {
+  if(!currentRoomId) return;
+  const roomRef = doc(db, 'rooms', currentRoomId);
+  const snap = await getDoc(roomRef);
+  const isMuted = snap.data()?.globalMute || false;
+  await updateDoc(roomRef, { globalMute: !isMuted });
+  alert('Global Mute toggled: ' + !isMuted);
+}
+slowChatBtn.onclick = async () => {
+  if(!currentRoomId) return;
+  const roomRef = doc(db, 'rooms', currentRoomId);
+  const snap = await getDoc(roomRef);
+  const slow = snap.data()?.slowChat || false;
+  await updateDoc(roomRef, { slowChat: !slow });
+  alert('Slow Chat toggled: ' + !slow);
+}
+
+// ---------- Shop ----------
+async function loadShop() {
+  shopList.innerHTML = '';
+  const querySnap = await getDocs(collection(db, 'shopItems'));
+  querySnap.forEach(docSnap => {
+    const p = { id: docSnap.id, ...docSnap.data() };
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    div.innerHTML = `<span>${p.name} (${p.cost} ⭐ | ₦${p.cashReward})</span>
+                     <span>
+                       <button onclick="editShopItem('${docSnap.id}')">Edit</button>
+                       <button onclick="deleteShopItem('${docSnap.id}')">Delete</button>
+                     </span>`;
+    shopList.appendChild(div);
   });
 }
 
-// Paystack subscription
-document.getElementById("payBtn").addEventListener("click", function(){
-  const name = document.getElementById("userName").value;
-  const email = document.getElementById("userEmail").value;
-  const amount = 2999; // fixed weekly subscription
-
-  if(!name || !email){
-    alert("Please fill all fields correctly.");
-    return;
+window.editShopItem = async (id) => {
+  const pRef = doc(db, 'shopItems', id);
+  const snap = await getDoc(pRef);
+  const data = snap.data();
+  productName.value = data.name;
+  productImg.value = data.img;
+  productCost.value = data.cost;
+  productCashReward.value = data.cashReward;
+  productStock.value = data.available;
+  saveProductBtn.onclick = async () => {
+    await updateDoc(pRef, {
+      name: productName.value,
+      img: productImg.value,
+      cost: Number(productCost.value),
+      cashReward: Number(productCashReward.value),
+      available: Number(productStock.value)
+    });
+    loadShop();
+    alert('Item updated!');
   }
+}
 
-  let handler = PaystackPop.setup({
-    key: "YOUR_PUBLIC_PAYSTACK_KEY", // replace with your Paystack public key
-    email: email,
-    amount: amount*100, // kobo
-    currency: "NGN",
-    metadata: {custom_fields:[{display_name:"Referral Code", variable_name:"referral", value:girlCode}]},
-    callback: function(response){
-      console.log("Payment success:", response.reference);
-      db.collection("vipUsers").add({
-        name:name,
-        email:email,
-        referredBy:girlCode || null,
-        plan:"Weekly ₦2,999",
-        reference:response.reference,
-        timestamp:firebase.firestore.FieldValue.serverTimestamp()
-      }).then(async()=>{
-        if(girlCode){
-          const girlQuery = await db.collection("girls").where("referralCode","==",girlCode).get();
-          if(!girlQuery.empty){
-            const girlDoc = girlQuery.docs[0];
-            await girlDoc.ref.update({
-              cashEarned: firebase.firestore.FieldValue.increment(amount)
-            });
-          }
-        }
-        alert("Subscription successful! Welcome to VIP.");
-      }).catch(err=>{console.error(err); alert("Error saving subscription.");});
-    },
-    onClose: function(){
-      alert("Subscription cancelled.");
-    }
+window.deleteShopItem = async (id) => {
+  const pRef = doc(db, 'shopItems', id);
+  await deleteDoc(pRef);
+  loadShop();
+  alert('Item deleted!');
+}
+
+saveProductBtn.onclick = async () => {
+  const colRef = collection(db, 'shopItems');
+  await setDoc(doc(colRef), {
+    name: productName.value,
+    img: productImg.value,
+    cost: Number(productCost.value),
+    cashReward: Number(productCashReward.value),
+    available: Number(productStock.value)
   });
-  handler.openIframe();
-});
+  loadShop();
+  alert('Item added!');
+}
+
+loadRooms();
+loadShop();
+
 </script>
 </body>
 </html>
