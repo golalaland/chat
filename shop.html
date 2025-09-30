@@ -239,43 +239,42 @@ function createProductCard(item){
   `;
 
   const btn = card.querySelector('.buy-btn');
-  btn.addEventListener('click', async () => {
-    if (!currentUser) { 
-      alert("Not logged in"); 
-      return; 
-    }
-    if (currentUser.stars < item.cost) { 
-      alert("You dont have enough stars to make this purchase."); 
-      return; 
-    }
+ btn.addEventListener('click', async () => {
+  if (!currentUser) { 
+    alert("Not logged in"); 
+    return; 
+  }
+  if (currentUser.stars < item.cost) { 
+    alert("Not enough stars"); 
+    return; 
+  }
 
-    try {
-      // Deduct stars from user
-const userRef = doc(db, "users", currentUser.uid);
-await updateDoc(userRef, {
-  stars: increment(-item.cost)
+  try {
+    // Deduct stars from user
+    const userRef = doc(db, "users", currentUser.uid);
+    await updateDoc(userRef, {
+      stars: increment(-item.cost)
+    });
+
+    // Update local stars
+    currentUser.stars -= item.cost;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+
+    // Log purchase
+    await logPurchase(currentUser, item);
+
+    // 🔥 Decrement product availability
+    const productRef = doc(db, "shopItems", item.id.toString());
+    await updateDoc(productRef, {
+      available: increment(-1)
+    });
+
+    alert(`You bought ${item.name}! ✅`);
+  } catch (err) {
+    console.error("Purchase failed:", err);
+    alert("Error completing purchase, try again.");
+  }
 });
-
-// Update local stars
-currentUser.stars -= item.cost;
-starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-
-// Log purchase with email + phone
-await logPurchase(currentUser, item);
-
-// Decrement product availability
-const productRef = doc(db, "shopItems", item.id); // <-- must have doc ID
-await updateDoc(productRef, {
-  available: increment(-1)
-});
-
-alert(`You bought ${item.name}! ✅`);
-    } catch (err) {
-      console.error("Purchase failed:", err);
-      alert("Error completing purchase, try again.");
-    }
-  });
-
   return card;
 }
 
