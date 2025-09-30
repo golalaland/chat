@@ -1,203 +1,85 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Girls Sign Up / Login</title>
+<title>乂丨乂丨 Purchases Dashboard</title>
 <style>
-  /* Reset & body */
-  * { box-sizing:border-box; margin:0; padding:0; }
   body {
-    background:#000;
-    color:#fff;
-    font-family:'Segoe UI', sans-serif;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 1rem;
   }
-
-  /* Container */
-  .container {
-    width: 90%;
-    max-width: 380px;
-    text-align:center;
+  h1 { text-align: center; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
-
-  /* Logo / image */
-  .logo {
-    width:40%;
-    max-width:150px;
-    margin:0 auto 30px auto;
-    display:block;
-    border-radius:15px;
+  th, td {
+    border: 1px solid #ddd;
+    padding: 0.7rem;
+    text-align: left;
   }
-
-  /* Form */
-  form {
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-  }
-
-  input {
-    padding:12px 15px;
-    border-radius:10px;
-    border:none;
-    font-size:1rem;
-    background:#222;
-    color:#fff;
-  }
-
-  input::placeholder {
-    color:#bbb;
-  }
-
-  button {
-    margin-top:10px;
-    padding:12px;
-    border:none;
-    border-radius:10px;
-    font-size:1rem;
-    font-weight:bold;
-    cursor:pointer;
-    background: linear-gradient(90deg,#ff69b4,#ff1493);
-    color:#fff;
-  }
-
-  .toggle-link {
-    margin-top:15px;
-    font-size:0.9rem;
-    color:#ff69b4;
-    cursor:pointer;
-  }
-
-  .error {
-    font-size:0.85rem;
-    color:#f00;
+  th {
+    background: #ff33cc;
+    color: #fff;
   }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <img src="https://via.placeholder.com/150" alt="Logo" class="logo">
-  <h1 id="formTitle">Sign Up</h1>
-  <form id="girlForm">
-    <!-- Sign Up Fields -->
-    <div id="signupFields">
-      <input type="text" id="name" placeholder="Full Name" required>
-      <input type="date" id="dob" required>
-      <input type="tel" id="phone" placeholder="Phone Number" required>
-      <input type="email" id="email" placeholder="Email Address" required>
-      <input type="text" id="bank" placeholder="Bank Name" required>
-      <input type="text" id="account" placeholder="Account Number" required>
-      <input type="password" id="password" placeholder="Password" required>
-    </div>
+<h1>Live Purchases Dashboard</h1>
+<table>
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Item</th>
+      <th>Cost</th>
+      <th>Time</th>
+    </tr>
+  </thead>
+  <tbody id="purchase-list"></tbody>
+</table>
 
-    <!-- Login Fields -->
-    <div id="loginFields" style="display:none;">
-      <input type="email" id="loginEmail" placeholder="Email Address" required>
-      <input type="password" id="loginPassword" placeholder="Password" required>
-    </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <div class="error" id="errorMsg"></div>
-    <button type="submit" id="submitBtn">Sign Up</button>
-  </form>
-  <div class="toggle-link" id="toggleForm">Already have an account? Log In</div>
-</div>
-
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-<script>
   const firebaseConfig = {
     apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
     authDomain: "metaverse-1010.firebaseapp.com",
     projectId: "metaverse-1010",
-    storageBucket: "metaverse-1010.firebasestorage.app",
+    storageBucket: "metaverse-1010.appspot.com",
     messagingSenderId: "1044064238233",
-    appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-    measurementId: "G-S77BMC266C"
+    appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-  const girlForm = document.getElementById('girlForm');
-  const toggleForm = document.getElementById('toggleForm');
-  const formTitle = document.getElementById('formTitle');
-  const submitBtn = document.getElementById('submitBtn');
-  const signupFields = document.getElementById('signupFields');
-  const loginFields = document.getElementById('loginFields');
-  const errorMsg = document.getElementById('errorMsg');
+  const listEl = document.getElementById("purchase-list");
 
-  let isLogin = false;
-
-  toggleForm.addEventListener('click', () => {
-    isLogin = !isLogin;
-    if(isLogin){
-      signupFields.style.display='none';
-      loginFields.style.display='flex';
-      formTitle.innerText = 'Log In';
-      submitBtn.innerText = 'Log In';
-      toggleForm.innerText = "Don't have an account? Sign Up";
-    } else {
-      signupFields.style.display='flex';
-      loginFields.style.display='none';
-      formTitle.innerText = 'Sign Up';
-      submitBtn.innerText = 'Sign Up';
-      toggleForm.innerText = "Already have an account? Log In";
-    }
-    errorMsg.innerText = '';
-  });
-
-  girlForm.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    errorMsg.innerText = '';
-
-    if(isLogin){
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
-      try{
-        await auth.signInWithEmailAndPassword(email,password);
-        alert('Logged in successfully!');
-      }catch(err){
-        errorMsg.innerText = err.message;
-      }
-    }else{
-      const name = document.getElementById('name').value;
-      const dob = document.getElementById('dob').value;
-      const phone = document.getElementById('phone').value;
-      const email = document.getElementById('email').value;
-      const bank = document.getElementById('bank').value;
-      const account = document.getElementById('account').value;
-      const password = document.getElementById('password').value;
-
-      const dobDate = new Date(dob);
-      const ageDifMs = Date.now() - dobDate.getTime();
-      const ageDate = new Date(ageDifMs);
-      const age = Math.abs(ageDate.getUTCFullYear() - 1970);
-      if(age<18){
-        errorMsg.innerText = 'You must be 18 or older to sign up.';
-        return;
-      }
-
-      try{
-        const userCredential = await auth.createUserWithEmailAndPassword(email,password);
-        const uid = userCredential.user.uid;
-        await db.collection('girls').doc(uid).set({
-          name, dob, phone, email, bank, account, stars:0, cash:0, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        alert('Sign up successful!');
-      }catch(err){
-        errorMsg.innerText = err.message;
-      }
-    }
+  // Live listener on "purchases"
+  const q = query(collection(db, "purchases"), orderBy("timestamp", "desc"));
+  onSnapshot(q, snapshot => {
+    listEl.innerHTML = "";
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${data.chatId || data.userId}</td>
+        <td>${data.itemName}</td>
+        <td>${data.cost} ⭐️</td>
+        <td>${data.timestamp?.toDate().toLocaleString() || ""}</td>
+      `;
+      listEl.appendChild(row);
+    });
   });
 </script>
+
 </body>
 </html>
