@@ -130,16 +130,7 @@ header {
   display: block;
   margin: 1rem auto;
 }
-#home-btn:hover {
-  background: #ff66d6;
-}
-#confirmNo {
-  background: #ccc;
-  color: #333;
-}
-#confirmNo:hover {
-  background: #bbb;
-}
+
 /* Add this to your CSS */
 .availability-badge {
   position: absolute;
@@ -154,6 +145,7 @@ header {
   z-index: 2;
   text-align: center;
 }
+/* Modal Overlay */
 #confirmModal {
   position: fixed;
   top: 0;
@@ -165,54 +157,65 @@ header {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeIn 0.25s ease-in-out;
 }
 
+/* Modal Box */
 #confirmModal .modal-content {
   background: var(--card-bg);
-  padding: 20px 25px;
+  padding: 18px 22px;
   border-radius: 12px;
-  max-width: 360px;
+  max-width: 340px;
   text-align: center;
   box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  transform: scale(0.9);
+  animation: popIn 0.2s forwards;
 }
 
+/* Modal Text */
 #confirmModal h3 {
   margin-top: 0;
   font-size: 1.2rem;
 }
-
 #confirmModal p {
   font-size: 1rem;
-  margin: 12px 0 18px 0;
+  margin: 10px 0 15px;
 }
 
+/* Buttons */
 #confirmModal button {
   background: var(--btn-bg);
   color: var(--btn-text);
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.55rem 1.1rem;
   font-weight: bold;
   font-size: 0.95rem;
   border-radius: 6px;
   cursor: pointer;
-  margin: 0 5px;
+  margin: 0 6px;
+  min-width: 95px;
   transition: background 0.2s;
-  min-width: 100px; /* ensures both buttons have same width */
 }
-
 #confirmModal button:hover {
   background: #ff66d6;
 }
-
 #confirmModal #confirmNo {
   background: #ccc;
   color: #333;
 }
-
 #confirmModal #confirmNo:hover {
   background: #bbb;
 }
-</style>
+
+/* Animations */
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}</style>
 </head>
 <body>
 
