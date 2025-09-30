@@ -371,32 +371,43 @@ refs.sendBtn?.addEventListener("click", async ()=>{
   });
   refs.messageInputEl.value = "";
 
-  // RENDER MESSAGE
+  // Render your own message
   renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
 
-  // ⭐ FORCE SCROLL
-  if (refs.messagesEl) {
-    refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
-  }
+  // ⭐ Force scroll AFTER browser paints
+  requestAnimationFrame(() => {
+    if (refs.messagesEl) {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    }
+  });
 });
 
   refs.buzzBtn?.addEventListener("click", async ()=>{
-    if (!currentUser) return showStarPopup("Sign in to BUZZ");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+  if (!currentUser) return showStarPopup("Sign in to BUZZ");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-    const userRef = doc(db,"users",currentUser.uid);
-    const snap = await getDoc(userRef);
-    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
+  const userRef = doc(db,"users",currentUser.uid);
+  const snap = await getDoc(userRef);
+  if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
 
-    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-    await addDoc(collection(db,CHAT_COLLECTION), {
-      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-      timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
-    });
-    refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent!");
+  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
+    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+    timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
   });
+  refs.messageInputEl.value = "";
+  showStarPopup("BUZZ sent!");
+
+  // ⭐ Render and scroll after browser paints
+  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
+
+  requestAnimationFrame(() => {
+    if (refs.messagesEl) {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    }
+  });
+});
 
   /* ---------- Hello text rotation ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
