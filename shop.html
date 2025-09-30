@@ -268,8 +268,19 @@ const shopItemsEl = document.getElementById('shop-items');
 
 // ---------- Utilities ----------
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+function animateNumber(el, from, to, duration = 600) {
+  const start = performance.now();
+  function step(timestamp) {
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const value = Math.floor(from + (to - from) * progress);
+    if (el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
+    else if (el === cashEl) el.textContent = `₦${formatNumber(value)}`;
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
-// ---------- Confirm Modal ----------
+// ---------- Modals ----------
 const confirmModal = document.createElement("div");
 confirmModal.id = "confirmModal";
 confirmModal.style.position = "fixed";
@@ -298,47 +309,57 @@ function showConfirmModal(title, text, onYes) {
   document.getElementById("confirmTitle").innerText = title;
   document.getElementById("confirmText").innerText = text;
   confirmModal.style.display = "flex";
-
   const yesBtn = document.getElementById("confirmYes");
   const noBtn = document.getElementById("confirmNo");
-
-  const cleanup = () => {
-    confirmModal.style.display = "none";
-    yesBtn.onclick = null;
-    noBtn.onclick = null;
-  };
-
-  yesBtn.onclick = () => {
-    onYes();
-    cleanup();
-  };
+  const cleanup = () => { confirmModal.style.display = "none"; yesBtn.onclick = null; noBtn.onclick = null; };
+  yesBtn.onclick = () => { onYes(); cleanup(); };
   noBtn.onclick = cleanup;
 }
 
 function showMessageModal(title, text, duration = 2000) {
-  const modal = confirmModal; 
   document.getElementById("confirmTitle").innerText = title;
   document.getElementById("confirmText").innerText = text;
-
-  // Hide the Yes/No buttons for this kind of message
   document.getElementById("confirmYes").style.display = "none";
   document.getElementById("confirmNo").style.display = "none";
-
-  modal.style.display = "flex";
-
+  confirmModal.style.display = "flex";
   setTimeout(() => {
-    modal.style.display = "none";
-    // Reset buttons for next confirm
+    confirmModal.style.display = "none";
     document.getElementById("confirmYes").style.display = "inline-block";
     document.getElementById("confirmNo").style.display = "inline-block";
   }, duration);
 }
 
-// ---------- Product Card ----------
+// ---------- Current User ----------
+let currentUser = null;
+async function loadCurrentUser() {
+  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
+  if(!vipSession?.email) return;
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+  const userRef = doc(db, 'users', uid);
+  const snap = await getDoc(userRef);
+  if(!snap.exists()) return;
+
+  currentUser = { uid, ...snap.data() };
+  usernameEl.textContent = currentUser.chatId || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+  renderShop();
+
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    currentUser.stars = Number(data.stars || 0);
+    currentUser.cash = Number(data.cash || 0);
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+  });
+}
+loadCurrentUser();
+
+// ---------- Shop Rendering ----------
 function createProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
-
   card.innerHTML = `
     <img src="${product.img}" alt="${product.name}">
     <div class="availability-badge">${product.available > 0 ? product.available + ' left' : 'Sold Out'}</div>
@@ -352,33 +373,16 @@ function createProductCard(product) {
   const badge = card.querySelector(".availability-badge");
   const btn = card.querySelector(".buy-btn");
 
-  // Update badge style if sold out
   if (product.available <= 0) {
     badge.textContent = "Sold Out";
-    badge.style.background = "#999"; // gray out
+    badge.style.background = "#999";
   }
 
-  // ✅ Button click handler
   btn.onclick = () => {
-    // Check login
-    if (!currentUser) {
-      showMessageModal("Oops!", "You must be logged in to purchase.");
-      return;
-    }
+    if (!currentUser) return showMessageModal("Oops!", "You must be logged in to purchase.");
+    if (currentUser.stars < product.cost) return showMessageModal("Oops!", "Not enough stars!");
+    if (product.available <= 0) return showMessageModal("Sold Out!", "This item is no longer available.");
 
-    // Check stars
-    if (currentUser.stars < product.cost) {
-      showMessageModal("Oops!", "Not enough stars!");
-      return;
-    }
-
-    // Check stock
-    if (product.available <= 0) {
-      showMessageModal("Sold Out!", "This item is no longer available.");
-      return;
-    }
-
-    // Show confirm modal
     showConfirmModal(
       "Confirm Purchase",
       `Are you sure you want to get "${product.name}" for ${product.cost} stars?`,
@@ -386,105 +390,62 @@ function createProductCard(product) {
         try {
           const userRef = doc(db, "users", currentUser.uid);
           const productRef = doc(db, "shopItems", product.id.toString());
+          let newStars, newCash;
 
-        await runTransaction(db, async (transaction) => {
-  const userSnap = await transaction.get(userRef);
-  const productSnap = await transaction.get(productRef);
+          await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef);
+            const productSnap = await transaction.get(productRef);
+            if (!userSnap.exists()) throw "User not found!";
+            if (!productSnap.exists()) throw "Product not found!";
+            const userData = userSnap.data();
+            const productData = productSnap.data();
+            if (Number(userData.stars) < Number(productData.cost)) throw "Not enough stars!";
+            if (Number(productData.available) <= 0) throw "Out of stock!";
 
-  if (!userSnap.exists()) throw "User not found!";
-  if (!productSnap.exists()) throw "Product not found!";
+            newStars = Number(userData.stars) - Number(productData.cost);
+            newCash = (Number(userData.cash) || 0) + (Number(productData.cashReward) || 0);
 
-  const userData = userSnap.data();
-  const productData = productSnap.data();
+            transaction.update(userRef, { stars: newStars, cash: newCash });
+            transaction.update(productRef, { available: Number(productData.available) - 1 });
 
-  if (Number(userData.stars) < Number(productData.cost)) throw "Not enough stars!";
-  if (Number(productData.available) <= 0) throw "Out of stock!";
+            const purchaseRef = doc(collection(db, "purchases"));
+            transaction.set(purchaseRef, {
+              userId: currentUser.uid,
+              email: userData.email || "",
+              phone: userData.phone || "",
+              productId: product.id,
+              productName: product.name,
+              cost: Number(productData.cost),
+              cashReward: Number(productData.cashReward) || 0,
+              timestamp: new Date()
+            });
+          });
 
-  // Deduct stars, add cash reward, reduce stock
-  const newStars = Number(userData.stars) - Number(productData.cost);
-  const newCash = (Number(userData.cash) || 0) + (Number(productData.cashReward) || 0);
+          // UI updates
+          currentUser.stars = newStars;
+          currentUser.cash = newCash;
+          animateNumber(starsEl, Number(starsEl.textContent.replace(/\D/g,'')), newStars);
+          animateNumber(cashEl, Number(cashEl.textContent.replace(/\D/g,'')), newCash);
+          renderShop();
+          showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
+        } catch(e) {
+          console.error("Redemption error:", e);
+          showMessageModal("Error!", "Redemption failed: " + e, 2500);
+        }
+      }
+    );
+  };
 
-  transaction.update(userRef, { 
-    stars: newStars,
-    cash: newCash
-  });
-  transaction.update(productRef, { available: Number(productData.available) - 1 });
-
-  // Log purchase
-  const purchaseRef = doc(collection(db, "purchases"));
-  transaction.set(purchaseRef, {
-    userId: currentUser.uid,
-    email: userData.email || "",
-    phone: userData.phone || "",
-    productId: product.id,
-    productName: product.name,
-    cost: Number(productData.cost),
-    cashReward: Number(productData.cashReward) || 0,
-    timestamp: new Date()
-  });
-});
-
-// After transaction succeeds, update DOM with proper formatting
-showMessageModal(
-  "Congratulations!",
-  `"${product.name}" redeemed successfully! 🎉`,
-  2500
-);
-
-renderShop(); // refresh shop availability
-
-// Update stars and cash in UI
-if (currentUser) {
-  currentUser.stars = newStars;
-  currentUser.cash = newCash;
-  starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+  return card;
 }
 
-// ---------- Load Current User ----------
-let currentUser = null;
-async function loadCurrentUser(){
-  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
-  if(!vipSession?.email) return;
-  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-  const userRef = doc(db, 'users', uid);
-  const snap = await getDoc(userRef);
-  if(!snap.exists()) return;
-  currentUser = { uid, ...snap.data() };
-  usernameEl.textContent = currentUser.chatId || 'Guest';
-  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
-  renderShop();
-  onSnapshot(userRef, docSnap => {
+async function renderShop(){
+  shopItemsEl.innerHTML = '';
+  const querySnap = await getDocs(collection(db, 'shopItems'));
+  querySnap.forEach(docSnap => {
     const data = docSnap.data();
-    if(!data) return;
-    currentUser.stars = data.stars || 0;
-    currentUser.cash = data.cash || 0;
-    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+    const item = { id: docSnap.id, ...data };
+    shopItemsEl.appendChild(createProductCard(item));
   });
 }
-// Animate number changes for a smooth counter effect
-function animateNumber(el, from, to, duration = 600) {
-  const start = performance.now();
-
-  function step(timestamp) {
-    const progress = Math.min((timestamp - start) / duration, 1);
-    const value = Math.floor(from + (to - from) * progress);
-    // Keep the right formatting
-    if (el === starsEl) {
-      el.textContent = `${formatNumber(value)} ⭐️`;
-    } else if (el === cashEl) {
-      el.textContent = `₦${formatNumber(value)}`;
-    }
-    if (progress < 1) {
-      requestAnimationFrame(step);
-    }
-  }
-
-  requestAnimationFrame(step);
-}
-loadCurrentUser();
 </script>
-</body>
-</html>
