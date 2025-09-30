@@ -145,6 +145,52 @@ header {
 #home-btn:hover {
   background: #ff66d6;
 }
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.modal.hidden {
+  display: none;
+}
+.modal-content {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  width: 90%;
+  max-width: 350px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+.modal-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-around;
+}
+.confirm-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.cancel-btn {
+  background: #ddd;
+  color: #333;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
 </style>
 </head>
 <body>
@@ -163,6 +209,17 @@ header {
         <div class="balance-label">Cash Balance</div>
         <div class="balance-value" id="cash-count">₦0</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirm-modal" class="modal hidden">
+  <div class="modal-content">
+    <p id="confirm-text"></p>
+    <div class="modal-actions">
+      <button id="confirm-yes" class="confirm-btn">Confirm</button>
+      <button id="confirm-no" class="cancel-btn">Cancel</button>
     </div>
   </div>
 </div>
