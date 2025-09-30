@@ -315,6 +315,25 @@ function showConfirmModal(title, text, onYes) {
   noBtn.onclick = cleanup;
 }
 
+function showMessageModal(title, text, duration = 2000) {
+  const modal = confirmModal; 
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+
+  // Hide the Yes/No buttons for this kind of message
+  document.getElementById("confirmYes").style.display = "none";
+  document.getElementById("confirmNo").style.display = "none";
+
+  modal.style.display = "flex";
+
+  setTimeout(() => {
+    modal.style.display = "none";
+    // Reset buttons for next confirm
+    document.getElementById("confirmYes").style.display = "inline-block";
+    document.getElementById("confirmNo").style.display = "inline-block";
+  }, duration);
+}
+
 // ---------- Product Card ----------
 function createProductCard(product) {
   const card = document.createElement("div");
@@ -341,19 +360,18 @@ function createProductCard(product) {
   }
 
   // Purchase button logic
-  btn.onclick = () => {
-    if (!currentUser) {
-      alert("You must be logged in to purchase.");
-      return;
-    }
-    if (currentUser.stars < product.cost) {
-      alert("Not enough stars!");
-      return;
-    }
-    if (product.available <= 0) {
-      alert("Out of stock!");
-      return;
-    }
+if (!currentUser) {
+  showMessageModal("Oops!", "You must be logged in to purchase.");
+  return;
+}
+if (currentUser.stars < product.cost) {
+  showMessageModal("Oops!", "Not enough stars!");
+  return;
+}
+if (product.available <= 0) {
+  showMessageModal("Sold Out!", "This item is no longer available.");
+  return;
+}
 
     showConfirmModal(
       "Confirm Purchase",
@@ -392,8 +410,7 @@ function createProductCard(product) {
               timestamp: new Date()
             });
           });
-
-          alert("Purchase successful!");
+showMessageModal("Congratulations!", `"${product.name}" purchased successfully! 🎉`, 2500);
           renderShop(); // refresh shop availability
           loadCurrentUser(); // refresh stars
         } catch (e) {
