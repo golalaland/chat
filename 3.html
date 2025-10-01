@@ -115,17 +115,6 @@
       font-size: 0.85rem;
       color: #ccc;
     }
-    .copy-btn {
-  background: #ff2fa0;   /* theme color */
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 8px;  /* spacing from label above */
-  font-size: 0.9rem;
-  transition: 0.3s ease;
-}
 .copy-btn:hover {
   background: #ff66d6;  /* hover accent color */
 }
@@ -704,13 +693,14 @@
     if (!currentUser?.isHost) {
       tabContentEl.innerHTML = `<div style="padding:1rem;color:#aaa;">VIP stats are for hosts only.</div>`;
       return;
-tabContentEl.innerHTML = `
-  <div class="stat-block">
-    <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
-    <div class="stat-label">VIPs Signed Up</div>
-    <button id="copyInviteBtn" class="copy-btn">Copy Invite Link</button>
-  </div>
-`;
+ // Set the inner HTML of the tab content
+  tabContentEl.innerHTML = `
+    <div class="stat-block">
+      <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
+      <div class="stat-label">VIPs Signed Up</div>
+      <button id="copyInviteBtn" class="copy-link-btn">Copy Invite Link</button>
+    </div>
+  `;
     attachInviteHandler();
   } else if (type === 'friends') {
     tabContentEl.innerHTML = `
