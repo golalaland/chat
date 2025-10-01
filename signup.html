@@ -14,46 +14,54 @@
   --vip-color: gold;
 }
 
+* { box-sizing:border-box; margin:0; padding:0; }
+
 body {
-  margin:0;
-  font-family: 'Inter', sans-serif;
   background: var(--background-color);
   color: var(--text-color);
+  font-family: 'Inter', sans-serif;
   display:flex;
   flex-direction:column;
   align-items:center;
   padding:1rem;
 }
 
-video {
+.video-container {
   width:100%;
-  max-width:400px;
+  max-width:430px;
   border-radius:15px;
+  overflow:hidden;
   margin-bottom:1rem;
-  height:200px;
+  aspect-ratio:16/9;
+}
+
+video, iframe {
+  width:100%;
+  height:100%;
   object-fit:cover;
+  border-radius:15px;
 }
 
+/* Header */
 h2 {
-  font-weight:600;
+  font-size:1.4rem;
   color:var(--primary-color);
-  text-align:center;
   margin-bottom:0.25rem;
-  font-size:1.3rem;
+  text-align:center;
 }
 
-p {
-  text-align:center;
+#host-info {
   font-size:0.85rem;
   color:#aaa;
+  text-align:center;
   margin-bottom:1rem;
 }
 
-/* Compact form fields */
+/* Form fields */
 .form-group {
   width:90%;
-  max-width:360px;
-  margin-bottom:0.8rem;
+  max-width:400px;
+  margin-bottom:0.7rem;
 }
 
 .form-group input {
@@ -72,13 +80,8 @@ p {
   box-shadow:0 0 8px rgba(255,64,129,0.5);
 }
 
-/* Gender */
-.gender-label {
-  text-align:center;
-  font-weight:600;
-  margin-bottom:0.3rem;
-}
-
+/* Gender buttons */
+.gender-label { text-align:center; font-weight:600; margin-bottom:0.3rem; }
 .gender-select {
   display:flex;
   justify-content:center;
@@ -93,27 +96,31 @@ p {
   border:none;
   background:#333;
   color:#eee;
-  font-weight:600;
+  font-weight:bold;
+  font-size:1rem;
   cursor:pointer;
-  box-shadow:0 4px #000;
+  box-shadow:0 6px #000;
   transition:0.2s;
 }
 
 .gender-select button:active {
-  transform:translateY(2px);
+  transform:translateY(3px);
   box-shadow:0 2px #000;
 }
 
 .gender-select button.selected {
   background:var(--primary-color);
-  box-shadow:0 0 12px var(--primary-color);
+  box-shadow:0 0 15px var(--primary-color);
 }
 
 /* VIP Toggle */
 .vip-label {
   text-align:center;
-  font-weight:600;
+  font-weight:bold;
+  font-size:1rem;
   margin-bottom:0.3rem;
+  color:#aaa;
+  transition:0.3s;
 }
 
 .vip-toggle {
@@ -123,10 +130,7 @@ p {
   background:#444;
   position:relative;
   cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin-bottom:1rem;
+  margin:0 auto 0.5rem auto;
   transition:0.3s;
 }
 
@@ -137,6 +141,7 @@ p {
   background:#555;
   position:absolute;
   left:1px;
+  top:1px;
   transition:0.3s;
 }
 
@@ -146,22 +151,24 @@ p {
   box-shadow:0 0 12px gold;
 }
 
-.vip-toggle .vip-text {
-  font-weight:bold;
-  color:gold;
+.vip-message {
+  text-align:center;
   font-size:0.8rem;
+  color:gold;
   opacity:0;
   transition:0.3s;
+  margin-bottom:1rem;
 }
 
-.vip-toggle.on .vip-text {
-  opacity:1;
+.vip-label.on {
+  color:gold;
+  text-shadow:0 0 8px gold;
 }
 
 /* Submit Button */
 .submit-btn {
   width:50%;
-  padding:0.7rem;
+  padding:0.65rem;
   border:none;
   border-radius:30px;
   font-weight:bold;
@@ -170,6 +177,7 @@ p {
   background:var(--primary-color);
   cursor:pointer;
   margin-bottom:1rem;
+  transition:0.2s;
 }
 
 .submit-btn:hover { transform:scale(1.03); }
@@ -182,10 +190,9 @@ p {
 </head>
 <body>
 
-<video autoplay muted loop>
-  <source src="sample-video.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+<div class="video-container">
+  <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Placeholder Video" frameborder="0" allowfullscreen></iframe>
+</div>
 
 <h2>VIP/Host Signup</h2>
 <p id="host-info">You're in <span id="host-username">HostName</span>'s VIP Tab</p>
@@ -206,11 +213,11 @@ p {
   <button id="maleBtn">M</button>
 </div>
 
-<div class="vip-label">VIP</div>
+<div class="vip-label" id="vipLabel">VIP</div>
 <div class="vip-toggle" id="vipToggle">
   <span class="vip-circle"></span>
-  <span class="vip-text">VIP</span>
 </div>
+<div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
 
 <button class="submit-btn" id="submitBtn">Sign Up</button>
 <div class="message" id="message"></div>
@@ -220,11 +227,15 @@ const clickSound = new Audio('click.mp3');
 
 // VIP Toggle
 const vipToggle = document.getElementById('vipToggle');
+const vipLabel = document.getElementById('vipLabel');
+const vipMessage = document.getElementById('vipMessage');
 let isVIP = false;
 
 vipToggle.addEventListener('click', () => {
   isVIP = !isVIP;
   vipToggle.classList.toggle('on', isVIP);
+  vipLabel.classList.toggle('on', isVIP);
+  vipMessage.style.opacity = isVIP ? '1' : '0';
   clickSound.play();
 });
 
@@ -273,5 +284,6 @@ submitBtn.addEventListener('click', () => {
   // TODO: Firestore + Paystack integration
 });
 </script>
+
 </body>
 </html>
