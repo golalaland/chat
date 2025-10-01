@@ -518,71 +518,69 @@
   }
 
   // ---------- Current User ----------
-  let currentUser = null;
   async function loadCurrentUser(){
-    const vipSessionRaw = localStorage.getItem('vipUser');
-    let vipSession = null;
-    try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession = null; }
+  const vipSessionRaw = localStorage.getItem('vipUser');
+  let vipSession = null;
+  try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession = null; }
 
-    usernameEl.textContent = 'Guest';
-    starsEl.textContent = `0 ⭐️`;
-    cashEl.textContent = `₦0`;
+  usernameEl.textContent = 'Guest';
+  starsEl.textContent = `0 ⭐️`;
+  cashEl.textContent = `₦0`;
 
-    renderShop();
+  renderShop();
 
-    if(!vipSession?.email) {
-      currentUser = null;
-      hostTabsEl.style.display = 'none';
-      return;
-    }
+  if(!vipSession?.email) {
+    currentUser = null;
+    hostTabsEl.style.display = 'none'; // hide tabs completely
+    tabContentEl.style.display = 'none'; // hide panel
+    return;
+  }
 
-    const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
-    if(!snap.exists()){
-      currentUser = { uid, stars:0, cash:0, isHost:false };
-      usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
-      hostTabsEl.style.display = 'none';
-      return;
-    }
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+  const userRef = doc(db, 'users', uid);
+  const snap = await getDoc(userRef);
 
-    currentUser = { uid, ...snap.data() };
-    usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
-    starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
-    cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
-    if (currentUser.isHost) hostTabsEl.style.display = ''; else hostTabsEl.style.display = 'none';
+  if(!snap.exists()){
+    currentUser = { uid, stars:0, cash:0, isHost:false };
+    usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
+    hostTabsEl.style.display = 'none';
+    tabContentEl.style.display = 'none'; // hide panel
+    return;
+  }
+
+  currentUser = { uid, ...snap.data() };
+  usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+
+  if (currentUser.isHost) {
+    hostTabsEl.style.display = ''; // show tabs
+    tabContentEl.style.display = ''; // show panel
     updateHostPanels();
+  } else {
+    hostTabsEl.style.display = 'none'; // hide tabs
+    tabContentEl.style.display = 'none'; // hide panel
+  }
 
-    onSnapshot(userRef, docSnap => {
-      const data = docSnap.data();
-      if(!data) return;
-      currentUser = { uid, ...data };
-      usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
-      currentUser.stars = Number(currentUser.stars) || 0;
-      currentUser.cash = Number(currentUser.cash) || 0;
-      starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-      cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
-      if (currentUser.isHost) hostTabsEl.style.display = ''; else hostTabsEl.style.display = 'none';
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    currentUser = { uid, ...data };
+    usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+    currentUser.stars = Number(currentUser.stars) || 0;
+    currentUser.cash = Number(currentUser.cash) || 0;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+    if (currentUser.isHost) {
+      hostTabsEl.style.display = '';
+      tabContentEl.style.display = '';
       updateHostPanels();
-    });
-  }
-
-  // ---------- Host panels ----------
-  function updateHostPanels(){
-    if(!currentUser || !currentUser.isHost){
+    } else {
       hostTabsEl.style.display = 'none';
-      return;
+      tabContentEl.style.display = 'none';
     }
-    hostTabsEl.style.display = '';
-    const vipCount = Number(currentUser.hostVIP) || 0;
-    const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
-    const badge = currentUser.hostBadge || 'Gold';
-    vipCountEl.textContent = formatNumber(vipCount);
-    friendsCountEl.textContent = formatNumber(friends.length);
-    badgesCountEl.textContent = badge;
-    vipStatEl.textContent = formatNumber(vipCount);
-  }
-
+  });
+}
   // ---------- Create product card ----------
   function createProductCard(product){
     const card = document.createElement('div');
