@@ -274,10 +274,10 @@ header {
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
 <script type="module">
+// ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
-  getFirestore, doc, getDoc, updateDoc,
-  collection, onSnapshot, orderBy, query 
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -286,105 +286,228 @@ const firebaseConfig = {
   projectId: "metaverse-1010",
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Elements
-const listEl = document.getElementById("purchase-list");
-const usernameEl = document.getElementById("username");
-const starsEl = document.getElementById("stars-count");
-const cashEl = document.getElementById("cash-count");
+// ---------- DOM Refs ----------
+const usernameEl = document.getElementById('username');
+const starsEl = document.getElementById('stars-count');
+const cashEl = document.getElementById('cash-count');
+const shopItemsEl = document.getElementById('shop-items');
 
-// Replace with actual auth system later
-const currentUserId = "testUser";  
-
-/* ----------------- Helper: Animated Count ----------------- */
-function animateCount(el, from, to, duration = 800, prefix = "", suffix = "") {
+// ---------- Utilities ----------
+function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+function animateNumber(el, from, to, duration = 600) {
   const start = performance.now();
-  function update(now) {
-    const progress = Math.min((now - start) / duration, 1);
+  function step(timestamp) {
+    const progress = Math.min((timestamp - start) / duration, 1);
     const value = Math.floor(from + (to - from) * progress);
-    el.textContent = `${prefix}${value}${suffix}`;
-    if (progress < 1) requestAnimationFrame(update);
+    if (el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
+    else if (el === cashEl) el.textContent = `₦${formatNumber(value)}`;
+    if (progress < 1) requestAnimationFrame(step);
   }
-  requestAnimationFrame(update);
+  requestAnimationFrame(step);
 }
 
-/* ----------------- Load User Balances ----------------- */
-async function loadUser() {
-  const userRef = doc(db, "users", currentUserId);
-  const snap = await getDoc(userRef);
-
-  if (snap.exists()) {
-    const data = snap.data();
-    usernameEl.textContent = data.chatId || "Guest";
-
-    animateCount(starsEl, 0, data.stars || 0, 1000, "", " ⭐️");
-    animateCount(cashEl, 0, data.cash || 0, 1000, "₦");
-  } else {
-    usernameEl.textContent = "Guest";
-    starsEl.textContent = "0 ⭐️";
-    cashEl.textContent = "₦0";
-  }
-}
-loadUser();
-
-/* ----------------- Purchases Listener ----------------- */
-const q = query(collection(db, "purchases"), orderBy("timestamp", "desc"));
-onSnapshot(q, snapshot => {
-  listEl.innerHTML = "";
-  snapshot.forEach((doc, idx) => {
-    const data = doc.data();
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${data.chatId || data.userId}</td>
-      <td>${data.itemName}</td>
-      <td>${data.cost} ⭐️</td>
-      <td>${data.timestamp?.toDate().toLocaleString() || ""}</td>
-    `;
-    listEl.appendChild(row);
-
-    if (idx === 0) {
-      showPurchasePopup(data.itemName, data.cost);
-      triggerConfetti();
-    }
-  });
-});
-
-/* ----------------- Popup ----------------- */
-function showPurchasePopup(item, cost) {
-  document.getElementById("popupTitle").innerText = "Purchase Confirmed 🎉";
-  document.getElementById("popupMessage").innerText = `You bought ${item} for ${cost} ⭐️`;
-  document.getElementById("purchasePopup").style.display = "flex";
-}
-
-window.closePopup = function() {
-  document.getElementById("purchasePopup").style.display = "none";
-}
-
-/* ----------------- Confetti ----------------- */
+// ---------- Confetti ----------
 function triggerConfetti() {
-  for (let i = 0; i < 25; i++) {
-    const confetti = document.createElement("div");
-    confetti.style.position = "fixed";
-    confetti.style.width = "8px";
-    confetti.style.height = "8px";
-    confetti.style.background = `hsl(${Math.random()*360},100%,50%)`;
-    confetti.style.top = "-10px";
-    confetti.style.left = Math.random() * 100 + "vw";
-    confetti.style.opacity = 0.9;
-    confetti.style.borderRadius = "50%";
-    confetti.style.transition = "top 1.5s ease, opacity 1.5s ease";
-    document.body.appendChild(confetti);
-
-    setTimeout(() => {
-      confetti.style.top = "100vh";
-      confetti.style.opacity = 0;
-    }, 50);
-
-    setTimeout(() => confetti.remove(), 1600);
+  if (!window.confetti) {
+    const confettiScript = document.createElement('script');
+    confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+    confettiScript.onload = () => {
+      window.confetti && window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    };
+    document.body.appendChild(confettiScript);
+  } else {
+    window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
   }
 }
+
+// ---------- Modals ----------
+const confirmModal = document.createElement("div");
+confirmModal.id = "confirmModal";
+confirmModal.style.position = "fixed";
+confirmModal.style.top = "0";
+confirmModal.style.left = "0";
+confirmModal.style.width = "100%";
+confirmModal.style.height = "100%";
+confirmModal.style.background = "rgba(0,0,0,0.6)";
+confirmModal.style.display = "none";
+confirmModal.style.justifyContent = "center";
+confirmModal.style.alignItems = "center";
+confirmModal.style.zIndex = "1000";
+confirmModal.innerHTML = `
+  <div class="modal-content theme-popup">
+    <h3 id="confirmTitle">Confirm</h3>
+    <p id="confirmText"></p>
+    <div class="modal-actions">
+      <button id="confirmYes" class="btn btn-primary">Yes</button>
+      <button id="confirmNo" class="btn btn-secondary">Cancel</button>
+    </div>
+  </div>
+`;
+document.body.appendChild(confirmModal);
+
+function showConfirmModal(title, text, onYes) {
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+  confirmModal.style.display = "flex";
+  const yesBtn = document.getElementById("confirmYes");
+  const noBtn = document.getElementById("confirmNo");
+  const cleanup = () => { confirmModal.style.display = "none"; yesBtn.onclick = null; noBtn.onclick = null; };
+  yesBtn.onclick = () => { onYes(); cleanup(); };
+  noBtn.onclick = cleanup;
+}
+
+function showMessageModal(title, text, duration = 2000) {
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+  document.getElementById("confirmYes").style.display = "none";
+  document.getElementById("confirmNo").style.display = "none";
+  confirmModal.style.display = "flex";
+  setTimeout(() => {
+    confirmModal.style.display = "none";
+    document.getElementById("confirmYes").style.display = "inline-block";
+    document.getElementById("confirmNo").style.display = "inline-block";
+  }, duration);
+}
+
+// ---------- Current User ----------
+let currentUser = null;
+async function loadCurrentUser() {
+  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
+  if(!vipSession?.email) return;
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+  const userRef = doc(db, 'users', uid);
+  const snap = await getDoc(userRef);
+  if(!snap.exists()) return;
+
+  currentUser = { uid, ...snap.data() };
+  usernameEl.textContent = currentUser.chatId || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+  renderShop();
+
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    const oldStars = currentUser.stars;
+    const oldCash = currentUser.cash;
+    currentUser.stars = Number(data.stars || 0);
+    currentUser.cash = Number(data.cash || 0);
+    animateNumber(starsEl, oldStars, currentUser.stars);
+    animateNumber(cashEl, oldCash, currentUser.cash);
+  });
+}
+loadCurrentUser();
+
+// ---------- Shop Rendering ----------
+function createProductCard(product) {
+  const card = document.createElement("div");
+  card.className = "product-card";
+  card.innerHTML = `
+    <img src="${product.img}" alt="${product.name}">
+    <div class="availability-badge">${product.available > 0 ? product.available + ' left' : 'Sold Out'}</div>
+    <div class="product-info">
+      <h3 class="product-name">${product.name}</h3>
+      <p class="product-cost">Cost: ${product.cost} ⭐</p>
+      <button class="buy-btn">Redeem</button>
+    </div>
+  `;
+  const badge = card.querySelector(".availability-badge");
+  const btn = card.querySelector(".buy-btn");
+  if (product.available <= 0) {
+    badge.textContent = "Sold Out";
+    badge.style.background = "#999";
+  }
+
+  btn.onclick = () => {
+    if (!currentUser) return showMessageModal("Oops!", "You must be logged in to purchase.");
+    if (currentUser.stars < product.cost) return showMessageModal("Oops!", "Not enough stars!");
+    if (product.available <= 0) return showMessageModal("Sold Out!", "This item is no longer available.");
+
+    showConfirmModal(
+      "Confirm Purchase",
+      `Get "${product.name}" for ${product.cost} ⭐?`,
+      async () => {
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          const productRef = doc(db, "shopItems", product.id.toString());
+          let newStars, newCash, redeemedCash = 0;
+
+          await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef);
+            const productSnap = await transaction.get(productRef);
+            if (!userSnap.exists()) throw "User not found!";
+            if (!productSnap.exists()) throw "Product not found!";
+            const userData = userSnap.data();
+            const productData = productSnap.data();
+            if (Number(userData.stars) < Number(productData.cost)) throw "Not enough stars!";
+            if (Number(productData.available) <= 0) throw "Out of stock!";
+
+            newStars = Number(userData.stars) - Number(productData.cost);
+
+            // Special handling for "Redeem Cash Balance"
+            if (product.name === "Redeem Cash Balance") {
+              redeemedCash = Number(userData.cash || 0);
+              newCash = 0; 
+            } else {
+              newCash = (Number(userData.cash) || 0) + (Number(productData.cashReward) || 0);
+            }
+
+            transaction.update(userRef, { stars: newStars, cash: newCash });
+            transaction.update(productRef, { available: Number(productData.available) - 1 });
+
+            const purchaseRef = doc(collection(db, "purchases"));
+            transaction.set(purchaseRef, {
+              userId: currentUser.uid,
+              email: userData.email || "",
+              phone: userData.phone || "",
+              productId: product.id,
+              productName: product.name,
+              cost: Number(productData.cost),
+              cashReward: Number(productData.cashReward) || 0,
+              redeemedCash: redeemedCash,
+              timestamp: new Date()
+            });
+          });
+
+          // Update UI + feedback
+          animateNumber(starsEl, currentUser.stars, newStars);
+          animateNumber(cashEl, currentUser.cash, newCash);
+          currentUser.stars = newStars;
+          currentUser.cash = newCash;
+          renderShop();
+          triggerConfetti();
+
+          if (redeemedCash > 0) {
+            showMessageModal("Cash Redeemed!", `₦${formatNumber(redeemedCash)} successfully withdrawn 🎉`, 3000);
+          } else {
+            showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
+          }
+
+        } catch(e) {
+          console.error("Redemption error:", e);
+          showMessageModal("Error!", "Redemption failed: " + e, 2500);
+        }
+      }
+    );
+  };
+
+  return card;
+}
+
+async function renderShop(){
+  shopItemsEl.innerHTML = '';
+  const querySnap = await getDocs(collection(db, 'shopItems'));
+  querySnap.forEach(docSnap => {
+    const data = docSnap.data();
+    const item = { id: docSnap.id, ...data };
+    shopItemsEl.appendChild(createProductCard(item));
+  });
+}
+</script>
