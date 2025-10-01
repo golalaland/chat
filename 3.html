@@ -375,21 +375,21 @@
     <button class="tab-btn" data-tab="badges">Badges</button>
   </div>
 
-  <!-- DYNAMIC PANEL -->
-  <div id="tab-content" class="tab-content">
-    <div class="stat-block">
-      <div class="stat-value" id="vip-stat">0</div>
-      <div class="stat-label">VIPs Signed Up</div>
-    </div>
-    <div class="stat-block">
-      <div class="stat-value" id="friends-stat">0</div>
-      <div class="stat-label">Friends Invited</div>
-    </div>
-    <div class="stat-block">
-      <div class="stat-value" id="badges-stat">0</div>
-      <div class="stat-label">Badges Collected</div>
-    </div>
+ <!-- DYNAMIC PANEL -->
+<div id="tab-content" class="tab-content" style="display:none;">
+  <div class="stat-block">
+    <div class="stat-value" id="vip-stat">0</div>
+    <div class="stat-label">VIPs Signed Up</div>
   </div>
+  <div class="stat-block">
+    <div class="stat-value" id="friends-stat">0</div>
+    <div class="stat-label">Friends Invited</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-value" id="badges-stat">0</div>
+    <div class="stat-label">Badges Collected</div>
+  </div>
+</div>
 
   <!-- SHOP GRID -->
   <div class="shop-grid" id="shop-items">
@@ -574,16 +574,38 @@ const loadCurrentUser = async () => {
 
 // ---------- Host Panels ----------
 const updateHostPanels = () => {
+  // Hide host tabs and vertical stack if not a host
   if (!currentUser?.isHost) {
     DOM.hostTabs.style.display = 'none';
-    DOM.tabContent.innerHTML = ''; // remove all tab content for non-hosts
+    DOM.tabContent.style.display = 'none';
+    DOM.tabContent.innerHTML = '';
     return;
   }
+
+  // Show host tabs
   DOM.hostTabs.style.display = '';
-  DOM.vipCount.textContent = formatNumber(currentUser.hostVIP || 0);
-  DOM.friendsCount.textContent = formatNumber((currentUser.hostFriends || []).length);
-  DOM.badgesCount.textContent = currentUser.hostBadge || 'Gold';
-  DOM.vipStat.textContent = formatNumber(currentUser.hostVIP || 0);
+  
+  // Update host stats (if you have small counters somewhere)
+  DOM.vipCount && (DOM.vipCount.textContent = formatNumber(currentUser.hostVIP || 0));
+  DOM.friendsCount && (DOM.friendsCount.textContent = formatNumber((currentUser.hostFriends || []).length));
+  DOM.badgesCount && (DOM.badgesCount.textContent = currentUser.hostBadge || 'Gold');
+
+  // Render the vertical stack inside tab-content
+  DOM.tabContent.style.display = '';
+  DOM.tabContent.innerHTML = `
+    <div class="stat-block">
+      <div class="stat-value" id="vip-stat">${formatNumber(currentUser.hostVIP || 0)}</div>
+      <div class="stat-label">VIPs Signed Up</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-value" id="friends-stat">${formatNumber((currentUser.hostFriends || []).length)}</div>
+      <div class="stat-label">Friends Invited</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-value" id="badges-stat">${currentUser.hostBadge || 'Gold'}</div>
+      <div class="stat-label">Badges Collected</div>
+    </div>
+  `;
 };
 
 // ---------- Product Card ----------
