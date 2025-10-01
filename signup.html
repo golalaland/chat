@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>VIP Signup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; }
+    input, button { padding: 1rem; margin: 0.5rem; border-radius: 12px; border: none; font-size: 1rem; }
+    input { width: 80%; }
+    button { background: #ff2fa0; color: #fff; cursor: pointer; }
+    button:hover { background: #ff66d6; }
+  </style>
+</head>
+<body>
+  <h2>Sign Up as VIP</h2>
+  <input type="text" id="displayName" placeholder="Your Name" />
+  <input type="email" id="email" placeholder="Your Email" />
+  <button id="vipSignup">VIP Sign Up</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = { /* your config */ };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Get host UID from query string: vip.html?host=HOST_UID
+    const urlParams = new URLSearchParams(window.location.search);
+    const hostUID = urlParams.get('host');
+
+    document.getElementById('vipSignup').addEventListener('click', async () => {
+      const name = document.getElementById('displayName').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if (!email) return alert('Email is required');
+      const uid = email.replace(/[.#$[\]]/g, ',');
+
+      try {
+        await setDoc(doc(db, 'users', uid), {
+          displayName: name || '',
+          email,
+          isVIP: true,
+          hostVIP: hostUID || null,
+          hostFriends: [],
+          isHost: false,
+          createdAt: serverTimestamp()
+        });
+        alert('Signed up as VIP successfully!');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to sign up. Try again.');
+      }
+    });
+  </script>
+</body>
+</html>
