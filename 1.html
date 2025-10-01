@@ -106,6 +106,9 @@ header {
 .host-card .host-count {
   font-weight: bold;
   font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .copy-link-btn {
@@ -201,8 +204,6 @@ header {
   display: block;
   margin: 1rem auto;
 }
-
-/* Confetti & Modals remain as in your previous JS */
 </style>
 </head>
 <body>
@@ -229,18 +230,18 @@ header {
 <!-- Host Dashboard -->
 <div class="host-dashboard" id="host-dashboard" style="display:none;">
   <div class="host-card" id="host-vip-tab">
-    <h3><img src="placeholder-vip.png" alt="VIP" width="18"> VIP TAB</h3>
-    <div class="host-count" id="vip-count">0</div>
+    <h3><span class="title-placeholder">VIP TAB</span></h3>
+    <div class="host-count" id="vip-count"><span class="count-placeholder">0</span></div>
   </div>
 
   <div class="host-card" id="host-friends">
-    <h3><img src="placeholder-friends.png" alt="Friends" width="18"> Friends</h3>
-    <div class="host-count" id="friends-count">0</div>
+    <h3><span class="title-placeholder">Friends</span></h3>
+    <div class="host-count" id="friends-count"><span class="count-placeholder">0</span></div>
   </div>
 
-  <div class="host-card" id="host-level">
-    <h3><img src="placeholder-trophy.png" alt="Level" width="18"> Host Level</h3>
-    <div class="host-count" id="level-count">Bronze</div>
+  <div class="host-card" id="host-badges">
+    <h3><span class="title-placeholder">Badges</span></h3>
+    <div class="host-count" id="badges-count"><span class="count-placeholder">Bronze</span></div>
     <button class="copy-link-btn" id="copy-invite-btn">Copy Invite Link</button>
   </div>
 </div>
@@ -249,6 +250,88 @@ header {
 <div class="shop-grid" id="shop-items"></div>
 
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
+
+<script type="module">
+// ---------- Firebase ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---------- DOM Refs ----------
+const usernameEl = document.getElementById('username');
+const starsEl = document.getElementById('stars-count');
+const cashEl = document.getElementById('cash-count');
+const vipCountEl = document.getElementById('vip-count');
+const friendsCountEl = document.getElementById('friends-count');
+const badgesCountEl = document.getElementById('badges-count');
+const hostDashboardEl = document.getElementById('host-dashboard');
+
+// ---------- Utilities ----------
+function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+
+// ---------- Current User ----------
+let currentUser = null;
+async function loadCurrentUser() {
+  // Placeholder logic for demonstration
+  currentUser = {
+    uid: "guest123",
+    chatId: "Guest",
+    stars: 120,
+    cash: 5000,
+    isHost: true,
+    hostVIP: 3,
+    hostFriends: 5,
+    hostBadges: "Silver"
+  };
+
+  usernameEl.textContent = currentUser.chatId;
+  starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+
+  renderHostDashboard();
+}
+loadCurrentUser();
+
+// ---------- Host Dashboard ----------
+function randomColor() {
+  const colors = ['#ff33cc','#33ccff','#ffcc33','#33ff77','#ff7733'];
+  return colors[Math.floor(Math.random()*colors.length)];
+}
+
+function renderHostDashboard() {
+  if(!currentUser?.isHost) {
+    hostDashboardEl.style.display = 'none';
+    return;
+  }
+  hostDashboardEl.style.display = 'flex';
+
+  vipCountEl.textContent = currentUser.hostVIP;
+  friendsCountEl.textContent = currentUser.hostFriends;
+  badgesCountEl.textContent = currentUser.hostBadges;
+
+  // Random color for titles
+  document.querySelectorAll('.title-placeholder').forEach(el=>{
+    el.style.color = randomColor();
+  });
+}
+
+// ---------- Copy Invite ----------
+document.getElementById('copy-invite-btn').onclick = () => {
+  const link = `https://yoursite.com/signup?host=${currentUser.uid}`;
+  navigator.clipboard.writeText(link);
+  alert("Invite link copied!");
+};
+</script>
 
 </body>
 </html>
