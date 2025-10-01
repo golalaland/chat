@@ -9,18 +9,19 @@
   --bg: #f5f5f5;
   --card-bg: #fff;
   --accent: #ff33cc; 
+  --accent-dark: #ff66d6;
+  --highlight: #fff0f8;
   --text: #000;
   --btn-bg: #ff33cc; 
   --btn-text: #fff;
+  --badge-bg: #ffd700;
 }
-
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
-
 header {
   background: var(--card-bg);
   padding: 1rem 2rem;
@@ -30,12 +31,7 @@ header {
   text-align: center;
 }
 
-#user-info {
-  display: flex;
-  justify-content: center;
-  padding: 1rem;
-}
-
+/* Profile Card */
 .profile-card {
   background: var(--card-bg);
   padding: 1rem 2rem;
@@ -43,43 +39,93 @@ header {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   text-align: center;
   min-width: 280px;
+  margin: 1rem auto;
 }
-
 #username {
   font-weight: bold;
   font-size: 1.3rem;
   margin-bottom: 0.8rem;
 }
-
 .balances {
   display: flex;
   justify-content: center;
   gap: 2rem;
   flex-wrap: wrap;
 }
-
 .balance-item {
   text-align: center;
 }
-
 .balance-label {
   font-size: 0.9rem;
   color: #555;
   margin-bottom: 0.2rem;
 }
-
 .balance-value {
   font-size: 1.1rem;
   font-weight: bold;
 }
 
+/* Host Dashboard */
+#host-dashboard {
+  display: none;
+  margin: 1rem 2rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #fffbe6;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+.host-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.host-card {
+  background: var(--highlight);
+  flex: 1;
+  margin: 0 0.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  text-align: center;
+}
+.host-card h4 {
+  margin: 0;
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--accent);
+}
+.host-card p {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 0.3rem;
+}
+#host-invite-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.copy-link-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.copy-link-btn:hover {
+  background: var(--accent-dark);
+}
+
+/* Shop Items */
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   padding: 1rem 2rem;
 }
-
 .product-card {
   background: var(--card-bg);
   border-radius: 10px;
@@ -126,23 +172,8 @@ header {
   transition: background 0.2s;
 }
 .buy-btn:hover {
-  background: #ff66d6;
+  background: var(--accent-dark);
 }
-#home-btn {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  padding: 0.8rem 2rem;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: block;
-  margin: 1rem auto;
-}
-
-/* Availability badge */
 .availability-badge {
   position: absolute;
   top: 8px;
@@ -157,8 +188,22 @@ header {
   text-align: center;
 }
 
+/* Home Button */
+#home-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: block;
+  margin: 1rem auto;
+}
 
-/* Modal Overlay */
+/* Modal */
 #confirmModal {
   position: fixed;
   top: 0;
@@ -170,10 +215,7 @@ header {
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  animation: fadeIn 0.25s ease-in-out;
 }
-
-/* Modal Box */
 #confirmModal .modal-content {
   background: var(--card-bg);
   padding: 15px 20px;
@@ -181,21 +223,9 @@ header {
   max-width: 300px;
   text-align: center;
   box-shadow: 0 6px 18px rgba(0,0,0,0.2);
-  transform: scale(0.9);
-  animation: popIn 0.2s forwards;
 }
-
-/* Modal Text */
-#confirmModal h3 {
-  margin-top: 0;
-  font-size: 1.2rem;
-}
-#confirmModal p {
-  font-size: 1rem;
-  margin: 10px 0 15px;
-}
-
-/* Buttons */
+#confirmModal h3 { margin-top: 0; font-size: 1.2rem; }
+#confirmModal p { font-size: 1rem; margin: 10px 0 15px; }
 #confirmModal button {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -209,149 +239,78 @@ header {
   min-width: 95px;
   transition: background 0.2s;
 }
-#confirmModal button:hover {
-  background: #ff66d6;
-}
+#confirmModal button:hover { background: var(--accent-dark); }
 #confirmModal #confirmNo {
   background: #ccc;
   color: #333;
 }
-#confirmModal #confirmNo:hover {
-  background: #bbb;
-}
-
-/* Animations */
-@keyframes popIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+#confirmModal #confirmNo:hover { background: #bbb; }
 </style>
 </head>
 <body>
 
 <header>乂丨乂丨Redeem</header>
 
-<div id="user-info">
-  <div class="profile-card">
-    <div id="username">Guest</div>
-    <div class="balances">
-      <div class="balance-item">
-        <div class="balance-label">Stars Balance</div>
-        <div class="balance-value" id="stars-count">0 ⭐️</div>
-      </div>
-      <div class="balance-item">
-        <div class="balance-label">Cash Balance</div>
-        <div class="balance-value" id="cash-count">₦0</div>
-      </div>
+<!-- Profile Card -->
+<div class="profile-card">
+  <div id="username">Guest</div>
+  <div class="balances">
+    <div class="balance-item">
+      <div class="balance-label">Stars Balance</div>
+      <div class="balance-value" id="stars-count">0 ⭐️</div>
+    </div>
+    <div class="balance-item">
+      <div class="balance-label">Cash Balance</div>
+      <div class="balance-value" id="cash-count">₦0</div>
     </div>
   </div>
 </div>
 
 <!-- Host Dashboard -->
 <div id="host-dashboard">
-  <!-- Top Metrics -->
-  <div class="host-metrics">
-    <div class="metric-card">
-      <div class="metric-title">VIPs</div>
-      <div class="metric-value" id="host-vips">0</div>
+  <div class="host-section">
+    <div class="host-card">
+      <h4>VIP</h4>
+      <p id="host-vips">0</p>
     </div>
-    <div class="metric-card">
-      <div class="metric-title">Friends</div>
-      <div class="metric-value" id="host-friends">0</div>
+    <div class="host-card">
+      <h4>Friends</h4>
+      <p id="host-friends">0</p>
     </div>
   </div>
-
-  <!-- Unique Invite Link -->
-  <div class="host-invite">
-    <input type="text" id="host-invite-link" readonly value="https://example.com/invite/XXX" />
-    <button id="copy-invite-btn">Copy Invite Link</button>
+  <div id="host-invite-link">
+    <input type="text" id="invite-link" readonly style="flex:1; padding:0.5rem; border-radius:6px; border:1px solid #ccc;">
+    <button class="copy-link-btn" onclick="copyInviteLink()">Copy Link</button>
   </div>
 </div>
 
-<style>
-/* Host Dashboard Base */
-#host-dashboard {
-  display: none;
-  margin: 1rem 2rem;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  background: #fffbe6;
-  border-left: 4px solid var(--accent);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-  font-family: Arial, sans-serif;
-}
-
-/* Metrics Layout */
-.host-metrics {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.metric-card {
-  flex: 1;
-  background: var(--card-bg);
-  border-radius: 10px;
-  text-align: center;
-  padding: 0.8rem 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.metric-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 12px rgba(0,0,0,0.15);
-}
-.metric-title {
-  font-weight: bold;
-  font-size: 1rem;
-  color: var(--accent);
-  margin-bottom: 0.3rem;
-}
-.metric-value {
-  font-size: 1.6rem;
-  font-weight: bold;
-  color: var(--text);
-}
-
-/* Invite Section */
-.host-invite {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-  margin-top: 0.8rem;
-}
-#host-invite-link {
-  flex: 1;
-  padding: 0.55rem 0.8rem;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  font-size: 0.95rem;
-  color: #555;
-}
-#copy-invite-btn {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.85rem;
-  font-weight: bold;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-#copy-invite-btn:hover {
-  background: #ff66d6;
-}
-</style>
-<!-- Shop Grid -->
+<!-- Shop Items -->
 <div class="shop-grid" id="shop-items"></div>
 
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
+
+<!-- Modal Overlay -->
+<div id="confirmModal">
+  <div class="modal-content">
+    <h3 id="confirmTitle">Confirm Purchase</h3>
+    <p id="confirmText"></p>
+    <div>
+      <button id="confirmYes">Yes</button>
+      <button id="confirmNo">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function copyInviteLink() {
+  const input = document.getElementById('invite-link');
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(() => {
+    alert("Invite link copied!");
+  });
+}
+</script>
 
 </body>
 </html>
