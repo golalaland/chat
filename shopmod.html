@@ -276,14 +276,8 @@ header {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
-  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-<script type="module">
-// ---------- Firebase ----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction
+  getFirestore, doc, getDoc, updateDoc,
+  collection, onSnapshot, orderBy, query 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -298,288 +292,99 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- DOM Refs ----------
-const usernameEl = document.getElementById('username');
-const starsEl = document.getElementById('stars-count');
-const cashEl = document.getElementById('cash-count');
-const shopItemsEl = document.getElementById('shop-items');
-const hostDashboardEl = document.getElementById('host-dashboard');
+// Elements
+const listEl = document.getElementById("purchase-list");
+const usernameEl = document.getElementById("username");
+const starsEl = document.getElementById("stars-count");
+const cashEl = document.getElementById("cash-count");
 
-// ---------- Utilities ----------
-function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+// Replace with actual auth system later
+const currentUserId = "testUser";  
 
-function animateNumber(el, from, to, duration = 600, suffix = '') {
+/* ----------------- Helper: Animated Count ----------------- */
+function animateCount(el, from, to, duration = 800, prefix = "", suffix = "") {
   const start = performance.now();
-  function step(timestamp) {
-    const progress = Math.min((timestamp - start) / duration, 1);
+  function update(now) {
+    const progress = Math.min((now - start) / duration, 1);
     const value = Math.floor(from + (to - from) * progress);
-    el.textContent = value + suffix;
-    if (progress < 1) requestAnimationFrame(step);
+    el.textContent = `${prefix}${value}${suffix}`;
+    if (progress < 1) requestAnimationFrame(update);
   }
-  requestAnimationFrame(step);
+  requestAnimationFrame(update);
 }
 
-// ---------- Confetti ----------
-function triggerConfetti() {
-  const confettiScript = document.createElement('script');
-  confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
-  confettiScript.onload = () => {
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-  };
-  document.body.appendChild(confettiScript);
-}
-
-// ---------- Modals ----------
-const confirmModal = document.createElement("div");
-confirmModal.id = "confirmModal";
-confirmModal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:1000;";
-confirmModal.innerHTML = `
-  <div style="background:#fff;padding:15px 20px;border-radius:12px;max-width:300px;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
-    <h3 id="confirmTitle">Confirm</h3>
-    <p id="confirmText"></p>
-    <div style="margin-top:10px;">
-      <button id="confirmYes" style="margin-right:6px;padding:0.5rem 1rem;background:#ff33cc;color:#fff;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">Yes</button>
-      <button id="confirmNo" style="padding:0.5rem 1rem;background:#ccc;color:#333;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">Cancel</button>
-    </div>
-  </div>
-`;
-document.body.appendChild(confirmModal);
-
-function showConfirmModal(title, text, onYes){
-  document.getElementById("confirmTitle").innerText = title;
-  document.getElementById("confirmText").innerText = text;
-  confirmModal.style.display = "flex";
-  const yesBtn = document.getElementById("confirmYes");
-  const noBtn = document.getElementById("confirmNo");
-  const cleanup = () => { confirmModal.style.display="none"; yesBtn.onclick=null; noBtn.onclick=null; };
-  yesBtn.onclick = () => { onYes(); cleanup(); };
-  noBtn.onclick = cleanup;
-}
-
-function showMessageModal(title, text, duration=2000){
-  document.getElementById("confirmTitle").innerText = title;
-  document.getElementById("confirmText").innerText = text;
-  document.getElementById("confirmYes").style.display="none";
-  document.getElementById("confirmNo").style.display="none";
-  confirmModal.style.display="flex";
-  setTimeout(()=>{
-    confirmModal.style.display="none";
-    document.getElementById("confirmYes").style.display="inline-block";
-    document.getElementById("confirmNo").style.display="inline-block";
-  }, duration);
-}
-
-// ---------- Current User ----------
-let currentUser = null;
-async function loadCurrentUser(){
-  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
-  if(!vipSession?.email) return;
-  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-  const userRef = doc(db,'users',uid);
+/* ----------------- Load User Balances ----------------- */
+async function loadUser() {
+  const userRef = doc(db, "users", currentUserId);
   const snap = await getDoc(userRef);
-  if(!snap.exists()) return;
 
-  currentUser = { uid, ...snap.data() };
-  usernameEl.textContent = currentUser.chatId || 'Guest';
-  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+  if (snap.exists()) {
+    const data = snap.data();
+    usernameEl.textContent = data.chatId || "Guest";
 
-  renderShop();
-  renderHostDashboard();
-
-  onSnapshot(userRef, docSnap=>{
-    const data = docSnap.data();
-    if(!data) return;
-    currentUser.stars = Number(data.stars || 0);
-    currentUser.cash = Number(data.cash || 0);
-    currentUser.isHost = data.isHost || false;
-    currentUser.hostBadge = data.hostBadge || '';
-    currentUser.hostFriends = data.hostFriends || [];
-    currentUser.hostVIP = data.hostVIP || 0;
-
-    animateNumber(starsEl, Number(starsEl.textContent.replace(/\D/g,'')), currentUser.stars, 500, ' ⭐️');
-    animateNumber(cashEl, Number(cashEl.textContent.replace(/\D/g,'')), currentUser.cash, 500, '₦');
-
-    renderHostDashboard();
-  });
-}
-loadCurrentUser();
-
-// ---------- Host Dashboard ----------
-function renderHostDashboard(){
-  if(!currentUser?.isHost){
-    hostDashboardEl.style.display = 'none';
-    return;
+    animateCount(starsEl, 0, data.stars || 0, 1000, "", " ⭐️");
+    animateCount(cashEl, 0, data.cash || 0, 1000, "₦");
+  } else {
+    usernameEl.textContent = "Guest";
+    starsEl.textContent = "0 ⭐️";
+    cashEl.textContent = "₦0";
   }
-  hostDashboardEl.style.display='flex';
-  hostDashboardEl.innerHTML = '';
+}
+loadUser();
 
-  const cards = [
-    { title:'VIP TAB', count: currentUser.hostVIP || 0, img:'https://via.placeholder.com/18' },
-    { title:'Friends', count: currentUser.hostFriends?.length || 0, img:'https://via.placeholder.com/18' },
-    { title:'Badges', count: currentUser.hostBadge || 'Bronze', img:'https://via.placeholder.com/18', copyInvite:true }
-  ];
+/* ----------------- Purchases Listener ----------------- */
+const q = query(collection(db, "purchases"), orderBy("timestamp", "desc"));
+onSnapshot(q, snapshot => {
+  listEl.innerHTML = "";
+  snapshot.forEach((doc, idx) => {
+    const data = doc.data();
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${data.chatId || data.userId}</td>
+      <td>${data.itemName}</td>
+      <td>${data.cost} ⭐️</td>
+      <td>${data.timestamp?.toDate().toLocaleString() || ""}</td>
+    `;
+    listEl.appendChild(row);
 
-  cards.forEach(c=>{
-    const card = document.createElement('div');
-    card.className='host-card';
-    card.style.background='#111';
-    card.style.color='#fff';
-    card.style.padding='1rem';
-    card.style.borderRadius='10px';
-    card.style.display='flex';
-    card.style.flexDirection='column';
-    card.style.justifyContent='space-between';
-    card.style.minHeight='80px';
-    card.style.marginBottom='0.8rem';
-
-    const h3 = document.createElement('h3');
-    const icon = document.createElement('img');
-    icon.src = c.img;
-    icon.width=18;
-    icon.style.marginRight='6px';
-    h3.appendChild(icon);
-    h3.appendChild(document.createTextNode(c.title));
-    card.appendChild(h3);
-
-    const countDiv = document.createElement('div');
-    countDiv.className='host-count';
-    countDiv.style.fontWeight='bold';
-    countDiv.style.fontSize='1.2rem';
-    countDiv.textContent = c.count;
-    card.appendChild(countDiv);
-
-    if(c.copyInvite){
-      const btn = document.createElement('button');
-      btn.className='copy-link-btn';
-      btn.textContent='Copy Invite Link';
-      btn.style.alignSelf='center';
-      btn.style.marginTop='0.6rem';
-      btn.style.padding='0.4rem 0.8rem';
-      btn.style.fontSize='0.85rem';
-      btn.style.background='#ff33cc';
-      btn.style.color='#fff';
-      btn.style.border='none';
-      btn.style.borderRadius='5px';
-      btn.style.cursor='pointer';
-      btn.onclick = () => {
-        const link = `https://yoursite.com/signup?host=${currentUser.uid}`;
-        navigator.clipboard.writeText(link);
-        showMessageModal("Copied!", "Your unique invite link has been copied to clipboard.", 2000);
-      };
-      card.appendChild(btn);
+    if (idx === 0) {
+      showPurchasePopup(data.itemName, data.cost);
+      triggerConfetti();
     }
-
-    hostDashboardEl.appendChild(card);
   });
+});
+
+/* ----------------- Popup ----------------- */
+function showPurchasePopup(item, cost) {
+  document.getElementById("popupTitle").innerText = "Purchase Confirmed 🎉";
+  document.getElementById("popupMessage").innerText = `You bought ${item} for ${cost} ⭐️`;
+  document.getElementById("purchasePopup").style.display = "flex";
 }
 
-// ---------- Shop ----------
-function createProductCard(product){
-  if(product.hostOnly && !currentUser?.isHost) return null;
+window.closePopup = function() {
+  document.getElementById("purchasePopup").style.display = "none";
+}
 
-  const card = document.createElement("div");
-  card.className="product-card";
-  card.innerHTML = `
-    <img src="${product.img}" alt="${product.name}">
-    <div class="availability-badge">${product.available>0?product.available+' left':'Sold Out'}</div>
-    <div class="product-info">
-      <h3 class="product-name">${product.name}</h3>
-      <p class="product-cost">Cost: ${product.cost} ⭐</p>
-      <button class="buy-btn">Redeem</button>
-    </div>
-  `;
+/* ----------------- Confetti ----------------- */
+function triggerConfetti() {
+  for (let i = 0; i < 25; i++) {
+    const confetti = document.createElement("div");
+    confetti.style.position = "fixed";
+    confetti.style.width = "8px";
+    confetti.style.height = "8px";
+    confetti.style.background = `hsl(${Math.random()*360},100%,50%)`;
+    confetti.style.top = "-10px";
+    confetti.style.left = Math.random() * 100 + "vw";
+    confetti.style.opacity = 0.9;
+    confetti.style.borderRadius = "50%";
+    confetti.style.transition = "top 1.5s ease, opacity 1.5s ease";
+    document.body.appendChild(confetti);
 
-  const badge = card.querySelector(".availability-badge");
-  const btn = card.querySelector(".buy-btn");
+    setTimeout(() => {
+      confetti.style.top = "100vh";
+      confetti.style.opacity = 0;
+    }, 50);
 
-  if(product.available<=0){
-    badge.textContent="Sold Out";
-    badge.style.background="#999";
+    setTimeout(() => confetti.remove(), 1600);
   }
-
-  btn.onclick = ()=>{
-    if(!currentUser) return showMessageModal("Oops!","You must be logged in.");
-    if(currentUser.stars<product.cost) return showMessageModal("Oops!","Not enough stars!");
-    if(product.available<=0) return showMessageModal("Sold Out!","This item is no longer available.");
-
-    showConfirmModal(
-      "Confirm Purchase",
-      `Are you sure you want "${product.name}" for ${product.cost} stars?`,
-      async ()=>{
-        try{
-          const userRef = doc(db,"users",currentUser.uid);
-          const productRef = doc(db,"shopItems",product.id.toString());
-          let newStars,newCash,redeemedCash=0;
-
-          await runTransaction(db, async transaction=>{
-            const userSnap = await transaction.get(userRef);
-            const productSnap = await transaction.get(productRef);
-            if(!userSnap.exists()) throw "User not found!";
-            if(!productSnap.exists()) throw "Product not found!";
-            const userData = userSnap.data();
-            const productData = productSnap.data();
-            if(Number(userData.stars)<Number(productData.cost)) throw "Not enough stars!";
-            if(Number(productData.available)<=0) throw "Out of stock!";
-
-            newStars = Number(userData.stars)-Number(productData.cost);
-
-            if(product.name==="Redeem Cash Balance"){
-              redeemedCash = Number(userData.cash||0);
-              newCash=0;
-            } else {
-              newCash = (Number(userData.cash)||0)+(Number(productData.cashReward)||0);
-            }
-
-            transaction.update(userRef,{ stars:newStars, cash:newCash });
-            transaction.update(productRef,{ available:Number(productData.available)-1 });
-
-            const purchaseRef = doc(collection(db,"purchases"));
-            transaction.set(purchaseRef,{
-              userId:currentUser.uid,
-              email:userData.email||"",
-              phone:userData.phone||"",
-              productId:product.id,
-              productName:product.name,
-              cost:Number(productData.cost),
-              cashReward:Number(productData.cashReward)||0,
-              redeemedCash:redeemedCash,
-              timestamp:new Date()
-            });
-          });
-
-          currentUser.stars=newStars;
-          currentUser.cash=newCash;
-          animateNumber(starsEl,Number(starsEl.textContent.replace(/\D/g,'')),newStars,600,' ⭐️');
-          animateNumber(cashEl,Number(cashEl.textContent.replace(/\D/g,'')),newCash,600,'₦');
-          renderShop();
-          triggerConfetti();
-
-          if(redeemedCash>0){
-            showMessageModal("Cash Redeemed!",`You redeemed ₦${formatNumber(redeemedCash)} successfully! 🎉`,3000);
-          } else {
-            showMessageModal("Success!",`"${product.name}" redeemed successfully! 🎉`,2500);
-          }
-
-        } catch(e){
-          console.error("Redemption error:",e);
-          showMessageModal("Error!", "Redemption failed: "+e,2500);
-        }
-      }
-    );
-  };
-
-  return card;
 }
-
-async function renderShop(){
-  shopItemsEl.innerHTML='';
-  const querySnap = await getDocs(collection(db,'shopItems'));
-  querySnap.forEach(docSnap=>{
-    const data = docSnap.data();
-    const item = { id: docSnap.id, ...data };
-    const card = createProductCard(item);
-    if(card) shopItemsEl.appendChild(card);
-  });
-}
-</script>
