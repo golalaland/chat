@@ -236,15 +236,20 @@ header {
   </div>
 </div>
 
-<!-- Host Dashboard (Above Shop Grid) -->
-<div id="host-dashboard" style="display:none; margin:1rem 2rem; background:#fff; padding:1rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-  <h3>Host Dashboard 💎</h3>
-  <p><strong>Invite Link:</strong> <span id="host-invite-link"></span> <button id="copy-invite-btn">Copy</button></p>
-  <p><strong>Badge Level:</strong> <span id="host-badge-level">Bronze</span></p>
-  <p><strong>VIPs Joined:</strong> <span id="host-vip-count">0</span></p>
-  <p><strong>Friends:</strong> <span id="host-friends-list">None yet</span></p>
+<!-- User Info / Host Dashboard -->
+<div id="user-info">
+  <h2 id="username">Guest</h2>
+  <p>Stars: <span id="stars-count">0 ⭐️</span></p>
+  <p>Cash: <span id="cash-count">₦0</span></p>
 </div>
 
+<!-- Host Dashboard (only shows if isHost = true) -->
+<div id="host-dashboard" style="display:none; margin:1rem 0; padding:1rem; border:2px solid #ffd700; border-radius:10px; background:#fffbe6;">
+  <!-- JS will populate this dynamically -->
+</div>
+
+<!-- Shop Items -->
+<div id="shop-items" style="display:flex; flex-wrap:wrap; gap:1rem;"></div>
 <div class="shop-grid" id="shop-items"></div>
 
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
@@ -274,6 +279,7 @@ const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-count');
 const cashEl = document.getElementById('cash-count');
 const shopItemsEl = document.getElementById('shop-items');
+const hostDashboardEl = document.getElementById('host-dashboard');
 
 // ---------- Utilities ----------
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
@@ -366,21 +372,60 @@ async function loadCurrentUser() {
   usernameEl.textContent = currentUser.chatId || 'Guest';
   starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
   cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+
   renderShop();
+  renderHostDashboard(); // ✅ host dashboard
 
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data();
     if(!data) return;
     currentUser.stars = Number(data.stars || 0);
     currentUser.cash = Number(data.cash || 0);
+    currentUser.isHost = data.isHost || false;
+    currentUser.hostBadge = data.hostBadge || '';
+    currentUser.hostFriends = data.hostFriends || [];
+    currentUser.hostVIP = data.hostVIP || 0;
+
     starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+
+    renderHostDashboard(); // live updates
   });
 }
 loadCurrentUser();
 
+// ---------- Host Dashboard ----------
+function renderHostDashboard() {
+  if(!currentUser?.isHost) {
+    hostDashboardEl.style.display = 'none';
+    return;
+  }
+
+  hostDashboardEl.style.display = 'block';
+  hostDashboardEl.innerHTML = `
+    <div class="profile-card">
+      <h3>Host Dashboard</h3>
+      <p>Your unique invite link:</p>
+      <input type="text" value="https://yoursite.com/signup?host=${currentUser.uid}" readonly style="width:100%; padding:0.5rem; margin-bottom:0.5rem;">
+      <p>VIPs joined under your tab: <strong>${currentUser.hostVIP || 0}</strong></p>
+      <p>Host Badge Level: <strong>${currentUser.hostBadge || 'N/A'}</strong></p>
+      <p>Friends (hosts you invited): <strong>${(currentUser.hostFriends || []).length}</strong></p>
+      <button id="copy-link-btn" style="padding:0.5rem 1rem; margin-top:0.5rem;">Copy Invite Link</button>
+    </div>
+  `;
+
+  const copyBtn = document.getElementById('copy-link-btn');
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(`https://yoursite.com/signup?host=${currentUser.uid}`);
+    showMessageModal("Copied!", "Your unique invite link has been copied to clipboard.", 2000);
+  };
+}
+
 // ---------- Shop Rendering ----------
 function createProductCard(product) {
+  // host-only products
+  if(product.hostOnly && !currentUser?.isHost) return null;
+
   const card = document.createElement("div");
   card.className = "product-card";
   card.innerHTML = `
@@ -425,10 +470,10 @@ function createProductCard(product) {
 
             newStars = Number(userData.stars) - Number(productData.cost);
 
-            // Special handling for "Redeem Cash Balance"
+            // Handle "Redeem Cash Balance"
             if (product.name === "Redeem Cash Balance") {
               redeemedCash = Number(userData.cash || 0);
-              newCash = 0; // reset cash balance
+              newCash = 0;
             } else {
               newCash = (Number(userData.cash) || 0) + (Number(productData.cashReward) || 0);
             }
@@ -450,7 +495,7 @@ function createProductCard(product) {
             });
           });
 
-          // Update UI
+          // UI Updates
           currentUser.stars = newStars;
           currentUser.cash = newCash;
           animateNumber(starsEl, Number(starsEl.textContent.replace(/\D/g,'')), newStars);
@@ -480,7 +525,8 @@ async function renderShop(){
   querySnap.forEach(docSnap => {
     const data = docSnap.data();
     const item = { id: docSnap.id, ...data };
-    shopItemsEl.appendChild(createProductCard(item));
+    const card = createProductCard(item);
+    if(card) shopItemsEl.appendChild(card);
   });
 }
 </script>
