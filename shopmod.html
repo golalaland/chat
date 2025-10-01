@@ -1,1 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>乂丨乂丨Redeem</title>
+<style>
+:root {
+  --bg: #f5f5f5;
+  --card-bg: #fff;
+  --accent: #ff33cc; 
+  --text: #000;
+  --btn-bg: #ff33cc; 
+  --btn-text: #fff;
+}
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+header {
+  background: var(--card-bg);
+  padding: 1rem 2rem;
+  font-size: 1.8rem;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+#user-info {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+}
+.profile-card {
+  background: var(--card-bg);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  text-align: center;
+  min-width: 280px;
+}
+#username {
+  font-weight: bold;
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
+}
+.balances {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.balance-item {
+  text-align: center;
+}
+.balance-label {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.2rem;
+}
+.balance-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1rem 2rem;
+}
+.product-card {
+  background: var(--card-bg);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.product-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+.product-info {
+  padding: 0.8rem;
+  text-align: center;
+}
+.product-name {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.product-cost {
+  color: var(--accent);
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.buy-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.6rem;
+  cursor: pointer;
+  font-weight: bold;
+  width: 90%;
+  margin: 0 auto 1rem auto;
+  border-radius: 5px;
+  transition: background 0.2s;
+}
+.buy-btn:hover {
+  background: #ff66d6;
+}
+#home-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: block;
+  margin: 1rem auto;
+}
 
+/* Add this to your CSS */
+.availability-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--accent); /* pink backdrop */
+  color: #fff;               /* bold white text */
+  font-weight: bold;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  z-index: 2;
+  text-align: center;
+}
+/* Modal Overlay */
+#confirmModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+/* Modal Box */
+#confirmModal .modal-content {
+  background: var(--card-bg);
+  padding: 15px 20px;
+  border-radius: 12px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  transform: scale(0.9);
+  animation: popIn 0.2s forwards;
+}
+
+/* Modal Text */
+#confirmModal h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+#confirmModal p {
+  font-size: 1rem;
+  margin: 10px 0 15px;
+}
+
+/* Buttons */
+#confirmModal button {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.55rem 1.1rem;
+  font-weight: bold;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 0 6px;
+  min-width: 95px;
+  transition: background 0.2s;
+}
+#confirmModal button:hover {
+  background: #ff66d6;
+}
+#confirmModal #confirmNo {
+  background: #ccc;
+  color: #333;
+}
+#confirmModal #confirmNo:hover {
+  background: #bbb;
+}
+
+/* Animations */
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}</style>
+</head>
+<body>
+
+<header>乂丨乂丨Redeem</header>
+<div id="user-info">
+  <div class="profile-card">
+    <div id="username">Guest</div>
+    <div class="balances">
+      <div class="balance-item">
+        <div class="balance-label">Stars Balance</div>
+        <div class="balance-value" id="stars-count">0 ⭐️</div>
+      </div>
+      <div class="balance-item">
+        <div class="balance-label">Cash Balance</div>
+        <div class="balance-value" id="cash-count">₦0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Host Dashboard (Above Shop Grid) -->
+<div id="host-dashboard" style="display:none; margin:1rem 2rem; background:#fff; padding:1rem; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+  <h3>Host Dashboard 💎</h3>
+  <p><strong>Invite Link:</strong> <span id="host-invite-link"></span> <button id="copy-invite-btn">Copy</button></p>
+  <p><strong>Badge Level:</strong> <span id="host-badge-level">Bronze</span></p>
+  <p><strong>VIPs Joined:</strong> <span id="host-vip-count">0</span></p>
+  <p><strong>Friends:</strong> <span id="host-friends-list">None yet</span></p>
+</div>
+
+<div class="shop-grid" id="shop-items"></div>
+
+<button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
+
+<script type="module">
+// ---------- Firebase ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { 
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---------- DOM Refs ----------
+const usernameEl = document.getElementById('username');
+const starsEl = document.getElementById('stars-count');
+const cashEl = document.getElementById('cash-count');
+const shopItemsEl = document.getElementById('shop-items');
+
+// ---------- Utilities ----------
+function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+function animateNumber(el, from, to, duration = 600) {
+  const start = performance.now();
+  function step(timestamp) {
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const value = Math.floor(from + (to - from) * progress);
+    if (el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
+    else if (el === cashEl) el.textContent = `₦${formatNumber(value)}`;
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ---------- Confetti ----------
+function triggerConfetti() {
+  const confettiScript = document.createElement('script');
+  confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+  confettiScript.onload = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+  document.body.appendChild(confettiScript);
+}
+
+// ---------- Modals ----------
+const confirmModal = document.createElement("div");
+confirmModal.id = "confirmModal";
+confirmModal.style.position = "fixed";
+confirmModal.style.top = "0";
+confirmModal.style.left = "0";
+confirmModal.style.width = "100%";
+confirmModal.style.height = "100%";
+confirmModal.style.background = "rgba(0,0,0,0.6)";
+confirmModal.style.display = "none";
+confirmModal.style.justifyContent = "center";
+confirmModal.style.alignItems = "center";
+confirmModal.style.zIndex = "1000";
+confirmModal.innerHTML = `
+  <div class="modal-content">
+    <h3 id="confirmTitle">Confirm Purchase</h3>
+    <p id="confirmText"></p>
+    <div>
+      <button id="confirmYes">Yes</button>
+      <button id="confirmNo">Cancel</button>
+    </div>
+  </div>
+`;
+document.body.appendChild(confirmModal);
+
+function showConfirmModal(title, text, onYes) {
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+  confirmModal.style.display = "flex";
+  const yesBtn = document.getElementById("confirmYes");
+  const noBtn = document.getElementById("confirmNo");
+  const cleanup = () => { confirmModal.style.display = "none"; yesBtn.onclick = null; noBtn.onclick = null; };
+  yesBtn.onclick = () => { onYes(); cleanup(); };
+  noBtn.onclick = cleanup;
+}
+
+function showMessageModal(title, text, duration = 2000) {
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+  document.getElementById("confirmYes").style.display = "none";
+  document.getElementById("confirmNo").style.display = "none";
+  confirmModal.style.display = "flex";
+  setTimeout(() => {
+    confirmModal.style.display = "none";
+    document.getElementById("confirmYes").style.display = "inline-block";
+    document.getElementById("confirmNo").style.display = "inline-block";
+  }, duration);
+}
+
+// ---------- Current User ----------
+let currentUser = null;
+async function loadCurrentUser() {
+  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
+  if(!vipSession?.email) return;
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+  const userRef = doc(db, 'users', uid);
+  const snap = await getDoc(userRef);
+  if(!snap.exists()) return;
+
+  currentUser = { uid, ...snap.data() };
+  usernameEl.textContent = currentUser.chatId || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+  renderShop();
+
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    currentUser.stars = Number(data.stars || 0);
+    currentUser.cash = Number(data.cash || 0);
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+  });
+}
+loadCurrentUser();
+
+// ---------- Shop Rendering ----------
+function createProductCard(product) {
+  const card = document.createElement("div");
+  card.className = "product-card";
+  card.innerHTML = `
+    <img src="${product.img}" alt="${product.name}">
+    <div class="availability-badge">${product.available > 0 ? product.available + ' left' : 'Sold Out'}</div>
+    <div class="product-info">
+      <h3 class="product-name">${product.name}</h3>
+      <p class="product-cost">Cost: ${product.cost} ⭐</p>
+      <button class="buy-btn">Redeem</button>
+    </div>
+  `;
+  const badge = card.querySelector(".availability-badge");
+  const btn = card.querySelector(".buy-btn");
+  if (product.available <= 0) {
+    badge.textContent = "Sold Out";
+    badge.style.background = "#999";
+  }
+
+  btn.onclick = () => {
+    if (!currentUser) return showMessageModal("Oops!", "You must be logged in to purchase.");
+    if (currentUser.stars < product.cost) return showMessageModal("Oops!", "Not enough stars!");
+    if (product.available <= 0) return showMessageModal("Sold Out!", "This item is no longer available.");
+
+    showConfirmModal(
+      "Confirm Purchase",
+      `Are you sure you want to get "${product.name}" for ${product.cost} stars?`,
+      async () => {
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          const productRef = doc(db, "shopItems", product.id.toString());
+          let newStars, newCash, redeemedCash = 0;
+
+          await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef);
+            const productSnap = await transaction.get(productRef);
+            if (!userSnap.exists()) throw "User not found!";
+            if (!productSnap.exists()) throw "Product not found!";
+            const userData = userSnap.data();
+            const productData = productSnap.data();
+            if (Number(userData.stars) < Number(productData.cost)) throw "Not enough stars!";
+            if (Number(productData.available) <= 0) throw "Out of stock!";
+
+            newStars = Number(userData.stars) - Number(productData.cost);
+
+            // Special handling for "Redeem Cash Balance"
+            if (product.name === "Redeem Cash Balance") {
+              redeemedCash = Number(userData.cash || 0);
+              newCash = 0; // reset cash balance
+            } else {
+              newCash = (Number(userData.cash) || 0) + (Number(productData.cashReward) || 0);
+            }
+
+            transaction.update(userRef, { stars: newStars, cash: newCash });
+            transaction.update(productRef, { available: Number(productData.available) - 1 });
+
+            const purchaseRef = doc(collection(db, "purchases"));
+            transaction.set(purchaseRef, {
+              userId: currentUser.uid,
+              email: userData.email || "",
+              phone: userData.phone || "",
+              productId: product.id,
+              productName: product.name,
+              cost: Number(productData.cost),
+              cashReward: Number(productData.cashReward) || 0,
+              redeemedCash: redeemedCash,
+              timestamp: new Date()
+            });
+          });
+
+          // Update UI
+          currentUser.stars = newStars;
+          currentUser.cash = newCash;
+          animateNumber(starsEl, Number(starsEl.textContent.replace(/\D/g,'')), newStars);
+          animateNumber(cashEl, Number(cashEl.textContent.replace(/\D/g,'')), newCash);
+          renderShop();
+          triggerConfetti();
+          if (redeemedCash > 0) {
+            showMessageModal("Cash Redeemed!", `You redeemed ₦${formatNumber(redeemedCash)} successfully! 🎉`, 3000);
+          } else {
+            showMessageModal("Congratulations!", `"${product.name}" redeemed successfully! 🎉`, 2500);
+          }
+
+        } catch(e) {
+          console.error("Redemption error:", e);
+          showMessageModal("Error!", "Redemption failed: " + e, 2500);
+        }
+      }
+    );
+  };
+
+  return card;
+}
+
+async function renderShop(){
+  shopItemsEl.innerHTML = '';
+  const querySnap = await getDocs(collection(db, 'shopItems'));
+  querySnap.forEach(docSnap => {
+    const data = docSnap.data();
+    const item = { id: docSnap.id, ...data };
+    shopItemsEl.appendChild(createProductCard(item));
+  });
+}
+</script>
