@@ -62,6 +62,7 @@ header {
 
 .balance-item {
   text-align: center;
+  min-width: 100px;
 }
 
 .balance-label {
@@ -73,6 +74,10 @@ header {
 .balance-value {
   font-size: 1.1rem;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
 }
 
 .host-dashboard {
@@ -204,6 +209,11 @@ header {
   display: block;
   margin: 1rem auto;
 }
+
+.host-card img.title-icon {
+  width: 20px;
+  height: 20px;
+}
 </style>
 </head>
 <body>
@@ -230,17 +240,17 @@ header {
 <!-- Host Dashboard -->
 <div class="host-dashboard" id="host-dashboard" style="display:none;">
   <div class="host-card" id="host-vip-tab">
-    <h3><span class="title-placeholder">VIP TAB</span></h3>
+    <h3><img class="title-icon" src="https://via.placeholder.com/20?text=VIP" alt="VIP"> <span class="title-placeholder">VIP TAB</span></h3>
     <div class="host-count" id="vip-count"><span class="count-placeholder">0</span></div>
   </div>
 
   <div class="host-card" id="host-friends">
-    <h3><span class="title-placeholder">Friends</span></h3>
+    <h3><img class="title-icon" src="https://via.placeholder.com/20?text=FR" alt="Friends"> <span class="title-placeholder">Friends</span></h3>
     <div class="host-count" id="friends-count"><span class="count-placeholder">0</span></div>
   </div>
 
   <div class="host-card" id="host-badges">
-    <h3><span class="title-placeholder">Badges</span></h3>
+    <h3><img class="title-icon" src="https://via.placeholder.com/20?text=B" alt="Badges"> <span class="title-placeholder">Badges</span></h3>
     <div class="host-count" id="badges-count"><span class="count-placeholder">Bronze</span></div>
     <button class="copy-link-btn" id="copy-invite-btn">Copy Invite Link</button>
   </div>
@@ -252,7 +262,6 @@ header {
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
 <script type="module">
-// ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -262,12 +271,12 @@ const firebaseConfig = {
   projectId: "metaverse-1010",
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- DOM Refs ----------
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-count');
 const cashEl = document.getElementById('cash-count');
@@ -275,62 +284,79 @@ const vipCountEl = document.getElementById('vip-count');
 const friendsCountEl = document.getElementById('friends-count');
 const badgesCountEl = document.getElementById('badges-count');
 const hostDashboardEl = document.getElementById('host-dashboard');
+const shopItemsEl = document.getElementById('shop-items');
 
-// ---------- Utilities ----------
+// Utilities
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+function randomColor(){ const colors=['#ff33cc','#33ccff','#ffcc33','#33ff77','#ff7733']; return colors[Math.floor(Math.random()*colors.length)]; }
 
-// ---------- Current User ----------
-let currentUser = null;
+// Load Current User
 async function loadCurrentUser() {
-  // Placeholder logic for demonstration
-  currentUser = {
-    uid: "guest123",
-    chatId: "Guest",
-    stars: 120,
-    cash: 5000,
-    isHost: true,
-    hostVIP: 3,
-    hostFriends: 5,
-    hostBadges: "Silver"
-  };
+  const uid = localStorage.getItem('userUID') || 'guest123'; // replace with actual auth logic
+  const userRef = doc(db,'users',uid);
+  const snap = await getDoc(userRef);
+  if(!snap.exists()) {
+    // Placeholder demo
+    currentUser = {
+      uid, chatId:'Guest', stars:120, cash:5000,
+      isHost:true, hostVIP:3, hostFriends:5, hostBadges:'Silver'
+    };
+  } else currentUser = { uid, ...snap.data() };
 
   usernameEl.textContent = currentUser.chatId;
   starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
   cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
 
   renderHostDashboard();
-}
-loadCurrentUser();
-
-// ---------- Host Dashboard ----------
-function randomColor() {
-  const colors = ['#ff33cc','#33ccff','#ffcc33','#33ff77','#ff7733'];
-  return colors[Math.floor(Math.random()*colors.length)];
+  renderShop();
 }
 
-function renderHostDashboard() {
-  if(!currentUser?.isHost) {
-    hostDashboardEl.style.display = 'none';
+// Host Dashboard
+function renderHostDashboard(){
+  if(!currentUser?.isHost){
+    hostDashboardEl.style.display='none';
     return;
   }
-  hostDashboardEl.style.display = 'flex';
+  hostDashboardEl.style.display='flex';
 
-  vipCountEl.textContent = currentUser.hostVIP;
-  friendsCountEl.textContent = currentUser.hostFriends;
-  badgesCountEl.textContent = currentUser.hostBadges;
+  vipCountEl.textContent = currentUser.hostVIP || 0;
+  friendsCountEl.textContent = currentUser.hostFriends || 0;
+  badgesCountEl.textContent = currentUser.hostBadges || 'Bronze';
 
-  // Random color for titles
-  document.querySelectorAll('.title-placeholder').forEach(el=>{
-    el.style.color = randomColor();
-  });
+  // Random title colors
+  document.querySelectorAll('.title-placeholder').forEach(el=>{el.style.color=randomColor();});
 }
 
-// ---------- Copy Invite ----------
+// Copy Invite
 document.getElementById('copy-invite-btn').onclick = () => {
   const link = `https://yoursite.com/signup?host=${currentUser.uid}`;
   navigator.clipboard.writeText(link);
   alert("Invite link copied!");
-};
+}
+
+// Load Shop
+async function renderShop(){
+  const shopCol = collection(db,'shopItems');
+  const snapshot = await getDocs(shopCol);
+  shopItemsEl.innerHTML = '';
+  snapshot.forEach(doc=>{
+    const data = doc.data();
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <img src="${data.imageURL || 'https://via.placeholder.com/200'}" alt="${data.name}">
+      <div class="product-info">
+        <div class="product-name">${data.name}</div>
+        <div class="product-cost">${formatNumber(data.cost)} ⭐️</div>
+        <button class="buy-btn">Buy</button>
+      </div>
+    `;
+    shopItemsEl.appendChild(card);
+  });
+}
+
+let currentUser=null;
+loadCurrentUser();
 </script>
 
 </body>
