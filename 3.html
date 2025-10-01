@@ -532,7 +532,7 @@ const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
 
-  DOM.username.textContent = 'Guest';
+  DOM.username.textContent = '******';
   DOM.stars.textContent = `0 ⭐️`;
   DOM.cash.textContent = `₦0`;
 
