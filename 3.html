@@ -572,38 +572,82 @@
   }
 
   // ---------- Host Panels ----------
-function updateHostPanels(tab='vip'){
+async function updateHostPanels(){
   if(!currentUser || !currentUser.isHost){
     hostTabsEl.style.display='none';
     return;
   }
   hostTabsEl.style.display='';
 
-  const vipCount = Number(currentUser.hostVIP) || 0;
-  const friendsCount = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends.length : 0;
-  const badgesCount = Array.isArray(currentUser.hostBadges) ? currentUser.hostBadges.length : 0;
+  const vipCount = Number(currentUser.hostVIP)||0;
 
-  let content = '';
-  if(tab==='vip'){
-    content = `
-      <div class="stat-block">
-        <div class="stat-value">${formatNumber(vipCount)}</div>
-        <div class="stat-label">VIPs Signed Up</div>
-        <button id="copyInviteBtn" class="copy-link-btn">Copy Invite Link</button>
-      </div>`;
-  } else if(tab==='friends'){
-    content = `
-      <div class="stat-block">
-        <div class="stat-value">${formatNumber(friendsCount)}</div>
-        <div class="stat-label">Friends Invited</div>
-      </div>`;
-  } else if(tab==='badges'){
-    content = `
-      <div class="stat-block">
-        <div class="stat-value">${formatNumber(badgesCount)}</div>
-        <div class="stat-label">Badges Collected</div>
-      </div>`;
+  // VIP tab content (numbers)
+  const vipContent = `
+    <div class="stat-block">
+      <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+      <div class="stat-label">VIPs Signed Up</div>
+      <button id="copyInviteBtn" class="copy-link-btn">Copy Invite Link</button>
+    </div>
+  `;
+
+  // Friends tab content (list names)
+  let friendsContent = '<div class="stat-block">';
+  try {
+    const usersSnap = await getDocs(collection(db,'users'));
+    const friendsList = [];
+    usersSnap.forEach(docSnap=>{
+      const data = docSnap.data();
+      if(data?.hostId === currentUser.uid) friendsList.push(data);
+    });
+
+    if(friendsList.length){
+      friendsList.forEach(f => {
+        const name = f.chatId || f.displayName || f.email || 'Unknown';
+        friendsContent += `<div>${name}</div>`;
+      });
+    } else {
+      friendsContent += 'No friends invited yet';
+    }
+  } catch(e){
+    friendsContent += 'Error loading friends';
+    console.error(e);
   }
+  friendsContent += '</div>';
+
+  // Badges tab content (letters/emoji)
+  let badgesContent = '<div class="stat-block">';
+  const badges = currentUser.hostBadges || [];
+  if(badges.length){
+    badges.forEach(b => {
+      badgesContent += `<div>${b}</div>`;
+    });
+  } else {
+    badgesContent += 'No badges yet';
+  }
+  badgesContent += '</div>';
+
+  // Store all tab contents
+  const tabData = {
+    vip: vipContent,
+    friends: friendsContent,
+    badges: badgesContent
+  };
+
+  // Default tab is VIP
+  tabContentEl.innerHTML = tabData.vip;
+
+  attachInviteHandler(); // keep VIP invite link working
+
+  // Tab switching
+  hostTabsEl.querySelectorAll('button').forEach(btn=>{
+    btn.onclick = () => {
+      document.querySelectorAll('#hostTabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const tabName = btn.dataset.tab;
+      tabContentEl.innerHTML = tabData[tabName] || '<p>Nothing to display</p>';
+    }
+  });
+}
 
   tabContentEl.innerHTML = content;
   if(tab==='vip') attachInviteHandler();
