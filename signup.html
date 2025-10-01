@@ -5,156 +5,164 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VIP/Host Signup</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-  body {
-    margin:0;
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg,#fbc2eb,#a6c1ee);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
-    padding:1rem;
-  }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
-  .signup-card {
-    background:#fff;
-    border-radius:32px;
-    padding:2rem;
-    width:100%;
-    max-width:400px;
-    color:#333;
-    box-shadow:0 12px 32px rgba(0,0,0,0.15);
-  }
+body {
+  margin:0;
+  font-family:'Inter',sans-serif;
+  background:#111;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  padding:1rem;
+  color:#eee;
+}
 
-  .signup-card h2 {
-    text-align:center;
-    font-weight:600;
-    margin-bottom:0.5rem;
-    color:#ff5c8d;
-  }
+.signup-card {
+  background:#1c1c1c;
+  border-radius:32px;
+  padding:2rem;
+  width:100%;
+  max-width:400px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.6);
+}
 
-  .signup-card p {
-    text-align:center;
-    font-size:0.9rem;
-    color:#555;
-    margin-bottom:1.5rem;
-  }
+.signup-card h2 {
+  text-align:center;
+  font-weight:600;
+  margin-bottom:0.5rem;
+  color:#ff4081;
+}
 
-  .form-group {
-    display:flex;
-    flex-direction:column;
-    margin-bottom:1rem;
-  }
+.signup-card p {
+  text-align:center;
+  font-size:0.9rem;
+  color:#aaa;
+  margin-bottom:1.5rem;
+}
 
-  .form-group input {
-    padding:0.85rem 1rem;
-    border-radius:50px;
-    border:1px solid #ddd;
-    font-size:0.95rem;
-    outline:none;
-    transition:0.3s;
-  }
+.form-group {
+  display:flex;
+  flex-direction:column;
+  margin-bottom:1rem;
+}
 
-  .form-group input:focus {
-    border-color:#ff5c8d;
-    box-shadow:0 0 10px rgba(255,92,141,0.3);
-  }
+.form-group input {
+  padding:0.85rem 1rem;
+  border-radius:50px;
+  border:1px solid #333;
+  background:#222;
+  color:#eee;
+  font-size:0.95rem;
+  outline:none;
+  transition:0.3s;
+}
 
-  /* Gender Selection Buttons */
-  .gender-select {
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    margin-bottom:1.5rem;
-  }
+.form-group input:focus {
+  border-color:#ff4081;
+  box-shadow:0 0 10px rgba(255,64,129,0.5);
+}
 
-  .gender-select button {
-    flex:1;
-    padding:0.8rem 0;
-    border-radius:50px;
-    border:1px solid #ddd;
-    font-weight:600;
-    font-size:0.95rem;
-    cursor:pointer;
-    transition:0.3s;
-    background:#f7f7f7;
-  }
+/* 3D Gender Buttons */
+.gender-select {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:1.5rem;
+  gap:15px;
+}
 
-  .gender-select button.selected {
-    background:linear-gradient(90deg,#ff5c8d,#fbc2eb);
-    color:#fff;
-    border:none;
-    box-shadow:0 4px 12px rgba(255,92,141,0.3);
-  }
+.gender-select button {
+  flex:1;
+  border:none;
+  border-radius:50%;
+  width:70px;
+  height:70px;
+  background:#333;
+  color:#eee;
+  font-weight:600;
+  font-size:0.9rem;
+  cursor:pointer;
+  box-shadow:0 6px #000;
+  transition:0.1s all;
+}
 
-  /* VIP Toggle */
-  .vip-toggle {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:1.5rem;
-    font-weight:600;
-    font-size:0.95rem;
-  }
+.gender-select button:active {
+  transform:translateY(4px);
+  box-shadow:0 2px #000;
+}
 
-  .toggle-btn {
-    width:80px;
-    height:36px;
-    background:#eee;
-    border-radius:18px;
-    position:relative;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 5px;
-  }
+.gender-select button.selected {
+  background:#ff4081;
+  color:#fff;
+}
 
-  .toggle-btn span.circle {
-    width:34px;
-    height:34px;
-    background:#ff5c8d;
-    border-radius:50%;
-    position:absolute;
-    top:1px;
-    left:1px;
-    transition:0.3s;
-  }
+/* VIP Toggle */
+.vip-toggle {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:1.5rem;
+  font-weight:600;
+}
 
-  .toggle-btn.on span.circle { left:45px; }
+.toggle-btn {
+  width:80px;
+  height:36px;
+  background:#444;
+  border-radius:18px;
+  position:relative;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 5px;
+}
 
-  .toggle-btn span.label {
-    font-size:0.75rem;
-    font-weight:bold;
-  }
+.toggle-btn span.circle {
+  width:34px;
+  height:34px;
+  background:#ff4081;
+  border-radius:50%;
+  position:absolute;
+  top:1px;
+  left:1px;
+  transition:0.3s;
+}
 
-  .toggle-btn span.label.no { color:#f00; }
-  .toggle-btn span.label.yes { color:#0a0; }
+.toggle-btn.on span.circle { left:45px; }
 
-  /* Submit Button */
-  .submit-btn {
-    width:100%;
-    padding:1rem;
-    border:none;
-    border-radius:50px;
-    font-weight:bold;
-    font-size:1rem;
-    color:#fff;
-    background:linear-gradient(90deg,#ff5c8d,#fbc2eb);
-    cursor:pointer;
-    transition:0.3s;
-    margin-bottom:0.5rem;
-  }
+.toggle-btn span.label {
+  font-size:0.75rem;
+  font-weight:bold;
+}
 
-  .submit-btn:hover { transform:scale(1.03); }
+.toggle-btn span.label.no { color:#f00; }
+.toggle-btn span.label.yes { color:#0a0; }
 
-  .message {
-    text-align:center;
-    margin-top:0.5rem;
-    font-size:0.9rem;
-    color:#333;
-  }
+/* Submit Button */
+.submit-btn {
+  width:100%;
+  padding:1rem;
+  border:none;
+  border-radius:50px;
+  font-weight:bold;
+  font-size:1rem;
+  color:#fff;
+  background:#ff4081;
+  cursor:pointer;
+  transition:0.3s;
+  margin-bottom:0.5rem;
+}
+
+.submit-btn:hover { transform:scale(1.03); }
+
+.message {
+  text-align:center;
+  margin-top:0.5rem;
+  font-size:0.9rem;
+  color:#eee;
+}
 </style>
 </head>
 <body>
@@ -174,8 +182,8 @@
   </div>
 
   <div class="gender-select">
-    <button id="femaleBtn">Female</button>
-    <button id="maleBtn">Male</button>
+    <button id="femaleBtn">F</button>
+    <button id="maleBtn">M</button>
   </div>
 
   <div class="vip-toggle">
