@@ -354,45 +354,32 @@
   <!-- HEADER -->
   <header>乂丨乂丨Redeem</header>
 
-  <!-- USER INFO -->
-  <div id="user-info">
-    <div class="profile-card">
-      <div id="username">Guest</div>
-      <div class="balances">
-        <div class="balance-item">
-          <div class="balance-label">Stars Balance</div>
-          <div class="balance-value" id="stars-count">1 ⭐️</div>
-        </div>
-        <div class="balance-item">
-          <div class="balance-label">Cash Balance</div>
-          <div class="balance-value" id="cash-count">₦3,000</div>
-        </div>
+ <!-- USER INFO -->
+<div id="user-info">
+  <div class="profile-card">
+    <div id="username">******</div>
+    <div class="balances">
+      <div class="balance-item">
+        <div class="balance-label">Stars Balance</div>
+        <div class="balance-value" id="stars-count">****** ⭐️</div>
+      </div>
+      <div class="balance-item">
+        <div class="balance-label">Cash Balance</div>
+        <div class="balance-value" id="cash-count">₦******</div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- HOST TABS (hidden for regular users) -->
-  <div class="host-tabs" id="hostTabs" style="display:none;">
-    <button class="tab-btn active" data-tab="vip">VIP</button>
-    <button class="tab-btn" data-tab="friends">Friends</button>
-    <button class="tab-btn" data-tab="badges">Badges</button>
-  </div>
+<!-- HOST TABS (hidden by default, only for hosts) -->
+<div class="host-tabs" id="hostTabs" style="display:none;">
+  <button class="tab-btn active" data-tab="vip">VIP</button>
+  <button class="tab-btn" data-tab="friends">Friends</button>
+  <button class="tab-btn" data-tab="badges">Badges</button>
+</div>
 
-  <!-- DYNAMIC PANEL -->
+<!-- HOST PANEL (populated dynamically by JS, hidden by default) -->
 <div id="tab-content" class="tab-content" style="display:none;"></div>
-    <div class="stat-block">
-      <div class="stat-value" id="vip-stat">0</div>
-      <div class="stat-label">VIPs Signed Up</div>
-    </div>
-    <div class="stat-block">
-      <div class="stat-value" id="friends-stat">0</div>
-      <div class="stat-label">Friends Invited</div>
-    </div>
-    <div class="stat-block">
-      <div class="stat-value" id="badges-stat">0</div>
-      <div class="stat-label">Badges Collected</div>
-    </div>
-  </div>
 
   <!-- SHOP GRID -->
   <div class="shop-grid" id="shop-items">
