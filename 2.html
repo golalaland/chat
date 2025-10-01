@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>乂丨乂丨Redeem</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    /* ---------- GLOBAL ---------- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* ---------- HEADER ---------- */
+    header {
+      background: #000;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      border-bottom: 2px solid #222;
+    }
+
+    /* ---------- PROFILE CARD ---------- */
+    #user-info {
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .profile-card {
+      background: #1a1a1a;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      text-align: center;
+      min-width: 280px;
+    }
+    #username {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .balances {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .balance-item { text-align: center; }
+    .balance-label {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 0.2rem;
+    }
+    .balance-value {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #2FE0FF; /* Zarah Bluefire */
+    }
+
+    /* ---------- HOST TABS ---------- */
+    .host-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 1rem auto 0;
+      background: #000;
+      padding: 8px;
+      border-radius: 12px;
+      width: fit-content;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #aaa;
+      font-weight: bold;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      background: #2FE0FF; /* Zarah Bluefire */
+      color: #000;
+    }
+
+    /* ---------- DYNAMIC PANEL ---------- */
+    .tab-content {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 1rem;
+      margin: 1rem auto;
+      width: 260px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .stat-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #2FE0FF; /* Zarah Bluefire */
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+
+    /* ---------- SHOP GRID ---------- */
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .product-card {
+      position: relative;
+      background: #1a1a1a;
+      border-radius: 12px;
+      text-align: center;
+      padding: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .product-card:hover { transform: translateY(-5px); }
+    .product-card img {
+      width: 100%;
+      max-height: 120px;
+      object-fit: cover;
+      border-radius: 10px;
+      cursor: pointer;
+      display:block;
+    }
+    .product-card h3 {
+      margin: 0.7rem 0 0.3rem;
+      font-size: 1rem;
+      color: #fff;
+    }
+    .product-card .price {
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+      font-weight: bold;
+      color: #B5F6FF; /* Zarah Mist */
+    }
+    .buy-btn {
+      background: #2FE0FF; /* Zarah Bluefire */
+      color: #000;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    .buy-btn[disabled] {
+      background: #333;
+      color: #777;
+      cursor: not-allowed;
+    }
+    .buy-btn:hover { background: #5AF4FF; /* Zarah Glow */ }
+
+    /* ---------- AVAILABILITY BADGE ---------- */
+    .availability-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #FFAE42; /* Zarah Ember */
+      color: #000;
+      font-weight: bold;
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    /* ---------- MODAL ---------- */
+    #confirmModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #confirmModal .modal-content {
+      background: #1a1a1a;
+      padding: 18px 20px;
+      border-radius: 12px;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+      animation: popIn 0.2s forwards;
+    }
+    #confirmModal h3 { margin-top: 0; font-size: 1.1rem; color:#2FE0FF; }
+    #confirmModal p { font-size: 0.95rem; margin: 10px 0 15px; color: #ccc; }
+    #confirmModal .btn-row { display:flex; justify-content:center; gap:12px; margin-top: 10px; }
+    #confirmModal button {
+      background: #2FE0FF;
+      color: #000;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      min-width: 100px;
+    }
+    #confirmModal #confirmNo {
+      background: #333;
+      color: #ddd;
+    }
+    #confirmModal #confirmNo:hover { background: #555; }
+    #confirmModal button:hover { background: #5AF4FF; }
+
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* ---------- HOME BUTTON ---------- */
+    #home-btn {
+      background: #2FE0FF;
+      color: #000;
+      border: none;
+      padding: 0.7rem 2rem;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      display: block;
+      margin: 1.5rem auto;
+      transition: background 0.2s;
+    }
+    #home-btn:hover { background: #5AF4FF; }
+
+    /* ---------- IMAGE PREVIEW ---------- */
+    #imagePreview {
+      position: fixed; inset:0; display:none; justify-content:center; align-items:center; background: rgba(0,0,0,0.9); z-index:1200;
+    }
+    #imagePreview img { max-width:90%; max-height:85%; border-radius:8px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+
+    /* small helper */
+    .muted { color:#999; font-size:0.9rem; }
+
+    /* ---------- FOOTER ---------- */
+    footer {
+      text-align:center;
+      padding:1rem;
+      font-size:0.8rem;
+      color:#555;
+    }
+    footer span {
+      color:#2FE0FF;
+      font-weight:bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>乂丨乂丨Redeem</header>
+
+  <!-- USER INFO -->
+  <div id="user-info">
+    <div class="profile-card">
+      <div id="username">Guest</div>
+      <div class="balances">
+        <div class="balance-item">
+          <div class="balance-label">Stars Balance</div>
+          <div class="balance-value" id="stars-count">0 ⭐️</div>
+        </div>
+        <div class="balance-item">
+          <div class="balance-label">Cash Balance</div>
+          <div class="balance-value" id="cash-count">₦0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOST TABS -->
+  <div class="host-tabs" id="hostTabs" style="display:none;">
+    <button class="tab-btn active" data-tab="vip">VIP <span class="muted" id="vip-count">0</span></button>
+    <button class="tab-btn" data-tab="friends">Friends <span class="muted" id="friends-count">0</span></button>
+    <button class="tab-btn" data-tab="badges">Badges <span class="muted" id="badges-count">0</span></button>
+  </div>
+
+  <!-- DYNAMIC PANEL -->
+  <div id="tab-content" class="tab-content">
+    <div class="stat-block">
+      <div class="stat-value" id="vip-stat">0</div>
+      <div class="stat-label">VIPs Signed Up</div>
+    </div>
+  </div>
+
+  <!-- SHOP GRID -->
+  <div class="shop-grid" id="shop-items">
+    <!-- products loaded dynamically -->
+  </div>
+
+  <!-- HOME BUTTON -->
+  <button id="home-btn">Take Me Home</button>
+
+  <!-- FOOTER -->
+  <footer>
+    Designed by <span>Zarah</span>
+  </footer>
+</body>
+</html>
