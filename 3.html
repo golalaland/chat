@@ -572,15 +572,19 @@
   }
 
   // ---------- Host Panels ----------
-  function updateHostPanels(){
-    if(!currentUser || !currentUser.isHost){
-      hostTabsEl.style.display='none';
-      return;
-    }
-    hostTabsEl.style.display='';
-    const vipCount = Number(currentUser.hostVIP)||0;
-    const friends = Array.isArray(currentUser.hostFriends)?currentUser.hostFriends:[];
-    const badge = currentUser.hostBadge || 'Gold';
+ function updateHostPanels(tab = 'vip') {
+  if (!currentUser || !currentUser.isHost) {
+    hostTabsEl.style.display = 'none';
+    return;
+  }
+
+  hostTabsEl.style.display = '';
+
+  const vipCount = Number(currentUser.hostVIP) || 0;
+  const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
+  const badge = currentUser.hostBadge || 'Gold';
+
+  if (tab === 'vip') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
         <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
@@ -589,23 +593,24 @@
       </div>
     `;
     attachInviteHandler();
+  } else if (tab === 'friends') {
+    tabContentEl.innerHTML = friends.length
+      ? friends.map(f => `
+          <div class="stat-block">
+            <div class="stat-value">${f.name || f.email || 'Guest'}</div>
+            <div class="stat-label">Friend Invited</div>
+          </div>
+        `).join('')
+      : '<p class="muted">No friends invited yet.</p>';
+  } else if (tab === 'badges') {
+    tabContentEl.innerHTML = badge
+      ? `<div class="stat-block">
+          <div class="stat-value">${badge}</div>
+          <div class="stat-label">Badge Collected</div>
+        </div>`
+      : '<p class="muted">No badges yet.</p>';
   }
-
-  function attachInviteHandler(){
-    const btn = document.getElementById('copyInviteBtn');
-    if(!btn) return;
-    btn.onclick = async ()=>{
-      const hostId = currentUser?.uid||'';
-      const safe = encodeURIComponent(hostId || 'unknown');
-      const link = `https://yoursite.com/signup?host=${safe}`;
-      try {
-        await navigator.clipboard.writeText(link);
-        showMessageModal('Copied!', 'Invite link copied to clipboard.',1800);
-      } catch(err){
-        showMessageModal('Error', 'Could not copy link. Please copy manually: '+link,3000);
-      }
-    }
-  }
+}
 
   // ---------- Product Card ----------
   function createProductCard(product){
