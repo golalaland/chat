@@ -258,24 +258,69 @@ signupBtn.addEventListener('click', async ()=>{
 });
 
 // ---------- Fireworks ----------
-let confettiActive=false;
-const canvas = document.getElementById('fireworks');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// ---------- Fireworks (previous smooth version) ----------
+let confettiActive = false;
+let particles = [];
 
-function startFireworks(){ confettiActive=true; requestAnimationFrame(fireworksLoop); }
-function stopFireworks(){ confettiActive=false; ctx.clearRect(0,0,canvas.width,canvas.height); }
-
-function fireworksLoop(){
-  if(!confettiActive) return;
-  // simple confetti effect
-  for(let i=0;i<5;i++){
-    ctx.fillStyle = `hsl(${Math.random()*360},100%,50%)`;
-    ctx.beginPath();
-    ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*5+2,0,Math.PI*2);
-    ctx.fill();
+function startFireworks() {
+  confettiActive = true;
+  particles = [];
+  for (let i = 0; i < 100; i++) {
+    particles.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      angle: Math.random() * 2 * Math.PI,
+      speed: Math.random() * 6 + 2,
+      radius: Math.random() * 3 + 2,
+      color: `hsl(${Math.random() * 360},100%,50%)`,
+      alpha: 1,
+      decay: Math.random() * 0.01 + 0.005
+    });
   }
+  requestAnimationFrame(fireworksLoop);
+}
+
+function stopFireworks() {
+  confettiActive = false;
+  particles = [];
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function fireworksLoop() {
+  if (!confettiActive) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  particles.forEach(p => {
+    p.x += Math.cos(p.angle) * p.speed;
+    p.y += Math.sin(p.angle) * p.speed;
+    p.alpha -= p.decay;
+
+    ctx.fillStyle = `hsla(${p.color},${p.alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Remove faded particles
+  particles = particles.filter(p => p.alpha > 0);
+
+  // Refill particles to keep burst continuous
+  if (confettiActive && particles.length < 100) {
+    for (let i = particles.length; i < 100; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        angle: Math.random() * 2 * Math.PI,
+        speed: Math.random() * 6 + 2,
+        radius: Math.random() * 3 + 2,
+        color: `hsl(${Math.random() * 360},100%,50%)`,
+        alpha: 1,
+        decay: Math.random() * 0.01 + 0.005
+      });
+    }
+  }
+
   requestAnimationFrame(fireworksLoop);
 }
 </script>
