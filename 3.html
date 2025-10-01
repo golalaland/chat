@@ -397,11 +397,9 @@
   </div>
 </div>
 <script type="module">
-    /<script type="module">
-  // ---------- Firebase ----------
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction
+    getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
