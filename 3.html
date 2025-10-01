@@ -249,6 +249,41 @@
       from { transform: scale(0.9); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
+    
+    #imagePreview {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.9);
+  z-index: 1200;
+}
+
+/* Image inside overlay */
+#imagePreview img {
+  max-width: 90%;
+  max-height: 85%;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+}
+
+/* Close X button */
+#closePreview {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 2rem;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 1300;
+  transition: color 0.2s;
+}
+
+#closePreview:hover {
+  color: #ff2fa0;
+}
 
     /* ---------- HOME BUTTON ---------- */
     #home-btn {
@@ -341,12 +376,11 @@
     </div>
   </div>
 
-  <!-- IMAGE PREVIEW -->
-  <div id="imagePreview" onclick="document.getElementById('imagePreview').style.display='none'">
-    <img id="previewImg" src="" alt="Preview">
-  </div>
-</body>
-</html>
+ <!-- IMAGE PREVIEW WITH CLOSE BUTTON -->
+<div id="imagePreview">
+  <span id="closePreview">&times;</span>
+  <img id="previewImg" src="" alt="Preview">
+</div>
 <script type="module">
     // ---------- Firebase ----------
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
