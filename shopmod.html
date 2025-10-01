@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>乂丨乂丨Redeem</title>
+<title>乂丨乂丨 Redeem</title>
 <style>
 :root {
   --bg: #f5f5f5;
@@ -70,7 +70,7 @@ header {
   font-weight: bold;
 }
 
-/* Host Dashboard Cards */
+/* Host Dashboard */
 .host-dashboard {
   display: flex;
   flex-direction: column;
@@ -78,7 +78,6 @@ header {
   padding: 0 2rem;
   margin-bottom: 1rem;
 }
-
 .host-card {
   background: var(--host-bg);
   color: var(--host-text);
@@ -97,9 +96,10 @@ header {
   align-items: center;
   gap: 0.5rem;
 }
-.host-card .host-count {
+.host-count {
   font-weight: bold;
   font-size: 1.2rem;
+  margin-top: 0.2rem;
 }
 .copy-link-btn {
   align-self: center;
@@ -117,7 +117,7 @@ header {
   background: #ff66d6;
 }
 
-/* Shop Items */
+/* Shop */
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -199,7 +199,7 @@ header {
     <div class="balances">
       <div class="balance-item">
         <div class="balance-label">Stars Balance</div>
-        <div class="balance-value" id="stars-count">0 ⭐️</div>
+        <div class="balance-value" id="stars-count">0</div>
       </div>
       <div class="balance-item">
         <div class="balance-label">Cash Balance</div>
@@ -211,21 +211,18 @@ header {
 
 <!-- Host Dashboard -->
 <div class="host-dashboard" id="host-dashboard" style="display:none;">
-  <!-- VIP Card -->
-  <div class="host-card" id="vip-card">
-    <h3><img src="placeholder-vip.png" width="18" alt="VIP"> VIP TAB</h3>
+  <div class="host-card" id="host-vip-tab">
+    <h3><img src="placeholder-vip.png" alt="VIP" width="18"> VIP TAB</h3>
     <div class="host-count" id="vip-count">0</div>
   </div>
 
-  <!-- Friends Card -->
-  <div class="host-card" id="friends-card">
-    <h3><img src="placeholder-friends.png" width="18" alt="Friends"> Friends</h3>
+  <div class="host-card" id="host-friends">
+    <h3><img src="placeholder-friends.png" alt="Friends" width="18"> Friends</h3>
     <div class="host-count" id="friends-count">0</div>
   </div>
 
-  <!-- Host Level Card -->
-  <div class="host-card" id="level-card">
-    <h3><img src="placeholder-trophy.png" width="18" alt="Level"> Host Level</h3>
+  <div class="host-card" id="host-level">
+    <h3><img src="placeholder-trophy.png" alt="Level" width="18"> Host Level</h3>
     <div class="host-count" id="level-count">Bronze</div>
     <button class="copy-link-btn" id="copy-invite-btn">Copy Invite Link</button>
   </div>
@@ -236,91 +233,108 @@ header {
 
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
-
 <script type="module">
-// ---------- FIREBASE ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = { /* your config */ };
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
+};
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- DOM REFS ----------
-const usernameEl = document.getElementById('profile-username');
+// DOM refs
+const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-count');
 const cashEl = document.getElementById('cash-count');
+const vipCountEl = document.getElementById('vip-count');
+const friendsCountEl = document.getElementById('friends-count');
+const levelCountEl = document.getElementById('level-count');
 const hostDashboardEl = document.getElementById('host-dashboard');
-const vipEl = document.getElementById('vip-count');
-const friendsEl = document.getElementById('friends-count');
-const levelEl = document.getElementById('level-count');
 const copyBtn = document.getElementById('copy-invite-btn');
 const shopItemsEl = document.getElementById('shop-items');
 
+// Utilities
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
-function animateNumber(el, from, to, duration = 600){
+
+// Animate numbers
+function animateNumber(el, from, to, duration = 600) {
   const start = performance.now();
-  function step(timestamp){
-    const progress = Math.min((timestamp-start)/duration,1);
+  function step(timestamp) {
+    const progress = Math.min((timestamp - start)/duration, 1);
     const value = Math.floor(from + (to-from)*progress);
-    el.textContent = (el===starsEl)?`${formatNumber(value)} ⭐️`:
-                     (el===cashEl)?`₦${formatNumber(value)}`:value;
-    if(progress<1) requestAnimationFrame(step);
+    el.textContent = value;
+    if(progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 }
 
-// ---------- LOAD CURRENT USER ----------
+// Load current user
 let currentUser = null;
 async function loadCurrentUser(){
   const vipSession = JSON.parse(localStorage.getItem('vipUser'));
   if(!vipSession?.email) return;
   const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-  const userRef = doc(db,'users',uid);
+  const userRef = doc(db, 'users', uid);
   const snap = await getDoc(userRef);
   if(!snap.exists()) return;
+
   currentUser = { uid, ...snap.data() };
 
   usernameEl.textContent = currentUser.chatId || 'Guest';
-  starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
+  starsEl.textContent = formatNumber(currentUser.stars || 0);
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
 
   renderHostDashboard();
   renderShop();
 
-  onSnapshot(userRef, docSnap=>{
+  onSnapshot(userRef, docSnap => {
     const data = docSnap.data();
     if(!data) return;
-    currentUser = {...currentUser, ...data};
-    starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
-    cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
+
+    currentUser.stars = Number(data.stars || 0);
+    currentUser.cash = Number(data.cash || 0);
+    currentUser.isHost = data.isHost || false;
+    currentUser.hostVIP = data.hostVIP || 0;
+    currentUser.hostFriends = data.hostFriends || [];
+    currentUser.hostBadge = data.hostBadge || 'Bronze';
+
+    starsEl.textContent = formatNumber(currentUser.stars);
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+
     renderHostDashboard();
   });
 }
-loadCurrentUser();
 
-// ---------- HOST DASHBOARD ----------
 function renderHostDashboard(){
   if(!currentUser?.isHost){
     hostDashboardEl.style.display = 'none';
     return;
   }
   hostDashboardEl.style.display = 'flex';
-  vipEl.textContent = currentUser.hostVIP||0;
-  friendsEl.textContent = (currentUser.hostFriends||[]).length;
-  levelEl.textContent = currentUser.hostBadge||'Bronze';
+
+  vipCountEl.textContent = currentUser.hostVIP;
+  friendsCountEl.textContent = currentUser.hostFriends.length;
+  levelCountEl.textContent = currentUser.hostBadge;
 }
 
-// ---------- COPY INVITE ----------
-copyBtn.onclick = ()=>{
-  navigator.clipboard.writeText(`https://yoursite.com/signup?host=${currentUser.uid}`);
-  alert("Copied! Your invite link has been copied.");
+// Copy invite link
+copyBtn.onclick = () => {
+  if(!currentUser) return;
+  const link = `https://yoursite.com/signup?host=${currentUser.uid}`;
+  navigator.clipboard.writeText(link);
+  alert("Invite link copied!");
 };
 
-// ---------- SHOP ----------
+// Shop rendering
 function createProductCard(product){
-  if(product.hostOnly && !currentUser?.isHost) return null;
-  const card = document.createElement('div'); card.className='product-card';
+  const card = document.createElement("div");
+  card.className = "product-card";
   card.innerHTML = `
     <img src="${product.img}" alt="${product.name}">
     <div class="product-info">
@@ -330,18 +344,37 @@ function createProductCard(product){
     </div>
   `;
   const btn = card.querySelector(".buy-btn");
-  btn.onclick = ()=>alert("Redeem logic here!");
+  btn.onclick = async () => {
+    if(!currentUser) return alert("Log in to redeem!");
+    if(currentUser.stars < product.cost) return alert("Not enough stars!");
+    const userRef = doc(db,"users",currentUser.uid);
+    const productRef = doc(db,"shopItems",product.id);
+    try{
+      await runTransaction(db, async t=>{
+        const userSnap = await t.get(userRef);
+        const prodSnap = await t.get(productRef);
+        if(!userSnap.exists() || !prodSnap.exists()) throw "Error";
+        t.update(userRef, { stars: Number(userSnap.data().stars)-product.cost });
+      });
+      currentUser.stars -= product.cost;
+      starsEl.textContent = formatNumber(currentUser.stars);
+      alert(`${product.name} redeemed!`);
+    } catch(e){ console.error(e); alert("Failed!"); }
+  };
   return card;
 }
+
 async function renderShop(){
-  shopItemsEl.innerHTML='';
+  shopItemsEl.innerHTML = '';
   const querySnap = await getDocs(collection(db,'shopItems'));
   querySnap.forEach(docSnap=>{
-    const product = { id: docSnap.id, ...docSnap.data() };
-    const card = createProductCard(product);
-    if(card) shopItemsEl.appendChild(card);
+    const item = { id: docSnap.id, ...docSnap.data() };
+    const card = createProductCard(item);
+    shopItemsEl.appendChild(card);
   });
 }
+
+loadCurrentUser();
 </script>
 </body>
 </html>
