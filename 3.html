@@ -574,7 +574,11 @@ const loadCurrentUser = async () => {
 
 // ---------- Host Panels ----------
 const updateHostPanels = () => {
-  if (!currentUser?.isHost) return DOM.hostTabs.style.display = 'none';
+  if (!currentUser?.isHost) {
+    DOM.hostTabs.style.display = 'none';
+    DOM.tabContent.innerHTML = ''; // remove all tab content for non-hosts
+    return;
+  }
   DOM.hostTabs.style.display = '';
   DOM.vipCount.textContent = formatNumber(currentUser.hostVIP || 0);
   DOM.friendsCount.textContent = formatNumber((currentUser.hostFriends || []).length);
