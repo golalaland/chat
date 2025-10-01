@@ -46,9 +46,9 @@
     }
     .balances {
       display: flex;
-      justify-content: center;
-      gap: 2rem;
-      flex-wrap: wrap;
+      flex-direction: column; /* stacked vertically */
+      align-items: center;
+      gap: 0.5rem;
     }
     .balance-item { text-align: center; }
     .balance-label {
@@ -59,7 +59,7 @@
     .balance-value {
       font-size: 1rem;
       font-weight: bold;
-      color: #ff2fa0;
+      color: #fff; /* white instead of theme pink */
     }
 
     /* ---------- HOST TABS ---------- */
@@ -104,6 +104,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      margin-bottom: 0.5rem;
     }
     .stat-value {
       font-size: 1.5rem;
@@ -155,7 +156,7 @@
       font-weight: bold;
       color: #ffb6da;
     }
-    .buy-btn, .copy-btn {
+    .buy-btn {
       background: #ff2fa0;
       color: #fff;
       border: none;
@@ -166,12 +167,12 @@
       transition: background 0.2s;
       width: 100%;
     }
-    .buy-btn[disabled], .copy-btn[disabled] {
+    .buy-btn[disabled] {
       background: #333;
       color: #777;
       cursor: not-allowed;
     }
-    .buy-btn:hover, .copy-btn:hover { background: #ff66d6; }
+    .buy-btn:hover { background: #ff66d6; }
 
     /* ---------- AVAILABILITY BADGE ---------- */
     .availability-badge {
@@ -254,28 +255,9 @@
       position: fixed; inset:0; display:none; justify-content:center; align-items:center; background: rgba(0,0,0,0.9); z-index:1200;
     }
     #imagePreview img { max-width:90%; max-height:85%; border-radius:8px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
-    #imagePreview .close-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: #fff;
-      background: rgba(0,0,0,0.5);
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      line-height: 36px;
-      text-align: center;
-      cursor: pointer;
-      z-index: 1300;
-      transition: background 0.2s;
-    }
-    #imagePreview .close-btn:hover { background: rgba(255,47,160,0.9); }
 
     /* small helper */
     .muted { color:#999; font-size:0.9rem; }
-
   </style>
 </head>
 <body>
@@ -290,21 +272,21 @@
       <div class="balances">
         <div class="balance-item">
           <div class="balance-label">Stars Balance</div>
-          <div class="balance-value" id="stars-count">0 ⭐️</div>
+          <div class="balance-value" id="stars-count">1 ⭐️</div>
         </div>
         <div class="balance-item">
           <div class="balance-label">Cash Balance</div>
-          <div class="balance-value" id="cash-count">0 ⭐️</div>
+          <div class="balance-value" id="cash-count">₦3,000</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- HOST TABS (hidden to non-hosts via JS) -->
+  <!-- HOST TABS (hidden for regular users) -->
   <div class="host-tabs" id="hostTabs" style="display:none;">
-    <button class="tab-btn active" data-tab="vip">VIP <span class="muted" id="vip-count">0</span></button>
-    <button class="tab-btn" data-tab="friends">Friends <span class="muted" id="friends-count">0</span></button>
-    <button class="tab-btn" data-tab="badges">Badges <span class="muted" id="badges-count">0</span></button>
+    <button class="tab-btn active" data-tab="vip">VIP</button>
+    <button class="tab-btn" data-tab="friends">Friends</button>
+    <button class="tab-btn" data-tab="badges">Badges</button>
   </div>
 
   <!-- DYNAMIC PANEL -->
@@ -312,6 +294,14 @@
     <div class="stat-block">
       <div class="stat-value" id="vip-stat">0</div>
       <div class="stat-label">VIPs Signed Up</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-value" id="friends-stat">0</div>
+      <div class="stat-label">Friends Invited</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-value" id="badges-stat">0</div>
+      <div class="stat-label">Badges Collected</div>
     </div>
   </div>
 
@@ -335,27 +325,10 @@
     </div>
   </div>
 
-  <!-- IMAGE PREVIEW MODAL -->
-  <div id="imagePreview">
-    <div class="close-btn" onclick="document.getElementById('imagePreview').style.display='none'">×</div>
+  <!-- IMAGE PREVIEW -->
+  <div id="imagePreview" onclick="document.getElementById('imagePreview').style.display='none'">
     <img id="previewImg" src="" alt="Preview">
   </div>
-
-  <script>
-    // Example JS to hide/show host tabs based on role
-    const isHost = false; // toggle based on your logic
-    if(isHost) document.getElementById('hostTabs').style.display = 'flex';
-
-    // Example JS to open image preview
-    document.querySelectorAll('.product-card img').forEach(img=>{
-      img.addEventListener('click', ()=>{
-        const preview = document.getElementById('imagePreview');
-        document.getElementById('previewImg').src = img.src;
-        preview.style.display = 'flex';
-      });
-    });
-  </script>
-
 </body>
 </html>
 <script type="module">
