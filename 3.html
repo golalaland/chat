@@ -177,6 +177,21 @@
     }
     .buy-btn:hover { background: #ff66d6; }
     
+.copy-link-btn {
+  background: #ff2fa0;    /* theme color */
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 8px;        /* space from the text above */
+  font-size: 0.9rem;
+  transition: background 0.3s ease;
+  display: inline-block;
+}
+.copy-link-btn {
+  margin-top: 1rem; /* 16px */
+}
 .themed-btn {
   background: linear-gradient(90deg, #ff6a00, #ee0979);
   border: none;
@@ -321,6 +336,11 @@
     }
     #home-btn:hover { background: #ff66d6; }
 
+    /* ---------- IMAGE PREVIEW ---------- */
+    #imagePreview {
+      position: fixed; inset:0; display:none; justify-content:center; align-items:center; background: rgba(0,0,0,0.9); z-index:1200;
+    }
+    #imagePreview img { max-width:90%; max-height:85%; border-radius:8px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
 
     /* small helper */
     .muted { color:#999; font-size:0.9rem; }
@@ -356,7 +376,7 @@
   </div>
 
   <!-- DYNAMIC PANEL -->
-  <div id="tab-content" class="tab-content">
+<div id="tab-content" class="tab-content" style="display:none;"></div>
     <div class="stat-block">
       <div class="stat-value" id="vip-stat">0</div>
       <div class="stat-label">VIPs Signed Up</div>
@@ -518,6 +538,7 @@
   }
 
   // ---------- Current User ----------
+  let currentUser = null;
   async function loadCurrentUser(){
   const vipSessionRaw = localStorage.getItem('vipUser');
   let vipSession = null;
@@ -531,7 +552,7 @@
 
   if(!vipSession?.email) {
     currentUser = null;
-    hostTabsEl.style.display = 'none'; // hide tabs completely
+    hostTabsEl.style.display = 'none';
     tabContentEl.style.display = 'none'; // hide panel
     return;
   }
@@ -539,7 +560,6 @@
   const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
   const userRef = doc(db, 'users', uid);
   const snap = await getDoc(userRef);
-
   if(!snap.exists()){
     currentUser = { uid, stars:0, cash:0, isHost:false };
     usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
@@ -554,14 +574,15 @@
   cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
 
   if (currentUser.isHost) {
-    hostTabsEl.style.display = ''; // show tabs
+    hostTabsEl.style.display = '';
     tabContentEl.style.display = ''; // show panel
     updateHostPanels();
   } else {
-    hostTabsEl.style.display = 'none'; // hide tabs
+    hostTabsEl.style.display = 'none';
     tabContentEl.style.display = 'none'; // hide panel
   }
 
+  // Live updates
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data();
     if(!data) return;
@@ -571,16 +592,31 @@
     currentUser.cash = Number(currentUser.cash) || 0;
     starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
-    if (currentUser.isHost) {
-      hostTabsEl.style.display = '';
-      tabContentEl.style.display = '';
-      updateHostPanels();
-    } else {
-      hostTabsEl.style.display = 'none';
-      tabContentEl.style.display = 'none';
-    }
-  });
+
+if (currentUser.isHost) {
+    hostTabsEl.style.display = '';
+    tabContentEl.style.display = '';
+    const vipCount = Number(currentUser.hostVIP) || 0;
+    const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
+    const badge = currentUser.hostBadge || 'Gold';
+    vipCountEl.textContent = formatNumber(vipCount);
+    friendsCountEl.textContent = formatNumber(friends.length);
+    badgesCountEl.textContent = badge;
+    vipStatEl.textContent = formatNumber(vipCount);
+} else {
+    hostTabsEl.style.display = 'none';
+    tabContentEl.style.display = 'none';
 }
+hostTabsEl.style.display = '';
+const vipCount = Number(currentUser.hostVIP) || 0;
+const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
+const badge = currentUser.hostBadge || 'Gold';
+vipCountEl.textContent = formatNumber(vipCount);
+friendsCountEl.textContent = formatNumber(friends.length);
+badgesCountEl.textContent = badge;
+vipStatEl.textContent = formatNumber(vipCount);
+}
+
   // ---------- Create product card ----------
   function createProductCard(product){
     const card = document.createElement('div');
