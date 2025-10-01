@@ -285,3 +285,398 @@ footer a:hover { text-decoration: underline; }
 
 </body>
 </html>
+
+
+  <!-- Firebase + App JS -->
+  <script type="module">
+    // ---------- Firebase ----------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, addDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+      authDomain: "metaverse-1010.firebaseapp.com",
+      projectId: "metaverse-1010",
+      storageBucket: "metaverse-1010.appspot.com",
+      messagingSenderId: "1044064238233",
+      appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+      measurementId: "G-S77BMC266C",
+      databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ---------- DOM refs ----------
+    const usernameEl = document.getElementById('username');
+    const starsEl = document.getElementById('stars-count');
+    const cashEl = document.getElementById('cash-count');
+    const shopItemsEl = document.getElementById('shop-items');
+    const hostTabsEl = document.getElementById('hostTabs');
+    const vipCountEl = document.getElementById('vip-count');
+    const friendsCountEl = document.getElementById('friends-count');
+    const badgesCountEl = document.getElementById('badges-count');
+    const vipStatEl = document.getElementById('vip-stat');
+    const tabContentEl = document.getElementById('tab-content');
+
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmTitle = document.getElementById('confirmTitle');
+    const confirmText = document.getElementById('confirmText');
+    const confirmYes = document.getElementById('confirmYes');
+    const confirmNo = document.getElementById('confirmNo');
+
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+
+    // ---------- Utilities ----------
+    function formatNumber(n){
+      if (n === undefined || n === null) return '0';
+      return new Intl.NumberFormat('en-NG').format(Number(n));
+    }
+    function parseNumberFromText(text){
+      if(!text) return 0;
+      const digits = text.replace(/[^\d\-]/g,'');
+      return Number(digits) || 0;
+    }
+    function animateNumber(el, from, to, duration = 600) {
+      const start = performance.now();
+      function step(timestamp) {
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const value = Math.floor(from + (to - from) * progress);
+        if (el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
+        else if (el === cashEl) el.textContent = `₦${formatNumber(value)}`;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ---------- Confetti ----------
+    function triggerConfetti() {
+      // lazy-load confetti library once
+      if (window.__confettiLoaded) {
+        confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
+        return;
+      }
+      const confettiScript = document.createElement('script');
+      confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+      confettiScript.onload = () => {
+        window.__confettiLoaded = true;
+        confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
+      };
+      document.body.appendChild(confettiScript);
+    }
+
+    // ---------- Modal helpers ----------
+    let activeConfirmHandler = null;
+    function showConfirmModal(title, text, onYes){
+      confirmTitle.textContent = title;
+      confirmText.textContent = text;
+      confirmYes.style.display = '';
+      confirmNo.style.display = '';
+      confirmModal.style.display = 'flex';
+      activeConfirmHandler = onYes;
+      confirmYes.onclick = () => {
+        if (typeof activeConfirmHandler === 'function') activeConfirmHandler();
+        closeModal();
+      };
+      confirmNo.onclick = closeModal;
+    }
+    function showMessageModal(title, text, timeout = 1800){
+      confirmTitle.textContent = title;
+      confirmText.textContent = text;
+      // hide yes/no buttons for message-only
+      confirmYes.style.display = 'none';
+      confirmNo.style.display = 'none';
+      confirmModal.style.display = 'flex';
+      setTimeout(() => { closeModal(); }, timeout);
+    }
+    function closeModal(){
+      confirmModal.style.display = 'none';
+      confirmYes.onclick = null;
+      confirmNo.onclick = null;
+      activeConfirmHandler = null;
+      confirmYes.style.display = '';
+      confirmNo.style.display = '';
+    }
+
+    // ---------- Image preview ----------
+    function previewImage(src){
+      previewImg.src = src;
+      imagePreview.style.display = 'flex';
+    }
+
+    // ---------- Current User (load & realtime) ----------
+    let currentUser = null;
+    async function loadCurrentUser(){
+      const vipSessionRaw = localStorage.getItem('vipUser');
+      let vipSession = null;
+      try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession = null; }
+
+      // default UI: guest
+      usernameEl.textContent = 'Guest';
+      starsEl.textContent = `0 ⭐️`;
+      cashEl.textContent = `₦0`;
+
+      // always render shop (so guests can view)
+      renderShop();
+
+      if(!vipSession?.email) {
+        // not logged in / no vip session
+        currentUser = null;
+        hostTabsEl.style.display = 'none';
+        return;
+      }
+
+      const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+      if(!snap.exists()){
+        currentUser = { uid, stars:0, cash:0, isHost:false };
+        usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
+        hostTabsEl.style.display = 'none';
+        return;
+      }
+
+      currentUser = { uid, ...snap.data() };
+      usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+      starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+      cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+
+      // show/hide host tabs depending on isHost
+      if (currentUser.isHost) hostTabsEl.style.display = '';
+      else hostTabsEl.style.display = 'none';
+
+      // populate host panels
+      updateHostPanels();
+
+      // realtime listener to keep UI in sync
+      onSnapshot(userRef, docSnap => {
+        const data = docSnap.data();
+        if(!data) return;
+        currentUser = { uid, ...data };
+        usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+        // ensure numbers are numeric
+        currentUser.stars = Number(currentUser.stars) || 0;
+        currentUser.cash = Number(currentUser.cash) || 0;
+        starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+        cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+        if (currentUser.isHost) hostTabsEl.style.display = ''; else hostTabsEl.style.display = 'none';
+        updateHostPanels();
+      });
+    }
+
+    // ---------- Host panels ----------
+    function updateHostPanels(){
+      if(!currentUser || !currentUser.isHost){
+        hostTabsEl.style.display = 'none';
+        return;
+      }
+      hostTabsEl.style.display = '';
+      // fields expected in user doc: hostVIP (number), hostFriends (array), hostBadge (string)
+      const vipCount = Number(currentUser.hostVIP) || 0;
+      const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
+      const badge = currentUser.hostBadge || 'Gold';
+      vipCountEl.textContent = formatNumber(vipCount);
+      friendsCountEl.textContent = formatNumber(friends.length || 0);
+      badgesCountEl.textContent = badge;
+      vipStatEl.textContent = formatNumber(vipCount);
+    }
+
+    // ---------- Create product card ----------
+    function createProductCard(product){
+      const card = document.createElement('div');
+      card.className = 'product-card';
+
+      const img = document.createElement('img');
+      img.src = product.img || 'https://via.placeholder.com/300';
+      img.alt = product.name || 'Item';
+      img.addEventListener('click', () => previewImage(img.src));
+
+      const badge = document.createElement('span');
+      badge.className = 'availability-badge';
+      const avail = Number(product.available) || 0;
+      badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
+
+      const title = document.createElement('h3');
+      title.textContent = product.name || 'Unnamed';
+
+      const price = document.createElement('div');
+      price.className = 'price';
+      // show cost in stars
+      price.textContent = `${Number(product.cost) || 0} ⭐`;
+
+      const btn = document.createElement('button');
+      btn.className = 'buy-btn';
+      btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
+      if (product.hostOnly && !currentUser?.isHost) btn.disabled = true;
+      if (avail <= 0) { btn.disabled = true; badge.style.background = '#666'; }
+
+      // assemble
+      card.appendChild(badge);
+      card.appendChild(img);
+      card.appendChild(title);
+      card.appendChild(price);
+      card.appendChild(btn);
+
+      // click handler
+      btn.addEventListener('click', async () => {
+        if (!currentUser) {
+          showMessageModal('Not Logged In', 'Please sign in to redeem items.');
+          return;
+        }
+        if (Number(currentUser.stars) < Number(product.cost)) {
+          showMessageModal('Not Enough Stars', 'You do not have enough stars to redeem this item.');
+          return;
+        }
+        if (Number(product.available) <= 0) {
+          showMessageModal('Sold Out', 'This item is no longer available.');
+          return;
+        }
+
+        showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
+          // purchase flow using transaction
+          try {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const productRef = doc(db, 'shopItems', String(product.id));
+            let newStars = 0;
+            let newCash = 0;
+            let redeemedCashAmount = 0;
+
+            await runTransaction(db, async (transaction) => {
+              const userSnap = await transaction.get(userRef);
+              const productSnap = await transaction.get(productRef);
+              if (!userSnap.exists()) throw new Error('User not found');
+              if (!productSnap.exists()) throw new Error('Product not found');
+
+              const userData = userSnap.data();
+              const productData = productSnap.data();
+
+              const userStars = Number(userData.stars) || 0;
+              const userCash = Number(userData.cash) || 0;
+              const cost = Number(productData.cost) || 0;
+              const available = Number(productData.available) || 0;
+
+              if (userStars < cost) throw new Error('Not enough stars');
+              if (available <= 0) throw new Error('Out of stock');
+
+              newStars = userStars - cost;
+
+              // special product: Redeem Cash Balance - empties user's cash and logs redeemedCash
+              if ((productData.name || '').toLowerCase() === 'redeem cash balance') {
+                redeemedCashAmount = userCash;
+                newCash = 0;
+              } else {
+                newCash = userCash + (Number(productData.cashReward) || 0);
+              }
+
+              transaction.update(userRef, { stars: newStars, cash: newCash });
+              transaction.update(productRef, { available: available - 1 });
+
+              // log purchase
+              const purchasesCol = collection(db, 'purchases');
+              transaction.set(doc(purchasesCol), {
+                userId: currentUser.uid,
+                email: userData.email || '',
+                phone: userData.phone || '',
+                productId: String(productData.id || product.id),
+                productName: productData.name || product.name,
+                cost: cost,
+                cashReward: Number(productData.cashReward) || 0,
+                redeemedCash: redeemedCashAmount || 0,
+                timestamp: serverTimestamp()
+              });
+            });
+
+            // UI updates (animated)
+            const previousStars = parseNumberFromText(starsEl.textContent);
+            const previousCash = parseNumberFromText(cashEl.textContent);
+            currentUser.stars = newStars;
+            currentUser.cash = newCash;
+
+            animateNumber(starsEl, previousStars, newStars);
+            animateNumber(cashEl, previousCash, newCash);
+
+            // re-render shop to reflect new availability
+            await renderShop();
+
+            // celebration
+            triggerConfetti();
+
+            if (redeemedCashAmount > 0) {
+              showMessageModal('Cash Redeemed', `You redeemed ₦${formatNumber(redeemedCashAmount)}. We will process the payout.`, 3000);
+            } else {
+              showMessageModal('Success', `"${product.name}" redeemed successfully!`, 2000);
+            }
+          } catch (err) {
+            console.error('Redemption error:', err);
+            showMessageModal('Error', (err.message || String(err)), 2400);
+          }
+        });
+      });
+
+      return card;
+    }
+
+    // ---------- Render shop ----------
+    async function renderShop(){
+      shopItemsEl.innerHTML = '';
+      try {
+        const querySnap = await getDocs(collection(db, 'shopItems'));
+        querySnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const item = { id: docSnap.id, ...data };
+          const card = createProductCard(item);
+          if (card) shopItemsEl.appendChild(card);
+        });
+      } catch (e) {
+        console.error('Failed to load shop items', e);
+        shopItemsEl.innerHTML = '<div style="padding:1rem;color:#ccc;text-align:center;">Failed to load shop items.</div>';
+      }
+    }
+
+    // ---------- Tabs logic ----------
+    document.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.getAttribute('data-tab');
+      // swap dynamic panel content to small stat blocks
+      if (type === 'vip') {
+        tabContentEl.innerHTML = `
+          <div class="stat-block">
+            <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
+            <div class="stat-label">VIPs Signed Up</div>
+          </div>
+        `;
+      } else if (type === 'friends') {
+        tabContentEl.innerHTML = `
+          <div class="stat-block">
+            <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length || 0)}</div>
+            <div class="stat-label">Friends Hosts</div>
+          </div>
+        `;
+      } else {
+        tabContentEl.innerHTML = `
+          <div class="stat-block">
+            <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
+            <div class="stat-label">Badge Status</div>
+          </div>
+        `;
+      }
+    });
+
+    // ---------- Init ----------
+    loadCurrentUser();
+
+    // close preview on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        imagePreview.style.display = 'none';
+        closeModal();
+      }
+    });
+  </script>
+</body>
+</html>
