@@ -222,116 +222,125 @@ h2 {
 <button class="submit-btn" id="submitBtn">Sign Up</button>
 <div class="message" id="message"></div>
 
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  // YOUR FIREBASE CONFIG
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const clickSound = new Audio('click.mp3');
+window.addEventListener('DOMContentLoaded', () => {
+  const clickSound = new Audio('click.mp3');
 
-// VIP Toggle
-const vipToggle = document.getElementById('vipToggle');
-const vipLabel = document.getElementById('vipLabel');
-const vipMessage = document.getElementById('vipMessage');
-let isVIP = false;
+  // VIP Toggle
+  const vipToggle = document.getElementById('vipToggle');
+  const vipLabel = document.getElementById('vipLabel');
+  const vipMessage = document.getElementById('vipMessage');
+  let isVIP = false;
 
-vipToggle.addEventListener('click', () => {
-  isVIP = !isVIP;
-  vipToggle.classList.toggle('on', isVIP);
-  vipLabel.classList.toggle('on', isVIP);
-  vipMessage.style.opacity = isVIP ? '1' : '0';
-  clickSound.play();
-});
-
-// Gender Selection
-const femaleBtn = document.getElementById('femaleBtn');
-const maleBtn = document.getElementById('maleBtn');
-let gender = '';
-
-femaleBtn.addEventListener('click', ()=>{
-  gender = 'Female';
-  femaleBtn.classList.add('selected');
-  maleBtn.classList.remove('selected');
-  clickSound.play();
-});
-
-maleBtn.addEventListener('click', ()=>{
-  gender = 'Male';
-  maleBtn.classList.add('selected');
-  femaleBtn.classList.remove('selected');
-  clickSound.play();
-});
-
-// Host info from URL
-const hostUsername = new URLSearchParams(window.location.search).get('host') || 'HostName';
-document.getElementById('host-username').textContent = hostUsername;
-
-// Helper to generate unique host code
-function generateHostCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}
-
-async function getUniqueHostCode() {
-  let code = generateHostCode();
-  let exists = true;
-
-  while (exists) {
-    const q = query(collection(db, 'users'), where('hostCode','==',code));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) exists = false;
-    else code = generateHostCode();
-  }
-  return code;
-}
-
-// Submit
-const submitBtn = document.getElementById('submitBtn');
-const messageEl = document.getElementById('message');
-
-submitBtn.addEventListener('click', async () => {
-  const name = document.getElementById('name').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  const email = document.getElementById('email').value.trim();
-
-  if(!name || !phone || !email || !gender){
-    messageEl.textContent = 'Please fill all fields.';
-    return;
-  }
-  if(!isVIP && gender !== 'Female'){
-    messageEl.textContent = 'Only females can sign up as hosts.';
-    return;
-  }
-
-  const isHost = !isVIP;
-  const hostCode = isHost ? await getUniqueHostCode() : null;
-  const invitedBy = hostUsername !== 'HostName' ? hostUsername : null;
-
-  // Save user
-  await setDoc(doc(db, 'users', email), {
-    name, phone, email, gender, isVIP, isHost, hostCode, invitedBy, whitelisted:false
+  vipToggle.addEventListener('click', () => {
+    isVIP = !isVIP;
+    vipToggle.classList.toggle('on', isVIP);
+    vipLabel.classList.toggle('on', isVIP);
+    vipMessage.style.opacity = isVIP ? '1' : '0';
+    if (clickSound) clickSound.play();
   });
 
-  // Optional: auto-whitelist VIP
-  if(isVIP){
-    await setDoc(doc(db, 'whitelist', email), { userId: email });
+  // Gender Selection
+  const femaleBtn = document.getElementById('femaleBtn');
+  const maleBtn = document.getElementById('maleBtn');
+  let gender = '';
+
+  femaleBtn.addEventListener('click', ()=>{
+    gender = 'Female';
+    femaleBtn.classList.add('selected');
+    maleBtn.classList.remove('selected');
+    if (clickSound) clickSound.play();
+  });
+
+  maleBtn.addEventListener('click', ()=>{
+    gender = 'Male';
+    maleBtn.classList.add('selected');
+    femaleBtn.classList.remove('selected');
+    if (clickSound) clickSound.play();
+  });
+
+  // Host info from URL
+  const hostUsername = new URLSearchParams(window.location.search).get('host') || 'HostName';
+  document.getElementById('host-username').textContent = hostUsername;
+
+  // Helper to generate unique host code
+  function generateHostCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
   }
 
-  messageEl.textContent = `Signed up as ${isVIP?'VIP':'Host'}!`;
+  async function getUniqueHostCode() {
+    let code = generateHostCode();
+    let exists = true;
 
-  // Redirect to dashboard
-  window.location.href = isHost ? `/host-dashboard?code=${hostCode}` : '/vip-dashboard';
+    while (exists) {
+      const q = query(collection(db, 'users'), where('hostCode','==',code));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) exists = false;
+      else code = generateHostCode();
+    }
+    return code;
+  }
+
+  // Submit
+  const submitBtn = document.getElementById('submitBtn');
+  const messageEl = document.getElementById('message');
+
+  submitBtn.addEventListener('click', async () => {
+    const name = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+
+    if(!name || !phone || !email || !gender){
+      messageEl.textContent = 'Please fill all fields.';
+      return;
+    }
+    if(!isVIP && gender !== 'Female'){
+      messageEl.textContent = 'Only females can sign up as hosts.';
+      return;
+    }
+
+    const isHost = !isVIP;
+    const hostCode = isHost ? await getUniqueHostCode() : null;
+    const invitedBy = hostUsername !== 'HostName' ? hostUsername : null;
+
+    // Save user
+    await setDoc(doc(db, 'users', email), {
+      name, phone, email, gender, isVIP, isHost, hostCode, invitedBy, whitelisted:false
+    });
+
+    // Optional: auto-whitelist VIP
+    if(isVIP){
+      await setDoc(doc(db, 'whitelist', email), { userId: email });
+    }
+
+    messageEl.textContent = `Signed up as ${isVIP?'VIP':'Host'}!`;
+
+    // Redirect to dashboard
+    window.location.href = isHost ? `/host-dashboard?code=${hostCode}` : '/vip-dashboard';
+  });
 });
 </script>
-
 </body>
 </html>
