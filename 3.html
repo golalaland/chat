@@ -544,7 +544,7 @@ async function loadCurrentUser() {
   let vipSession = null;
   try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession = null; }
 
-  usernameEl.textContent = 'Guest';
+  usernameEl.textContent = '******';
   starsEl.textContent = `0 ⭐️`;
   cashEl.textContent = `₦0`;
 
