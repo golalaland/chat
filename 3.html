@@ -190,7 +190,6 @@
   display: inline-block;
 }
 
-/* IMAGE PREVIEW */
 #imagePreview {
   position: fixed;
   inset: 0;
@@ -203,17 +202,18 @@
 
 #imagePreview .preview-wrapper {
   position: relative;
+  max-width: 90%;
+  max-height: 85%;
 }
 
 #imagePreview img {
-  max-width: 90%;
-  max-height: 85%;
+  width: 100%;
+  height: auto;       /* keeps aspect ratio */
+  object-fit: contain; 
   border-radius: 8px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  display: block;
 }
 
-/* CLOSE BUTTON */
 .close-btn {
   position: absolute;
   top: -10px;
@@ -230,8 +230,8 @@
   line-height: 36px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.5);
   transition: all 0.2s;
+  z-index: 10;
 }
-
 .close-btn:hover {
   color: #fff;
   background: #ff2fa0;
