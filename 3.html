@@ -724,52 +724,58 @@
 
   // ---------- Tabs logic ----------
   document.addEventListener('click', (ev) => {
-    const btn = ev.target.closest('.tab-btn');
-    if (!btn) return;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const type = btn.getAttribute('data-tab');
-    if (type === 'vip') {
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
-          <div class="stat-label">VIPs Signed Up</div>
-        </div>
-      `;
-    if (type === 'vip') {
-  tabContentEl.innerHTML = `
-    <div class="stat-block">
-      <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
-      <div class="stat-label">VIPs Signed Up</div>
-      <button id="copyVIPBtn" class="copy-btn">Copy Link</button>
-    </div>
-  `;
+  const btn = ev.target.closest('.tab-btn');
+  if (!btn) return;
 
-  const copyBtn = document.getElementById('copyVIPBtn');
-  copyBtn.addEventListener('click', () => {
-    const vipLink = currentUser?.vipLink || '';
-    if (!vipLink) return;
-    navigator.clipboard.writeText(vipLink).then(() => {
-      showMessageModal('Copied!', 'VIP link copied to clipboard.');
-    });
-  });
+  // Toggle active class
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 
-} else if (type === 'friends') {
-  tabContentEl.innerHTML = `
-    <div class="stat-block">
-      <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length)}</div>
-      <div class="stat-label">Friends Hosts</div>
-    </div>
-  `;
-} else {
-  tabContentEl.innerHTML = `
-    <div class="stat-block">
-      <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
-      <div class="stat-label">Badge Status</div>
-    </div>
-  `;
-}
+  const type = btn.getAttribute('data-tab');
 
+  // VIP tab
+  if (type === 'vip') {
+    tabContentEl.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
+        <div class="stat-label">VIPs Signed Up</div>
+        <button id="copyVIPBtn" class="copy-btn">Copy Link</button>
+      </div>
+    `;
+
+    const copyBtn = document.getElementById('copyVIPBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const vipLink = currentUser?.vipLink || '';
+        if (!vipLink) {
+          showMessageModal('Oops', 'No VIP link available.');
+          return;
+        }
+        navigator.clipboard.writeText(vipLink)
+          .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard.'))
+          .catch(() => showMessageModal('Error', 'Failed to copy link.'));
+      });
+    }
+
+  // Friends tab
+  } else if (type === 'friends') {
+    tabContentEl.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length)}</div>
+        <div class="stat-label">Friends Hosts</div>
+      </div>
+    `;
+
+  // Badge tab
+  } else {
+    tabContentEl.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
+        <div class="stat-label">Badge Status</div>
+      </div>
+    `;
+  }
+});
   // ---------- Init ----------
   loadCurrentUser();
 
