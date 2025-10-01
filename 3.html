@@ -397,389 +397,389 @@
   </div>
 </div>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-    authDomain: "metaverse-1010.firebaseapp.com",
-    projectId: "metaverse-1010",
-    storageBucket: "metaverse-1010.appspot.com",
-    messagingSenderId: "1044064238233",
-    appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-    measurementId: "G-S77BMC266C",
-    databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---------- DOM Refs ----------
+const usernameEl = document.getElementById('username');
+const starsEl = document.getElementById('stars-count');
+const cashEl = document.getElementById('cash-count');
+const shopItemsEl = document.getElementById('shop-items');
+const hostTabsEl = document.getElementById('hostTabs');
+const tabContentEl = document.getElementById('tab-content');
+
+const confirmModal = document.getElementById('confirmModal');
+const confirmTitle = document.getElementById('confirmTitle');
+const confirmText = document.getElementById('confirmText');
+const confirmYes = document.getElementById('confirmYes');
+const confirmNo = document.getElementById('confirmNo');
+
+const imagePreviewEl = document.getElementById('imagePreview');
+const previewImgEl = document.getElementById('previewImg');
+const closePreviewBtn = document.getElementById('closePreview');
+
+// ---------- Utilities ----------
+function formatNumber(n){
+  if (n === undefined || n === null) return '0';
+  return new Intl.NumberFormat('en-NG').format(Number(n));
+}
+function parseNumberFromText(text){
+  if(!text) return 0;
+  const digits = text.replace(/[^\d\-]/g,'');
+  return Number(digits) || 0;
+}
+function animateNumber(el, from, to, duration = 600){
+  const start = performance.now();
+  function step(timestamp){
+    const progress = Math.min((timestamp - start)/duration,1);
+    const value = Math.floor(from + (to - from) * progress);
+    if (el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
+    else if (el === cashEl) el.textContent = `₦${formatNumber(value)}`;
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ---------- Confetti ----------
+function triggerConfetti(){
+  if (window.__confettiLoaded){
+    confetti({ particleCount: 90, spread: 65, origin: { y:0.6 } });
+    return;
+  }
+  const confettiScript = document.createElement('script');
+  confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+  confettiScript.onload = () => {
+    window.__confettiLoaded = true;
+    confetti({ particleCount: 90, spread: 65, origin: { y:0.6 } });
   };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  document.body.appendChild(confettiScript);
+}
 
-  // ---------- DOM Refs ----------
-  const usernameEl = document.getElementById('username');
-  const starsEl = document.getElementById('stars-count');
-  const cashEl = document.getElementById('cash-count');
-  const shopItemsEl = document.getElementById('shop-items');
-  const hostTabsEl = document.getElementById('hostTabs');
-  const tabContentEl = document.getElementById('tab-content');
+// ---------- Modal helpers ----------
+let activeConfirmHandler = null;
+function showConfirmModal(title, text, onYes){
+  confirmTitle.textContent = title;
+  confirmText.textContent = text;
+  confirmYes.style.display = '';
+  confirmNo.style.display = '';
+  confirmModal.style.display = 'flex';
+  activeConfirmHandler = onYes;
+  confirmYes.onclick = () => {
+    if (typeof activeConfirmHandler === 'function') activeConfirmHandler();
+    closeModal();
+  };
+  confirmNo.onclick = closeModal;
+}
+function showMessageModal(title, text, timeout = 1800){
+  confirmTitle.textContent = title;
+  confirmText.textContent = text;
+  confirmYes.style.display = 'none';
+  confirmNo.style.display = 'none';
+  confirmModal.style.display = 'flex';
+  setTimeout(() => closeModal(), timeout);
+}
+function closeModal(){
+  confirmModal.style.display = 'none';
+  confirmYes.onclick = null;
+  confirmNo.onclick = null;
+  activeConfirmHandler = null;
+  confirmYes.style.display = '';
+  confirmNo.style.display = '';
+}
 
-  const confirmModal = document.getElementById('confirmModal');
-  const confirmTitle = document.getElementById('confirmTitle');
-  const confirmText = document.getElementById('confirmText');
-  const confirmYes = document.getElementById('confirmYes');
-  const confirmNo = document.getElementById('confirmNo');
-
-  const imagePreviewEl = document.getElementById('imagePreview');
-  const previewImgEl = document.getElementById('previewImg');
-  const closePreviewBtn = document.getElementById('closePreview');
-
-  // ---------- Utilities ----------
-  function formatNumber(n){
-    if (n === undefined || n === null) return '0';
-    return new Intl.NumberFormat('en-NG').format(Number(n));
-  }
-  function parseNumberFromText(text){
-    if(!text) return 0;
-    const digits = text.replace(/[^\d\-]/g,'');
-    return Number(digits) || 0;
-  }
-  function animateNumber(el, from, to, duration = 600){
-    const start = performance.now();
-    function step(timestamp){
-      const progress = Math.min((timestamp - start)/duration,1);
-      const value = Math.floor(from + (to - from) * progress);
-      if (el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
-      else if (el === cashEl) el.textContent = `₦${formatNumber(value)}`;
-      if (progress < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  // ---------- Confetti ----------
-  function triggerConfetti(){
-    if (window.__confettiLoaded){
-      confetti({ particleCount: 90, spread: 65, origin: { y:0.6 } });
-      return;
-    }
-    const confettiScript = document.createElement('script');
-    confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
-    confettiScript.onload = () => {
-      window.__confettiLoaded = true;
-      confetti({ particleCount: 90, spread: 65, origin: { y:0.6 } });
-    };
-    document.body.appendChild(confettiScript);
-  }
-
-  // ---------- Modal helpers ----------
-  let activeConfirmHandler = null;
-  function showConfirmModal(title, text, onYes){
-    confirmTitle.textContent = title;
-    confirmText.textContent = text;
-    confirmYes.style.display = '';
-    confirmNo.style.display = '';
-    confirmModal.style.display = 'flex';
-    activeConfirmHandler = onYes;
-    confirmYes.onclick = () => {
-      if (typeof activeConfirmHandler === 'function') activeConfirmHandler();
-      closeModal();
-    };
-    confirmNo.onclick = closeModal;
-  }
-  function showMessageModal(title, text, timeout = 1800){
-    confirmTitle.textContent = title;
-    confirmText.textContent = text;
-    confirmYes.style.display = 'none';
-    confirmNo.style.display = 'none';
-    confirmModal.style.display = 'flex';
-    setTimeout(() => closeModal(), timeout);
-  }
-  function closeModal(){
-    confirmModal.style.display = 'none';
-    confirmYes.onclick = null;
-    confirmNo.onclick = null;
-    activeConfirmHandler = null;
-    confirmYes.style.display = '';
-    confirmNo.style.display = '';
-  }
-
-  // ---------- Image preview ----------
-  function openImagePreview(src){
-    previewImgEl.src = src;
-    imagePreviewEl.style.display = 'flex';
-  }
-  closePreviewBtn.addEventListener('click', ()=>{
+// ---------- Image preview ----------
+function openImagePreview(src){
+  previewImgEl.src = src;
+  imagePreviewEl.style.display = 'flex';
+}
+closePreviewBtn.addEventListener('click', ()=>{
+  imagePreviewEl.style.display = 'none';
+  previewImgEl.src = '';
+});
+imagePreviewEl.addEventListener('click',(e)=>{
+  if(e.target === imagePreviewEl){
     imagePreviewEl.style.display = 'none';
     previewImgEl.src = '';
-  });
-  imagePreviewEl.addEventListener('click',(e)=>{
-    if(e.target === imagePreviewEl){
-      imagePreviewEl.style.display = 'none';
-      previewImgEl.src = '';
-    }
-  });
+  }
+});
 
-  // ---------- Current User ----------
-  let currentUser = null;
-  async function loadCurrentUser(){
-    const vipSessionRaw = localStorage.getItem('vipUser');
-    let vipSession = null;
-    try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession=null; }
+// ---------- Current User ----------
+let currentUser = null;
+async function loadCurrentUser(){
+  const vipSessionRaw = localStorage.getItem('vipUser');
+  let vipSession = null;
+  try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession=null; }
 
-    usernameEl.textContent = 'Guest';
-    starsEl.textContent = `0 ⭐️`;
-    cashEl.textContent = `₦0`;
+  usernameEl.textContent = 'Guest';
+  starsEl.textContent = `0 ⭐️`;
+  cashEl.textContent = `₦0`;
 
-    await renderShop();
+  await renderShop();
 
-    if(!vipSession?.email){
-      currentUser=null;
-      hostTabsEl.style.display='none';
-      return;
-    }
-
-    const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-    const userRef = doc(db,'users',uid);
-    const snap = await getDoc(userRef);
-
-    if(!snap.exists()){
-      currentUser={uid, stars:0, cash:0, isHost:false};
-      usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
-      hostTabsEl.style.display='none';
-      return;
-    }
-
-    currentUser={uid, ...snap.data()};
-    usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
-    starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
-    cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
-    hostTabsEl.style.display = currentUser.isHost ? '' : 'none';
-
-    updateHostPanels();
-
-    // Realtime listener
-    onSnapshot(userRef, docSnap=>{
-      const data = docSnap.data();
-      if(!data) return;
-      currentUser={uid,...data};
-      usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
-      currentUser.stars = Number(currentUser.stars)||0;
-      currentUser.cash = Number(currentUser.cash)||0;
-      starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-      cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
-      hostTabsEl.style.display = currentUser.isHost ? '' : 'none';
-      updateHostPanels();
-    });
+  if(!vipSession?.email){
+    currentUser=null;
+    hostTabsEl.style.display='none';
+    return;
   }
 
-  // ---------- Host Panels ----------
-function setupRealtimeHostPanels(){
-  if(!currentUser || !currentUser.isHost) return;
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+  const userRef = doc(db,'users',uid);
+  const snap = await getDoc(userRef);
 
-  // ---------- VIP (already working) ----------
-  const vipCount = Number(currentUser.hostVIP)||0;
+  if(!snap.exists()){
+    currentUser={uid, stars:0, cash:0, isHost:false};
+    usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
+    hostTabsEl.style.display='none';
+    return;
+  }
 
-  // ---------- Friends Count ----------
-  let friendsListener = onSnapshot(collection(db,'users'), snapshot=>{
-    let friendsCount = 0;
-    snapshot.forEach(docSnap=>{
-      const data = docSnap.data();
-      if(data?.hostId === currentUser.uid) friendsCount++;
-    });
+  currentUser={uid, ...snap.data()};
+  usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
+  hostTabsEl.style.display = currentUser.isHost ? '' : 'none';
 
-    if(document.querySelector('#hostTabs button.active').dataset.tab === 'friends'){
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <div class="stat-value" id="friends-stat">${friendsCount}</div>
-          <div class="stat-label">Friends Invited</div>
-        </div>
-      `;
-    }
-  });
+  setupRealtimeHostPanels();
 
-  // ---------- Badges ----------
-  let badgesListener = onSnapshot(doc(db,'users',currentUser.uid), docSnap=>{
+  // Realtime listener
+  onSnapshot(userRef, docSnap=>{
     const data = docSnap.data();
-    const badges = data?.hostBadges || [];
-    if(document.querySelector('#hostTabs button.active').dataset.tab === 'badges'){
-      const badgesContent = document.createElement('div');
-      badgesContent.className = 'stat-block';
-      if(badges.length){
-        badges.forEach(b=>{
-          const div = document.createElement('div');
-          div.textContent = b; // letters/emoji
-          badgesContent.appendChild(div);
-        });
-      } else {
-        badgesContent.textContent = 'No badges yet';
-      }
-      tabContentEl.innerHTML = '';
-      tabContentEl.appendChild(badgesContent);
-    }
+    if(!data) return;
+    currentUser={uid,...data};
+    usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+    currentUser.stars = Number(currentUser.stars)||0;
+    currentUser.cash = Number(currentUser.cash)||0;
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+    hostTabsEl.style.display = currentUser.isHost ? '' : 'none';
+    setupRealtimeHostPanels();
   });
 }
-  // Badges tab content (letters/emoji)
-  let badgesContent = '<div class="stat-block">';
-  const badges = currentUser.hostBadges || [];
-  if(badges.length){
-    badges.forEach(b => {
-      badgesContent += `<div>${b}</div>`;
-    });
-  } else {
-    badgesContent += 'No badges yet';
+
+// ---------- Host Panels ----------
+function setupRealtimeHostPanels(){
+  if(!currentUser || !currentUser.isHost){
+    hostTabsEl.style.display='none';
+    return;
   }
-  badgesContent += '</div>';
+  hostTabsEl.style.display='';
 
-  // Store all tab contents
-  const tabData = {
-    vip: vipContent,
-    friends: friendsContent,
-    badges: badgesContent
-  };
+  // ---------- VIP ----------
+  const vipCount = Number(currentUser.hostVIP)||0;
 
-  // Default tab is VIP
-  tabContentEl.innerHTML = tabData.vip;
-
-  attachInviteHandler(); // keep VIP invite link working
-
-  // Tab switching
+  // ---------- Tab Buttons ----------
   hostTabsEl.querySelectorAll('button').forEach(btn=>{
     btn.onclick = () => {
       document.querySelectorAll('#hostTabs button').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      const tabName = btn.dataset.tab;
-      tabContentEl.innerHTML = tabData[tabName] || '<p>Nothing to display</p>';
+      const tab = btn.dataset.tab;
+
+      if(tab==='vip'){
+        tabContentEl.innerHTML = `
+          <div class="stat-block">
+            <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+            <div class="stat-label">VIPs Signed Up</div>
+            <button id="copyInviteBtn" class="copy-link-btn">Copy Invite Link</button>
+          </div>
+        `;
+        attachInviteHandler();
+      }
+
+      if(tab==='friends'){
+        // Count friends where hostId === currentUser.uid
+        const usersCol = collection(db,'users');
+        tabContentEl.innerHTML = `<p>Loading friends...</p>`;
+        onSnapshot(usersCol, snapshot=>{
+          let friendsCount=0;
+          snapshot.forEach(docSnap=>{
+            const data = docSnap.data();
+            if(data?.hostId === currentUser.uid) friendsCount++;
+          });
+          if(document.querySelector('#hostTabs button.active').dataset.tab==='friends'){
+            tabContentEl.innerHTML = `
+              <div class="stat-block">
+                <div class="stat-value" id="friends-stat">${friendsCount}</div>
+                <div class="stat-label">Friends Invited</div>
+              </div>
+            `;
+          }
+        });
+      }
+
+      if(tab==='badges'){
+        const badges = currentUser.hostBadges || [];
+        const container = document.createElement('div');
+        container.className = 'stat-block';
+        container.style.display='flex';
+        container.style.flexWrap='wrap';
+        container.style.justifyContent='center';
+        if(badges.length){
+          badges.forEach(b=>{
+            const div = document.createElement('div');
+            div.textContent = b; // letters or emoji
+            div.style.margin='4px';
+            div.style.fontWeight='bold';
+            container.appendChild(div);
+          });
+        } else {
+          container.textContent = 'No badges yet';
+        }
+        tabContentEl.innerHTML='';
+        tabContentEl.appendChild(container);
+      }
     }
+  });
+
+  // ---------- Default to VIP tab ----------
+  document.querySelector('#hostTabs button[data-tab="vip"]').click();
+}
+
+// ---------- Invite Handler ----------
+function attachInviteHandler(){
+  const btn = document.getElementById('copyInviteBtn');
+  if(!btn) return;
+  btn.onclick = async ()=>{
+    const hostId = currentUser?.uid||'';
+    const safe = encodeURIComponent(hostId || 'unknown');
+    const link = `https://yoursite.com/signup?host=${safe}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      showMessageModal('Copied!', 'Invite link copied to clipboard.',1800);
+    } catch(err){
+      showMessageModal('Error', 'Could not copy link. Please copy manually: '+link,3000);
+    }
+  }
+}
+
+// ---------- Product Card ----------
+function createProductCard(product){
+  const card = document.createElement('div');
+  card.className='product-card';
+
+  const img = document.createElement('img');
+  img.src = product.img || 'https://via.placeholder.com/300';
+  img.alt = product.name || 'Item';
+  img.addEventListener('click', ()=>openImagePreview(img.src));
+
+  const badge = document.createElement('span');
+  badge.className='availability-badge';
+  const avail = Number(product.available) || 0;
+  badge.textContent = avail>0 ? `${avail} Left` : 'Sold Out';
+  if(avail<=0) badge.style.background='#666';
+
+  const title = document.createElement('h3');
+  title.textContent = product.name || 'Unnamed';
+
+  const price = document.createElement('div');
+  price.className='price';
+  price.textContent = `${Number(product.cost)||0} ⭐`;
+
+  const btn = document.createElement('button');
+  btn.className='buy-btn';
+  btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem':'Host Only'):'Redeem';
+  if(product.hostOnly && !currentUser?.isHost) btn.disabled=true;
+  if(avail<=0) btn.disabled=true;
+
+  card.appendChild(badge);
+  card.appendChild(img);
+  card.appendChild(title);
+  card.appendChild(price);
+  card.appendChild(btn);
+
+  btn.addEventListener('click', async()=>{
+    if(!currentUser){ showMessageModal('Not Logged In','Please sign in to redeem items.'); return; }
+    if(Number(currentUser.stars)<Number(product.cost)){ showMessageModal('Not Enough Stars','You do not have enough stars to redeem this item.'); return; }
+    if(avail<=0){ showMessageModal('Sold Out','This item is no longer available.'); return; }
+
+    showConfirmModal('Confirm Redemption',`Redeem "${product.name}" for ${product.cost} ⭐?`, async ()=>{
+      try{
+        const userRef = doc(db,'users',currentUser.uid);
+        const productRef = doc(db,'shopItems',String(product.id));
+        let newStars=0,newCash=0,redeemedCashAmount=0;
+
+        await runTransaction(db,async(transaction)=>{
+          const userSnap = await transaction.get(userRef);
+          const productSnap = await transaction.get(productRef);
+          if(!userSnap.exists()) throw new Error('User not found');
+          if(!productSnap.exists()) throw new Error('Product not found');
+
+          const userData = userSnap.data();
+          const productData = productSnap.data();
+          const userStars = Number(userData.stars)||0;
+          const userCash = Number(userData.cash)||0;
+          const cost = Number(productData.cost)||0;
+          const available = Number(productData.available)||0;
+          if(userStars<cost) throw new Error('Not enough stars');
+          if(available<=0) throw new Error('Out of stock');
+
+          newStars = userStars-cost;
+
+          if((productData.name||'').toLowerCase()==='redeem cash balance'){
+            redeemedCashAmount=userCash;
+            newCash=0;
+          } else { newCash = userCash + (Number(productData.cashReward)||0); }
+
+          transaction.update(userRef,{stars:newStars,cash:newCash});
+          transaction.update(productRef,{available:available-1});
+
+          const purchasesCol = collection(db,'purchases');
+          transaction.set(doc(purchasesCol),{
+            userId:currentUser.uid,
+            email:userData.email||'',
+            phone:userData.phone||'',
+            productId:String(productData.id||product.id),
+            productName:productData.name||product.name,
+            cost:cost,
+            cashReward:Number(productData.cashReward)||0,
+            redeemedCash:redeemedCashAmount||0,
+            timestamp:serverTimestamp()
+          });
+        });
+
+        const previousStars=parseNumberFromText(starsEl.textContent);
+        const previousCash=parseNumberFromText(cashEl.textContent);
+        animateNumber(starsEl,previousStars,newStars);
+        animateNumber(cashEl,previousCash,newCash);
+        triggerConfetti();
+        await renderShop(); // Refresh
+      } catch(err){
+        console.error(err);
+        showMessageModal('Error','Transaction failed: '+err.message,2500);
+      }
+    });
+  });
+
+  return card;
+}
+
+// ---------- Shop ----------
+async function renderShop(){
+  shopItemsEl.innerHTML='Loading...';
+  const snap = await getDocs(collection(db,'shopItems'));
+  shopItemsEl.innerHTML='';
+  snap.forEach(docSnap=>{
+    const data = docSnap.data();
+    if(!data) return;
+    const card = createProductCard({id:docSnap.id, ...data});
+    shopItemsEl.appendChild(card);
   });
 }
 
-  tabContentEl.innerHTML = content;
-  if(tab==='vip') attachInviteHandler();
-}
-  // ---------- Product Card ----------
-  function createProductCard(product){
-    const card = document.createElement('div');
-    card.className='product-card';
-
-    const img = document.createElement('img');
-    img.src = product.img || 'https://via.placeholder.com/300';
-    img.alt = product.name || 'Item';
-    img.addEventListener('click', ()=>openImagePreview(img.src));
-
-    const badge = document.createElement('span');
-    badge.className='availability-badge';
-    const avail = Number(product.available) || 0;
-    badge.textContent = avail>0 ? `${avail} Left` : 'Sold Out';
-    if(avail<=0) badge.style.background='#666';
-
-    const title = document.createElement('h3');
-    title.textContent = product.name || 'Unnamed';
-
-    const price = document.createElement('div');
-    price.className='price';
-    price.textContent = `${Number(product.cost)||0} ⭐`;
-
-    const btn = document.createElement('button');
-    btn.className='buy-btn';
-    btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem':'Host Only'):'Redeem';
-    if(product.hostOnly && !currentUser?.isHost) btn.disabled=true;
-    if(avail<=0) btn.disabled=true;
-
-    card.appendChild(badge);
-    card.appendChild(img);
-    card.appendChild(title);
-    card.appendChild(price);
-    card.appendChild(btn);
-
-    btn.addEventListener('click', async()=>{
-      if(!currentUser){ showMessageModal('Not Logged In','Please sign in to redeem items.'); return; }
-      if(Number(currentUser.stars)<Number(product.cost)){ showMessageModal('Not Enough Stars','You do not have enough stars to redeem this item.'); return; }
-      if(avail<=0){ showMessageModal('Sold Out','This item is no longer available.'); return; }
-
-      showConfirmModal('Confirm Redemption',`Redeem "${product.name}" for ${product.cost} ⭐?`, async ()=>{
-        try{
-          const userRef = doc(db,'users',currentUser.uid);
-          const productRef = doc(db,'shopItems',String(product.id));
-          let newStars=0,newCash=0,redeemedCashAmount=0;
-
-          await runTransaction(db,async(transaction)=>{
-            const userSnap = await transaction.get(userRef);
-            const productSnap = await transaction.get(productRef);
-            if(!userSnap.exists()) throw new Error('User not found');
-            if(!productSnap.exists()) throw new Error('Product not found');
-
-            const userData = userSnap.data();
-            const productData = productSnap.data();
-            const userStars = Number(userData.stars)||0;
-            const userCash = Number(userData.cash)||0;
-            const cost = Number(productData.cost)||0;
-            const available = Number(productData.available)||0;
-            if(userStars<cost) throw new Error('Not enough stars');
-            if(available<=0) throw new Error('Out of stock');
-
-            newStars = userStars-cost;
-
-            if((productData.name||'').toLowerCase()==='redeem cash balance'){
-              redeemedCashAmount=userCash;
-              newCash=0;
-            } else { newCash = userCash + (Number(productData.cashReward)||0); }
-
-            transaction.update(userRef,{stars:newStars,cash:newCash});
-            transaction.update(productRef,{available:available-1});
-
-            const purchasesCol = collection(db,'purchases');
-            transaction.set(doc(purchasesCol),{
-              userId:currentUser.uid,
-              email:userData.email||'',
-              phone:userData.phone||'',
-              productId:String(productData.id||product.id),
-              productName:productData.name||product.name,
-              cost:cost,
-              cashReward:Number(productData.cashReward)||0,
-              redeemedCash:redeemedCashAmount||0,
-              timestamp:serverTimestamp()
-            });
-          });
-
-          const previousStars=parseNumberFromText(starsEl.textContent);
-          const previousCash=parseNumberFromText(cashEl.textContent);
-          animateNumber(starsEl,previousStars,newStars);
-          animateNumber(cashEl,previousCash,newCash);
-          triggerConfetti();
-          await renderShop(); // Refresh
-        } catch(err){
-          console.error(err);
-          showMessageModal('Error','Transaction failed: '+err.message,2500);
-        }
-      });
-    });
-
-    return card;
-  }
-
-  // ---------- Shop ----------
-  async function renderShop(){
-    shopItemsEl.innerHTML='Loading...';
-    const snap = await getDocs(collection(db,'shopItems'));
-    shopItemsEl.innerHTML='';
-    snap.forEach(docSnap=>{
-      const data = docSnap.data();
-      if(!data) return;
-      const card = createProductCard({id:docSnap.id, ...data});
-      shopItemsEl.appendChild(card);
-    });
-  }
-
-  // ---------- Tabs ----------
-hostTabsEl.querySelectorAll('button').forEach(btn=>{
-  btn.onclick = () => {
-    document.querySelectorAll('#hostTabs button').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const tabName = btn.dataset.tab;
-    if(tabName==='vip') updateHostPanels(); // VIP numbers
-    // Friends and Badges auto-updated by listeners
-  }
-});
-
-  // ---------- Init ----------
-  loadCurrentUser();
+// ---------- Init ----------
+loadCurrentUser();
 </script>
