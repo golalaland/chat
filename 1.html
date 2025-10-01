@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>乂丨乂丨Redeem</title>
+<title>Sign Up - 乂丨乂丨</title>
 <style>
 :root {
   --bg: #f5f5f5;
@@ -12,8 +12,6 @@
   --text: #000;
   --btn-bg: #ff33cc;
   --btn-text: #fff;
-  --host-bg: #111;
-  --host-text: #fff;
 }
 
 body {
@@ -21,317 +19,142 @@ body {
   font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-}
-
-header {
-  background: var(--card-bg);
-  padding: 1rem 2rem;
-  font-size: 1.8rem;
-  font-weight: bold;
-  border-bottom: 1px solid #ddd;
-  text-align: center;
-}
-
-#profile-section {
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 1rem;
+  min-height: 100vh;
 }
 
-.profile-card {
+.signup-card {
   background: var(--card-bg);
-  padding: 1rem 2rem;
+  padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  max-width: 380px;
+  width: 100%;
+}
+
+.signup-card h2 {
+  margin-bottom: 1.5rem;
   text-align: center;
-  min-width: 280px;
 }
 
-#username {
-  font-weight: bold;
-  font-size: 1.3rem;
-  margin-bottom: 0.5rem;
+.signup-card input[type="text"],
+.signup-card input[type="email"],
+.signup-card input[type="password"] {
+  width: 100%;
+  padding: 0.8rem;
+  margin: 0.6rem 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
 }
 
-.balances {
+.signup-card label {
   display: flex;
-  justify-content: center;
-  gap: 2rem;
-  flex-wrap: wrap;
+  align-items: center;
+  font-size: 0.95rem;
+  margin: 0.8rem 0;
 }
 
-.balance-item {
-  text-align: center;
+.signup-card input[type="checkbox"] {
+  margin-right: 0.5rem;
 }
 
-.balance-label {
-  font-size: 0.85rem;
-  color: #555;
-  margin-bottom: 0.2rem;
-}
-
-.balance-value {
+.signup-card button {
+  width: 100%;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
   font-size: 1.1rem;
   font-weight: bold;
-}
-
-.host-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 0 2rem;
-  margin-bottom: 1rem;
-}
-
-.host-card {
-  background: var(--host-bg);
-  color: var(--host-text);
-  padding: 1rem;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 80px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-}
-
-.host-card h3 {
-  font-size: 1rem;
-  margin: 0 0 0.3rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.host-card .host-count {
-  font-weight: bold;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.copy-link-btn {
-  align-self: center;
-  margin-top: 0.6rem;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  border-radius: 5px;
   cursor: pointer;
+  margin-top: 1rem;
   transition: background 0.2s;
 }
 
-.copy-link-btn:hover {
+.signup-card button:hover {
   background: #ff66d6;
 }
 
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  padding: 0 2rem 2rem 2rem;
-}
-
-.product-card {
-  background: var(--card-bg);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
-}
-
-.product-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.product-card img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-}
-
-.product-info {
-  padding: 0.8rem;
+.message {
+  margin-top: 1rem;
   text-align: center;
-}
-
-.product-name {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.product-cost {
-  color: var(--accent);
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.buy-btn {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  padding: 0.6rem;
-  cursor: pointer;
-  font-weight: bold;
-  width: 90%;
-  margin: 0 auto 1rem auto;
-  border-radius: 5px;
-  transition: background 0.2s;
-}
-
-.buy-btn:hover {
-  background: #ff66d6;
-}
-
-#home-btn {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  padding: 0.8rem 2rem;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: block;
-  margin: 1rem auto;
+  font-size: 0.9rem;
 }
 </style>
 </head>
 <body>
 
-<header>乂丨乂丨Redeem</header>
+<div class="signup-card">
+  <h2>Sign Up</h2>
+  <form id="signupForm">
+    <input type="text" id="username" placeholder="Username" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
 
-<!-- Profile Card -->
-<div id="profile-section">
-  <div class="profile-card">
-    <div id="username">Guest</div>
-    <div class="balances">
-      <div class="balance-item">
-        <div class="balance-label">Stars Balance</div>
-        <div class="balance-value" id="stars-count">0 ⭐️</div>
-      </div>
-      <div class="balance-item">
-        <div class="balance-label">Cash Balance</div>
-        <div class="balance-value" id="cash-count">₦0</div>
-      </div>
-    </div>
-  </div>
+    <label>
+      <input type="checkbox" id="isHost"> Sign up as Host
+    </label>
+
+    <button type="submit">Create Account</button>
+    <div class="message" id="signupMessage"></div>
+  </form>
 </div>
-
-<!-- Host Dashboard -->
-<div class="host-dashboard" id="host-dashboard" style="display:none;">
-  <div class="host-card" id="host-vip-tab">
-    <h3><span class="title-placeholder">VIP TAB</span></h3>
-    <div class="host-count" id="vip-count"><span class="count-placeholder">0</span></div>
-  </div>
-
-  <div class="host-card" id="host-friends">
-    <h3><span class="title-placeholder">Friends</span></h3>
-    <div class="host-count" id="friends-count"><span class="count-placeholder">0</span></div>
-  </div>
-
-  <div class="host-card" id="host-badges">
-    <h3><span class="title-placeholder">Badges</span></h3>
-    <div class="host-count" id="badges-count"><span class="count-placeholder">Bronze</span></div>
-    <button class="copy-link-btn" id="copy-invite-btn">Copy Invite Link</button>
-  </div>
-</div>
-
-<!-- Shop Items -->
-<div class="shop-grid" id="shop-items"></div>
-
-<button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
 <script type="module">
-// ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  // 🔹 your firebase config here
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// ---------- DOM Refs ----------
-const usernameEl = document.getElementById('username');
-const starsEl = document.getElementById('stars-count');
-const cashEl = document.getElementById('cash-count');
-const vipCountEl = document.getElementById('vip-count');
-const friendsCountEl = document.getElementById('friends-count');
-const badgesCountEl = document.getElementById('badges-count');
-const hostDashboardEl = document.getElementById('host-dashboard');
-
-// ---------- Utilities ----------
-function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
-
-// ---------- Current User ----------
-let currentUser = null;
-async function loadCurrentUser() {
-  // Placeholder logic for demonstration
-  currentUser = {
-    uid: "guest123",
-    chatId: "Guest",
-    stars: 120,
-    cash: 5000,
-    isHost: true,
-    hostVIP: 3,
-    hostFriends: 5,
-    hostBadges: "Silver"
-  };
-
-  usernameEl.textContent = currentUser.chatId;
-  starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
-
-  renderHostDashboard();
-}
-loadCurrentUser();
-
-// ---------- Host Dashboard ----------
-function randomColor() {
-  const colors = ['#ff33cc','#33ccff','#ffcc33','#33ff77','#ff7733'];
-  return colors[Math.floor(Math.random()*colors.length)];
+// Get referrer UID from ?ref= in URL
+function getReferrerId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("ref") || null;
 }
 
-function renderHostDashboard() {
-  if(!currentUser?.isHost) {
-    hostDashboardEl.style.display = 'none';
-    return;
+async function signup(email, password, username, isHost = false) {
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
+    const referrerId = getReferrerId();
+
+    await setDoc(doc(db, "users", uid), {
+      username,
+      email,
+      isHost,
+      vipCount: 0,
+      friendsCount: 0,
+      badges: ["gold"], // placeholder badge
+      referrerId: referrerId,
+      createdAt: new Date()
+    });
+
+    document.getElementById("signupMessage").textContent = "✅ Account created successfully!";
+  } catch (err) {
+    document.getElementById("signupMessage").textContent = "❌ " + err.message;
+    console.error("Signup error:", err);
   }
-  hostDashboardEl.style.display = 'flex';
-
-  vipCountEl.textContent = currentUser.hostVIP;
-  friendsCountEl.textContent = currentUser.hostFriends;
-  badgesCountEl.textContent = currentUser.hostBadges;
-
-  // Random color for titles
-  document.querySelectorAll('.title-placeholder').forEach(el=>{
-    el.style.color = randomColor();
-  });
 }
 
-// ---------- Copy Invite ----------
-document.getElementById('copy-invite-btn').onclick = () => {
-  const link = `https://yoursite.com/signup?host=${currentUser.uid}`;
-  navigator.clipboard.writeText(link);
-  alert("Invite link copied!");
-};
-</script>
+document.getElementById("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const username = document.getElementById("username").value;
+  const isHost = document.getElementById("isHost").checked;
 
+  await signup(email, password, username, isHost);
+});
+</script>
 </body>
 </html>
