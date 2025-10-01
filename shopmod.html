@@ -262,9 +262,13 @@ header {
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
 <script type="module">
+// ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// ---------- Firebase config ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -277,87 +281,188 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// ---------- DOM references ----------
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-count');
 const cashEl = document.getElementById('cash-count');
-const vipCountEl = document.getElementById('vip-count');
-const friendsCountEl = document.getElementById('friends-count');
-const badgesCountEl = document.getElementById('badges-count');
 const hostDashboardEl = document.getElementById('host-dashboard');
 const shopItemsEl = document.getElementById('shop-items');
 
-// Utilities
+// ---------- Utilities ----------
 function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
-function randomColor(){ const colors=['#ff33cc','#33ccff','#ffcc33','#33ff77','#ff7733']; return colors[Math.floor(Math.random()*colors.length)]; }
-
-// Load Current User
-async function loadCurrentUser() {
-  const uid = localStorage.getItem('userUID') || 'guest123'; // replace with actual auth logic
-  const userRef = doc(db,'users',uid);
-  const snap = await getDoc(userRef);
-  if(!snap.exists()) {
-    // Placeholder demo
-    currentUser = {
-      uid, chatId:'Guest', stars:120, cash:5000,
-      isHost:true, hostVIP:3, hostFriends:5, hostBadges:'Silver'
-    };
-  } else currentUser = { uid, ...snap.data() };
-
-  usernameEl.textContent = currentUser.chatId;
-  starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
-
-  renderHostDashboard();
-  renderShop();
+function animateNumber(el, from, to, duration = 600) {
+  const start = performance.now();
+  function step(timestamp) {
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const value = Math.floor(from + (to - from) * progress);
+    if(el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
+    else if(el === cashEl) el.textContent = `₦${formatNumber(value)}`;
+    if(progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
-// Host Dashboard
+// ---------- Modals ----------
+const confirmModal = document.createElement("div");
+confirmModal.id = "confirmModal";
+confirmModal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:1000;";
+confirmModal.innerHTML = `
+  <div style="background:#fff;padding:1rem 2rem;border-radius:10px;min-width:280px;text-align:center;">
+    <h3 id="confirmTitle"></h3>
+    <p id="confirmText"></p>
+    <div style="margin-top:1rem;">
+      <button id="confirmYes" style="margin-right:0.5rem;padding:0.5rem 1rem;">Yes</button>
+      <button id="confirmNo" style="padding:0.5rem 1rem;">Cancel</button>
+    </div>
+  </div>
+`;
+document.body.appendChild(confirmModal);
+
+function showConfirmModal(title, text, onYes) {
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+  confirmModal.style.display = "flex";
+  const yesBtn = document.getElementById("confirmYes");
+  const noBtn = document.getElementById("confirmNo");
+  const cleanup = () => { confirmModal.style.display="none"; yesBtn.onclick=null; noBtn.onclick=null; };
+  yesBtn.onclick = () => { onYes(); cleanup(); };
+  noBtn.onclick = cleanup;
+}
+
+function showMessageModal(title, text, duration=2000){
+  document.getElementById("confirmTitle").innerText = title;
+  document.getElementById("confirmText").innerText = text;
+  document.getElementById("confirmYes").style.display = "none";
+  document.getElementById("confirmNo").style.display = "none";
+  confirmModal.style.display="flex";
+  setTimeout(()=>{
+    confirmModal.style.display="none";
+    document.getElementById("confirmYes").style.display="inline-block";
+    document.getElementById("confirmNo").style.display="inline-block";
+  }, duration);
+}
+
+// ---------- Current User ----------
+let currentUser = null;
+async function loadCurrentUser() {
+  const vipSession = JSON.parse(localStorage.getItem('vipUser'));
+  if(!vipSession?.email) return;
+  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+  const userRef = doc(db, 'users', uid);
+  const snap = await getDoc(userRef);
+  if(!snap.exists()) return;
+
+  currentUser = { uid, ...snap.data() };
+  updateProfileUI();
+
+  onSnapshot(userRef, docSnap => {
+    const data = docSnap.data();
+    if(!data) return;
+    currentUser.stars = Number(data.stars||0);
+    currentUser.cash = Number(data.cash||0);
+    currentUser.isHost = data.isHost||false;
+    currentUser.hostBadge = data.hostBadge||'N/A';
+    currentUser.hostFriends = data.hostFriends||[];
+    currentUser.hostVIP = data.hostVIP||0;
+
+    updateProfileUI();
+    renderHostDashboard();
+  });
+}
+loadCurrentUser();
+
+function updateProfileUI(){
+  usernameEl.textContent = currentUser.chatId||'Guest';
+  starsEl.textContent = `⭐ ${formatNumber(currentUser.stars||0)}`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
+}
+
+// ---------- Host Dashboard ----------
 function renderHostDashboard(){
   if(!currentUser?.isHost){
-    hostDashboardEl.style.display='none';
+    hostDashboardEl.style.display = 'none';
     return;
   }
-  hostDashboardEl.style.display='flex';
+  hostDashboardEl.style.display = 'flex';
+  hostDashboardEl.innerHTML = '';
 
-  vipCountEl.textContent = currentUser.hostVIP || 0;
-  friendsCountEl.textContent = currentUser.hostFriends || 0;
-  badgesCountEl.textContent = currentUser.hostBadges || 'Bronze';
+  const cards = [
+    { title:'VIP TAB', count: currentUser.hostVIP||0, icon:'https://via.placeholder.com/18' },
+    { title:'Friends', count: (currentUser.hostFriends||[]).length, icon:'https://via.placeholder.com/18' },
+    { title:'Badges', count: currentUser.hostBadge||'Bronze', icon:'https://via.placeholder.com/18', copyInvite:true }
+  ];
 
-  // Random title colors
-  document.querySelectorAll('.title-placeholder').forEach(el=>{el.style.color=randomColor();});
-}
-
-// Copy Invite
-document.getElementById('copy-invite-btn').onclick = () => {
-  const link = `https://yoursite.com/signup?host=${currentUser.uid}`;
-  navigator.clipboard.writeText(link);
-  alert("Invite link copied!");
-}
-
-// Load Shop
-async function renderShop(){
-  const shopCol = collection(db,'shopItems');
-  const snapshot = await getDocs(shopCol);
-  shopItemsEl.innerHTML = '';
-  snapshot.forEach(doc=>{
-    const data = doc.data();
+  cards.forEach(c=>{
     const card = document.createElement('div');
-    card.className = 'product-card';
+    card.className='host-card';
     card.innerHTML = `
-      <img src="${data.imageURL || 'https://via.placeholder.com/200'}" alt="${data.name}">
-      <div class="product-info">
-        <div class="product-name">${data.name}</div>
-        <div class="product-cost">${formatNumber(data.cost)} ⭐️</div>
-        <button class="buy-btn">Buy</button>
-      </div>
+      <h3><img src="${c.icon}" width="18" style="margin-right:6px;"> ${c.title}</h3>
+      <div class="host-count">${c.count}</div>
     `;
-    shopItemsEl.appendChild(card);
+    if(c.copyInvite){
+      const btn = document.createElement('button');
+      btn.className='copy-link-btn';
+      btn.textContent='Copy Invite Link';
+      btn.onclick = ()=>{
+        navigator.clipboard.writeText(`https://yoursite.com/signup?host=${currentUser.uid}`);
+        showMessageModal('Copied!', 'Your invite link has been copied!',2000);
+      };
+      card.appendChild(btn);
+    }
+    hostDashboardEl.appendChild(card);
   });
 }
 
-let currentUser=null;
-loadCurrentUser();
-</script>
-
-</body>
-</html>
+// ---------- Shop Rendering ----------
+async function renderShop(){
+  shopItemsEl.innerHTML='';
+  const querySnap = await getDocs(collection(db,'shopItems'));
+  querySnap.forEach(docSnap=>{
+    const data = docSnap.data();
+    const item = {id: docSnap.id, ...data};
+    const card = document.createElement("div");
+    card.className="product-card";
+    card.innerHTML=`
+      <img src="${item.img||'https://via.placeholder.com/150'}" alt="${item.name}">
+      <div class="product-info">
+        <h3 class="product-name">${item.name}</h3>
+        <p class="product-cost">Cost: ${item.cost} ⭐</p>
+        <button class="buy-btn">Redeem</button>
+      </div>
+    `;
+    const btn = card.querySelector(".buy-btn");
+    btn.onclick=()=>{
+      if(!currentUser) return showMessageModal("Oops!","You must be logged in.");
+      if(currentUser.stars<item.cost) return showMessageModal("Oops!","Not enough stars.");
+      showConfirmModal(
+        "Confirm Purchase",
+        `Get "${item.name}" for ${item.cost} stars?`,
+        async ()=>{
+          try{
+            const userRef = doc(db,"users",currentUser.uid);
+            const productRef = doc(db,"shopItems",item.id);
+            let newStars;
+            await runTransaction(db, async (transaction)=>{
+              const userSnap = await transaction.get(userRef);
+              const productSnap = await transaction.get(productRef);
+              if(!userSnap.exists()) throw "User not found!";
+              if(!productSnap.exists()) throw "Product not found!";
+              if(Number(userSnap.data().stars)<Number(item.cost)) throw "Not enough stars!";
+              newStars = Number(userSnap.data().stars)-Number(item.cost);
+              transaction.update(userRef,{stars:newStars});
+              transaction.update(productRef,{available:(item.available||1)-1});
+            });
+            currentUser.stars=newStars;
+            starsEl.textContent = `⭐ ${formatNumber(newStars)}`;
+            showMessageModal("Success!",`"${item.name}" redeemed! 🎉`,2500);
+          }catch(e){
+            console.error(e);
+            showMessageModal("Error","Purchase failed.",2500);
+          }
+        }
+      );
+    };
+    shopItemsEl.appendChild(card);
+  });
+}
+renderShop();
