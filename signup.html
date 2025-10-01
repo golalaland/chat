@@ -3,95 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Host/VIP Signup</title>
+<title>VIP/Host Signup</title>
 <style>
   body {
     margin:0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg,#ff6a00,#ee0979);
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg,#ff9a9e,#fad0c4);
     display:flex;
     justify-content:center;
     align-items:center;
     min-height:100vh;
+    padding:1rem;
   }
+
   .signup-card {
-    background:#1a1a1a;
-    border-radius:16px;
+    background:#fff;
+    border-radius:24px;
     padding:2rem;
-    width:350px;
-    color:#fff;
-    box-shadow:0 8px 24px rgba(0,0,0,0.5);
+    width:100%;
+    max-width:400px;
+    color:#333;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
   }
+
   .signup-card h2 {
     text-align:center;
-    color:#ff66d6;
-    margin-bottom:1rem;
+    color:#ff6a95;
+    margin-bottom:0.5rem;
   }
+
   .signup-card p {
-    font-size:0.9rem;
-    color:#ccc;
     text-align:center;
+    font-size:0.9rem;
+    color:#555;
     margin-bottom:1.5rem;
   }
+
   .form-group {
     display:flex;
     flex-direction:column;
     margin-bottom:1rem;
   }
+
   .form-group label {
     margin-bottom:0.3rem;
     font-size:0.85rem;
-    color:#aaa;
+    font-weight:bold;
+    color:#666;
   }
+
   .form-group input, .form-group select {
-    padding:0.6rem 0.8rem;
-    border-radius:8px;
-    border:none;
+    padding:0.8rem 1rem;
+    border-radius:50px;
+    border:1px solid #ddd;
     font-size:0.95rem;
+    outline:none;
+    transition:0.3s;
   }
+
+  .form-group input:focus, .form-group select:focus {
+    border-color:#ff6a95;
+    box-shadow:0 0 8px rgba(255,106,149,0.3);
+  }
+
   .vip-toggle {
     display:flex;
-    align-items:center;
     justify-content:space-between;
+    align-items:center;
     margin-bottom:1.5rem;
     font-weight:bold;
     font-size:0.95rem;
   }
+
   .toggle-btn {
-    width:60px;
-    height:28px;
-    background:#333;
-    border-radius:14px;
+    width:70px;
+    height:32px;
+    background:#eee;
+    border-radius:16px;
     position:relative;
     cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 5px;
   }
-  .toggle-btn span {
+
+  .toggle-btn span.circle {
+    width:28px;
+    height:28px;
+    background:#ff6a95;
+    border-radius:50%;
     position:absolute;
     top:2px;
     left:2px;
-    width:24px;
-    height:24px;
-    background:#ff2fa0;
-    border-radius:50%;
     transition:0.3s;
   }
-  .toggle-btn.on span {
-    left:34px;
+
+  .toggle-btn.on span.circle {
+    left:40px;
   }
+
+  .toggle-btn span.label {
+    font-size:0.75rem;
+    font-weight:bold;
+  }
+
+  .toggle-btn span.label.no { color:#f00; }
+  .toggle-btn span.label.yes { color:#0a0; }
+
   .submit-btn {
     width:100%;
-    padding:0.8rem;
+    padding:0.9rem;
     border:none;
-    border-radius:24px;
+    border-radius:50px;
     font-weight:bold;
     font-size:1rem;
     color:#fff;
-    background:linear-gradient(90deg,#ff6a00,#ee0979);
+    background:linear-gradient(90deg,#ff6a95,#ff9a9e);
     cursor:pointer;
     transition:0.3s;
+    margin-bottom:0.5rem;
   }
-  .submit-btn:hover { transform:scale(1.05); }
-  .message {text-align:center;margin-top:1rem;font-size:0.9rem;}
+
+  .submit-btn:hover { transform:scale(1.03); }
+
+  .message {
+    text-align:center;
+    margin-top:0.5rem;
+    font-size:0.9rem;
+    color:#333;
+  }
+
+  @media (max-width:400px){
+    .signup-card { padding:1.5rem; }
+  }
 </style>
 </head>
 <body>
@@ -123,7 +168,11 @@
 
   <div class="vip-toggle">
     <span>VIP</span>
-    <div class="toggle-btn" id="vipToggle"><span></span></div>
+    <div class="toggle-btn" id="vipToggle">
+      <span class="label yes">Yes</span>
+      <span class="label no">No</span>
+      <span class="circle"></span>
+    </div>
   </div>
 
   <button class="submit-btn" id="submitBtn">Sign Up</button>
@@ -170,13 +219,11 @@ submitBtn.addEventListener('click', async () => {
     return;
   }
 
-  // Only females can be hosts
   if(!isVIP && gender !== 'Female'){
     messageEl.textContent = 'Only females can sign up as hosts.';
     return;
   }
 
-  // Prepare Firestore data
   const uid = email.replace(/[.#$[\]]/g, ',');
   const userData = {
     displayName: name,
@@ -198,8 +245,7 @@ submitBtn.addEventListener('click', async () => {
     await setDoc(doc(db,'users',uid), userData, { merge:true });
     messageEl.textContent = 'Signup recorded. Redirecting to payment...';
 
-    // TODO: Integrate Paystack here
-    // After payment, update `whitelist = true` and `paymentStatus = completed`
+    // TODO: Paystack integration
     setTimeout(()=>{messageEl.textContent='Payment complete. Redirecting to chat...';}, 2000);
 
   } catch(err){
