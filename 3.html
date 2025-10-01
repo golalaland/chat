@@ -258,22 +258,24 @@
       position: absolute;
       top: 20px;
       right: 20px;
-      background: rgba(255,255,255,0.2);
+      font-size: 1.8rem;
+      font-weight: bold;
       color: #fff;
-      font-size: 1.5rem;
-      border:none;
-      border-radius:50%;
-      width:40px;
-      height:40px;
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      background: rgba(0,0,0,0.5);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
+      text-align: center;
+      cursor: pointer;
+      z-index: 1300;
+      transition: background 0.2s;
     }
-    #imagePreview .close-btn:hover { background: rgba(255,47,160,0.8); }
+    #imagePreview .close-btn:hover { background: rgba(255,47,160,0.9); }
 
     /* small helper */
     .muted { color:#999; font-size:0.9rem; }
+
   </style>
 </head>
 <body>
@@ -290,11 +292,15 @@
           <div class="balance-label">Stars Balance</div>
           <div class="balance-value" id="stars-count">0 ⭐️</div>
         </div>
+        <div class="balance-item">
+          <div class="balance-label">Cash Balance</div>
+          <div class="balance-value" id="cash-count">0 ⭐️</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- HOST TABS (hidden for regular users) -->
+  <!-- HOST TABS (hidden to non-hosts via JS) -->
   <div class="host-tabs" id="hostTabs" style="display:none;">
     <button class="tab-btn active" data-tab="vip">VIP <span class="muted" id="vip-count">0</span></button>
     <button class="tab-btn" data-tab="friends">Friends <span class="muted" id="friends-count">0</span></button>
@@ -329,16 +335,30 @@
     </div>
   </div>
 
-  <!-- IMAGE PREVIEW -->
+  <!-- IMAGE PREVIEW MODAL -->
   <div id="imagePreview">
+    <div class="close-btn" onclick="document.getElementById('imagePreview').style.display='none'">×</div>
     <img id="previewImg" src="" alt="Preview">
-    <button class="close-btn" onclick="document.getElementById('imagePreview').style.display='none'">×</button>
   </div>
+
+  <script>
+    // Example JS to hide/show host tabs based on role
+    const isHost = false; // toggle based on your logic
+    if(isHost) document.getElementById('hostTabs').style.display = 'flex';
+
+    // Example JS to open image preview
+    document.querySelectorAll('.product-card img').forEach(img=>{
+      img.addEventListener('click', ()=>{
+        const preview = document.getElementById('imagePreview');
+        document.getElementById('previewImg').src = img.src;
+        preview.style.display = 'flex';
+      });
+    });
+  </script>
 
 </body>
 </html>
-  <!-- Firebase + App JS -->
-  <script type="module">
+<script type="module">
     // ---------- Firebase ----------
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
