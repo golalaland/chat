@@ -3,155 +3,281 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIP / Host Signup</title>
+<title>VIP/Host Signup</title>
 <style>
-  /* ---------- GLOBAL ---------- */
-  * { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
-  body { background:#111; color:#fff; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:20px; }
-
-  /* ---------- CONTAINER ---------- */
-  .signup-container { width:100%; max-width:420px; text-align:center; }
-
-  /* ---------- VIDEO ---------- */
-  .video-frame { width:100%; height:220px; margin-bottom:20px; border-radius:12px; overflow:hidden; background:#222; }
-  .video-frame iframe { width:100%; height:100%; }
-
-  /* ---------- FIELDS ---------- */
-  .input-field { width:90%; padding:14px 16px; margin:10px auto; border-radius:28px; border:none; background:#1a1a1a; color:#fff; font-size:1rem; outline:none; }
-  ::placeholder { color:#777; }
-
-  /* ---------- GENDER BUTTONS ---------- */
-  .gender-btns { display:flex; justify-content:center; gap:20px; margin:15px 0; }
-  .gender-btn {
-    width:60px; height:60px; border-radius:50%; border:none; cursor:pointer;
-    background:#1a1a1a; color:#fff; font-weight:bold; font-size:0.85rem;
-    display:flex; justify-content:center; align-items:center; box-shadow:0 4px 6px rgba(0,0,0,0.4);
-    transition:all 0.2s;
+  body {
+    margin:0; padding:0;
+    font-family: Arial, sans-serif;
+    background:#111;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    min-height:100vh;
   }
-  .gender-btn.selected { background:#ff2fa0; box-shadow:0 0 12px #ff2fa0; transform:scale(1.1); }
 
-  /* ---------- VIP TOGGLE ---------- */
-  .vip-section { margin:20px 0; position:relative; }
-  .vip-title { font-size:1.2rem; margin-bottom:8px; transition:color 0.3s; }
-  .vip-toggle { width:60px; height:30px; border-radius:30px; background:#333; margin:0 auto; cursor:pointer; position:relative; }
-  .vip-toggle-circle { width:26px; height:26px; border-radius:50%; background:#777; position:absolute; top:2px; left:2px; transition:all 0.3s; box-shadow:0 2px 6px rgba(0,0,0,0.5); }
-  .vip-toggle.active .vip-toggle-circle { left:32px; background:gold; box-shadow:0 0 12px gold; }
-  .vip-msg { font-size:0.9rem; margin-top:8px; color:gold; display:none; }
+  /* Video placeholder */
+  #videoFrame {
+    width: 320px;
+    height: 180px;
+    background:#222;
+    margin-bottom:20px;
+    border-radius:12px;
+    overflow:hidden;
+  }
 
-  /* ---------- SIGNUP BUTTON ---------- */
-  .signup-btn { padding:12px 28px; margin-top:20px; border-radius:28px; border:none; background:linear-gradient(90deg,#ff6a00,#ee0979); color:#fff; font-size:1rem; font-weight:bold; cursor:pointer; transition:all 0.2s; }
-  .signup-btn:hover { transform:scale(1.05); }
+  #videoFrame iframe {
+    width:100%;
+    height:100%;
+    border:none;
+  }
 
-  /* ---------- FIREWORKS CANVAS ---------- */
-  #fireworksCanvas { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
+  /* Form container */
+  #signupForm {
+    background:#1a1a1a;
+    padding:20px;
+    border-radius:12px;
+    width:90%;
+    max-width:360px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  #dynamicHostMessage {
+    font-size:0.95rem;
+    color:#ffcc00;
+    text-align:center;
+    margin-bottom:10px;
+  }
+
+  input[type=text], input[type=email], input[type=tel] {
+    padding:12px;
+    border-radius:30px;
+    border:none;
+    outline:none;
+    font-size:1rem;
+    background:#222;
+    color:#fff;
+  }
+
+  /* Gender buttons */
+  .genderContainer {
+    display:flex; justify-content:space-around; margin-top:10px;
+  }
+  .genderBtn {
+    width:60px; height:60px;
+    border-radius:50%;
+    background:#333;
+    border:none;
+    font-size:0.85rem;
+    cursor:pointer;
+    color:#fff;
+    font-weight:bold;
+    transition:0.2s;
+    display:flex; justify-content:center; align-items:center;
+    box-shadow:0 4px 8px rgba(0,0,0,0.5);
+    position:relative;
+  }
+  .genderBtn.selected {
+    box-shadow:0 0 12px #ff2fa0,0 0 24px #ff2fa0 inset;
+    transform:translateY(-2px);
+  }
+
+  /* VIP toggle */
+  .toggleContainer {
+    margin:10px auto;
+    text-align:center;
+  }
+  #vipLabel {
+    font-size:1rem;
+    margin-bottom:6px;
+    display:block;
+    color:#aaa;
+    transition:0.3s;
+  }
+  .toggleBtn {
+    width:60px;
+    height:30px;
+    background:#333;
+    border-radius:50px;
+    position:relative;
+    cursor:pointer;
+    margin:0 auto;
+  }
+  .toggleBtn::after {
+    content:'';
+    width:28px; height:28px;
+    background:#555;
+    border-radius:50%;
+    position:absolute;
+    top:1px; left:1px;
+    transition:0.3s;
+  }
+  .toggleBtn.on::after {
+    left:31px;
+    background:gold;
+    box-shadow:0 0 12px gold,0 0 24px gold inset;
+  }
+  .toggleBtn.on + #vipMessage {
+    display:block;
+  }
+  #vipMessage {
+    display:none;
+    margin-top:6px;
+    font-size:0.85rem;
+    color:gold;
+    font-weight:bold;
+  }
+
+  /* Signup button */
+  #signupBtn {
+    padding:12px;
+    border-radius:30px;
+    border:none;
+    background: linear-gradient(90deg,#ff6a00,#ee0979);
+    color:#fff;
+    font-weight:bold;
+    font-size:1rem;
+    cursor:pointer;
+    margin-top:10px;
+    transition:0.2s;
+  }
+  #signupBtn:hover { transform:scale(1.05); }
+
+  /* Fireworks container */
+  #fireworks {
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:999;
+  }
 </style>
 </head>
 <body>
-<div class="signup-container">
 
-  <!-- Video -->
-  <div class="video-frame">
-    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&loop=1&playlist=dQw4w9WgXcQ" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-  </div>
-
-  <!-- Dynamic VIP message -->
-  <div class="vip-title" id="vipTitle">You’re in {username}’s VIP Tab</div>
-
-  <!-- Input fields -->
-  <input type="text" class="input-field" placeholder="Name" id="nameField">
-  <input type="text" class="input-field" placeholder="Phone" id="phoneField">
-  <input type="email" class="input-field" placeholder="Email" id="emailField">
-
-  <!-- Gender selection -->
-  <div class="gender-btns">
-    <button class="gender-btn" data-gender="female">Female</button>
-    <button class="gender-btn" data-gender="male">Male</button>
-  </div>
-
-  <!-- VIP Toggle -->
-  <div class="vip-section">
-    <div class="vip-toggle" id="vipToggle">
-      <div class="vip-toggle-circle"></div>
-    </div>
-    <div class="vip-msg" id="vipMsg">You’re in VIP zone, way to go!</div>
-  </div>
-
-  <!-- Signup Button -->
-  <button class="signup-btn" id="signupBtn">Sign Up</button>
-
+<div id="videoFrame">
+  <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&mute=1" allowfullscreen></iframe>
 </div>
 
-<!-- Fireworks Canvas -->
-<canvas id="fireworksCanvas"></canvas>
+<div id="signupForm">
+  <div id="dynamicHostMessage">You’re in {hostName}'s VIP Tab</div>
+  <input type="text" id="name" placeholder="Full Name">
+  <input type="tel" id="phone" placeholder="Phone Number">
+  <input type="email" id="email" placeholder="Email">
+  
+  <div class="genderContainer">
+    <button class="genderBtn" data-gender="female">F</button>
+    <button class="genderBtn" data-gender="male">M</button>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script>
-  // ---------- Variables ----------
-  let selectedGender = null;
-  let isVip = false;
-  const vipToggle = document.getElementById('vipToggle');
-  const vipCircle = vipToggle.querySelector('.vip-toggle-circle');
-  const vipMsg = document.getElementById('vipMsg');
-  const vipTitle = document.getElementById('vipTitle');
-  const genderBtns = document.querySelectorAll('.gender-btn');
-  const signupBtn = document.getElementById('signupBtn');
-  const fireworksCanvas = document.getElementById('fireworksCanvas');
-  let fireworksInterval;
+  <div class="toggleContainer">
+    <span id="vipLabel">VIP</span>
+    <div class="toggleBtn" id="vipToggle"></div>
+    <div id="vipMessage">You’re in VIP zone, way to go!</div>
+  </div>
 
-  // ---------- Gender Selection ----------
-  genderBtns.forEach(btn => {
-    btn.addEventListener('click', ()=> {
-      genderBtns.forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedGender = btn.dataset.gender;
-    });
+  <button id="signupBtn">Sign Up</button>
+</div>
+
+<canvas id="fireworks"></canvas>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ---------- Firebase ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---------- DOM ----------
+const genderBtns = document.querySelectorAll('.genderBtn');
+let selectedGender = null;
+genderBtns.forEach(btn=>{
+  btn.addEventListener('click',()=> {
+    genderBtns.forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedGender = btn.dataset.gender;
   });
+});
 
-  // ---------- VIP Toggle ----------
-  vipToggle.addEventListener('click', ()=>{
-    isVip = !isVip;
-    vipToggle.classList.toggle('active', isVip);
-    vipMsg.style.display = isVip ? 'block' : 'none';
-    vipTitle.style.color = isVip ? 'gold' : '#fff';
-    if(isVip){
-      startFireworks();
-    } else{
-      stopFireworks();
-    }
-  });
+const vipToggle = document.getElementById('vipToggle');
+let isVip = false;
+vipToggle.addEventListener('click',()=>{
+  isVip = !isVip;
+  vipToggle.classList.toggle('on',isVip);
+  document.getElementById('vipLabel').style.color = isVip?'gold':'#aaa';
+  if(isVip) startFireworks();
+  else stopFireworks();
+});
 
-  // ---------- Fireworks ----------
-  const startFireworks = () => {
-    fireworksInterval = setInterval(()=> {
-      confetti({
-        particleCount: 20,
-        spread: 70,
-        origin: { y:0.6 },
-        colors:['#FFD700','#FF69B4','#FF2FA0']
-      });
-    }, 500);
+const signupBtn = document.getElementById('signupBtn');
+signupBtn.addEventListener('click', async ()=>{
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const invitedBy = localStorage.getItem('hostUID') || 'unknownHost';
+
+  if(!name || !phone || !email || !selectedGender){
+    alert('Please fill all fields and select gender');
+    return;
   }
-  const stopFireworks = () => { clearInterval(fireworksInterval); }
-
-  // ---------- Signup ----------
-  signupBtn.addEventListener('click', ()=> {
-    const name = document.getElementById('nameField').value.trim();
-    const phone = document.getElementById('phoneField').value.trim();
-    const email = document.getElementById('emailField').value.trim();
-
-    if(!name || !phone || !email || !selectedGender){
-      alert("Please fill all fields and select gender!");
-      return;
-    }
-
-    // TODO: Push to Firestore whitelist collection
-    console.log({
-      name, phone, email, gender:selectedGender, isVip
-    });
-
-    alert("Signup successful! Now redirect to Paystack (mock).");
-    // TODO: Redirect to Paystack & handle post-payment logic
+  
+  const uid = email.replace(/[.#$[\]]/g, ',');
+  
+  await setDoc(doc(db,'users',uid),{
+    name,
+    phone,
+    email,
+    gender:selectedGender,
+    isVip,
+    invitedBy,
+    whitelisted:false,
+    createdAt:serverTimestamp(),
   });
+
+  // Update host references
+  const hostRef = doc(db,'users',invitedBy);
+  if(isVip){
+    await updateDoc(hostRef,{ hostVIP: arrayUnion(email) });
+  } else if(selectedGender==='female'){
+    await updateDoc(hostRef,{ hostFriends: arrayUnion(email) });
+  }
+
+  alert('Signed up successfully! Proceed to payment.');
+  // TODO: redirect to Paystack payment and then chatroom
+});
+
+// ---------- Fireworks ----------
+let confettiActive=false;
+const canvas = document.getElementById('fireworks');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+function startFireworks(){ confettiActive=true; requestAnimationFrame(fireworksLoop); }
+function stopFireworks(){ confettiActive=false; ctx.clearRect(0,0,canvas.width,canvas.height); }
+
+function fireworksLoop(){
+  if(!confettiActive) return;
+  // simple confetti effect
+  for(let i=0;i<5;i++){
+    ctx.fillStyle = `hsl(${Math.random()*360},100%,50%)`;
+    ctx.beginPath();
+    ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*5+2,0,Math.PI*2);
+    ctx.fill();
+  }
+  requestAnimationFrame(fireworksLoop);
+}
 </script>
 </body>
 </html>
