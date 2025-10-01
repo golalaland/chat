@@ -215,29 +215,26 @@
   border: 2px solid #ee0979;
   object-fit: cover;
 }
-
-#imagePreview {
-  position: fixed;
-  inset: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,0.9);
-  z-index: 1200;
+#imagePreview .close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #ff2fa0;
+  cursor: pointer;
+  background: transparent;
+  width: auto;
+  height: auto;
+  padding: 0;
+  line-height: 1;
+  border-radius: 0;
+  box-shadow: none;
+  z-index: 10;
+  transition: color 0.2s ease;
 }
-
-#imagePreview .preview-wrapper {
-  position: relative;
-  max-width: 90%;
-  max-height: 85%;
-}
-
-#imagePreview img {
-  width: 100%;
-  height: auto;       /* keeps aspect ratio */
-  object-fit: contain; 
-  border-radius: 8px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+#imagePreview .close-btn:hover {
+  color: #fff;
 }
 
 .close-btn {
@@ -567,11 +564,11 @@ async function loadCurrentUser() {
   // show/hide host tabs & panel
 if (currentUser.isHost) {
   hostTabsEl.style.display = '';       // show tabs
-  tabContentEl.style.display = '';     // show the stats panel
-  updateHostPanels();                  // fill in the numbers
+  tabContentEl.style.display = '';     // show panel
+  renderHostTab('vip');                 // default tab
 } else {
-  hostTabsEl.style.display = 'none';   // hide tabs
-  tabContentEl.style.display = 'none'; // hide panel
+  hostTabsEl.style.display = 'none';
+  tabContentEl.style.display = 'none';
 }
   // Live updates
   onSnapshot(userRef, docSnap => {
@@ -584,14 +581,15 @@ if (currentUser.isHost) {
     starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
 
-    if (currentUser.isHost) {
-      hostTabsEl.style.display = '';
-      tabContentEl.style.display = '';
-      updateHostPanels();
-    } else {
-      hostTabsEl.style.display = 'none';
-      tabContentEl.style.display = 'none';
-    }
+if (currentUser.isHost) {
+  hostTabsEl.style.display = '';
+  tabContentEl.style.display = '';
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'vip';
+  renderHostTab(activeTab);
+} else {
+  hostTabsEl.style.display = 'none';
+  tabContentEl.style.display = 'none';
+}
   });
 }
 
@@ -737,22 +735,11 @@ if (currentUser.isHost) {
     }
   }
 
-  // ---------- Tabs logic ----------
+
 // ---------- Tabs logic ----------
-document.addEventListener('click', (ev) => {
-  const btn = ev.target.closest('.tab-btn');
-  if (!btn) return;
-
-  // Prevent non-hosts from interacting with tabs
-  if (!currentUser?.isHost) return;
-
-  // mark active tab
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  const type = btn.getAttribute('data-tab');
+document// ---------- Tabs logic ----------
+function renderHostTab(type) {
   tabContentEl.innerHTML = ''; // clear old content
-
   if (type === 'vip') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
@@ -761,7 +748,6 @@ document.addEventListener('click', (ev) => {
         <button id="copyVipLink" class="themed-btn">Copy Link</button>
       </div>
     `;
-
     const copyBtn = document.getElementById('copyVipLink');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
@@ -770,7 +756,6 @@ document.addEventListener('click', (ev) => {
           showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500);
         }).catch(err => {
           showMessageModal('Error', 'Failed to copy link.', 1800);
-          console.error('Copy VIP link error:', err);
         });
       });
     }
@@ -793,7 +778,28 @@ document.addEventListener('click', (ev) => {
   } else {
     tabContentEl.innerHTML = `<div class="stat-block">No data available</div>`;
   }
+}
+
+document.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.tab-btn');
+  if (!btn) return;
+  if (!currentUser?.isHost) return;
+
+  // mark active
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  renderHostTab(btn.dataset.tab);
 });
+
+// ---------- Image preview ----------
+function previewImage(src){
+  previewImg.src = src;
+  imagePreview.style.display = 'flex';
+}
+document.getElementById('closePreview').onclick = () => {
+  imagePreview.style.display = 'none';
+};
   // ---------- Init ----------
   loadCurrentUser();
 
