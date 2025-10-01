@@ -553,97 +553,104 @@
       card.appendChild(price);
       card.appendChild(btn);
 
-      // click handler
     // click handler
-btn.addEventListener('click', async () => {
-  if (!currentUser) {
-    showMessageModal('Not Logged In', 'Please sign in to redeem items.');
-    return;
-  }
-  if (Number(currentUser.stars) < Number(product.cost)) {
-    showMessageModal('Not Enough Stars', 'You do not have enough stars to redeem this item.');
-    return;
-  }
-  if (Number(product.available) <= 0) {
-    showMessageModal('Sold Out', 'This item is no longer available.');
-    return;
-  }
-
-  showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
-    try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      const productRef = doc(db, 'shopItems', String(product.id));
-      let newStars = 0;
-      let newCash = 0;
-      let redeemedCashAmount = 0;
-
-      await runTransaction(db, async (transaction) => {
-        const userSnap = await transaction.get(userRef);
-        const productSnap = await transaction.get(productRef);
-        if (!userSnap.exists()) throw new Error('User not found');
-        if (!productSnap.exists()) throw new Error('Product not found');
-
-        const userData = userSnap.data();
-        const productData = productSnap.data();
-
-        const userStars = Number(userData.stars) || 0;
-        const userCash = Number(userData.cash) || 0;
-        const cost = Number(productData.cost) || 0;
-        const available = Number(productData.available) || 0;
-
-        if (userStars < cost) throw new Error('Not enough stars');
-        if (available <= 0) throw new Error('Out of stock');
-
-        newStars = userStars - cost;
-
-        if ((productData.name || '').toLowerCase() === 'redeem cash balance') {
-          redeemedCashAmount = userCash;
-          newCash = 0;
-        } else {
-          newCash = userCash + (Number(productData.cashReward) || 0);
+      btn.addEventListener('click', async () => {
+        if (!currentUser) {
+          showMessageModal('Not Logged In', 'Please sign in to redeem items.');
+          return;
+        }
+        if (Number(currentUser.stars) < Number(product.cost)) {
+          showMessageModal('Not Enough Stars', 'You do not have enough stars to redeem this item.');
+          return;
+        }
+        if (Number(product.available) <= 0) {
+          showMessageModal('Sold Out', 'This item is no longer available.');
+          return;
         }
 
-        transaction.update(userRef, { stars: newStars, cash: newCash });
-        transaction.update(productRef, { available: available - 1 });
+        showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
+          // purchase flow using transaction
+          try {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const productRef = doc(db, 'shopItems', String(product.id));
+            let newStars = 0;
+            let newCash = 0;
+            let redeemedCashAmount = 0;
 
-        const purchasesCol = collection(db, 'purchases');
-        transaction.set(doc(purchasesCol), {
-          userId: currentUser.uid,
-          email: userData.email || '',
-          phone: userData.phone || '',
-          productId: String(productData.id || product.id),
-          productName: productData.name || product.name,
-          cost: cost,
-          cashReward: Number(productData.cashReward) || 0,
-          redeemedCash: redeemedCashAmount || 0,
-          timestamp: serverTimestamp()
+            await runTransaction(db, async (transaction) => {
+              const userSnap = await transaction.get(userRef);
+              const productSnap = await transaction.get(productRef);
+              if (!userSnap.exists()) throw new Error('User not found');
+              if (!productSnap.exists()) throw new Error('Product not found');
+
+              const userData = userSnap.data();
+              const productData = productSnap.data();
+
+              const userStars = Number(userData.stars) || 0;
+              const userCash = Number(userData.cash) || 0;
+              const cost = Number(productData.cost) || 0;
+              const available = Number(productData.available) || 0;
+
+              if (userStars < cost) throw new Error('Not enough stars');
+              if (available <= 0) throw new Error('Out of stock');
+
+              newStars = userStars - cost;
+
+              // special product: Redeem Cash Balance - empties user's cash and logs redeemedCash
+              if ((productData.name || '').toLowerCase() === 'redeem cash balance') {
+                redeemedCashAmount = userCash;
+                newCash = 0;
+              } else {
+                newCash = userCash + (Number(productData.cashReward) || 0);
+              }
+
+              transaction.update(userRef, { stars: newStars, cash: newCash });
+              transaction.update(productRef, { available: available - 1 });
+
+              // log purchase
+              const purchasesCol = collection(db, 'purchases');
+              transaction.set(doc(purchasesCol), {
+                userId: currentUser.uid,
+                email: userData.email || '',
+                phone: userData.phone || '',
+                productId: String(productData.id || product.id),
+                productName: productData.name || product.name,
+                cost: cost,
+                cashReward: Number(productData.cashReward) || 0,
+                redeemedCash: redeemedCashAmount || 0,
+                timestamp: serverTimestamp()
+              });
+            });
+
+            // UI updates (animated)
+            const previousStars = parseNumberFromText(starsEl.textContent);
+            const previousCash = parseNumberFromText(cashEl.textContent);
+            currentUser.stars = newStars;
+            currentUser.cash = newCash;
+
+            animateNumber(starsEl, previousStars, newStars);
+            animateNumber(cashEl, previousCash, newCash);
+
+            // re-render shop to reflect new availability
+            await renderShop();
+
+            // celebration
+            triggerConfetti();
+
+            if (redeemedCashAmount > 0) {
+              showMessageModal('Cash Redeemed', `You redeemed ₦${formatNumber(redeemedCashAmount)}. We will process the payout.`, 3000);
+            } else {
+              showMessageModal('Success', `"${product.name}" redeemed successfully!`, 2000);
+            }
+          } catch (err) {
+            console.error('Redemption error:', err);
+            showMessageModal('Error', (err.message || String(err)), 2400);
+          }
         });
       });
 
-      const previousStars = parseNumberFromText(starsEl.textContent);
-      const previousCash = parseNumberFromText(cashEl.textContent);
-      currentUser.stars = newStars;
-      currentUser.cash = newCash;
-
-      animateNumber(starsEl, previousStars, newStars);
-      animateNumber(cashEl, previousCash, newCash);
-
-      await renderShop();
-      triggerConfetti();
-
-      if (redeemedCashAmount > 0) {
-        showMessageModal('Cash Redeemed', `You redeemed ₦${formatNumber(redeemedCashAmount)}. We will process the payout.`, 3000);
-      } else {
-        showMessageModal('Success', `"${product.name}" redeemed successfully!`, 2000);
-      }
-
-    } catch (err) {
-      console.error('Redemption error:', err);
-      showMessageModal('Error', (err.message || String(err)), 2400);
+      return card;
     }
-  });
-});
-
     // ---------- Render shop ----------
     async function renderShop(){
       shopItemsEl.innerHTML = '';
