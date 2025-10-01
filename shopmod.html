@@ -193,6 +193,15 @@ header {
   color: #666;
   margin-top: 0.2rem;
 }
+/* Small count badges on tab buttons */
+.tab-btn .count {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  margin-left: 6px;
+}
 </style>
 </head>
 <body>
@@ -230,7 +239,34 @@ header {
 <div class="shop-grid" id="shop-items"></div>
 
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
+<!-- Host Tabs -->
+<div class="host-tabs">
+  <button class="tab-btn active" data-tab="vip">
+    VIP <span class="count" id="vip-count">0</span>
+  </button>
+  <button class="tab-btn" data-tab="friends">
+    Friends <span class="count" id="friends-count">0</span>
+  </button>
+  <button class="tab-btn" data-tab="badges">
+    Badges <span class="count" id="badges-count">0</span>
+  </button>
+</div>
 
+<!-- Dynamic Content -->
+<div id="tab-content" class="tab-content small-panel">
+  <div id="vip-panel" class="stat-block">
+    <div class="stat-value" id="vip-stat">0</div>
+    <div class="stat-label">VIP Members</div>
+  </div>
+  <div id="friends-panel" class="stat-block" style="display:none;">
+    <div class="stat-value" id="friends-stat">0</div>
+    <div class="stat-label">Friends Hosts</div>
+  </div>
+  <div id="badges-panel" class="stat-block" style="display:none;">
+    <div class="stat-value" id="badges-stat">0</div>
+    <div class="stat-label">Badges Earned</div>
+  </div>
+</div>
 <script>
 // Tab switching logic
 const tabs = document.querySelectorAll(".tab-btn");
