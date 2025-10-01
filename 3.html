@@ -12,7 +12,9 @@
       font-family: Arial, sans-serif;
       background: #111;
       color: #fff;
-      -webkit-font-smoothing:antialiased;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
     /* ---------- HEADER ---------- */
@@ -63,6 +65,7 @@
     }
 
     /* ---------- HOST TABS ---------- */
+    .tab-btn span { display: none !important; }
     .host-tabs {
       display: flex;
       justify-content: center;
@@ -115,6 +118,11 @@
       color: #ccc;
     }
 
+    /* Hide VIP signed-up block for normal users */
+    body:not(.isHost):not(.isAdmin) .vip-only {
+      display: none;
+    }
+
     /* ---------- SHOP GRID ---------- */
     .shop-grid {
       display: grid;
@@ -130,10 +138,6 @@
       padding: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       transition: transform 0.2s;
-      min-height: 230px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
     }
     .product-card:hover { transform: translateY(-5px); }
     .product-card img {
@@ -141,8 +145,6 @@
       max-height: 120px;
       object-fit: cover;
       border-radius: 10px;
-      cursor: pointer;
-      display:block;
     }
     .product-card h3 {
       margin: 0.7rem 0 0.3rem;
@@ -150,10 +152,10 @@
       color: #fff;
     }
     .product-card .price {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       margin-bottom: 0.6rem;
       font-weight: bold;
-      color: #ffb6da;
+      color: #ccc;
     }
     .buy-btn {
       background: #ff2fa0;
@@ -164,12 +166,6 @@
       border-radius: 6px;
       cursor: pointer;
       transition: background 0.2s;
-      width: 100%;
-    }
-    .buy-btn[disabled] {
-      background: #333;
-      color: #777;
-      cursor: not-allowed;
     }
     .buy-btn:hover { background: #ff66d6; }
 
@@ -201,15 +197,13 @@
       background: #1a1a1a;
       padding: 18px 20px;
       border-radius: 12px;
-      max-width: 360px;
-      width: 90%;
+      max-width: 300px;
       text-align: center;
       box-shadow: 0 6px 18px rgba(0,0,0,0.4);
       animation: popIn 0.2s forwards;
     }
-    #confirmModal h3 { margin-top: 0; font-size: 1.1rem; color:#ff2fa0; }
-    #confirmModal p { font-size: 0.95rem; margin: 10px 0 15px; color: #ccc; }
-    #confirmModal .btn-row { display:flex; justify-content:center; gap:12px; margin-top: 10px; }
+    #confirmModal h3 { margin-top: 0; font-size: 1.1rem; }
+    #confirmModal p { font-size: 0.9rem; margin: 10px 0 15px; color: #ccc; }
     #confirmModal button {
       background: #ff2fa0;
       color: #fff;
@@ -219,7 +213,8 @@
       font-size: 0.9rem;
       border-radius: 6px;
       cursor: pointer;
-      min-width: 100px;
+      margin: 0 6px;
+      min-width: 90px;
     }
     #confirmModal #confirmNo {
       background: #333;
@@ -229,7 +224,7 @@
     #confirmModal button:hover { background: #ff66d6; }
 
     @keyframes popIn {
-      from { transform: scale(0.9); opacity: 0; }
+      from { transform: scale(0.8); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
 
@@ -249,17 +244,36 @@
     }
     #home-btn:hover { background: #ff66d6; }
 
-    /* ---------- IMAGE PREVIEW ---------- */
-    #imagePreview {
-      position: fixed; inset:0; display:none; justify-content:center; align-items:center; background: rgba(0,0,0,0.9); z-index:1200;
+    /* ---------- FOOTER ---------- */
+    footer {
+      background: #000;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #aaa;
+      border-top: 2px solid #222;
+      margin-top: auto;
     }
-    #imagePreview img { max-width:90%; max-height:85%; border-radius:8px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
-
-    /* small helper */
-    .muted { color:#999; font-size:0.9rem; }
+    footer a {
+      color: #ff2fa0;
+      text-decoration: none;
+    }
+    .copy-link-btn {
+  margin-top: 10px;
+  padding: 0.45rem 0.9rem;
+  background: #ff2fa0;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background .18s;
+}
+.copy-link-btn:hover { background: #ff66d6; }
+    footer a:hover { text-decoration: underline; }
   </style>
 </head>
-<body>
+<body class="isHost">
 
   <!-- HEADER -->
   <header>乂丨乂丨Redeem</header>
@@ -281,46 +295,132 @@
     </div>
   </div>
 
-  <!-- HOST TABS (hidden to non-hosts via JS) -->
-  <div class="host-tabs" id="hostTabs" style="display:none;">
-    <button class="tab-btn active" data-tab="vip">VIP <span class="muted" id="vip-count">0</span></button>
-    <button class="tab-btn" data-tab="friends">Friends <span class="muted" id="friends-count">0</span></button>
-    <button class="tab-btn" data-tab="badges">Badges <span class="muted" id="badges-count">0</span></button>
+  <!-- HOST TABS -->
+  <div class="host-tabs">
+    <button class="tab-btn active" data-tab="vip">VIP</button>
+    <button class="tab-btn" data-tab="friends">Friends</button>
+    <button class="tab-btn" data-tab="badges">Badges</button>
   </div>
 
   <!-- DYNAMIC PANEL -->
   <div id="tab-content" class="tab-content">
-    <div class="stat-block">
-      <div class="stat-value" id="vip-stat">0</div>
-      <div class="stat-label">VIPs Signed Up</div>
+    <div class="vip-only">
+      <div class="stat-block">
+        <div class="stat-value">0</div>
+        <div class="stat-label">VIPs Signed Up</div>
+      </div>
+    </div>
+    <div class="friends-only">
+      <div class="stat-block">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Friends Added</div>
+      </div>
+    </div>
+    <div class="badges-only">
+      <div class="stat-block">
+        <img src="https://via.placeholder.com/40x40.png?text=⭐" alt="Gold Badge" style="margin-bottom:6px;">
+        <div class="stat-label">Badge Status</div>
+      </div>
     </div>
   </div>
 
   <!-- SHOP GRID -->
-  <div class="shop-grid" id="shop-items">
-    <!-- products loaded dynamically -->
+  <div class="shop-grid">
+    <div class="product-card">
+      <span class="availability-badge">3 Left</span>
+      <img src="item1.jpg" alt="Product 1">
+      <h3>Exclusive Cube</h3>
+      <p class="price">₦2,500</p>
+      <button class="buy-btn">Purchase</button>
+    </div>
+    <div class="product-card">
+      <span class="availability-badge">5 Left</span>
+      <img src="item2.jpg" alt="Product 2">
+      <h3>Luxury Drink</h3>
+      <p class="price">₦4,000</p>
+      <button class="buy-btn">Purchase</button>
+    </div>
+    <div class="product-card">
+      <span class="availability-badge">1 Left</span>
+      <img src="item3.jpg" alt="Product 3">
+      <h3>Gold Package</h3>
+      <p class="price">₦7,500</p>
+      <button class="buy-btn">Purchase</button>
+    </div>
   </div>
 
   <!-- HOME BUTTON -->
   <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
-  <!-- CONFIRM PURCHASE MODAL (reused for confirmations & info) -->
-  <div id="confirmModal" aria-hidden="true">
+  <!-- FOOTER -->
+  <footer>
+    © 2025 DettyVerse · Built by NNAMDI · <a href="#">Privacy</a> · <a href="#">Support</a>
+  </footer>
+
+  <!-- CONFIRM PURCHASE MODAL -->
+  <div id="confirmModal">
     <div class="modal-content">
-      <h3 id="confirmTitle">Confirm Purchase</h3>
-      <p id="confirmText">Are you sure you want to buy this item?</p>
-      <div class="btn-row">
-        <button id="confirmYes">Yes</button>
-        <button id="confirmNo">Cancel</button>
-      </div>
+      <h3>Confirm Purchase</h3>
+      <p>Are you sure you want to buy this item?</p>
+      <button id="confirmYes">Yes</button>
+      <button id="confirmNo">No</button>
     </div>
   </div>
 
-  <!-- Image Preview -->
-  <div id="imagePreview" onclick="document.getElementById('imagePreview').style.display='none'">
-    <img id="previewImg" src="" alt="Preview">
-  </div>
+  <script>
+    // Tab switch
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    const tabContent = document.getElementById("tab-content");
 
+    tabBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        tabBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        let type = btn.getAttribute("data-tab");
+
+        if (type === "vip") {
+          tabContent.innerHTML = `
+            <div class="vip-only">
+              <div class="stat-block">
+                <div class="stat-value">0</div>
+                <div class="stat-label">VIPs Signed Up</div>
+              </div>
+            </div>`;
+        } else if (type === "friends") {
+          tabContent.innerHTML = `
+            <div class="stat-block">
+              <div class="stat-value">0</div>
+              <div class="stat-label">Friends Added</div>
+            </div>`;
+        } else {
+          tabContent.innerHTML = `
+            <div class="stat-block">
+              <img src="https://via.placeholder.com/40x40.png?text=⭐" alt="Gold Badge" style="margin-bottom:6px;">
+              <div class="stat-label">Badge Status</div>
+            </div>`;
+        }
+      });
+    });
+
+    // Modal
+    const modal = document.getElementById("confirmModal");
+    const buyBtns = document.querySelectorAll(".buy-btn");
+    const confirmYes = document.getElementById("confirmYes");
+    const confirmNo = document.getElementById("confirmNo");
+
+    buyBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        modal.style.display = "flex";
+      });
+    });
+    confirmNo.addEventListener("click", () => { modal.style.display = "none"; });
+    confirmYes.addEventListener("click", () => {
+      alert("Purchase confirmed!"); 
+      modal.style.display = "none";
+    });
+  </script>
+</body>
+</html>
   <!-- Firebase + App JS -->
   <script type="module">
     // ---------- Firebase ----------
@@ -671,35 +771,56 @@
 
     // ---------- Tabs logic ----------
     document.addEventListener('click', (ev) => {
-      const btn = ev.target.closest('.tab-btn');
-      if (!btn) return;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const type = btn.getAttribute('data-tab');
-      // swap dynamic panel content to small stat blocks
-      if (type === 'vip') {
-        tabContentEl.innerHTML = `
-          <div class="stat-block">
-            <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
-            <div class="stat-label">VIPs Signed Up</div>
-          </div>
-        `;
-      } else if (type === 'friends') {
-        tabContentEl.innerHTML = `
-          <div class="stat-block">
-            <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length || 0)}</div>
-            <div class="stat-label">Friends Hosts</div>
-          </div>
-        `;
-      } else {
-        tabContentEl.innerHTML = `
-          <div class="stat-block">
-            <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
-            <div class="stat-label">Badge Status</div>
-          </div>
-        `;
-      }
-    });
+  const btn = ev.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const type = btn.getAttribute('data-tab');
+
+  if (type === 'vip') {
+    if (!currentUser?.isHost) {
+      tabContentEl.innerHTML = `<div style="padding:1rem;color:#aaa;">VIP stats are for hosts only.</div>`;
+      return;
+    }
+    tabContentEl.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
+        <div class="stat-label">VIPs Signed Up</div>
+        <button id="copyInviteBtn" class="copy-link-btn">Copy Invite Link</button>
+      </div>
+    `;
+    attachInviteHandler();
+  } else if (type === 'friends') {
+    tabContentEl.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length || 0)}</div>
+        <div class="stat-label">Friends Hosts</div>
+      </div>
+    `;
+  } else {
+    tabContentEl.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
+        <div class="stat-label">Badge Status</div>
+      </div>
+    `;
+  }
+});
+function attachInviteHandler(){
+  const btn = document.getElementById('copyInviteBtn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    let hostId = currentUser?.uid || '';
+    const safe = encodeURIComponent(hostId || 'unknown');
+    const link = `https://yoursite.com/signup?host=${safe}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      showMessageModal('Copied!', 'Invite link copied to clipboard.', 1800);
+    } catch (err) {
+      showMessageModal('Error', 'Could not copy link. Please copy manually: ' + link, 3000);
+    }
+  });
+}
 
     // ---------- Init ----------
     loadCurrentUser();
