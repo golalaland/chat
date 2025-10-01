@@ -236,8 +236,9 @@ header {
 
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
+
 <script type="module">
-// ---------- Firebase ----------
+// ---------- FIREBASE ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -245,73 +246,102 @@ const firebaseConfig = { /* your config */ };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- DOM Refs ----------
-const usernameEl = document.getElementById('username');
+// ---------- DOM REFS ----------
+const usernameEl = document.getElementById('profile-username');
 const starsEl = document.getElementById('stars-count');
 const cashEl = document.getElementById('cash-count');
 const hostDashboardEl = document.getElementById('host-dashboard');
-const vipCountEl = document.getElementById('vip-count');
-const friendsCountEl = document.getElementById('friends-count');
-const levelCountEl = document.getElementById('level-count');
-const copyInviteBtn = document.getElementById('copy-invite-btn');
+const vipEl = document.getElementById('vip-count');
+const friendsEl = document.getElementById('friends-count');
+const levelEl = document.getElementById('level-count');
+const copyBtn = document.getElementById('copy-invite-btn');
+const shopItemsEl = document.getElementById('shop-items');
 
-// ---------- Current User ----------
+function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+function animateNumber(el, from, to, duration = 600){
+  const start = performance.now();
+  function step(timestamp){
+    const progress = Math.min((timestamp-start)/duration,1);
+    const value = Math.floor(from + (to-from)*progress);
+    el.textContent = (el===starsEl)?`${formatNumber(value)} ⭐️`:
+                     (el===cashEl)?`₦${formatNumber(value)}`:value;
+    if(progress<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ---------- LOAD CURRENT USER ----------
 let currentUser = null;
-
-async function loadCurrentUser() {
+async function loadCurrentUser(){
   const vipSession = JSON.parse(localStorage.getItem('vipUser'));
   if(!vipSession?.email) return;
   const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-  const userRef = doc(db, 'users', uid);
+  const userRef = doc(db,'users',uid);
   const snap = await getDoc(userRef);
   if(!snap.exists()) return;
-
   currentUser = { uid, ...snap.data() };
 
-  // Profile card
   usernameEl.textContent = currentUser.chatId || 'Guest';
-  starsEl.textContent = `${currentUser.stars || 0} ⭐️`;
-  cashEl.textContent = `₦${currentUser.cash || 0}`;
+  starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
 
   renderHostDashboard();
+  renderShop();
 
-  onSnapshot(userRef, docSnap => {
+  onSnapshot(userRef, docSnap=>{
     const data = docSnap.data();
     if(!data) return;
-    currentUser.stars = Number(data.stars || 0);
-    currentUser.cash = Number(data.cash || 0);
-    currentUser.isHost = data.isHost || false;
-    currentUser.hostVIP = data.hostVIP || 0;
-    currentUser.hostFriends = data.hostFriends || [];
-    currentUser.hostBadge = data.hostBadge || 'Bronze';
-
-    starsEl.textContent = `${currentUser.stars} ⭐️`;
-    cashEl.textContent = `₦${currentUser.cash}`;
-
+    currentUser = {...currentUser, ...data};
+    starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
     renderHostDashboard();
   });
 }
+loadCurrentUser();
 
-function renderHostDashboard() {
-  if(!currentUser?.isHost) {
+// ---------- HOST DASHBOARD ----------
+function renderHostDashboard(){
+  if(!currentUser?.isHost){
     hostDashboardEl.style.display = 'none';
     return;
   }
   hostDashboardEl.style.display = 'flex';
-  vipCountEl.textContent = currentUser.hostVIP || 0;
-  friendsCountEl.textContent = (currentUser.hostFriends || []).length;
-  levelCountEl.textContent = currentUser.hostBadge || 'Bronze';
+  vipEl.textContent = currentUser.hostVIP||0;
+  friendsEl.textContent = (currentUser.hostFriends||[]).length;
+  levelEl.textContent = currentUser.hostBadge||'Bronze';
 }
 
-copyInviteBtn.onclick = () => {
-  if(!currentUser) return;
-  const inviteLink = `https://yoursite.com/signup?host=${currentUser.uid}`;
-  navigator.clipboard.writeText(inviteLink);
-  alert("Invite link copied!");
-}
+// ---------- COPY INVITE ----------
+copyBtn.onclick = ()=>{
+  navigator.clipboard.writeText(`https://yoursite.com/signup?host=${currentUser.uid}`);
+  alert("Copied! Your invite link has been copied.");
+};
 
-loadCurrentUser();
+// ---------- SHOP ----------
+function createProductCard(product){
+  if(product.hostOnly && !currentUser?.isHost) return null;
+  const card = document.createElement('div'); card.className='product-card';
+  card.innerHTML = `
+    <img src="${product.img}" alt="${product.name}">
+    <div class="product-info">
+      <h3 class="product-name">${product.name}</h3>
+      <p class="product-cost">Cost: ${product.cost} ⭐</p>
+      <button class="buy-btn">Redeem</button>
+    </div>
+  `;
+  const btn = card.querySelector(".buy-btn");
+  btn.onclick = ()=>alert("Redeem logic here!");
+  return card;
+}
+async function renderShop(){
+  shopItemsEl.innerHTML='';
+  const querySnap = await getDocs(collection(db,'shopItems'));
+  querySnap.forEach(docSnap=>{
+    const product = { id: docSnap.id, ...docSnap.data() };
+    const card = createProductCard(product);
+    if(card) shopItemsEl.appendChild(card);
+  });
+}
 </script>
-
 </body>
 </html>
