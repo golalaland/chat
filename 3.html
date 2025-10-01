@@ -189,6 +189,26 @@
   transition: background 0.3s ease;
   display: inline-block;
 }
+.themed-btn {
+  background: linear-gradient(90deg, #ff6a00, #ee0979);
+  border: none;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.15s ease;
+}
+
+.themed-btn:hover {
+  transform: scale(1.05);
+}
+
+.themed-badge {
+  border-radius: 12px;
+  border: 2px solid #ee0979;
+  object-fit: cover;
+}
 
 #imagePreview {
   position: fixed;
@@ -723,35 +743,29 @@
   }
 
   // ---------- Tabs logic ----------
-// ---------- Tabs logic ----------
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
   if (!btn) return;
 
-  // reset active state
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const type = btn.getAttribute('data-tab');
-  tabContentEl.innerHTML = ''; // clear first
 
   if (type === 'vip') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
         <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
         <div class="stat-label">VIPs Signed Up</div>
+        <button id="copyVipBtn" class="themed-btn">Copy VIP Link</button>
       </div>
-      <button class="copy-btn" id="copyVipLinkBtn">Copy VIP Link</button>
     `;
-
-    const copyBtn = document.getElementById('copyVipLinkBtn');
-    if (copyBtn) {
-      copyBtn.onclick = () => {
-        navigator.clipboard.writeText(currentUser?.vipLink || '')
-          .then(() => showMessageModal('Copied', 'VIP link copied to clipboard!', 1800))
-          .catch(err => console.error('Copy failed', err));
-      };
-    }
+    const copyBtn = document.getElementById('copyVipBtn');
+    copyBtn.addEventListener('click', () => {
+      const vipLink = currentUser?.vipLink || 'https://example.com';
+      navigator.clipboard.writeText(vipLink);
+      showMessageModal('Copied!', 'VIP link copied to clipboard.', 1800);
+    });
 
   } else if (type === 'friends') {
     tabContentEl.innerHTML = `
@@ -762,8 +776,10 @@ document.addEventListener('click', (ev) => {
     `;
 
   } else if (type === 'badge') {
+    const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/80x80?text=Badge';
     tabContentEl.innerHTML = `
       <div class="stat-block">
+        <img src="${badgeImg}" alt="Badge" class="themed-badge">
         <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
         <div class="stat-label">Badge Status</div>
       </div>
