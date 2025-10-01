@@ -371,80 +371,15 @@
   </div>
 </div>
 
-<!-- HOST TABS (only for hosts) -->
+<!-- HOST TABS (hidden by default, only for hosts) -->
 <div class="host-tabs" id="hostTabs" style="display:none;">
   <button class="tab-btn active" data-tab="vip">VIP</button>
   <button class="tab-btn" data-tab="friends">Friends</button>
   <button class="tab-btn" data-tab="badges">Badges</button>
 </div>
 
-<!-- HOST PANEL -->
+<!-- HOST PANEL (populated dynamically by JS, hidden by default) -->
 <div id="tab-content" class="tab-content" style="display:none;"></div>
-
-<script>
-function updateHostPanels() {
-  if (!currentUser?.isHost) return;
-
-  const tabContentEl = document.getElementById('tab-content');
-  const tabs = document.querySelectorAll('.tab-btn');
-
-  function renderTab(type) {
-    tabContentEl.innerHTML = ''; // clear previous content
-
-    if (type === 'vip') {
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <div class="stat-value">${formatNumber(currentUser?.hostVIP || 0)}</div>
-          <div class="stat-label">VIPs Signed Up</div>
-          <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
-        </div>
-      `;
-      const copyBtn = document.getElementById('copyVipLink');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-          const vipLink = `https://yourapp.com/ref/${currentUser?.uid || ''}`;
-          navigator.clipboard.writeText(vipLink).then(() => {
-            showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500);
-          });
-        });
-      }
-    } else if (type === 'friends') {
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length)}</div>
-          <div class="stat-label">Friends Invited</div>
-        </div>
-      `;
-    } else if (type === 'badges') {
-      const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/100';
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;">
-          <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
-          <div class="stat-label">Badge Status</div>
-        </div>
-      `;
-    }
-  }
-
-  // default tab
-  renderTab('vip');
-
-  // tab click handlers
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      if (!currentUser?.isHost) return; // safeguard
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      renderTab(tab.dataset.tab);
-    });
-  });
-
-  // show container
-  document.getElementById('hostTabs').style.display = '';
-  tabContentEl.style.display = '';
-}
-</script>
 
   <!-- SHOP GRID -->
   <div class="shop-grid" id="shop-items">
@@ -648,13 +583,16 @@ if (currentUser.isHost) {
     currentUser.cash = Number(currentUser.cash) || 0;
     starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
-if (currentUser.isHost) {
-  hostTabsEl.style.display = '';
-  tabContentEl.style.display = '';
-  initHostTabs();  // <-- call your new tab initializer here
-} else {
-  hostTabsEl.style.display = 'none';
-  tabContentEl.style.display = 'none';
+
+    if (currentUser.isHost) {
+      hostTabsEl.style.display = '';
+      tabContentEl.style.display = '';
+      updateHostPanels();
+    } else {
+      hostTabsEl.style.display = 'none';
+      tabContentEl.style.display = 'none';
+    }
+  });
 }
 
   // ---------- Create product card ----------
@@ -799,6 +737,7 @@ if (currentUser.isHost) {
     }
   }
 
+  // ---------- Tabs logic ----------
 // ---------- Tabs logic ----------
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
@@ -864,96 +803,4 @@ document.addEventListener('click', (ev) => {
       closeModal();
     }
   });
-  function initHostTabs() {
-  if (!currentUser?.isHost) return;
-
-  const tabContentEl = document.getElementById('tab-content');
-  const hostTabsEl = document.getElementById('hostTabs');
-  const tabs = hostTabsEl.querySelectorAll('.tab-btn');
-  let activeTab = 'vip'; // keep track of active tab
-
-  function renderTab(type) {
-    tabContentEl.innerHTML = ''; // clear previous content
-
-    if (type === 'vip') {
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <div class="stat-value" id="vip-stat">${formatNumber(currentUser.hostVIP || 0)}</div>
-          <div class="stat-label">VIPs Signed Up</div>
-          <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
-        </div>
-      `;
-      const copyBtn = document.getElementById('copyVipLink');
-      copyBtn?.addEventListener('click', () => {
-        const vipLink = `https://yourapp.com/ref/${currentUser.uid || ''}`;
-        navigator.clipboard.writeText(vipLink)
-          .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500))
-          .catch(() => showMessageModal('Error', 'Failed to copy link.', 1800));
-      });
-    }
-    else if (type === 'friends') {
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <div class="stat-value" id="friends-stat">${formatNumber((currentUser.hostFriends || []).length)}</div>
-          <div class="stat-label">Friends Invited</div>
-        </div>
-      `;
-    }
-    else if (type === 'badges') {
-      const badgeImg = currentUser.hostBadgeImg || 'https://via.placeholder.com/100';
-      tabContentEl.innerHTML = `
-        <div class="stat-block">
-          <img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;">
-          <div class="stat-value">${currentUser.hostBadge || 'Gold'}</div>
-          <div class="stat-label">Badge Status</div>
-        </div>
-      `;
-    }
-  }
-
-  // default tab
-  renderTab(activeTab);
-  tabs.forEach(tab => tab.classList.remove('active'));
-  tabs[0].classList.add('active');
-
-  // handle tab clicks
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      activeTab = tab.dataset.tab; // remember which tab is active
-      renderTab(activeTab);
-    });
-  });
-
-  // show tabs & panel
-  hostTabsEl.style.display = '';
-  tabContentEl.style.display = '';
-
-  // ---------- LIVE UPDATES ----------
-  const userRef = doc(db, 'users', currentUser.uid);
-  onSnapshot(userRef, docSnap => {
-    const data = docSnap.data();
-    if (!data) return;
-    currentUser = { uid: currentUser.uid, ...data };
-
-    // update numbers only, keep active tab
-    if (activeTab === 'vip') {
-      const vipStatEl = document.getElementById('vip-stat');
-      if (vipStatEl) vipStatEl.textContent = formatNumber(currentUser.hostVIP || 0);
-    } 
-    else if (activeTab === 'friends') {
-      const friendsStatEl = document.getElementById('friends-stat');
-      if (friendsStatEl) friendsStatEl.textContent = formatNumber((currentUser.hostFriends || []).length);
-    }
-    else if (activeTab === 'badges') {
-      const badgeImg = currentUser.hostBadgeImg || 'https://via.placeholder.com/100';
-      const statBlock = tabContentEl.querySelector('.stat-block');
-      if (statBlock) {
-        statBlock.querySelector('img')?.setAttribute('src', badgeImg);
-        statBlock.querySelector('.stat-value').textContent = currentUser.hostBadge || 'Gold';
-      }
-    }
-  });
-}
 </script>
