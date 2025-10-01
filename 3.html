@@ -747,26 +747,35 @@ document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
   if (!btn) return;
 
+  // mark active tab
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const type = btn.getAttribute('data-tab');
+  tabContentEl.innerHTML = ''; // clear old content
 
   if (type === 'vip') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
         <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
         <div class="stat-label">VIPs Signed Up</div>
-        <button id="copyVipBtn" class="themed-btn">Copy VIP Link</button>
+        <button id="copyVipLink" class="themed-btn">Copy Link</button>
       </div>
     `;
-    const copyBtn = document.getElementById('copyVipBtn');
-    copyBtn.addEventListener('click', () => {
-      const vipLink = currentUser?.vipLink || 'https://example.com';
-      navigator.clipboard.writeText(vipLink);
-      showMessageModal('Copied!', 'VIP link copied to clipboard.', 1800);
-    });
 
+    // Copy link button functionality
+    const copyBtn = document.getElementById('copyVipLink');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const vipLink = `https://yourapp.com/ref/${currentUser?.uid || ''}`;
+        navigator.clipboard.writeText(vipLink).then(() => {
+          showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500);
+        }).catch(err => {
+          showMessageModal('Error', 'Failed to copy link.', 1800);
+          console.error('Copy VIP link error:', err);
+        });
+      });
+    }
   } else if (type === 'friends') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
@@ -774,16 +783,18 @@ document.addEventListener('click', (ev) => {
         <div class="stat-label">Friends Hosts</div>
       </div>
     `;
-
   } else if (type === 'badge') {
-    const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/80x80?text=Badge';
+    const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/100';
     tabContentEl.innerHTML = `
       <div class="stat-block">
-        <img src="${badgeImg}" alt="Badge" class="themed-badge">
+        <img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;">
         <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
         <div class="stat-label">Badge Status</div>
       </div>
     `;
+  } else {
+    // fallback
+    tabContentEl.innerHTML = `<div class="stat-block">No data available</div>`;
   }
 });
   // ---------- Init ----------
