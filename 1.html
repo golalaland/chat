@@ -1,160 +1,716 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign Up - 乂丨乂丨</title>
-<style>
-:root {
-  --bg: #f5f5f5;
-  --card-bg: #fff;
-  --accent: #ff33cc;
-  --text: #000;
-  --btn-bg: #ff33cc;
-  --btn-text: #fff;
-}
+  <meta charset="UTF-8">
+  <title>乂丨乂丨Redeem</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-}
+  <style>
+    /* ---------- GLOBAL ---------- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      -webkit-font-smoothing:antialiased;
+    }
 
-.signup-card {
-  background: var(--card-bg);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  max-width: 380px;
-  width: 100%;
-}
+    /* ---------- HEADER ---------- */
+    header {
+      background: #000;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      border-bottom: 2px solid #222;
+    }
 
-.signup-card h2 {
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
+    /* ---------- PROFILE CARD ---------- */
+    #user-info {
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .profile-card {
+      background: #1a1a1a;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      text-align: center;
+      min-width: 280px;
+    }
+    #username {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .balances {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .balance-item { text-align: center; }
+    .balance-label {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 0.2rem;
+    }
+    .balance-value {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #ff2fa0;
+    }
 
-.signup-card input[type="text"],
-.signup-card input[type="email"],
-.signup-card input[type="password"] {
-  width: 100%;
-  padding: 0.8rem;
-  margin: 0.6rem 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-}
+    /* ---------- HOST TABS ---------- */
+    .host-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 1rem auto 0;
+      background: #000;
+      padding: 8px;
+      border-radius: 12px;
+      width: fit-content;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #aaa;
+      font-weight: bold;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      background: #ff2fa0;
+      color: #fff;
+    }
 
-.signup-card label {
-  display: flex;
-  align-items: center;
-  font-size: 0.95rem;
-  margin: 0.8rem 0;
-}
+    /* ---------- DYNAMIC PANEL ---------- */
+    .tab-content {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 1rem;
+      margin: 1rem auto;
+      width: 260px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .stat-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ff2fa0;
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: #ccc;
+    }
 
-.signup-card input[type="checkbox"] {
-  margin-right: 0.5rem;
-}
+    /* ---------- SHOP GRID ---------- */
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .product-card {
+      position: relative;
+      background: #1a1a1a;
+      border-radius: 12px;
+      text-align: center;
+      padding: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .product-card:hover { transform: translateY(-5px); }
+    .product-card img {
+      width: 100%;
+      max-height: 120px;
+      object-fit: cover;
+      border-radius: 10px;
+      cursor: pointer;
+      display:block;
+    }
+    .product-card h3 {
+      margin: 0.7rem 0 0.3rem;
+      font-size: 1rem;
+      color: #fff;
+    }
+    .product-card .price {
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+      font-weight: bold;
+      color: #ffb6da;
+    }
+    .buy-btn {
+      background: #ff2fa0;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    .buy-btn[disabled] {
+      background: #333;
+      color: #777;
+      cursor: not-allowed;
+    }
+    .buy-btn:hover { background: #ff66d6; }
 
-.signup-card button {
-  width: 100%;
-  padding: 0.9rem;
-  border: none;
-  border-radius: 8px;
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  font-size: 1.1rem;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 1rem;
-  transition: background 0.2s;
-}
+    /* ---------- AVAILABILITY BADGE ---------- */
+    .availability-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #ff2fa0;
+      color: #fff;
+      font-weight: bold;
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
 
-.signup-card button:hover {
-  background: #ff66d6;
-}
+    /* ---------- MODAL ---------- */
+    #confirmModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #confirmModal .modal-content {
+      background: #1a1a1a;
+      padding: 18px 20px;
+      border-radius: 12px;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+      animation: popIn 0.2s forwards;
+    }
+    #confirmModal h3 { margin-top: 0; font-size: 1.1rem; color:#ff2fa0; }
+    #confirmModal p { font-size: 0.95rem; margin: 10px 0 15px; color: #ccc; }
+    #confirmModal .btn-row { display:flex; justify-content:center; gap:12px; margin-top: 10px; }
+    #confirmModal button {
+      background: #ff2fa0;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      min-width: 100px;
+    }
+    #confirmModal #confirmNo {
+      background: #333;
+      color: #ddd;
+    }
+    #confirmModal #confirmNo:hover { background: #555; }
+    #confirmModal button:hover { background: #ff66d6; }
 
-.message {
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-</style>
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* ---------- HOME BUTTON ---------- */
+    #home-btn {
+      background: #ff2fa0;
+      color: #fff;
+      border: none;
+      padding: 0.7rem 2rem;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      display: block;
+      margin: 1.5rem auto;
+      transition: background 0.2s;
+    }
+    #home-btn:hover { background: #ff66d6; }
+
+    /* ---------- IMAGE PREVIEW ---------- */
+    #imagePreview {
+      position: fixed; inset:0; display:none; justify-content:center; align-items:center; background: rgba(0,0,0,0.9); z-index:1200;
+    }
+    #imagePreview img { max-width:90%; max-height:85%; border-radius:8px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+
+    /* small helper */
+    .muted { color:#999; font-size:0.9rem; }
+  </style>
 </head>
 <body>
 
-<div class="signup-card">
-  <h2>Sign Up</h2>
-  <form id="signupForm">
-    <input type="text" id="username" placeholder="Username" required>
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
+  <!-- HEADER -->
+  <header>乂丨乂丨Redeem</header>
 
-    <label>
-      <input type="checkbox" id="isHost"> Sign up as Host
-    </label>
+  <!-- USER INFO -->
+  <div id="user-info">
+    <div class="profile-card">
+      <div id="username">Guest</div>
+      <div class="balances">
+        <div class="balance-item">
+          <div class="balance-label">Stars Balance</div>
+          <div class="balance-value" id="stars-count">0 ⭐️</div>
+        </div>
+        <div class="balance-item">
+          <div class="balance-label">Cash Balance</div>
+          <div class="balance-value" id="cash-count">₦0</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <button type="submit">Create Account</button>
-    <div class="message" id="signupMessage"></div>
-  </form>
-</div>
+  <!-- HOST TABS (hidden to non-hosts via JS) -->
+  <div class="host-tabs" id="hostTabs" style="display:none;">
+    <button class="tab-btn active" data-tab="vip">VIP <span class="muted" id="vip-count">0</span></button>
+    <button class="tab-btn" data-tab="friends">Friends <span class="muted" id="friends-count">0</span></button>
+    <button class="tab-btn" data-tab="badges">Badges <span class="muted" id="badges-count">0</span></button>
+  </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  <!-- DYNAMIC PANEL -->
+  <div id="tab-content" class="tab-content">
+    <div class="stat-block">
+      <div class="stat-value" id="vip-stat">0</div>
+      <div class="stat-label">VIPs Signed Up</div>
+    </div>
+  </div>
 
-const firebaseConfig = {
-  // 🔹 your firebase config here
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+  <!-- SHOP GRID -->
+  <div class="shop-grid" id="shop-items">
+    <!-- products loaded dynamically -->
+  </div>
 
-// Get referrer UID from ?ref= in URL
-function getReferrerId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("ref") || null;
-}
+  <!-- HOME BUTTON -->
+  <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
-async function signup(email, password, username, isHost = false) {
-  try {
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = userCred.user.uid;
-    const referrerId = getReferrerId();
+  <!-- CONFIRM PURCHASE MODAL (reused for confirmations & info) -->
+  <div id="confirmModal" aria-hidden="true">
+    <div class="modal-content">
+      <h3 id="confirmTitle">Confirm Purchase</h3>
+      <p id="confirmText">Are you sure you want to buy this item?</p>
+      <div class="btn-row">
+        <button id="confirmYes">Yes</button>
+        <button id="confirmNo">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-    await setDoc(doc(db, "users", uid), {
-      username,
-      email,
-      isHost,
-      vipCount: 0,
-      friendsCount: 0,
-      badges: ["gold"], // placeholder badge
-      referrerId: referrerId,
-      createdAt: new Date()
+  <!-- Image Preview -->
+  <div id="imagePreview" onclick="document.getElementById('imagePreview').style.display='none'">
+    <img id="previewImg" src="" alt="Preview">
+  </div>
+
+  <!-- Firebase + App JS -->
+  <script type="module">
+    // ---------- Firebase ----------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, addDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+      authDomain: "metaverse-1010.firebaseapp.com",
+      projectId: "metaverse-1010",
+      storageBucket: "metaverse-1010.appspot.com",
+      messagingSenderId: "1044064238233",
+      appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+      measurementId: "G-S77BMC266C",
+      databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ---------- DOM refs ----------
+    const usernameEl = document.getElementById('username');
+    const starsEl = document.getElementById('stars-count');
+    const cashEl = document.getElementById('cash-count');
+    const shopItemsEl = document.getElementById('shop-items');
+    const hostTabsEl = document.getElementById('hostTabs');
+    const vipCountEl = document.getElementById('vip-count');
+    const friendsCountEl = document.getElementById('friends-count');
+    const badgesCountEl = document.getElementById('badges-count');
+    const vipStatEl = document.getElementById('vip-stat');
+    const tabContentEl = document.getElementById('tab-content');
+
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmTitle = document.getElementById('confirmTitle');
+    const confirmText = document.getElementById('confirmText');
+    const confirmYes = document.getElementById('confirmYes');
+    const confirmNo = document.getElementById('confirmNo');
+
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+
+    // ---------- Utilities ----------
+    function formatNumber(n){
+      if (n === undefined || n === null) return '0';
+      return new Intl.NumberFormat('en-NG').format(Number(n));
+    }
+    function parseNumberFromText(text){
+      if(!text) return 0;
+      const digits = text.replace(/[^\d\-]/g,'');
+      return Number(digits) || 0;
+    }
+    function animateNumber(el, from, to, duration = 600) {
+      const start = performance.now();
+      function step(timestamp) {
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const value = Math.floor(from + (to - from) * progress);
+        if (el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
+        else if (el === cashEl) el.textContent = `₦${formatNumber(value)}`;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ---------- Confetti ----------
+    function triggerConfetti() {
+      // lazy-load confetti library once
+      if (window.__confettiLoaded) {
+        confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
+        return;
+      }
+      const confettiScript = document.createElement('script');
+      confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+      confettiScript.onload = () => {
+        window.__confettiLoaded = true;
+        confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
+      };
+      document.body.appendChild(confettiScript);
+    }
+
+    // ---------- Modal helpers ----------
+    let activeConfirmHandler = null;
+    function showConfirmModal(title, text, onYes){
+      confirmTitle.textContent = title;
+      confirmText.textContent = text;
+      confirmYes.style.display = '';
+      confirmNo.style.display = '';
+      confirmModal.style.display = 'flex';
+      activeConfirmHandler = onYes;
+      confirmYes.onclick = () => {
+        if (typeof activeConfirmHandler === 'function') activeConfirmHandler();
+        closeModal();
+      };
+      confirmNo.onclick = closeModal;
+    }
+    function showMessageModal(title, text, timeout = 1800){
+      confirmTitle.textContent = title;
+      confirmText.textContent = text;
+      // hide yes/no buttons for message-only
+      confirmYes.style.display = 'none';
+      confirmNo.style.display = 'none';
+      confirmModal.style.display = 'flex';
+      setTimeout(() => { closeModal(); }, timeout);
+    }
+    function closeModal(){
+      confirmModal.style.display = 'none';
+      confirmYes.onclick = null;
+      confirmNo.onclick = null;
+      activeConfirmHandler = null;
+      confirmYes.style.display = '';
+      confirmNo.style.display = '';
+    }
+
+    // ---------- Image preview ----------
+    function previewImage(src){
+      previewImg.src = src;
+      imagePreview.style.display = 'flex';
+    }
+
+    // ---------- Current User (load & realtime) ----------
+    let currentUser = null;
+    async function loadCurrentUser(){
+      const vipSessionRaw = localStorage.getItem('vipUser');
+      let vipSession = null;
+      try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession = null; }
+
+      // default UI: guest
+      usernameEl.textContent = 'Guest';
+      starsEl.textContent = `0 ⭐️`;
+      cashEl.textContent = `₦0`;
+
+      // always render shop (so guests can view)
+      renderShop();
+
+      if(!vipSession?.email) {
+        // not logged in / no vip session
+        currentUser = null;
+        hostTabsEl.style.display = 'none';
+        return;
+      }
+
+      const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+      if(!snap.exists()){
+        currentUser = { uid, stars:0, cash:0, isHost:false };
+        usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
+        hostTabsEl.style.display = 'none';
+        return;
+      }
+
+      currentUser = { uid, ...snap.data() };
+      usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+      starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+      cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+
+      // show/hide host tabs depending on isHost
+      if (currentUser.isHost) hostTabsEl.style.display = '';
+      else hostTabsEl.style.display = 'none';
+
+      // populate host panels
+      updateHostPanels();
+
+      // realtime listener to keep UI in sync
+      onSnapshot(userRef, docSnap => {
+        const data = docSnap.data();
+        if(!data) return;
+        currentUser = { uid, ...data };
+        usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+        // ensure numbers are numeric
+        currentUser.stars = Number(currentUser.stars) || 0;
+        currentUser.cash = Number(currentUser.cash) || 0;
+        starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+        cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+        if (currentUser.isHost) hostTabsEl.style.display = ''; else hostTabsEl.style.display = 'none';
+        updateHostPanels();
+      });
+    }
+
+    // ---------- Host panels ----------
+    function updateHostPanels(){
+      if(!currentUser || !currentUser.isHost){
+        hostTabsEl.style.display = 'none';
+        return;
+      }
+      hostTabsEl.style.display = '';
+      // fields expected in user doc: hostVIP (number), hostFriends (array), hostBadge (string)
+      const vipCount = Number(currentUser.hostVIP) || 0;
+      const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
+      const badge = currentUser.hostBadge || 'Gold';
+      vipCountEl.textContent = formatNumber(vipCount);
+      friendsCountEl.textContent = formatNumber(friends.length || 0);
+      badgesCountEl.textContent = badge;
+      vipStatEl.textContent = formatNumber(vipCount);
+    }
+
+    // ---------- Create product card ----------
+    function createProductCard(product){
+      const card = document.createElement('div');
+      card.className = 'product-card';
+
+      const img = document.createElement('img');
+      img.src = product.img || 'https://via.placeholder.com/300';
+      img.alt = product.name || 'Item';
+      img.addEventListener('click', () => previewImage(img.src));
+
+      const badge = document.createElement('span');
+      badge.className = 'availability-badge';
+      const avail = Number(product.available) || 0;
+      badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
+
+      const title = document.createElement('h3');
+      title.textContent = product.name || 'Unnamed';
+
+      const price = document.createElement('div');
+      price.className = 'price';
+      // show cost in stars
+      price.textContent = `${Number(product.cost) || 0} ⭐`;
+
+      const btn = document.createElement('button');
+      btn.className = 'buy-btn';
+      btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
+      if (product.hostOnly && !currentUser?.isHost) btn.disabled = true;
+      if (avail <= 0) { btn.disabled = true; badge.style.background = '#666'; }
+
+      // assemble
+      card.appendChild(badge);
+      card.appendChild(img);
+      card.appendChild(title);
+      card.appendChild(price);
+      card.appendChild(btn);
+
+      // click handler
+      btn.addEventListener('click', async () => {
+        if (!currentUser) {
+          showMessageModal('Not Logged In', 'Please sign in to redeem items.');
+          return;
+        }
+        if (Number(currentUser.stars) < Number(product.cost)) {
+          showMessageModal('Not Enough Stars', 'You do not have enough stars to redeem this item.');
+          return;
+        }
+        if (Number(product.available) <= 0) {
+          showMessageModal('Sold Out', 'This item is no longer available.');
+          return;
+        }
+
+        showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
+          // purchase flow using transaction
+          try {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const productRef = doc(db, 'shopItems', String(product.id));
+            let newStars = 0;
+            let newCash = 0;
+            let redeemedCashAmount = 0;
+
+            await runTransaction(db, async (transaction) => {
+              const userSnap = await transaction.get(userRef);
+              const productSnap = await transaction.get(productRef);
+              if (!userSnap.exists()) throw new Error('User not found');
+              if (!productSnap.exists()) throw new Error('Product not found');
+
+              const userData = userSnap.data();
+              const productData = productSnap.data();
+
+              const userStars = Number(userData.stars) || 0;
+              const userCash = Number(userData.cash) || 0;
+              const cost = Number(productData.cost) || 0;
+              const available = Number(productData.available) || 0;
+
+              if (userStars < cost) throw new Error('Not enough stars');
+              if (available <= 0) throw new Error('Out of stock');
+
+              newStars = userStars - cost;
+
+              // special product: Redeem Cash Balance - empties user's cash and logs redeemedCash
+              if ((productData.name || '').toLowerCase() === 'redeem cash balance') {
+                redeemedCashAmount = userCash;
+                newCash = 0;
+              } else {
+                newCash = userCash + (Number(productData.cashReward) || 0);
+              }
+
+              transaction.update(userRef, { stars: newStars, cash: newCash });
+              transaction.update(productRef, { available: available - 1 });
+
+              // log purchase
+              const purchasesCol = collection(db, 'purchases');
+              transaction.set(doc(purchasesCol), {
+                userId: currentUser.uid,
+                email: userData.email || '',
+                phone: userData.phone || '',
+                productId: String(productData.id || product.id),
+                productName: productData.name || product.name,
+                cost: cost,
+                cashReward: Number(productData.cashReward) || 0,
+                redeemedCash: redeemedCashAmount || 0,
+                timestamp: serverTimestamp()
+              });
+            });
+
+            // UI updates (animated)
+            const previousStars = parseNumberFromText(starsEl.textContent);
+            const previousCash = parseNumberFromText(cashEl.textContent);
+            currentUser.stars = newStars;
+            currentUser.cash = newCash;
+
+            animateNumber(starsEl, previousStars, newStars);
+            animateNumber(cashEl, previousCash, newCash);
+
+            // re-render shop to reflect new availability
+            await renderShop();
+
+            // celebration
+            triggerConfetti();
+
+            if (redeemedCashAmount > 0) {
+              showMessageModal('Cash Redeemed', `You redeemed ₦${formatNumber(redeemedCashAmount)}. We will process the payout.`, 3000);
+            } else {
+              showMessageModal('Success', `"${product.name}" redeemed successfully!`, 2000);
+            }
+          } catch (err) {
+            console.error('Redemption error:', err);
+            showMessageModal('Error', (err.message || String(err)), 2400);
+          }
+        });
+      });
+
+      return card;
+    }
+
+    // ---------- Render shop ----------
+    async function renderShop(){
+      shopItemsEl.innerHTML = '';
+      try {
+        const querySnap = await getDocs(collection(db, 'shopItems'));
+        querySnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const item = { id: docSnap.id, ...data };
+          const card = createProductCard(item);
+          if (card) shopItemsEl.appendChild(card);
+        });
+      } catch (e) {
+        console.error('Failed to load shop items', e);
+        shopItemsEl.innerHTML = '<div style="padding:1rem;color:#ccc;text-align:center;">Failed to load shop items.</div>';
+      }
+    }
+
+    // ---------- Tabs logic ----------
+    document.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.getAttribute('data-tab');
+      // swap dynamic panel content to small stat blocks
+      if (type === 'vip') {
+        tabContentEl.innerHTML = `
+          <div class="stat-block">
+            <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
+            <div class="stat-label">VIPs Signed Up</div>
+          </div>
+        `;
+      } else if (type === 'friends') {
+        tabContentEl.innerHTML = `
+          <div class="stat-block">
+            <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length || 0)}</div>
+            <div class="stat-label">Friends Hosts</div>
+          </div>
+        `;
+      } else {
+        tabContentEl.innerHTML = `
+          <div class="stat-block">
+            <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
+            <div class="stat-label">Badge Status</div>
+          </div>
+        `;
+      }
     });
 
-    document.getElementById("signupMessage").textContent = "✅ Account created successfully!";
-  } catch (err) {
-    document.getElementById("signupMessage").textContent = "❌ " + err.message;
-    console.error("Signup error:", err);
-  }
-}
+    // ---------- Init ----------
+    loadCurrentUser();
 
-document.getElementById("signupForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const username = document.getElementById("username").value;
-  const isHost = document.getElementById("isHost").checked;
-
-  await signup(email, password, username, isHost);
-});
-</script>
+    // close preview on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        imagePreview.style.display = 'none';
+        closeModal();
+      }
+    });
+  </script>
 </body>
 </html>
