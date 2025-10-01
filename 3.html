@@ -792,6 +792,27 @@ function attachInviteHandler(){
         closeModal();
       }
     });
-  </script>
+const imagePreview = document.getElementById('imagePreview');
+  const previewImg = document.getElementById('previewImg');
+  const closeBtn = document.getElementById('closePreview');
+
+  // Show image preview (call this from wherever you open an image)
+  function showImage(src) {
+    previewImg.src = src;
+    imagePreview.style.display = 'flex';
+  }
+
+  // Close when clicking X
+  closeBtn.addEventListener('click', () => {
+    imagePreview.style.display = 'none';
+  });
+
+  // Optional: close when clicking outside the image
+  imagePreview.addEventListener('click', (e) => {
+    if (e.target === imagePreview) {
+      imagePreview.style.display = 'none';
+    }
+  });
+</script>
 </body>
 </html>
