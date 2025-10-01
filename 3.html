@@ -239,25 +239,24 @@
 
 .close-btn {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: 8px;        /* inside the image wrapper */
+  right: 8px;
   font-size: 2rem;
   font-weight: bold;
-  color: #ff2fa0;
+  color: #fff;     /* plain white */
   cursor: pointer;
-  background: #111;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  text-align: center;
-  line-height: 36px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  transition: all 0.2s;
+  background: transparent;  /* remove colored background */
+  border: none;            /* no border */
+  width: auto;
+  height: auto;
+  line-height: normal;
+  padding: 0;
+  margin: 0;
   z-index: 10;
+  text-shadow: 0 0 6px rgba(0,0,0,0.7); /* optional for visibility */
 }
 .close-btn:hover {
-  color: #fff;
-  background: #ff2fa0;
+  color: #ff2fa0;   /* subtle hover accent if you want */
 }
     /* ---------- AVAILABILITY BADGE ---------- */
     .availability-badge {
@@ -524,6 +523,12 @@ const previewImage = src => {
   DOM.previewImg.src = src;
   DOM.imagePreview.style.display = 'flex';
 };
+
+// Close button
+document.getElementById('closePreview').addEventListener('click', () => {
+  DOM.imagePreview.style.display = 'none';
+  DOM.previewImg.src = ''; // optional, clears the image
+});
 
 // ---------- Current User ----------
 let currentUser = null;
