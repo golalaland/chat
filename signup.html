@@ -1,58 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>VIP Signup</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; }
-    input, button { padding: 1rem; margin: 0.5rem; border-radius: 12px; border: none; font-size: 1rem; }
-    input { width: 80%; }
-    button { background: #ff2fa0; color: #fff; cursor: pointer; }
-    button:hover { background: #ff66d6; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Host/VIP Signup</title>
+<style>
+  body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg,#ff6a00,#ee0979);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+  }
+  .signup-card {
+    background:#1a1a1a;
+    border-radius:16px;
+    padding:2rem;
+    width:350px;
+    color:#fff;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  }
+  .signup-card h2 {
+    text-align:center;
+    color:#ff66d6;
+    margin-bottom:1rem;
+  }
+  .signup-card p {
+    font-size:0.9rem;
+    color:#ccc;
+    text-align:center;
+    margin-bottom:1.5rem;
+  }
+  .form-group {
+    display:flex;
+    flex-direction:column;
+    margin-bottom:1rem;
+  }
+  .form-group label {
+    margin-bottom:0.3rem;
+    font-size:0.85rem;
+    color:#aaa;
+  }
+  .form-group input, .form-group select {
+    padding:0.6rem 0.8rem;
+    border-radius:8px;
+    border:none;
+    font-size:0.95rem;
+  }
+  .vip-toggle {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:1.5rem;
+    font-weight:bold;
+    font-size:0.95rem;
+  }
+  .toggle-btn {
+    width:60px;
+    height:28px;
+    background:#333;
+    border-radius:14px;
+    position:relative;
+    cursor:pointer;
+  }
+  .toggle-btn span {
+    position:absolute;
+    top:2px;
+    left:2px;
+    width:24px;
+    height:24px;
+    background:#ff2fa0;
+    border-radius:50%;
+    transition:0.3s;
+  }
+  .toggle-btn.on span {
+    left:34px;
+  }
+  .submit-btn {
+    width:100%;
+    padding:0.8rem;
+    border:none;
+    border-radius:24px;
+    font-weight:bold;
+    font-size:1rem;
+    color:#fff;
+    background:linear-gradient(90deg,#ff6a00,#ee0979);
+    cursor:pointer;
+    transition:0.3s;
+  }
+  .submit-btn:hover { transform:scale(1.05); }
+  .message {text-align:center;margin-top:1rem;font-size:0.9rem;}
+</style>
 </head>
 <body>
-  <h2>Sign Up as VIP</h2>
-  <input type="text" id="displayName" placeholder="Your Name" />
-  <input type="email" id="email" placeholder="Your Email" />
-  <button id="vipSignup">VIP Sign Up</button>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<div class="signup-card">
+  <h2>VIP/Host Signup</h2>
+  <p id="host-info">You're in <span id="host-username">HostName</span>'s VIP Tab</p>
 
-    const firebaseConfig = { /* your config */ };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  <div class="form-group">
+    <label for="name">Name</label>
+    <input id="name" type="text" placeholder="Your full name">
+  </div>
+  <div class="form-group">
+    <label for="phone">Phone</label>
+    <input id="phone" type="text" placeholder="e.g +2348012345678">
+  </div>
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="you@example.com">
+  </div>
+  <div class="form-group">
+    <label for="gender">Gender</label>
+    <select id="gender">
+      <option value="">Select gender</option>
+      <option value="Female">Female</option>
+      <option value="Male">Male</option>
+    </select>
+  </div>
 
-    // Get host UID from query string: vip.html?host=HOST_UID
-    const urlParams = new URLSearchParams(window.location.search);
-    const hostUID = urlParams.get('host');
+  <div class="vip-toggle">
+    <span>VIP</span>
+    <div class="toggle-btn" id="vipToggle"><span></span></div>
+  </div>
 
-    document.getElementById('vipSignup').addEventListener('click', async () => {
-      const name = document.getElementById('displayName').value.trim();
-      const email = document.getElementById('email').value.trim();
+  <button class="submit-btn" id="submitBtn">Sign Up</button>
+  <div class="message" id="message"></div>
+</div>
 
-      if (!email) return alert('Email is required');
-      const uid = email.replace(/[.#$[\]]/g, ',');
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-      try {
-        await setDoc(doc(db, 'users', uid), {
-          displayName: name || '',
-          email,
-          isVIP: true,
-          hostVIP: hostUID || null,
-          hostFriends: [],
-          isHost: false,
-          createdAt: serverTimestamp()
-        });
-        alert('Signed up as VIP successfully!');
-      } catch (err) {
-        console.error(err);
-        alert('Failed to sign up. Try again.');
-      }
-    });
-  </script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Elements
+const vipToggle = document.getElementById('vipToggle');
+let isVIP = true;
+vipToggle.addEventListener('click', ()=> {
+  isVIP = !isVIP;
+  vipToggle.classList.toggle('on', isVIP);
+});
+
+const submitBtn = document.getElementById('submitBtn');
+const messageEl = document.getElementById('message');
+const hostUsername = new URLSearchParams(window.location.search).get('host') || 'HostName';
+document.getElementById('host-username').textContent = hostUsername;
+
+// Form Submit
+submitBtn.addEventListener('click', async () => {
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const gender = document.getElementById('gender').value;
+
+  if(!name || !phone || !email || !gender){
+    messageEl.textContent = 'Please fill all fields.';
+    return;
+  }
+
+  // Only females can be hosts
+  if(!isVIP && gender !== 'Female'){
+    messageEl.textContent = 'Only females can sign up as hosts.';
+    return;
+  }
+
+  // Prepare Firestore data
+  const uid = email.replace(/[.#$[\]]/g, ',');
+  const userData = {
+    displayName: name,
+    phone,
+    email,
+    gender,
+    isVIP,
+    isHost: !isVIP,
+    hostVIP: isVIP ? hostUsername : null,
+    hostVIPUsername: isVIP ? hostUsername : null,
+    hostFriends: [],
+    hostBadge: 'Gold',
+    createdAt: serverTimestamp(),
+    whitelist: false,
+    paymentStatus: 'pending'
+  };
+
+  try {
+    await setDoc(doc(db,'users',uid), userData, { merge:true });
+    messageEl.textContent = 'Signup recorded. Redirecting to payment...';
+
+    // TODO: Integrate Paystack here
+    // After payment, update `whitelist = true` and `paymentStatus = completed`
+    setTimeout(()=>{messageEl.textContent='Payment complete. Redirecting to chat...';}, 2000);
+
+  } catch(err){
+    console.error(err);
+    messageEl.textContent = 'Error saving signup. Check console.';
+  }
+});
+</script>
 </body>
 </html>
