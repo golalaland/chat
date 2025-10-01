@@ -190,6 +190,52 @@
   display: inline-block;
 }
 
+/* IMAGE PREVIEW */
+#imagePreview {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.9);
+  z-index: 1200;
+}
+
+#imagePreview .preview-wrapper {
+  position: relative;
+}
+
+#imagePreview img {
+  max-width: 90%;
+  max-height: 85%;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  display: block;
+}
+
+/* CLOSE BUTTON */
+.close-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #ff2fa0;
+  cursor: pointer;
+  background: #111;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  text-align: center;
+  line-height: 36px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  color: #fff;
+  background: #ff2fa0;
+}
     /* ---------- AVAILABILITY BADGE ---------- */
     .availability-badge {
       position: absolute;
@@ -250,40 +296,6 @@
       to { transform: scale(1); opacity: 1; }
     }
     
-    #imagePreview {
-  position: fixed;
-  inset: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,0.9);
-  z-index: 1200;
-}
-
-/* Image inside overlay */
-#imagePreview img {
-  max-width: 90%;
-  max-height: 85%;
-  border-radius: 8px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-}
-
-/* Close X button */
-#closePreview {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  font-size: 2rem;
-  color: #fff;
-  cursor: pointer;
-  font-weight: bold;
-  z-index: 1300;
-  transition: color 0.2s;
-}
-
-#closePreview:hover {
-  color: #ff2fa0;
-}
 
     /* ---------- HOME BUTTON ---------- */
     #home-btn {
@@ -377,9 +389,12 @@
   </div>
 
  <!-- IMAGE PREVIEW WITH CLOSE BUTTON -->
+<!-- IMAGE PREVIEW -->
 <div id="imagePreview">
-  <span id="closePreview">&times;</span>
-  <img id="previewImg" src="" alt="Preview">
+  <div class="preview-wrapper">
+    <span id="closePreview" class="close-btn">&times;</span>
+    <img id="previewImg" src="" alt="Preview">
+  </div>
 </div>
 <script type="module">
     // ---------- Firebase ----------
@@ -727,7 +742,32 @@
         shopItemsEl.innerHTML = '<div style="padding:1rem;color:#ccc;text-align:center;">Failed to load shop items.</div>';
       }
     }
+const imagePreview = document.getElementById('imagePreview');
+const previewImg = document.getElementById('previewImg');
+const closePreview = document.getElementById('closePreview');
 
+/**
+ * Open the image preview
+ * @param {string} src - URL of the image
+ */
+function openImagePreview(src) {
+  previewImg.src = src;
+  imagePreview.style.display = 'flex';
+}
+
+// Close on clicking X button
+closePreview.addEventListener('click', () => {
+  imagePreview.style.display = 'none';
+  previewImg.src = '';
+});
+
+// Optional: Close by clicking outside the image
+imagePreview.addEventListener('click', (e) => {
+  if (e.target === imagePreview) {
+    imagePreview.style.display = 'none';
+    previewImg.src = '';
+  }
+});
     // ---------- Tabs logic ----------
     document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
@@ -784,28 +824,6 @@ function attachInviteHandler(){
 
     // ---------- Init ----------
     loadCurrentUser();
-    
-const imagePreview = document.getElementById('imagePreview');
-  const previewImg = document.getElementById('previewImg');
-  const closeBtn = document.getElementById('closePreview');
-
-  // Show image preview (call this from wherever you open an image)
-  function showImage(src) {
-    previewImg.src = src;
-    imagePreview.style.display = 'flex';
-  }
-
-  // Close when clicking X
-  closeBtn.addEventListener('click', () => {
-    imagePreview.style.display = 'none';
-  });
-
-  // Optional: close when clicking outside the image
-  imagePreview.addEventListener('click', (e) => {
-    if (e.target === imagePreview) {
-      imagePreview.style.display = 'none';
-    }
-  });
 </script>
 </body>
 </html>
