@@ -157,16 +157,6 @@ header {
   text-align: center;
 }
 
-/* Host Dashboard */
-#host-dashboard {
-  display: none;
-  margin: 1rem 2rem;
-  padding: 1rem;
-  border-radius: 12px;
-  background: #fff7e6;
-  border-left: 4px solid var(--accent);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
 
 /* Modal Overlay */
 #confirmModal {
@@ -263,9 +253,101 @@ header {
 
 <!-- Host Dashboard -->
 <div id="host-dashboard">
-  <!-- JS will populate badge, unique link, invited VIPs, and friends -->
+  <!-- Top Metrics -->
+  <div class="host-metrics">
+    <div class="metric-card">
+      <div class="metric-title">VIPs</div>
+      <div class="metric-value" id="host-vips">0</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Friends</div>
+      <div class="metric-value" id="host-friends">0</div>
+    </div>
+  </div>
+
+  <!-- Unique Invite Link -->
+  <div class="host-invite">
+    <input type="text" id="host-invite-link" readonly value="https://example.com/invite/XXX" />
+    <button id="copy-invite-btn">Copy Invite Link</button>
+  </div>
 </div>
 
+<style>
+/* Host Dashboard Base */
+#host-dashboard {
+  display: none;
+  margin: 1rem 2rem;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background: #fffbe6;
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  font-family: Arial, sans-serif;
+}
+
+/* Metrics Layout */
+.host-metrics {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metric-card {
+  flex: 1;
+  background: var(--card-bg);
+  border-radius: 10px;
+  text-align: center;
+  padding: 0.8rem 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+}
+.metric-title {
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--accent);
+  margin-bottom: 0.3rem;
+}
+.metric-value {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--text);
+}
+
+/* Invite Section */
+.host-invite {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+#host-invite-link {
+  flex: 1;
+  padding: 0.55rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 0.95rem;
+  color: #555;
+}
+#copy-invite-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#copy-invite-btn:hover {
+  background: #ff66d6;
+}
+</style>
 <!-- Shop Grid -->
 <div class="shop-grid" id="shop-items"></div>
 
