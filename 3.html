@@ -784,14 +784,7 @@ function attachInviteHandler(){
 
     // ---------- Init ----------
     loadCurrentUser();
-
-    // close preview on escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        imagePreview.style.display = 'none';
-        closeModal();
-      }
-    });
+    
 const imagePreview = document.getElementById('imagePreview');
   const previewImg = document.getElementById('previewImg');
   const closeBtn = document.getElementById('closePreview');
