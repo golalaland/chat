@@ -25,9 +25,6 @@
       border-bottom: 2px solid #222;
     }
 
-#tab-content {
-  display: none; /* hide by default */
-}
     /* ---------- PROFILE CARD ---------- */
     #user-info {
       display: flex;
@@ -215,26 +212,29 @@
   border: 2px solid #ee0979;
   object-fit: cover;
 }
-#imagePreview .close-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #ff2fa0;
-  cursor: pointer;
-  background: transparent;
-  width: auto;
-  height: auto;
-  padding: 0;
-  line-height: 1;
-  border-radius: 0;
-  box-shadow: none;
-  z-index: 10;
-  transition: color 0.2s ease;
+
+#imagePreview {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.9);
+  z-index: 1200;
 }
-#imagePreview .close-btn:hover {
-  color: #fff;
+
+#imagePreview .preview-wrapper {
+  position: relative;
+  max-width: 90%;
+  max-height: 85%;
+}
+
+#imagePreview img {
+  width: 100%;
+  height: auto;       /* keeps aspect ratio */
+  object-fit: contain; 
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
 }
 
 .close-btn {
@@ -351,32 +351,45 @@
   <!-- HEADER -->
   <header>乂丨乂丨Redeem</header>
 
- <!-- USER INFO -->
-<div id="user-info">
-  <div class="profile-card">
-    <div id="username">******</div>
-    <div class="balances">
-      <div class="balance-item">
-        <div class="balance-label">Stars Balance</div>
-        <div class="balance-value" id="stars-count">****** ⭐️</div>
-      </div>
-      <div class="balance-item">
-        <div class="balance-label">Cash Balance</div>
-        <div class="balance-value" id="cash-count">₦******</div>
+  <!-- USER INFO -->
+  <div id="user-info">
+    <div class="profile-card">
+      <div id="username">Guest</div>
+      <div class="balances">
+        <div class="balance-item">
+          <div class="balance-label">Stars Balance</div>
+          <div class="balance-value" id="stars-count">1 ⭐️</div>
+        </div>
+        <div class="balance-item">
+          <div class="balance-label">Cash Balance</div>
+          <div class="balance-value" id="cash-count">₦3,000</div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- HOST TABS (hidden by default, only for hosts) -->
-<div class="host-tabs" id="hostTabs" style="display:none;">
-  <button class="tab-btn active" data-tab="vip">VIP</button>
-  <button class="tab-btn" data-tab="friends">Friends</button>
-  <button class="tab-btn" data-tab="badges">Badges</button>
-</div>
+  <!-- HOST TABS (hidden for regular users) -->
+  <div class="host-tabs" id="hostTabs" style="display:none;">
+    <button class="tab-btn active" data-tab="vip">VIP</button>
+    <button class="tab-btn" data-tab="friends">Friends</button>
+    <button class="tab-btn" data-tab="badges">Badges</button>
+  </div>
 
-<!-- HOST PANEL (populated dynamically by JS, hidden by default) -->
-<div id="tab-content" class="tab-content" style="display:none;"></div>
+  <!-- DYNAMIC PANEL -->
+  <div id="tab-content" class="tab-content">
+    <div class="stat-block">
+      <div class="stat-value" id="vip-stat">0</div>
+      <div class="stat-label">VIPs Signed Up</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-value" id="friends-stat">0</div>
+      <div class="stat-label">Friends Invited</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-value" id="badges-stat">0</div>
+      <div class="stat-label">Badges Collected</div>
+    </div>
+  </div>
 
   <!-- SHOP GRID -->
   <div class="shop-grid" id="shop-items">
@@ -525,73 +538,70 @@
   }
 
   // ---------- Current User ----------
-let currentUser = null;
-async function loadCurrentUser() {
-  const vipSessionRaw = localStorage.getItem('vipUser');
-  let vipSession = null;
-  try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession = null; }
+  let currentUser = null;
+  async function loadCurrentUser(){
+    const vipSessionRaw = localStorage.getItem('vipUser');
+    let vipSession = null;
+    try { vipSession = vipSessionRaw ? JSON.parse(vipSessionRaw) : null; } catch(e){ vipSession = null; }
 
-  usernameEl.textContent = '******';
-  starsEl.textContent = `0 ⭐️`;
-  cashEl.textContent = `₦0`;
+    usernameEl.textContent = 'Guest';
+    starsEl.textContent = `0 ⭐️`;
+    cashEl.textContent = `₦0`;
 
-  renderShop();
+    renderShop();
 
-  if (!vipSession?.email) {
-    currentUser = null;
-    hostTabsEl.style.display = 'none';
-    tabContentEl.style.display = 'none'; // hide panel
-    return;
-  }
+    if(!vipSession?.email) {
+      currentUser = null;
+      hostTabsEl.style.display = 'none';
+      return;
+    }
 
-  const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-  const userRef = doc(db, 'users', uid);
-  const snap = await getDoc(userRef);
+    const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
+    const userRef = doc(db, 'users', uid);
+    const snap = await getDoc(userRef);
+    if(!snap.exists()){
+      currentUser = { uid, stars:0, cash:0, isHost:false };
+      usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
+      hostTabsEl.style.display = 'none';
+      return;
+    }
 
-  if (!snap.exists()) {
-    currentUser = { uid, stars:0, cash:0, isHost:false };
-    usernameEl.textContent = vipSession.displayName || vipSession.email || 'Guest';
-    hostTabsEl.style.display = 'none';
-    tabContentEl.style.display = 'none'; // hide panel
-    return;
-  }
-
-  currentUser = { uid, ...snap.data() };
-  usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
-  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
-
-  // show/hide host tabs & panel
-if (currentUser.isHost) {
-  hostTabsEl.style.display = '';       // show tabs
-  tabContentEl.style.display = '';     // show panel
-  renderHostTab('vip');                 // default tab
-} else {
-  hostTabsEl.style.display = 'none';
-  tabContentEl.style.display = 'none';
-}
-  // Live updates
-  onSnapshot(userRef, docSnap => {
-    const data = docSnap.data();
-    if(!data) return;
-    currentUser = { uid, ...data };
+    currentUser = { uid, ...snap.data() };
     usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
-    currentUser.stars = Number(currentUser.stars) || 0;
-    currentUser.cash = Number(currentUser.cash) || 0;
-    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+    starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
+    if (currentUser.isHost) hostTabsEl.style.display = ''; else hostTabsEl.style.display = 'none';
+    updateHostPanels();
 
-if (currentUser.isHost) {
-  hostTabsEl.style.display = '';
-  tabContentEl.style.display = '';
-  const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'vip';
-  renderHostTab(activeTab);
-} else {
-  hostTabsEl.style.display = 'none';
-  tabContentEl.style.display = 'none';
-}
-  });
-}
+    onSnapshot(userRef, docSnap => {
+      const data = docSnap.data();
+      if(!data) return;
+      currentUser = { uid, ...data };
+      usernameEl.textContent = currentUser.chatId || vipSession.displayName || vipSession.email || 'Guest';
+      currentUser.stars = Number(currentUser.stars) || 0;
+      currentUser.cash = Number(currentUser.cash) || 0;
+      starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+      cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+      if (currentUser.isHost) hostTabsEl.style.display = ''; else hostTabsEl.style.display = 'none';
+      updateHostPanels();
+    });
+  }
+
+  // ---------- Host panels ----------
+  function updateHostPanels(){
+    if(!currentUser || !currentUser.isHost){
+      hostTabsEl.style.display = 'none';
+      return;
+    }
+    hostTabsEl.style.display = '';
+    const vipCount = Number(currentUser.hostVIP) || 0;
+    const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
+    const badge = currentUser.hostBadge || 'Gold';
+    vipCountEl.textContent = formatNumber(vipCount);
+    friendsCountEl.textContent = formatNumber(friends.length);
+    badgesCountEl.textContent = badge;
+    vipStatEl.textContent = formatNumber(vipCount);
+  }
 
   // ---------- Create product card ----------
   function createProductCard(product){
@@ -735,11 +745,18 @@ if (currentUser.isHost) {
     }
   }
 
+  // ---------- Tabs logic ----------
+document.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.tab-btn');
+  if (!btn) return;
 
-// ---------- Tabs logic ----------
-document// ---------- Tabs logic ----------
-function renderHostTab(type) {
+  // mark active tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const type = btn.getAttribute('data-tab');
   tabContentEl.innerHTML = ''; // clear old content
+
   if (type === 'vip') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
@@ -748,6 +765,8 @@ function renderHostTab(type) {
         <button id="copyVipLink" class="themed-btn">Copy Link</button>
       </div>
     `;
+
+    // Copy link button functionality
     const copyBtn = document.getElementById('copyVipLink');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
@@ -756,6 +775,7 @@ function renderHostTab(type) {
           showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500);
         }).catch(err => {
           showMessageModal('Error', 'Failed to copy link.', 1800);
+          console.error('Copy VIP link error:', err);
         });
       });
     }
@@ -776,30 +796,10 @@ function renderHostTab(type) {
       </div>
     `;
   } else {
+    // fallback
     tabContentEl.innerHTML = `<div class="stat-block">No data available</div>`;
   }
-}
-
-document.addEventListener('click', (ev) => {
-  const btn = ev.target.closest('.tab-btn');
-  if (!btn) return;
-  if (!currentUser?.isHost) return;
-
-  // mark active
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  renderHostTab(btn.dataset.tab);
 });
-
-// ---------- Image preview ----------
-function previewImage(src){
-  previewImg.src = src;
-  imagePreview.style.display = 'flex';
-}
-document.getElementById('closePreview').onclick = () => {
-  imagePreview.style.display = 'none';
-};
   // ---------- Init ----------
   loadCurrentUser();
 
