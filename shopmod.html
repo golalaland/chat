@@ -279,7 +279,13 @@ import {
   getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+<script type="module">
 // ---------- Firebase ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { 
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -288,6 +294,7 @@ const firebaseConfig = {
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -295,37 +302,44 @@ const db = getFirestore(app);
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-count');
 const cashEl = document.getElementById('cash-count');
-const hostDashboardEl = document.getElementById('host-dashboard');
 const shopItemsEl = document.getElementById('shop-items');
+const hostDashboardEl = document.getElementById('host-dashboard');
 
 // ---------- Utilities ----------
-function formatNumber(n) { return new Intl.NumberFormat('en-NG').format(n); }
-function randomColor() { return '#' + Math.floor(Math.random()*16777215).toString(16); }
-function animateNumber(el, from, to, duration = 600){
+function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
+
+function animateNumber(el, from, to, duration = 600, suffix = '') {
   const start = performance.now();
-  function step(timestamp){
-    const progress = Math.min((timestamp-start)/duration,1);
-    const value = Math.floor(from + (to-from)*progress);
-    el.textContent = value;
-    if(progress<1) requestAnimationFrame(step);
+  function step(timestamp) {
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const value = Math.floor(from + (to - from) * progress);
+    el.textContent = value + suffix;
+    if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
+}
+
+// ---------- Confetti ----------
+function triggerConfetti() {
+  const confettiScript = document.createElement('script');
+  confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+  confettiScript.onload = () => {
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+  };
+  document.body.appendChild(confettiScript);
 }
 
 // ---------- Modals ----------
 const confirmModal = document.createElement("div");
 confirmModal.id = "confirmModal";
-confirmModal.style.cssText = `
-  position: fixed; top:0; left:0; width:100%; height:100%;
-  background: rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:1000;
-`;
+confirmModal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:1000;";
 confirmModal.innerHTML = `
-  <div style="background:#fff; padding:1rem 2rem; border-radius:8px; text-align:center; max-width:300px;">
-    <h3 id="confirmTitle"></h3>
+  <div style="background:#fff;padding:15px 20px;border-radius:12px;max-width:300px;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+    <h3 id="confirmTitle">Confirm</h3>
     <p id="confirmText"></p>
-    <div style="margin-top:1rem;">
-      <button id="confirmYes">Yes</button>
-      <button id="confirmNo">Cancel</button>
+    <div style="margin-top:10px;">
+      <button id="confirmYes" style="margin-right:6px;padding:0.5rem 1rem;background:#ff33cc;color:#fff;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">Yes</button>
+      <button id="confirmNo" style="padding:0.5rem 1rem;background:#ccc;color:#333;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">Cancel</button>
     </div>
   </div>
 `;
@@ -348,7 +362,7 @@ function showMessageModal(title, text, duration=2000){
   document.getElementById("confirmYes").style.display="none";
   document.getElementById("confirmNo").style.display="none";
   confirmModal.style.display="flex";
-  setTimeout(() => {
+  setTimeout(()=>{
     confirmModal.style.display="none";
     document.getElementById("confirmYes").style.display="inline-block";
     document.getElementById("confirmNo").style.display="inline-block";
@@ -364,26 +378,28 @@ async function loadCurrentUser(){
   const userRef = doc(db,'users',uid);
   const snap = await getDoc(userRef);
   if(!snap.exists()) return;
+
   currentUser = { uid, ...snap.data() };
   usernameEl.textContent = currentUser.chatId || 'Guest';
-  starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
+  starsEl.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
 
-  renderHostDashboard();
   renderShop();
+  renderHostDashboard();
 
   onSnapshot(userRef, docSnap=>{
     const data = docSnap.data();
     if(!data) return;
-    currentUser.stars = Number(data.stars||0);
-    currentUser.cash = Number(data.cash||0);
+    currentUser.stars = Number(data.stars || 0);
+    currentUser.cash = Number(data.cash || 0);
     currentUser.isHost = data.isHost || false;
     currentUser.hostBadge = data.hostBadge || '';
     currentUser.hostFriends = data.hostFriends || [];
     currentUser.hostVIP = data.hostVIP || 0;
 
-    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
+    animateNumber(starsEl, Number(starsEl.textContent.replace(/\D/g,'')), currentUser.stars, 500, ' ⭐️');
+    animateNumber(cashEl, Number(cashEl.textContent.replace(/\D/g,'')), currentUser.cash, 500, '₦');
+
     renderHostDashboard();
   });
 }
@@ -391,108 +407,179 @@ loadCurrentUser();
 
 // ---------- Host Dashboard ----------
 function renderHostDashboard(){
-  hostDashboardEl.innerHTML = '';
-  if(!currentUser?.isHost) { hostDashboardEl.style.display='none'; return; }
+  if(!currentUser?.isHost){
+    hostDashboardEl.style.display = 'none';
+    return;
+  }
   hostDashboardEl.style.display='flex';
-  hostDashboardEl.style.flexDirection='column';
-  hostDashboardEl.style.gap='1rem';
+  hostDashboardEl.innerHTML = '';
 
   const cards = [
-    { title:'VIP Tab', count:currentUser.hostVIP || 0, icon:'https://via.placeholder.com/18', showEmoji:false },
-    { title:'Friends', count:(currentUser.hostFriends||[]).length, icon:'https://via.placeholder.com/18', showEmoji:false },
-    { title:'Badges', count:currentUser.hostBadge||'Bronze', icon:'https://via.placeholder.com/18', showEmoji:false, copyInvite:true }
+    { title:'VIP TAB', count: currentUser.hostVIP || 0, img:'https://via.placeholder.com/18' },
+    { title:'Friends', count: currentUser.hostFriends?.length || 0, img:'https://via.placeholder.com/18' },
+    { title:'Badges', count: currentUser.hostBadge || 'Bronze', img:'https://via.placeholder.com/18', copyInvite:true }
   ];
 
-  cards.forEach(card=>{
-    const div = document.createElement('div');
-    div.className='host-card';
-    div.style.background='#111';
-    div.style.color='#fff';
-    div.style.padding='1rem';
-    div.style.borderRadius='10px';
-    div.style.display='flex';
-    div.style.flexDirection='column';
-    div.style.justifyContent='space-between';
-    div.style.minHeight='80px';
-    
+  cards.forEach(c=>{
+    const card = document.createElement('div');
+    card.className='host-card';
+    card.style.background='#111';
+    card.style.color='#fff';
+    card.style.padding='1rem';
+    card.style.borderRadius='10px';
+    card.style.display='flex';
+    card.style.flexDirection='column';
+    card.style.justifyContent='space-between';
+    card.style.minHeight='80px';
+    card.style.marginBottom='0.8rem';
+
     const h3 = document.createElement('h3');
-    h3.style.display='flex';
-    h3.style.alignItems='center';
-    h3.style.gap='0.5rem';
-    h3.style.color=randomColor();
-    const img = document.createElement('img');
-    img.src = card.icon;
-    img.width = 18;
-    h3.appendChild(img);
-    h3.appendChild(document.createTextNode(card.title));
-    div.appendChild(h3);
+    const icon = document.createElement('img');
+    icon.src = c.img;
+    icon.width=18;
+    icon.style.marginRight='6px';
+    h3.appendChild(icon);
+    h3.appendChild(document.createTextNode(c.title));
+    card.appendChild(h3);
 
-    const span = document.createElement('div');
-    span.className='host-count';
-    span.style.fontWeight='bold';
-    span.style.fontSize='1.2rem';
-    span.textContent = card.count + (card.showEmoji ? ' ⭐️':'');
-    div.appendChild(span);
+    const countDiv = document.createElement('div');
+    countDiv.className='host-count';
+    countDiv.style.fontWeight='bold';
+    countDiv.style.fontSize='1.2rem';
+    countDiv.textContent = c.count;
+    card.appendChild(countDiv);
 
-    if(card.copyInvite){
+    if(c.copyInvite){
       const btn = document.createElement('button');
-      btn.textContent='Copy Invite Link';
       btn.className='copy-link-btn';
-      btn.onclick=()=>{
-        navigator.clipboard.writeText(`https://yoursite.com/signup?host=${currentUser.uid}`);
-        showMessageModal('Copied!','Your invite link has been copied.',2000);
+      btn.textContent='Copy Invite Link';
+      btn.style.alignSelf='center';
+      btn.style.marginTop='0.6rem';
+      btn.style.padding='0.4rem 0.8rem';
+      btn.style.fontSize='0.85rem';
+      btn.style.background='#ff33cc';
+      btn.style.color='#fff';
+      btn.style.border='none';
+      btn.style.borderRadius='5px';
+      btn.style.cursor='pointer';
+      btn.onclick = () => {
+        const link = `https://yoursite.com/signup?host=${currentUser.uid}`;
+        navigator.clipboard.writeText(link);
+        showMessageModal("Copied!", "Your unique invite link has been copied to clipboard.", 2000);
       };
-      div.appendChild(btn);
+      card.appendChild(btn);
     }
 
-    hostDashboardEl.appendChild(div);
+    hostDashboardEl.appendChild(card);
   });
 }
 
-// ---------- Shop Rendering ----------
+// ---------- Shop ----------
+function createProductCard(product){
+  if(product.hostOnly && !currentUser?.isHost) return null;
+
+  const card = document.createElement("div");
+  card.className="product-card";
+  card.innerHTML = `
+    <img src="${product.img}" alt="${product.name}">
+    <div class="availability-badge">${product.available>0?product.available+' left':'Sold Out'}</div>
+    <div class="product-info">
+      <h3 class="product-name">${product.name}</h3>
+      <p class="product-cost">Cost: ${product.cost} ⭐</p>
+      <button class="buy-btn">Redeem</button>
+    </div>
+  `;
+
+  const badge = card.querySelector(".availability-badge");
+  const btn = card.querySelector(".buy-btn");
+
+  if(product.available<=0){
+    badge.textContent="Sold Out";
+    badge.style.background="#999";
+  }
+
+  btn.onclick = ()=>{
+    if(!currentUser) return showMessageModal("Oops!","You must be logged in.");
+    if(currentUser.stars<product.cost) return showMessageModal("Oops!","Not enough stars!");
+    if(product.available<=0) return showMessageModal("Sold Out!","This item is no longer available.");
+
+    showConfirmModal(
+      "Confirm Purchase",
+      `Are you sure you want "${product.name}" for ${product.cost} stars?`,
+      async ()=>{
+        try{
+          const userRef = doc(db,"users",currentUser.uid);
+          const productRef = doc(db,"shopItems",product.id.toString());
+          let newStars,newCash,redeemedCash=0;
+
+          await runTransaction(db, async transaction=>{
+            const userSnap = await transaction.get(userRef);
+            const productSnap = await transaction.get(productRef);
+            if(!userSnap.exists()) throw "User not found!";
+            if(!productSnap.exists()) throw "Product not found!";
+            const userData = userSnap.data();
+            const productData = productSnap.data();
+            if(Number(userData.stars)<Number(productData.cost)) throw "Not enough stars!";
+            if(Number(productData.available)<=0) throw "Out of stock!";
+
+            newStars = Number(userData.stars)-Number(productData.cost);
+
+            if(product.name==="Redeem Cash Balance"){
+              redeemedCash = Number(userData.cash||0);
+              newCash=0;
+            } else {
+              newCash = (Number(userData.cash)||0)+(Number(productData.cashReward)||0);
+            }
+
+            transaction.update(userRef,{ stars:newStars, cash:newCash });
+            transaction.update(productRef,{ available:Number(productData.available)-1 });
+
+            const purchaseRef = doc(collection(db,"purchases"));
+            transaction.set(purchaseRef,{
+              userId:currentUser.uid,
+              email:userData.email||"",
+              phone:userData.phone||"",
+              productId:product.id,
+              productName:product.name,
+              cost:Number(productData.cost),
+              cashReward:Number(productData.cashReward)||0,
+              redeemedCash:redeemedCash,
+              timestamp:new Date()
+            });
+          });
+
+          currentUser.stars=newStars;
+          currentUser.cash=newCash;
+          animateNumber(starsEl,Number(starsEl.textContent.replace(/\D/g,'')),newStars,600,' ⭐️');
+          animateNumber(cashEl,Number(cashEl.textContent.replace(/\D/g,'')),newCash,600,'₦');
+          renderShop();
+          triggerConfetti();
+
+          if(redeemedCash>0){
+            showMessageModal("Cash Redeemed!",`You redeemed ₦${formatNumber(redeemedCash)} successfully! 🎉`,3000);
+          } else {
+            showMessageModal("Success!",`"${product.name}" redeemed successfully! 🎉`,2500);
+          }
+
+        } catch(e){
+          console.error("Redemption error:",e);
+          showMessageModal("Error!", "Redemption failed: "+e,2500);
+        }
+      }
+    );
+  };
+
+  return card;
+}
+
 async function renderShop(){
   shopItemsEl.innerHTML='';
   const querySnap = await getDocs(collection(db,'shopItems'));
   querySnap.forEach(docSnap=>{
     const data = docSnap.data();
-    const item = { id:docSnap.id, ...data };
-    const card = document.createElement('div');
-    card.className='product-card';
-    card.innerHTML=`
-      <img src="${item.img||'https://via.placeholder.com/150'}" alt="${item.name}">
-      <div class="product-info">
-        <h3 class="product-name">${item.name}</h3>
-        <p class="product-cost">Cost: ${item.cost} ⭐</p>
-        <button class="buy-btn">Redeem</button>
-      </div>
-    `;
-    const btn = card.querySelector('.buy-btn');
-    btn.onclick = ()=>{
-      if(!currentUser) return showMessageModal('Oops!','You must be logged in.');
-      if(currentUser.stars<item.cost) return showMessageModal('Oops!','Not enough stars!');
-      showConfirmModal('Confirm Purchase',`Get "${item.name}" for ${item.cost} stars?`, async ()=>{
-        try{
-          const userRef = doc(db,'users',currentUser.uid);
-          const productRef = doc(db,'shopItems',item.id);
-          let newStars;
-          await runTransaction(db, async t=>{
-            const userSnap = await t.get(userRef);
-            const prodSnap = await t.get(productRef);
-            if(!userSnap.exists()) throw "User not found!";
-            if(!prodSnap.exists()) throw "Product not found!";
-            const userData = userSnap.data();
-            const prodData = prodSnap.data();
-            if(userData.stars<prodData.cost) throw "Not enough stars!";
-            newStars = Number(userData.stars)-Number(prodData.cost);
-            t.update(userRef,{stars:newStars});
-          });
-          currentUser.stars=newStars;
-          starsEl.textContent=`${formatNumber(newStars)} ⭐️`;
-          showMessageModal('Success!',`You redeemed "${item.name}"!`,2500);
-        }catch(e){ console.error(e); showMessageModal('Error!',e,2500);}
-      });
-    };
-    shopItemsEl.appendChild(card);
+    const item = { id: docSnap.id, ...data };
+    const card = createProductCard(item);
+    if(card) shopItemsEl.appendChild(card);
   });
 }
 </script>
