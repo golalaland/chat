@@ -723,16 +723,17 @@
   }
 
   // ---------- Tabs logic ----------
-  // ---------- Tabs logic ----------
+// ---------- Tabs logic ----------
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
   if (!btn) return;
 
-  // remove active class from all buttons
+  // reset active state
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const type = btn.getAttribute('data-tab');
+  tabContentEl.innerHTML = ''; // clear first
 
   if (type === 'vip') {
     tabContentEl.innerHTML = `
@@ -740,23 +741,17 @@ document.addEventListener('click', (ev) => {
         <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
         <div class="stat-label">VIPs Signed Up</div>
       </div>
-      <div class="vip-link-block">
-        <input type="text" readonly id="vipLinkInput" value="${currentUser?.vipLink || ''}" />
-        <button id="copyVipLinkBtn" class="theme-btn">Copy Link</button>
-      </div>
+      <button class="copy-btn" id="copyVipLinkBtn">Copy VIP Link</button>
     `;
 
     const copyBtn = document.getElementById('copyVipLinkBtn');
-    const vipInput = document.getElementById('vipLinkInput');
-
-    copyBtn?.addEventListener('click', () => {
-      if (!vipInput) return;
-      vipInput.select();
-      vipInput.setSelectionRange(0, 99999); // for mobile
-      navigator.clipboard.writeText(vipInput.value)
-        .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard'))
-        .catch(() => showMessageModal('Error', 'Failed to copy link'));
-    });
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(currentUser?.vipLink || '')
+          .then(() => showMessageModal('Copied', 'VIP link copied to clipboard!', 1800))
+          .catch(err => console.error('Copy failed', err));
+      };
+    }
 
   } else if (type === 'friends') {
     tabContentEl.innerHTML = `
@@ -765,7 +760,8 @@ document.addEventListener('click', (ev) => {
         <div class="stat-label">Friends Hosts</div>
       </div>
     `;
-  } else { // badges
+
+  } else if (type === 'badge') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
         <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
