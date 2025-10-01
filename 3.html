@@ -573,53 +573,41 @@
 
   // ---------- Host Panels ----------
 function updateHostPanels(tab='vip'){
-  if(!currentUser || !currentUser.isHost) return;
+  if(!currentUser || !currentUser.isHost){
+    hostTabsEl.style.display='none';
+    return;
+  }
+  hostTabsEl.style.display='';
 
-  tab = tab || 'vip';
+  const vipCount = Number(currentUser.hostVIP) || 0;
+  const friendsCount = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends.length : 0;
+  const badgesCount = Array.isArray(currentUser.hostBadges) ? currentUser.hostBadges.length : 0;
 
-  if(tab === 'vip'){
-    const vipCount = Number(currentUser.hostVIP) || 0;
-    tabContentEl.innerHTML = `
+  let content = '';
+  if(tab==='vip'){
+    content = `
       <div class="stat-block">
-        <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+        <div class="stat-value">${formatNumber(vipCount)}</div>
         <div class="stat-label">VIPs Signed Up</div>
         <button id="copyInviteBtn" class="copy-link-btn">Copy Invite Link</button>
-      </div>
-    `;
-    attachInviteHandler();
+      </div>`;
+  } else if(tab==='friends'){
+    content = `
+      <div class="stat-block">
+        <div class="stat-value">${formatNumber(friendsCount)}</div>
+        <div class="stat-label">Friends Invited</div>
+      </div>`;
+  } else if(tab==='badges'){
+    content = `
+      <div class="stat-block">
+        <div class="stat-value">${formatNumber(badgesCount)}</div>
+        <div class="stat-label">Badges Collected</div>
+      </div>`;
   }
 
-  else if(tab === 'friends'){
-    const friends = Array.isArray(currentUser.hostFriends) ? currentUser.hostFriends : [];
-    if(friends.length === 0){
-      tabContentEl.innerHTML = `<p>No friends invited yet.</p>`;
-      return;
-    }
-    let html = '';
-    friends.forEach(f => {
-      html += `<div class="stat-block">
-                 <div class="stat-value">${f.name || 'Friend'}</div>
-               </div>`;
-    });
-    tabContentEl.innerHTML = html;
-  }
-
-  else if(tab === 'badges'){
-    const badges = Array.isArray(currentUser.hostBadges) ? currentUser.hostBadges : [];
-    if(badges.length === 0){
-      tabContentEl.innerHTML = `<p>No badges collected yet.</p>`;
-      return;
-    }
-    let html = '';
-    badges.forEach(b => {
-      html += `<div class="stat-block">
-                 <div class="stat-value">${b.name || 'Badge'}</div>
-               </div>`;
-    });
-    tabContentEl.innerHTML = html;
-  }
+  tabContentEl.innerHTML = content;
+  if(tab==='vip') attachInviteHandler();
 }
-
   // ---------- Product Card ----------
   function createProductCard(product){
     const card = document.createElement('div');
@@ -735,12 +723,12 @@ function updateHostPanels(tab='vip'){
   }
 
   // ---------- Tabs ----------
-hostTabsEl.addEventListener('click', (e) => {
+hostTabsEl.addEventListener('click',(e)=>{
+  if(!e.target.dataset.tab) return;
   const tab = e.target.dataset.tab;
-  if (!tab) return;
-  document.querySelectorAll('#hostTabs button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#hostTabs button').forEach(b=>b.classList.remove('active'));
   e.target.classList.add('active');
-  updateHostPanels(tab); // now handles all tabs
+  updateHostPanels(tab);
 });
 
   // ---------- Init ----------
