@@ -723,41 +723,41 @@
   }
 
   // ---------- Tabs logic ----------
-  document.addEventListener('click', (ev) => {
+  // ---------- Tabs logic ----------
+document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
   if (!btn) return;
 
-  // Toggle active class
+  // remove active class from all buttons
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const type = btn.getAttribute('data-tab');
 
-  // VIP tab
   if (type === 'vip') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
         <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
         <div class="stat-label">VIPs Signed Up</div>
-        <button id="copyVIPBtn" class="copy-btn">Copy Link</button>
+      </div>
+      <div class="vip-link-block">
+        <input type="text" readonly id="vipLinkInput" value="${currentUser?.vipLink || ''}" />
+        <button id="copyVipLinkBtn" class="theme-btn">Copy Link</button>
       </div>
     `;
 
-    const copyBtn = document.getElementById('copyVIPBtn');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', () => {
-        const vipLink = currentUser?.vipLink || '';
-        if (!vipLink) {
-          showMessageModal('Oops', 'No VIP link available.');
-          return;
-        }
-        navigator.clipboard.writeText(vipLink)
-          .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard.'))
-          .catch(() => showMessageModal('Error', 'Failed to copy link.'));
-      });
-    }
+    const copyBtn = document.getElementById('copyVipLinkBtn');
+    const vipInput = document.getElementById('vipLinkInput');
 
-  // Friends tab
+    copyBtn?.addEventListener('click', () => {
+      if (!vipInput) return;
+      vipInput.select();
+      vipInput.setSelectionRange(0, 99999); // for mobile
+      navigator.clipboard.writeText(vipInput.value)
+        .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard'))
+        .catch(() => showMessageModal('Error', 'Failed to copy link'));
+    });
+
   } else if (type === 'friends') {
     tabContentEl.innerHTML = `
       <div class="stat-block">
@@ -765,9 +765,7 @@
         <div class="stat-label">Friends Hosts</div>
       </div>
     `;
-
-  // Badge tab
-  } else {
+  } else { // badges
     tabContentEl.innerHTML = `
       <div class="stat-block">
         <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
