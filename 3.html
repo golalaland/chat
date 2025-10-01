@@ -25,6 +25,9 @@
       border-bottom: 2px solid #222;
     }
 
+#tab-content {
+  display: none; /* hide by default */
+}
     /* ---------- PROFILE CARD ---------- */
     #user-info {
       display: flex;
@@ -575,15 +578,14 @@ async function loadCurrentUser() {
   cashEl.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
 
   // show/hide host tabs & panel
-  if (currentUser.isHost) {
-    hostTabsEl.style.display = '';
-    tabContentEl.style.display = '';
-    updateHostPanels();
-  } else {
-    hostTabsEl.style.display = 'none';
-    tabContentEl.style.display = 'none';
-  }
-
+if (currentUser.isHost) {
+  hostTabsEl.style.display = '';       // show tabs
+  tabContentEl.style.display = '';     // show the stats panel
+  updateHostPanels();                  // fill in the numbers
+} else {
+  hostTabsEl.style.display = 'none';   // hide tabs
+  tabContentEl.style.display = 'none'; // hide panel
+}
   // Live updates
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data();
