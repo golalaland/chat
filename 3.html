@@ -371,15 +371,80 @@
   </div>
 </div>
 
-<!-- HOST TABS (hidden by default, only for hosts) -->
+<!-- HOST TABS (only for hosts) -->
 <div class="host-tabs" id="hostTabs" style="display:none;">
   <button class="tab-btn active" data-tab="vip">VIP</button>
   <button class="tab-btn" data-tab="friends">Friends</button>
   <button class="tab-btn" data-tab="badges">Badges</button>
 </div>
 
-<!-- HOST PANEL (populated dynamically by JS, hidden by default) -->
+<!-- HOST PANEL -->
 <div id="tab-content" class="tab-content" style="display:none;"></div>
+
+<script>
+function updateHostPanels() {
+  if (!currentUser?.isHost) return;
+
+  const tabContentEl = document.getElementById('tab-content');
+  const tabs = document.querySelectorAll('.tab-btn');
+
+  function renderTab(type) {
+    tabContentEl.innerHTML = ''; // clear previous content
+
+    if (type === 'vip') {
+      tabContentEl.innerHTML = `
+        <div class="stat-block">
+          <div class="stat-value">${formatNumber(currentUser?.hostVIP || 0)}</div>
+          <div class="stat-label">VIPs Signed Up</div>
+          <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
+        </div>
+      `;
+      const copyBtn = document.getElementById('copyVipLink');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          const vipLink = `https://yourapp.com/ref/${currentUser?.uid || ''}`;
+          navigator.clipboard.writeText(vipLink).then(() => {
+            showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500);
+          });
+        });
+      }
+    } else if (type === 'friends') {
+      tabContentEl.innerHTML = `
+        <div class="stat-block">
+          <div class="stat-value">${formatNumber((currentUser?.hostFriends || []).length)}</div>
+          <div class="stat-label">Friends Invited</div>
+        </div>
+      `;
+    } else if (type === 'badges') {
+      const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/100';
+      tabContentEl.innerHTML = `
+        <div class="stat-block">
+          <img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;">
+          <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
+          <div class="stat-label">Badge Status</div>
+        </div>
+      `;
+    }
+  }
+
+  // default tab
+  renderTab('vip');
+
+  // tab click handlers
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (!currentUser?.isHost) return; // safeguard
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderTab(tab.dataset.tab);
+    });
+  });
+
+  // show container
+  document.getElementById('hostTabs').style.display = '';
+  tabContentEl.style.display = '';
+}
+</script>
 
   <!-- SHOP GRID -->
   <div class="shop-grid" id="shop-items">
@@ -737,7 +802,6 @@ if (currentUser.isHost) {
     }
   }
 
-  // ---------- Tabs logic ----------
 // ---------- Tabs logic ----------
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
