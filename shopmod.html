@@ -262,13 +262,12 @@ header {
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
 
 <script type="module">
-// ---------- Firebase ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
   getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ---------- Firebase config ----------
+// ---------- Firebase ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -277,11 +276,10 @@ const firebaseConfig = {
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- DOM references ----------
+// ---------- DOM Refs ----------
 const usernameEl = document.getElementById('username');
 const starsEl = document.getElementById('stars-count');
 const cashEl = document.getElementById('cash-count');
@@ -289,15 +287,15 @@ const hostDashboardEl = document.getElementById('host-dashboard');
 const shopItemsEl = document.getElementById('shop-items');
 
 // ---------- Utilities ----------
-function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n); }
-function animateNumber(el, from, to, duration = 600) {
+function formatNumber(n) { return new Intl.NumberFormat('en-NG').format(n); }
+function randomColor() { return '#' + Math.floor(Math.random()*16777215).toString(16); }
+function animateNumber(el, from, to, duration = 600){
   const start = performance.now();
-  function step(timestamp) {
-    const progress = Math.min((timestamp - start) / duration, 1);
-    const value = Math.floor(from + (to - from) * progress);
-    if(el === starsEl) el.textContent = `${formatNumber(value)} ⭐️`;
-    else if(el === cashEl) el.textContent = `₦${formatNumber(value)}`;
-    if(progress < 1) requestAnimationFrame(step);
+  function step(timestamp){
+    const progress = Math.min((timestamp-start)/duration,1);
+    const value = Math.floor(from + (to-from)*progress);
+    el.textContent = value;
+    if(progress<1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 }
@@ -305,20 +303,23 @@ function animateNumber(el, from, to, duration = 600) {
 // ---------- Modals ----------
 const confirmModal = document.createElement("div");
 confirmModal.id = "confirmModal";
-confirmModal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:1000;";
+confirmModal.style.cssText = `
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:1000;
+`;
 confirmModal.innerHTML = `
-  <div style="background:#fff;padding:1rem 2rem;border-radius:10px;min-width:280px;text-align:center;">
+  <div style="background:#fff; padding:1rem 2rem; border-radius:8px; text-align:center; max-width:300px;">
     <h3 id="confirmTitle"></h3>
     <p id="confirmText"></p>
     <div style="margin-top:1rem;">
-      <button id="confirmYes" style="margin-right:0.5rem;padding:0.5rem 1rem;">Yes</button>
-      <button id="confirmNo" style="padding:0.5rem 1rem;">Cancel</button>
+      <button id="confirmYes">Yes</button>
+      <button id="confirmNo">Cancel</button>
     </div>
   </div>
 `;
 document.body.appendChild(confirmModal);
 
-function showConfirmModal(title, text, onYes) {
+function showConfirmModal(title, text, onYes){
   document.getElementById("confirmTitle").innerText = title;
   document.getElementById("confirmText").innerText = text;
   confirmModal.style.display = "flex";
@@ -332,10 +333,10 @@ function showConfirmModal(title, text, onYes) {
 function showMessageModal(title, text, duration=2000){
   document.getElementById("confirmTitle").innerText = title;
   document.getElementById("confirmText").innerText = text;
-  document.getElementById("confirmYes").style.display = "none";
-  document.getElementById("confirmNo").style.display = "none";
+  document.getElementById("confirmYes").style.display="none";
+  document.getElementById("confirmNo").style.display="none";
   confirmModal.style.display="flex";
-  setTimeout(()=>{
+  setTimeout(() => {
     confirmModal.style.display="none";
     document.getElementById("confirmYes").style.display="inline-block";
     document.getElementById("confirmNo").style.display="inline-block";
@@ -344,72 +345,95 @@ function showMessageModal(title, text, duration=2000){
 
 // ---------- Current User ----------
 let currentUser = null;
-async function loadCurrentUser() {
+async function loadCurrentUser(){
   const vipSession = JSON.parse(localStorage.getItem('vipUser'));
   if(!vipSession?.email) return;
   const uid = vipSession.email.replace(/[.#$[\]]/g, ',');
-  const userRef = doc(db, 'users', uid);
+  const userRef = doc(db,'users',uid);
   const snap = await getDoc(userRef);
   if(!snap.exists()) return;
-
   currentUser = { uid, ...snap.data() };
-  updateProfileUI();
+  usernameEl.textContent = currentUser.chatId || 'Guest';
+  starsEl.textContent = `${formatNumber(currentUser.stars||0)} ⭐️`;
+  cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
 
-  onSnapshot(userRef, docSnap => {
+  renderHostDashboard();
+  renderShop();
+
+  onSnapshot(userRef, docSnap=>{
     const data = docSnap.data();
     if(!data) return;
     currentUser.stars = Number(data.stars||0);
     currentUser.cash = Number(data.cash||0);
-    currentUser.isHost = data.isHost||false;
-    currentUser.hostBadge = data.hostBadge||'N/A';
-    currentUser.hostFriends = data.hostFriends||[];
-    currentUser.hostVIP = data.hostVIP||0;
+    currentUser.isHost = data.isHost || false;
+    currentUser.hostBadge = data.hostBadge || '';
+    currentUser.hostFriends = data.hostFriends || [];
+    currentUser.hostVIP = data.hostVIP || 0;
 
-    updateProfileUI();
+    starsEl.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    cashEl.textContent = `₦${formatNumber(currentUser.cash)}`;
     renderHostDashboard();
   });
 }
 loadCurrentUser();
 
-function updateProfileUI(){
-  usernameEl.textContent = currentUser.chatId||'Guest';
-  starsEl.textContent = `⭐ ${formatNumber(currentUser.stars||0)}`;
-  cashEl.textContent = `₦${formatNumber(currentUser.cash||0)}`;
-}
-
 // ---------- Host Dashboard ----------
 function renderHostDashboard(){
-  if(!currentUser?.isHost){
-    hostDashboardEl.style.display = 'none';
-    return;
-  }
-  hostDashboardEl.style.display = 'flex';
   hostDashboardEl.innerHTML = '';
+  if(!currentUser?.isHost) { hostDashboardEl.style.display='none'; return; }
+  hostDashboardEl.style.display='flex';
+  hostDashboardEl.style.flexDirection='column';
+  hostDashboardEl.style.gap='1rem';
 
   const cards = [
-    { title:'VIP TAB', count: currentUser.hostVIP||0, icon:'https://via.placeholder.com/18' },
-    { title:'Friends', count: (currentUser.hostFriends||[]).length, icon:'https://via.placeholder.com/18' },
-    { title:'Badges', count: currentUser.hostBadge||'Bronze', icon:'https://via.placeholder.com/18', copyInvite:true }
+    { title:'VIP Tab', count:currentUser.hostVIP || 0, icon:'https://via.placeholder.com/18', showEmoji:false },
+    { title:'Friends', count:(currentUser.hostFriends||[]).length, icon:'https://via.placeholder.com/18', showEmoji:false },
+    { title:'Badges', count:currentUser.hostBadge||'Bronze', icon:'https://via.placeholder.com/18', showEmoji:false, copyInvite:true }
   ];
 
-  cards.forEach(c=>{
-    const card = document.createElement('div');
-    card.className='host-card';
-    card.innerHTML = `
-      <h3><img src="${c.icon}" width="18" style="margin-right:6px;"> ${c.title}</h3>
-      <div class="host-count">${c.count}</div>
-    `;
-    if(c.copyInvite){
+  cards.forEach(card=>{
+    const div = document.createElement('div');
+    div.className='host-card';
+    div.style.background='#111';
+    div.style.color='#fff';
+    div.style.padding='1rem';
+    div.style.borderRadius='10px';
+    div.style.display='flex';
+    div.style.flexDirection='column';
+    div.style.justifyContent='space-between';
+    div.style.minHeight='80px';
+    
+    const h3 = document.createElement('h3');
+    h3.style.display='flex';
+    h3.style.alignItems='center';
+    h3.style.gap='0.5rem';
+    h3.style.color=randomColor();
+    const img = document.createElement('img');
+    img.src = card.icon;
+    img.width = 18;
+    h3.appendChild(img);
+    h3.appendChild(document.createTextNode(card.title));
+    div.appendChild(h3);
+
+    const span = document.createElement('div');
+    span.className='host-count';
+    span.style.fontWeight='bold';
+    span.style.fontSize='1.2rem';
+    span.textContent = card.count + (card.showEmoji ? ' ⭐️':'');
+    div.appendChild(span);
+
+    if(card.copyInvite){
       const btn = document.createElement('button');
-      btn.className='copy-link-btn';
       btn.textContent='Copy Invite Link';
-      btn.onclick = ()=>{
+      btn.className='copy-link-btn';
+      btn.onclick=()=>{
         navigator.clipboard.writeText(`https://yoursite.com/signup?host=${currentUser.uid}`);
-        showMessageModal('Copied!', 'Your invite link has been copied!',2000);
+        showMessageModal('Copied!','Your invite link has been copied.',2000);
       };
-      card.appendChild(btn);
+      div.appendChild(btn);
     }
-    hostDashboardEl.appendChild(card);
+
+    hostDashboardEl.appendChild(div);
   });
 }
 
@@ -419,9 +443,9 @@ async function renderShop(){
   const querySnap = await getDocs(collection(db,'shopItems'));
   querySnap.forEach(docSnap=>{
     const data = docSnap.data();
-    const item = {id: docSnap.id, ...data};
-    const card = document.createElement("div");
-    card.className="product-card";
+    const item = { id:docSnap.id, ...data };
+    const card = document.createElement('div');
+    card.className='product-card';
     card.innerHTML=`
       <img src="${item.img||'https://via.placeholder.com/150'}" alt="${item.name}">
       <div class="product-info">
@@ -430,39 +454,33 @@ async function renderShop(){
         <button class="buy-btn">Redeem</button>
       </div>
     `;
-    const btn = card.querySelector(".buy-btn");
-    btn.onclick=()=>{
-      if(!currentUser) return showMessageModal("Oops!","You must be logged in.");
-      if(currentUser.stars<item.cost) return showMessageModal("Oops!","Not enough stars.");
-      showConfirmModal(
-        "Confirm Purchase",
-        `Get "${item.name}" for ${item.cost} stars?`,
-        async ()=>{
-          try{
-            const userRef = doc(db,"users",currentUser.uid);
-            const productRef = doc(db,"shopItems",item.id);
-            let newStars;
-            await runTransaction(db, async (transaction)=>{
-              const userSnap = await transaction.get(userRef);
-              const productSnap = await transaction.get(productRef);
-              if(!userSnap.exists()) throw "User not found!";
-              if(!productSnap.exists()) throw "Product not found!";
-              if(Number(userSnap.data().stars)<Number(item.cost)) throw "Not enough stars!";
-              newStars = Number(userSnap.data().stars)-Number(item.cost);
-              transaction.update(userRef,{stars:newStars});
-              transaction.update(productRef,{available:(item.available||1)-1});
-            });
-            currentUser.stars=newStars;
-            starsEl.textContent = `⭐ ${formatNumber(newStars)}`;
-            showMessageModal("Success!",`"${item.name}" redeemed! 🎉`,2500);
-          }catch(e){
-            console.error(e);
-            showMessageModal("Error","Purchase failed.",2500);
-          }
-        }
-      );
+    const btn = card.querySelector('.buy-btn');
+    btn.onclick = ()=>{
+      if(!currentUser) return showMessageModal('Oops!','You must be logged in.');
+      if(currentUser.stars<item.cost) return showMessageModal('Oops!','Not enough stars!');
+      showConfirmModal('Confirm Purchase',`Get "${item.name}" for ${item.cost} stars?`, async ()=>{
+        try{
+          const userRef = doc(db,'users',currentUser.uid);
+          const productRef = doc(db,'shopItems',item.id);
+          let newStars;
+          await runTransaction(db, async t=>{
+            const userSnap = await t.get(userRef);
+            const prodSnap = await t.get(productRef);
+            if(!userSnap.exists()) throw "User not found!";
+            if(!prodSnap.exists()) throw "Product not found!";
+            const userData = userSnap.data();
+            const prodData = prodSnap.data();
+            if(userData.stars<prodData.cost) throw "Not enough stars!";
+            newStars = Number(userData.stars)-Number(prodData.cost);
+            t.update(userRef,{stars:newStars});
+          });
+          currentUser.stars=newStars;
+          starsEl.textContent=`${formatNumber(newStars)} ⭐️`;
+          showMessageModal('Success!',`You redeemed "${item.name}"!`,2500);
+        }catch(e){ console.error(e); showMessageModal('Error!',e,2500);}
+      });
     };
     shopItemsEl.appendChild(card);
   });
 }
-renderShop();
+</script>
