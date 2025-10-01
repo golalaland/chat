@@ -3,16 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>乂丨乂丨Redeem</title>
+<title>Redeem & Host Dashboard</title>
 <style>
 :root {
   --bg: #f5f5f5;
   --card-bg: #fff;
   --accent: #ff33cc;
   --text: #000;
+  --host-bg: #111;
+  --host-text: #fff;
   --btn-bg: #ff33cc;
   --btn-text: #fff;
-  --flat-bg: #fffbe6;
 }
 
 body {
@@ -41,7 +42,7 @@ header {
   min-width: 280px;
   margin: 1rem auto;
 }
-.profile-card #username {
+#username {
   font-weight: bold;
   font-size: 1.3rem;
   margin-bottom: 0.8rem;
@@ -65,117 +66,57 @@ header {
   font-weight: bold;
 }
 
-/* Host Dashboard */
-#host-dashboard {
-  display: none; 
-  margin: 1rem 2rem;
+/* Host Cards */
+.host-card {
+  background: var(--host-bg);
+  color: var(--host-text);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  margin: 0.8rem auto;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-.host-card {
-  background: var(--flat-bg);
-  padding: 1rem 1.5rem;
-  border-radius: 10px;
-  display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  font-size: 1.1rem;
 }
-.host-title {
-  background: var(--accent);
-  color: #fff;
-  padding: 0.2rem 0.6rem;
-  border-radius: 6px;
+.host-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.host-card .count {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-top: 0.4rem;
 }
 .copy-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
   border: none;
-  padding: 0.5rem 0.8rem;
-  font-weight: bold;
-  font-size: 0.85rem;
-  border-radius: 5px;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 0.6rem;
+  align-self: center;
   transition: background 0.2s;
 }
 .copy-btn:hover {
   background: #ff66d6;
 }
 
-/* Shop Grid */
+/* Shop Items Grid */
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   padding: 1rem 2rem;
 }
-.product-card {
-  background: var(--card-bg);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
-}
-.product-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-.product-card img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-}
-.product-info {
-  padding: 0.8rem;
-  text-align: center;
-}
-.product-name {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-.product-cost {
-  color: var(--accent);
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-.buy-btn {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: none;
-  padding: 0.6rem;
-  cursor: pointer;
-  font-weight: bold;
-  width: 90%;
-  margin: 0 auto 1rem auto;
-  border-radius: 5px;
-  transition: background 0.2s;
-}
-.buy-btn:hover {
-  background: #ff66d6;
-}
 
-/* Availability Badge */
-.availability-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-weight: bold;
-  font-size: 0.8rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  z-index: 2;
-  text-align: center;
-}
-
-/* Home Button */
+/* Buttons */
 #home-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -213,24 +154,24 @@ header {
   </div>
 </div>
 
-<!-- Host Dashboard -->
-<div id="host-dashboard">
+<!-- Host Dashboard (only if isHost) -->
+<div id="host-dashboard" style="display:none;">
   <div class="host-card">
-    <span class="host-title">VIP TAB 💎</span>
-    <span id="vip-count">0</span>
+    <h3><img src="placeholder-vip.png" alt="" width="18"> VIP TAB 💎</h3>
+    <div class="count" id="vip-count">0</div>
   </div>
   <div class="host-card">
-    <span class="host-title">Friends 🫂</span>
-    <span id="friends-count">0</span>
+    <h3><img src="placeholder-friends.png" alt="" width="18"> Friends 🫂</h3>
+    <div class="count" id="friends-count">0</div>
   </div>
-  <div class="host-card">
-    <span class="host-title">Host Level 🏆</span>
-    <span id="host-level">1</span>
-    <button class="copy-btn" id="copy-invite">Copy Invite</button>
+  <div class="host-card" style="padding-bottom:1rem;">
+    <h3><img src="placeholder-trophy.png" alt="" width="18"> Host Level 🏆</h3>
+    <div class="count" id="host-level">Bronze</div>
+    <button class="copy-btn" id="copy-invite-btn">Copy Invite Link</button>
   </div>
 </div>
 
-<!-- Shop Grid -->
+<!-- Shop Items -->
 <div class="shop-grid" id="shop-items"></div>
 
 <button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
