@@ -572,48 +572,51 @@
   }
 
   // ---------- Host Panels ----------
-async function updateHostPanels(){
-  if(!currentUser || !currentUser.isHost){
-    hostTabsEl.style.display='none';
-    return;
-  }
-  hostTabsEl.style.display='';
+function setupRealtimeHostPanels(){
+  if(!currentUser || !currentUser.isHost) return;
 
+  // ---------- VIP (already working) ----------
   const vipCount = Number(currentUser.hostVIP)||0;
 
-  // VIP tab content (numbers)
-  const vipContent = `
-    <div class="stat-block">
-      <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
-      <div class="stat-label">VIPs Signed Up</div>
-      <button id="copyInviteBtn" class="copy-link-btn">Copy Invite Link</button>
-    </div>
-  `;
-
-  // Friends tab content (list names)
-  let friendsContent = '<div class="stat-block">';
-  try {
-    const usersSnap = await getDocs(collection(db,'users'));
-    const friendsList = [];
-    usersSnap.forEach(docSnap=>{
+  // ---------- Friends Count ----------
+  let friendsListener = onSnapshot(collection(db,'users'), snapshot=>{
+    let friendsCount = 0;
+    snapshot.forEach(docSnap=>{
       const data = docSnap.data();
-      if(data?.hostId === currentUser.uid) friendsList.push(data);
+      if(data?.hostId === currentUser.uid) friendsCount++;
     });
 
-    if(friendsList.length){
-      friendsList.forEach(f => {
-        const name = f.chatId || f.displayName || f.email || 'Unknown';
-        friendsContent += `<div>${name}</div>`;
-      });
-    } else {
-      friendsContent += 'No friends invited yet';
+    if(document.querySelector('#hostTabs button.active').dataset.tab === 'friends'){
+      tabContentEl.innerHTML = `
+        <div class="stat-block">
+          <div class="stat-value" id="friends-stat">${friendsCount}</div>
+          <div class="stat-label">Friends Invited</div>
+        </div>
+      `;
     }
-  } catch(e){
-    friendsContent += 'Error loading friends';
-    console.error(e);
-  }
-  friendsContent += '</div>';
+  });
 
+  // ---------- Badges ----------
+  let badgesListener = onSnapshot(doc(db,'users',currentUser.uid), docSnap=>{
+    const data = docSnap.data();
+    const badges = data?.hostBadges || [];
+    if(document.querySelector('#hostTabs button.active').dataset.tab === 'badges'){
+      const badgesContent = document.createElement('div');
+      badgesContent.className = 'stat-block';
+      if(badges.length){
+        badges.forEach(b=>{
+          const div = document.createElement('div');
+          div.textContent = b; // letters/emoji
+          badgesContent.appendChild(div);
+        });
+      } else {
+        badgesContent.textContent = 'No badges yet';
+      }
+      tabContentEl.innerHTML = '';
+      tabContentEl.appendChild(badgesContent);
+    }
+  });
+}
   // Badges tab content (letters/emoji)
   let badgesContent = '<div class="stat-block">';
   const badges = currentUser.hostBadges || [];
@@ -767,12 +770,14 @@ async function updateHostPanels(){
   }
 
   // ---------- Tabs ----------
-hostTabsEl.addEventListener('click',(e)=>{
-  if(!e.target.dataset.tab) return;
-  const tab = e.target.dataset.tab;
-  document.querySelectorAll('#hostTabs button').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  updateHostPanels(tab);
+hostTabsEl.querySelectorAll('button').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('#hostTabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tabName = btn.dataset.tab;
+    if(tabName==='vip') updateHostPanels(); // VIP numbers
+    // Friends and Badges auto-updated by listeners
+  }
 });
 
   // ---------- Init ----------
