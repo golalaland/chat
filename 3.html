@@ -749,9 +749,13 @@ async function loadCurrentUser() {
   }
 
   // ---------- Tabs logic ----------
+// ---------- Tabs logic ----------
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('.tab-btn');
   if (!btn) return;
+
+  // Prevent non-hosts from interacting with tabs
+  if (!currentUser?.isHost) return;
 
   // mark active tab
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -769,7 +773,6 @@ document.addEventListener('click', (ev) => {
       </div>
     `;
 
-    // Copy link button functionality
     const copyBtn = document.getElementById('copyVipLink');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
@@ -799,7 +802,6 @@ document.addEventListener('click', (ev) => {
       </div>
     `;
   } else {
-    // fallback
     tabContentEl.innerHTML = `<div class="stat-block">No data available</div>`;
   }
 });
