@@ -693,6 +693,7 @@
     if (!currentUser?.isHost) {
       tabContentEl.innerHTML = `<div style="padding:1rem;color:#aaa;">VIP stats are for hosts only.</div>`;
       return;
+  }
  // Set the inner HTML of the tab content
   tabContentEl.innerHTML = `
     <div class="stat-block">
