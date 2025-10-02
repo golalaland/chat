@@ -1,651 +1,249 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Admin Dashboard — NNAMDI</title>
-<style>
-:root{
-  --bg:#f5f6f8; --panel:#fff; --accent:#ff33cc; --muted:#6b7280; --text:#0f1720;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
-.sidebar{width:220px;background:#0b1220;color:#fff;display:flex;flex-direction:column;padding:14px;gap:8px}
-.sidebar h2{margin:0 0 6px 0;font-size:16px;text-align:center}
-.sidebar button{background:none;border:none;color:#cbd5e1;padding:10px;border-radius:8px;text-align:left;cursor:pointer}
-.sidebar button.active, .sidebar button:hover{background:var(--accent);color:#fff}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:64px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #e6e9ee}
-.topbar .left{display:flex;align-items:center;gap:12px}
-.brand{font-weight:700}
-.admin-info{display:flex;gap:12px;align-items:center;font-size:14px}
-.content{display:flex;flex:1;overflow:auto;padding:18px;gap:18px}
-.col{flex:1;min-width:420px;max-width:1200px;overflow:auto}
-.card{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(8,12,20,0.06);margin-bottom:12px}
-h3{margin:0 0 8px 0}
-input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e3e7ee;margin:6px 0;font-size:14px}
-.table{width:100%;border-collapse:collapse}
-.table th,.table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px;vertical-align:middle}
-.btn{background:var(--accent);color:#fff;border:none;padding:7px 10px;border-radius:8px;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--muted);border:1px solid #eef2f6}
-.controls{display:flex;gap:8px;flex-wrap:wrap}
-.small{font-size:13px;color:var(--muted)}
-.log-list, .claims-list{max-height:360px;overflow:auto;padding:0;margin:0;list-style:none}
-.actions-wrap{display:flex;gap:6px;flex-wrap:wrap}
-.footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
-.badge{background:#eef2f6;color:#111;padding:4px 6px;border-radius:6px;font-size:12px}
-</style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      height: 100vh;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #222;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar h2 { margin-bottom: 20px; }
+    .sidebar button {
+      margin: 5px 0;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      transition: background .2s;
+    }
+    .sidebar button:hover { background: #444; }
+
+    /* Content */
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: left;
+    }
+    th { background: #222; }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.7);
+      display:none;
+      align-items:center; justify-content:center;
+      z-index:1000;
+    }
+    .modal-content {
+      background:#111;
+      padding:20px;
+      border-radius:8px;
+      width:350px;
+      max-width:90%;
+      text-align:center;
+      color:#fff;
+    }
+    .modal-actions { margin-top:20px; display:flex; justify-content:space-between; }
+    .btn-secondary { background:#444; padding:8px 14px; border:none; border-radius:4px; color:#fff; cursor:pointer; }
+    .btn-danger { background:#d33; padding:8px 14px; border:none; border-radius:4px; color:#fff; cursor:pointer; }
+    .btn { padding:6px 10px; margin:2px; border:none; border-radius:4px; cursor:pointer; }
+    .btn-action { background:#333; color:#fff; }
+  </style>
 </head>
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar">
-  <h2>ADMIN</h2>
-  <button data-view="rooms" class="active" onclick="navigate(event)">Rooms</button>
-  <button data-view="users" onclick="navigate(event)">Users</button>
-  <button data-view="shop" onclick="navigate(event)">Shop</button>
-  <button data-view="claims" onclick="navigate(event)">Claims</button>
-  <button data-view="logs" onclick="navigate(event)">Logs</button>
-  <div style="flex:1"></div>
-  <button data-view="meta" onclick="navigate(event)">Admin Profile</button>
-</div>
-
-<div class="main">
-  <div class="topbar">
-    <div class="left">
-      <div class="brand">🎛️ Admin Dashboard</div>
-      <div class="small">PC layout — realtime</div>
-    </div>
-    <div class="admin-info">
-      <div id="adminDisplay" class="small">Not signed (admin)</div>
-      <div id="adminBalances" class="small badge">⭐ 0 — ₦0</div>
-      <button class="btn" onclick="refreshAll()">Refresh</button>
-    </div>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin</h2>
+    <button onclick="showSection('users')">Users</button>
+    <button onclick="showSection('rooms')">Rooms</button>
+    <button onclick="showSection('shop')">Shop</button>
+    <button onclick="showSection('purchases')">Purchases</button>
+    <button onclick="showSection('claims')">Claims</button>
   </div>
 
+  <!-- Main Content -->
   <div class="content">
-    <!-- ROOMS -->
-    <div id="view-rooms" class="col">
-      <div class="card">
-        <h3>Rooms</h3>
-        <div style="display:flex;gap:8px;">
-          <select id="roomSelect"></select>
-          <button class="btn" id="btnToggleMute">Toggle Mute</button>
-          <button class="btn" id="btnToggleSlow">Toggle SlowChat</button>
-          <button class="btn ghost" id="btnResetRoom">Reset</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Room Stats</h3>
-        <div class="small">Selected: <span id="roomName">—</span></div>
-        <div style="display:flex;gap:12px;margin-top:8px">
-          <div class="small">Users: <span id="roomUserCount">0</span></div>
-          <div class="small">Hosts: <span id="roomHostCount">0</span></div>
-          <div class="small">Banned: <span id="roomBannedCount">0</span></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Broadcast</h3>
-        <textarea id="broadcastText" rows="3" placeholder="Message to all users in selected room"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="sendBroadcastBtn">Send</button><button class="btn ghost" id="previewBroadcastBtn">Preview</button></div>
-      </div>
-    </div>
 
     <!-- USERS -->
-    <div id="view-users" class="col" style="display:none">
-      <div class="card">
-        <h3>Users</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="userSearch" placeholder="Search email / name / id">
-          <select id="userFilter"><option value="all">All</option><option value="hosts">Hosts</option><option value="vip">VIP</option><option value="banned">Banned</option><option value="kicked">Kicked</option><option value="timedout">Timed out</option></select>
-          <button class="btn" id="userSearchBtn">Search</button>
-        </div>
+    <section id="users" class="section active">
+      <h2>Users</h2>
+      <label><input type="checkbox" id="vipFilter"> Show only VIPs</label>
+      <table id="usersTable">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Username</th>
+            <th>Phone</th>
+            <th>Invited By</th>
+            <th>Stars</th>
+            <th>Cash</th>
+            <th>VIP</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-        <table class="table">
-          <thead><tr><th>User</th><th>Host</th><th>Stars</th><th>Cash</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="userList"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3>Quick Gift / Timeout</h3>
-        <div style="display:flex;gap:8px">
-          <input id="selectedUserId" placeholder="User id (click a user to auto-fill)">
-          <input id="giftStars" type="number" placeholder="Stars">
-          <input id="giftCash" type="number" placeholder="Cash">
-          <button class="btn" id="quickGiftBtn">Give</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <input id="timeoutSec" type="number" placeholder="Timeout seconds">
-          <button class="btn" id="quickTimeoutBtn">Timeout</button>
-          <button class="btn ghost" id="quickClearTimeoutBtn">Clear Timeout</button>
-        </div>
-      </div>
-    </div>
+    <!-- ROOMS -->
+    <section id="rooms" class="section">
+      <h2>Rooms</h2>
+      <p>Here we’ll show active chatrooms, timeout users, and number of online users.</p>
+    </section>
 
     <!-- SHOP -->
-    <div id="view-shop" class="col" style="display:none">
-      <div class="card">
-        <h3>Shop Items</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="shopSearch" placeholder="Search items">
-          <select id="shopViewMode"><option value="admin">Admin</option><option value="host">Host</option><option value="user">User</option></select>
-          <button class="btn" id="shopRefreshBtn">Refresh</button>
-        </div>
-        <table class="table">
-          <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>HostOnly</th><th>Actions</th></tr></thead>
-          <tbody id="shopList"></tbody>
-        </table>
-      </div>
+    <section id="shop" class="section">
+      <h2>Shop</h2>
+      <p>Manage shop items here.</p>
+    </section>
 
-      <div class="card">
-        <h3>Add / Edit Product</h3>
-        <input id="productName" placeholder="Name">
-        <input id="productImg" placeholder="Image URL (optional)">
-        <input id="productCost" type="number" placeholder="Cost (stars)">
-        <input id="productCash" type="number" placeholder="Cash reward (₦)">
-        <input id="productStock" type="number" placeholder="Stock">
-        <label><input id="productHostOnly" type="checkbox"> Host only</label>
-        <div style="margin-top:8px"><button class="btn" id="saveProductBtn">Save</button><button class="btn ghost" id="clearProductBtn">Clear</button></div>
-      </div>
-    </div>
+    <!-- PURCHASES -->
+    <section id="purchases" class="section">
+      <h2>Purchases</h2>
+      <p>Comprehensive spreadsheet-style purchases log.</p>
+    </section>
 
     <!-- CLAIMS -->
-    <div id="view-claims" class="col" style="display:none">
-      <div class="card">
-        <h3>Claims / Purchases</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="claimSearch" placeholder="Search by user / product / id">
-          <button class="btn" id="claimsRefreshBtn">Refresh</button>
-        </div>
-        <ul class="claims-list" id="claimsList"></ul>
-      </div>
-    </div>
-
-    <!-- LOGS -->
-    <div id="view-logs" class="col" style="display:none">
-      <div class="card">
-        <h3>Action Logs</h3>
-        <button class="btn" id="logsRefreshBtn">Refresh</button>
-        <ul class="log-list" id="logList"></ul>
-      </div>
-    </div>
-
-    <!-- META -->
-    <div id="view-meta" class="col" style="display:none">
-      <div class="card">
-        <h3>Admin Profile</h3>
-        <input id="adminName" placeholder="Admin display name (chatId)">
-        <input id="adminEmail" placeholder="Admin email">
-        <input id="adminStars" type="number" placeholder="Stars">
-        <input id="adminCash" type="number" placeholder="Cash">
-        <div style="margin-top:8px"><button class="btn" id="saveAdminBtn">Save</button><button class="btn ghost" id="loadAdminBtn">Load</button></div>
-      </div>
-    </div>
+    <section id="claims" class="section">
+      <h2>Claims</h2>
+      <p>Manage and refund claims here.</p>
+    </section>
 
   </div>
 
-  <div class="footer">Built for NNAMDI — replace anything you want. Secure Firestore rules before production.</div>
-</div>
+  <!-- Modal -->
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <h3 id="modalTitle"></h3>
+      <p id="modalMessage"></p>
+      <div class="modal-actions">
+        <button id="modalCancel" class="btn-secondary">Cancel</button>
+        <button id="modalConfirm" class="btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
 
-<!-- Firebase + JS -->
-<script type="module">
-/* FIREBASE v10 imports */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc,
-  onSnapshot, serverTimestamp, increment
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-/* ---------- FIREBASE CONFIG (your config) ---------- */
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js"></script>
+  <script>
+    // TODO: replace with your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
 };
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-/* ---------- DOM refs ---------- */
-const roomSelect = document.getElementById('roomSelect');
-const roomNameEl = document.getElementById('roomName');
-const roomUserCount = document.getElementById('roomUserCount');
-const roomHostCount = document.getElementById('roomHostCount');
-const roomBannedCount = document.getElementById('roomBannedCount');
-const sendBroadcastBtn = document.getElementById('sendBroadcastBtn');
-const broadcastText = document.getElementById('broadcastText');
-
-const userList = document.getElementById('userList');
-const userSearch = document.getElementById('userSearch');
-const userFilter = document.getElementById('userFilter');
-const selectedUserId = document.getElementById('selectedUserId');
-const giftStars = document.getElementById('giftStars');
-const giftCash = document.getElementById('giftCash');
-const timeoutSec = document.getElementById('timeoutSec');
-const userSearchBtn = document.getElementById('userSearchBtn');
-const quickGiftBtn = document.getElementById('quickGiftBtn');
-const quickTimeoutBtn = document.getElementById('quickTimeoutBtn');
-const quickClearTimeoutBtn = document.getElementById('quickClearTimeoutBtn');
-
-const shopList = document.getElementById('shopList');
-const shopViewMode = document.getElementById('shopViewMode');
-const shopSearch = document.getElementById('shopSearch');
-const shopRefreshBtn = document.getElementById('shopRefreshBtn');
-const saveProductBtn = document.getElementById('saveProductBtn');
-const clearProductBtn = document.getElementById('clearProductBtn');
-
-const claimsList = document.getElementById('claimsList');
-const claimsRefreshBtn = document.getElementById('claimsRefreshBtn');
-
-const logList = document.getElementById('logList');
-const logsRefreshBtn = document.getElementById('logsRefreshBtn');
-
-const adminDisplay = document.getElementById('adminDisplay');
-const adminBalances = document.getElementById('adminBalances');
-const adminName = document.getElementById('adminName');
-const adminEmail = document.getElementById('adminEmail');
-const adminStars = document.getElementById('adminStars');
-const adminCash = document.getElementById('adminCash');
-const saveAdminBtn = document.getElementById('saveAdminBtn');
-const loadAdminBtn = document.getElementById('loadAdminBtn');
-
-/* ---------- State ---------- */
-const chatCollections = ["messages","messages_room","messages_room2","messages_room4","messages_room5"];
-let currentRoomId = null;
-let usersUnsub = null, shopUnsub = null, purchasesUnsub = null, logsUnsub = null;
-let editingProductId = null;
-
-/* ---------- Navigation helper ---------- */
-function navigate(e){
-  const view = e.currentTarget?.dataset?.view || e;
-  document.querySelectorAll('.col').forEach(c=>c.style.display='none');
-  document.getElementById('view-' + view).style.display = 'block';
-  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
-  const btn = [...document.querySelectorAll('.sidebar button')].find(b=>b.dataset.view===view);
-  if(btn) btn.classList.add('active');
-}
-window.navigate = navigate;
-
-/* ---------- Logging ---------- */
-async function logAction(type, detail = {}){
-  try { await addDoc(collection(db,'logs'), { type, detail, createdAt: serverTimestamp() }); } catch(e){ console.warn('log failed',e); }
-}
-window.logAction = logAction;
-
-/* ---------- Rooms ---------- */
-async function loadRooms(){
-  roomSelect.innerHTML = '';
-  chatCollections.forEach(id=>{
-    const opt = document.createElement('option');
-    opt.value = id; opt.textContent = id;
-    roomSelect.appendChild(opt);
-  });
-  if(roomSelect.options.length){
-    currentRoomId = roomSelect.value = roomSelect.options[0].value;
-    await refreshRoomStats();
-  }
-}
-roomSelect.addEventListener('change', async ()=>{
-  currentRoomId = roomSelect.value;
-  await refreshRoomStats();
-});
-
-/* ---------- Refresh Room Stats (simple cross-users stat) ---------- */
-async function refreshRoomStats(){
-  const snap = await getDocs(collection(db,'users'));
-  let total=0, hosts=0, banned=0;
-  snap.forEach(d=>{
-    total++;
-    const u = d.data();
-    if(u.isHost) hosts++;
-    if(u.banned) banned++;
-  });
-  roomUserCount.textContent = total;
-  roomHostCount.textContent = hosts;
-  roomBannedCount.textContent = banned;
-  roomNameEl.textContent = currentRoomId || '—';
-}
-
-/* ---------- Users (realtime) ---------- */
-function startUsersListener(){
-  if(usersUnsub) usersUnsub();
-  usersUnsub = onSnapshot(collection(db,'users'), snap => {
-    renderUsersSnapshot(snap.docs);
-    refreshRoomStats();
-  });
-}
-function renderUsersSnapshot(docs){
-  userList.innerHTML = '';
-  const filter = userFilter.value;
-  const qstr = (userSearch.value||'').toLowerCase();
-  docs.forEach(docSnap=>{
-    const u = { id: docSnap.id, ...docSnap.data() };
-    // filters
-    if(filter==='hosts' && !u.isHost) return;
-    if(filter==='vip' && !u.isVIP) return;
-    if(filter==='banned' && !u.banned) return;
-    if(filter==='kicked' && !u.kicked) return;
-    if(filter==='timedout' && !(u.timeoutUntil && u.timeoutUntil > Date.now())) return;
-    if(qstr){
-      const s = `${u.email||''} ${u.chatId||''} ${u.id}`.toLowerCase();
-      if(!s.includes(qstr)) return;
+    // Section navigation
+    function showSection(id) {
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
     }
-    const status = [];
-    if(u.banned) status.push('banned');
-    if(u.kicked) status.push('kicked');
-    if(u.timeoutUntil && u.timeoutUntil > Date.now()) status.push('timeout');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="max-width:220px">${u.chatId || u.email || u.id}<br><span class="small">${u.email || u.id}</span></td>
-      <td>${u.isHost? '✅' : '—'}</td>
-      <td>${u.stars||0}</td>
-      <td>₦${u.cash||0}</td>
-      <td>${status.join(', ') || 'ok'}</td>
-      <td>
-        <div class="actions-wrap">
-          <button class="btn" onclick="toggleHost('${u.id}', ${!u.isHost})">${u.isHost? 'Demote' : 'Promote'}</button>
-          <button class="btn" onclick="kickUser('${u.id}')">Kick</button>
-          <button class="btn" onclick="banUser('${u.id}')">Ban</button>
-          <button class="btn" onclick="viewClaimsForUser('${u.id}')">Claims</button>
-          <button class="btn ghost" onclick="selectUser('${u.id}')">Select</button>
-        </div>
-      </td>
-    `;
-    userList.appendChild(tr);
-  });
-}
-window.startUsersListener = startUsersListener;
 
-/* ---------- User actions ---------- */
-window.selectUser = (id) => { selectedUserId.value = id; };
-window.toggleHost = async (uid, setTo) => {
-  await updateDoc(doc(db,'users',uid), { isHost: setTo }).catch(async ()=> setDoc(doc(db,'users',uid), { isHost:setTo }, { merge:true }));
-  await logAction('toggle_host',{uid,setTo});
-  startUsersListener();
-};
-window.kickUser = async (uid) => {
-  await updateDoc(doc(db,'users',uid), { kicked:true }).catch(async ()=> setDoc(doc(db,'users',uid), { kicked:true }, { merge:true }));
-  await logAction('kick',{uid});
-  startUsersListener();
-};
-window.banUser = async (uid) => {
-  await updateDoc(doc(db,'users',uid), { banned:true }).catch(async ()=> setDoc(doc(db,'users',uid), { banned:true }, { merge:true }));
-  await logAction('ban',{uid});
-  startUsersListener();
-};
+    // Modal handler
+    function showModal(title, message, onConfirm) {
+      const modal = document.getElementById("adminModal");
+      document.getElementById("modalTitle").innerText = title;
+      document.getElementById("modalMessage").innerText = message;
+      modal.style.display = "flex";
 
-/* ---------- Gift & Timeout (quick controls) ---------- */
-window.giftToUser = async () => {
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select user id');
-  const s = Number(giftStars.value) || 0;
-  const c = Number(giftCash.value) || 0;
-  const ref = doc(db,'users',uid);
-  const updates = {};
-  if(s) updates.stars = increment(s);
-  if(c) updates.cash = increment(c);
-  if(Object.keys(updates).length === 0) return alert('Enter amount to gift');
-  await updateDoc(ref, updates).catch(async ()=> setDoc(ref, updates, { merge:true }));
-  await logAction('gift',{uid,stars:s,cash:c});
-  alert('Gift sent');
-};
-
-window.timeoutUser = async () => {
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select user id');
-  const s = Number(timeoutSec.value) || 60;
-  const until = Date.now() + s*1000;
-  await updateDoc(doc(db,'users',uid), { timeoutUntil: until }).catch(async ()=> setDoc(doc(db,'users',uid), { timeoutUntil: until }, { merge:true }));
-  await logAction('timeout',{uid,seconds:s});
-  alert(`User timed out for ${s} seconds`);
-};
-
-window.clearTimeoutUser = async () => {
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select user id');
-  await updateDoc(doc(db,'users',uid), { timeoutUntil: 0 }).catch(async ()=> setDoc(doc(db,'users',uid), { timeoutUntil: 0 }, { merge:true }));
-  await logAction('clear_timeout',{uid});
-  alert('Timeout cleared');
-};
-
-/* wire quick UI buttons */
-userSearchBtn?.addEventListener('click', ()=> startUsersListener());
-quickGiftBtn?.addEventListener('click', () => window.giftToUser());
-quickTimeoutBtn?.addEventListener('click', () => window.timeoutUser());
-quickClearTimeoutBtn?.addEventListener('click', () => window.clearTimeoutUser());
-
-/* ---------- Shop (realtime) ---------- */
-function startShopListener(){
-  if(shopUnsub) shopUnsub();
-  shopUnsub = onSnapshot(collection(db,'shopItems'), snap => {
-    shopList.innerHTML = '';
-    const mode = shopViewMode.value;
-    const qstr = (shopSearch.value||'').toLowerCase();
-    snap.forEach(d=>{
-      const p = { id: d.id, ...d.data() };
-      if(qstr && !(p.name||'').toLowerCase().includes(qstr)) return;
-      if(mode==='user' && p.hostOnly) return;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${p.name}</td>
-        <td>${p.cost||0} ⭐</td>
-        <td>₦${p.cashReward||0}</td>
-        <td>${p.available||0}</td>
-        <td>${p.hostOnly? '✅' : '—'}</td>
-        <td>
-          <div class="actions-wrap">
-            <button class="btn" onclick="editProduct('${p.id}')">Edit</button>
-            <button class="btn" onclick="deleteProduct('${p.id}')">Delete</button>
-          </div>
-        </td>
-      `;
-      shopList.appendChild(tr);
-    });
-  });
-}
-window.startShopListener = startShopListener;
-
-window.editProduct = async (id) => {
-  editingProductId = id;
-  const snap = await getDoc(doc(db,'shopItems',id));
-  const p = snap.data() || {};
-  document.getElementById('productName').value = p.name || '';
-  document.getElementById('productImg').value = p.img || '';
-  document.getElementById('productCost').value = p.cost || 0;
-  document.getElementById('productCash').value = p.cashReward || 0;
-  document.getElementById('productStock').value = p.available || 0;
-  document.getElementById('productHostOnly').checked = !!p.hostOnly;
-  window.scrollTo(0,document.body.scrollHeight);
-};
-
-window.deleteProduct = async (id) => {
-  if(!confirm('Delete product?')) return;
-  await deleteDoc(doc(db,'shopItems',id));
-  await logAction('delete_product',{id});
-  alert('Deleted');
-};
-
-saveProductBtn?.addEventListener('click', async ()=>{
-  const data = {
-    name: document.getElementById('productName').value,
-    img: document.getElementById('productImg').value || '',
-    cost: Number(document.getElementById('productCost').value) || 0,
-    cashReward: Number(document.getElementById('productCash').value) || 0,
-    available: Number(document.getElementById('productStock').value) || 0,
-    hostOnly: !!document.getElementById('productHostOnly').checked,
-    createdAt: serverTimestamp()
-  };
-  if(editingProductId){
-    await updateDoc(doc(db,'shopItems',editingProductId), data).catch(async ()=> setDoc(doc(db,'shopItems',editingProductId), data, { merge:true }));
-    await logAction('update_product',{id:editingProductId});
-    editingProductId = null;
-  } else {
-    await addDoc(collection(db,'shopItems'), data);
-    await logAction('create_product',{name:data.name});
-  }
-  // clear
-  document.getElementById('productName').value = '';
-  document.getElementById('productImg').value = '';
-  document.getElementById('productCost').value = '';
-  document.getElementById('productCash').value = '';
-  document.getElementById('productStock').value = '';
-  document.getElementById('productHostOnly').checked = false;
-});
-
-clearProductBtn?.addEventListener('click', ()=>{
-  editingProductId = null;
-  document.getElementById('productName').value = '';
-  document.getElementById('productImg').value = '';
-  document.getElementById('productCost').value = '';
-  document.getElementById('productCash').value = '';
-  document.getElementById('productStock').value = '';
-  document.getElementById('productHostOnly').checked = false;
-});
-shopRefreshBtn?.addEventListener('click', ()=> startShopListener());
-
-/* ---------- Purchases/Claims (realtime) ---------- */
-function startPurchasesListener(){
-  if(purchasesUnsub) purchasesUnsub();
-  purchasesUnsub = onSnapshot(collection(db,'purchases'), snap => {
-    claimsList.innerHTML = '';
-    snap.forEach(d=>{
-      const c = { id: d.id, ...d.data() };
-      const li = document.createElement('li');
-      li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
-      li.innerHTML = `<div style="display:flex;justify-content:space-between">
-        <div><b>${c.itemName || c.itemId}</b> — <span class="small">by ${c.userEmail||c.userId||c.uid}</span><br><span class="small">${c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString() : '-'}</span></div>
-        <div>
-          <button class="btn" onclick="refundPurchase('${c.id}')">Refund</button>
-          <button class="btn ghost" onclick="viewPurchase('${c.id}')">View</button>
-        </div>
-      </div>`;
-      claimsList.appendChild(li);
-    });
-  });
-}
-window.startPurchasesListener = startPurchasesListener;
-
-window.refundPurchase = async (id) => {
-  await updateDoc(doc(db,'purchases',id), { refunded: true }).catch(()=> setDoc(doc(db,'purchases',id), { refunded:true }, { merge:true }));
-  await logAction('refund_purchase',{id});
-  alert('Marked refunded');
-};
-window.viewPurchase = async (id) => {
-  const snap = await getDoc(doc(db,'purchases',id));
-  alert(JSON.stringify(snap.data(), null, 2));
-};
-claimsRefreshBtn?.addEventListener('click', ()=> startPurchasesListener());
-
-window.viewClaimsForUser = async (uid) => {
-  const snap = await getDocs(collection(db,'purchases'));
-  const arr = [];
-  snap.forEach(d=>{ const c = { id:d.id, ...d.data() }; if(c.userId===uid || c.uid===uid) arr.push(c); });
-  if(!arr.length) return alert('No claims for user');
-  alert(JSON.stringify(arr, null, 2));
-};
-
-/* ---------- Logs (realtime) ---------- */
-function startLogsListener(){
-  if(logsUnsub) logsUnsub();
-  logsUnsub = onSnapshot(collection(db,'logs'), snap => {
-    logList.innerHTML = '';
-    snap.forEach(d=>{
-      const l = d.data();
-      const li = document.createElement('li');
-      li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
-      li.textContent = `${l.type} — ${JSON.stringify(l.detail||'')} — ${l.createdAt?.toDate ? l.createdAt.toDate().toLocaleString() : ''}`;
-      logList.appendChild(li);
-    });
-  });
-}
-logsRefreshBtn?.addEventListener('click', ()=> startLogsListener());
-
-/* ---------- Broadcast button ---------- */
-sendBroadcastBtn?.addEventListener('click', async ()=>{
-  const msg = broadcastText.value.trim();
-  if(!msg) return alert('Type message');
-  if(!currentRoomId) return alert('Select room');
-  await addDoc(collection(db,`${currentRoomId}_broadcasts`), { text: msg, createdAt: serverTimestamp() });
-  await logAction('broadcast',{room: currentRoomId, text: msg});
-  alert('Broadcast sent');
-  broadcastText.value = '';
-});
-
-/* ---------- Admin Profile (meta/adminProfile) ---------- */
-async function loadAdminProfile(){
-  const ref = doc(db,'meta','adminProfile');
-  const snap = await getDoc(ref);
-  if(snap.exists()){
-    const p = snap.data();
-    adminName.value = p.name || '';
-    adminEmail.value = p.email || '';
-    adminStars.value = p.stars || 0;
-    adminCash.value = p.cash || 0;
-    adminDisplay.textContent = `${p.name || 'Admin'}`;
-    adminBalances.textContent = `⭐ ${p.stars||0} — ₦${p.cash||0}`;
-  } else {
-    adminDisplay.textContent = 'Admin (not set)';
-  }
-}
-async function saveAdminProfile(){
-  const ref = doc(db,'meta','adminProfile');
-  const data = { name: adminName.value, email: adminEmail.value, stars: Number(adminStars.value)||0, cash: Number(adminCash.value)||0, updatedAt: serverTimestamp() };
-  await setDoc(ref, data, { merge:true });
-  await logAction('save_admin', data);
-  await loadAdminProfile();
-  alert('Saved admin profile');
-}
-saveAdminBtn?.addEventListener('click', saveAdminProfile);
-loadAdminBtn?.addEventListener('click', loadAdminProfile);
-
-/* ---------- Admin info topbar (from local session vipUser) ---------- */
-async function loadAdminInfoFromSession(){
-  const vip = JSON.parse(localStorage.getItem('vipUser'));
-  if(vip?.email){
-    const uid = vip.email.replace(/[.#$\\[\\]]/g, ',');
-    const snap = await getDoc(doc(db,'users',uid));
-    if(snap.exists()){
-      const d = snap.data();
-      adminDisplay.textContent = d.chatId || vip.email;
-      adminBalances.textContent = `⭐ ${d.stars||0} — ₦${d.cash||0}`;
+      document.getElementById("modalConfirm").onclick = () => {
+        modal.style.display = "none";
+        onConfirm();
+      };
+      document.getElementById("modalCancel").onclick = () => {
+        modal.style.display = "none";
+      };
     }
-  } else {
-    adminDisplay.textContent = 'Admin (not set)';
-  }
-}
 
-/* ---------- Refresh/Start everything ---------- */
-async function refreshAll(){
-  await loadRooms();
-  startUsersListener();
-  startShopListener();
-  startPurchasesListener();
-  startLogsListener();
-  await loadAdminProfile();
-  await loadAdminInfoFromSession();
-}
+    // Load users
+    const usersTableBody = document.querySelector("#usersTable tbody");
+    const vipFilter = document.getElementById("vipFilter");
 
-/* ---------- Start ---------- */
-refreshAll();
+    async function loadUsers() {
+      usersTableBody.innerHTML = "";
+      const snapshot = await db.collection("users").get();
+      snapshot.forEach(doc => {
+        const u = doc.data();
+        if (vipFilter.checked && !u.isVIP) return;
 
-/* expose some helpers to window (so inline onclick works) */
-window.refreshAll = refreshAll;
-window.giftToUser = window.giftToUser;
-window.timeoutUser = window.timeoutUser;
-window.clearTimeoutUser = window.clearTimeoutUser;
-window.toggleHost = window.toggleHost;
-window.kickUser = window.kickUser;
-window.banUser = window.banUser;
-window.refundPurchase = window.refundPurchase;
-window.viewPurchase = window.viewPurchase;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${u.email || "-"}</td>
+          <td>${u.username || "-"}</td>
+          <td>${u.phone || "-"}</td>
+          <td>${u.invitedBy || "-"}</td>
+          <td>${u.stars || 0}</td>
+          <td>${u.cash || 0}</td>
+          <td>${u.isVIP ? "✅" : "❌"}</td>
+          <td>
+            <button class="btn btn-action" onclick="confirmAction('Kick ${u.username}', 'Kick ${u.username}?', () => kickUser('${doc.id}'))">Kick</button>
+            <button class="btn btn-action" onclick="confirmAction('Ban ${u.username}', 'Ban ${u.username}?', () => banUser('${doc.id}'))">Ban</button>
+            <button class="btn btn-action" onclick="confirmAction('Demote ${u.username}', 'Demote ${u.username}?', () => demoteUser('${doc.id}'))">Demote</button>
+            <button class="btn btn-action" onclick="confirmAction('Timeout ${u.username}', 'Timeout ${u.username}?', () => timeoutUser('${doc.id}'))">Timeout</button>
+            <button class="btn btn-action" onclick="confirmAction('Gift Stars', 'Gift 100 stars?', () => giftStars('${doc.id}', 100))">+⭐</button>
+            <button class="btn btn-action" onclick="confirmAction('Gift Cash', 'Gift $10?', () => giftCash('${doc.id}', 10))">+$</button>
+          </td>
+        `;
+        usersTableBody.appendChild(row);
+      });
+    }
 
-</script>
+    function confirmAction(title, msg, action) {
+      showModal(title, msg, action);
+    }
+
+    // Placeholder functions (replace with Firestore logic)
+    function kickUser(uid) { console.log("Kick", uid); }
+    function banUser(uid) { console.log("Ban", uid); }
+    function demoteUser(uid) { console.log("Demote", uid); }
+    function timeoutUser(uid) { console.log("Timeout", uid); }
+    function giftStars(uid, amt) { console.log("Gift", amt, "stars to", uid); }
+    function giftCash(uid, amt) { console.log("Gift", amt, "cash to", uid); }
+
+    vipFilter.addEventListener("change", loadUsers);
+    loadUsers();
+  </script>
 </body>
 </html>
