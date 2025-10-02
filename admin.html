@@ -1,249 +1,311 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Dashboard — NNAMDI</title>
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#fff; --accent:#ff33cc; --muted:#6b7280; --text:#0f1720;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
+.sidebar{width:220px;background:#0b1220;color:#fff;display:flex;flex-direction:column;padding:14px;gap:8px}
+.sidebar h2{margin:0 0 6px 0;font-size:16px;text-align:center}
+.sidebar button{background:none;border:none;color:#cbd5e1;padding:10px;border-radius:8px;text-align:left;cursor:pointer}
+.sidebar button.active, .sidebar button:hover{background:var(--accent);color:#fff}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:64px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #e6e9ee}
+.topbar .left{display:flex;align-items:center;gap:12px}
+.brand{font-weight:700}
+.admin-info{display:flex;gap:12px;align-items:center;font-size:14px}
+.content{display:flex;flex:1;overflow:auto;padding:18px;gap:18px}
+.col{flex:1;min-width:420px;max-width:1200px;overflow:auto}
+.card{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(8,12,20,0.06);margin-bottom:12px}
+h3{margin:0 0 8px 0}
+input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e3e7ee;margin:6px 0;font-size:14px}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px;vertical-align:middle}
+.btn{background:var(--accent);color:#fff;border:none;padding:7px 10px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid #eef2f6}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.small{font-size:13px;color:var(--muted)}
+.log-list, .claims-list{max-height:360px;overflow:auto;padding:0;margin:0;list-style:none}
+.actions-wrap{display:flex;gap:6px;flex-wrap:wrap}
+.footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
+.badge{background:#eef2f6;color:#111;padding:4px 6px;border-radius:6px;font-size:12px}
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      display: flex;
-      height: 100vh;
-    }
-    /* Sidebar */
-    .sidebar {
-      width: 220px;
-      background: #222;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-    }
-    .sidebar h2 { margin-bottom: 20px; }
-    .sidebar button {
-      margin: 5px 0;
-      padding: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      background: #333;
-      color: #fff;
-      transition: background .2s;
-    }
-    .sidebar button:hover { background: #444; }
-
-    /* Content */
-    .content {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-    .section { display: none; }
-    .section.active { display: block; }
-
-    /* Tables */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #333;
-      padding: 8px;
-      text-align: left;
-    }
-    th { background: #222; }
-
-    /* Modal */
-    .modal {
-      position: fixed;
-      top:0; left:0;
-      width:100%; height:100%;
-      background: rgba(0,0,0,0.7);
-      display:none;
-      align-items:center; justify-content:center;
-      z-index:1000;
-    }
-    .modal-content {
-      background:#111;
-      padding:20px;
-      border-radius:8px;
-      width:350px;
-      max-width:90%;
-      text-align:center;
-      color:#fff;
-    }
-    .modal-actions { margin-top:20px; display:flex; justify-content:space-between; }
-    .btn-secondary { background:#444; padding:8px 14px; border:none; border-radius:4px; color:#fff; cursor:pointer; }
-    .btn-danger { background:#d33; padding:8px 14px; border:none; border-radius:4px; color:#fff; cursor:pointer; }
-    .btn { padding:6px 10px; margin:2px; border:none; border-radius:4px; cursor:pointer; }
-    .btn-action { background:#333; color:#fff; }
-  </style>
+/* ---------- MODAL ---------- */
+#adminModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);justify-content:center;align-items:center;z-index:9999}
+#adminModal .modal-content{background:#fff;padding:18px;border-radius:12px;max-width:400px;width:90%;text-align:center}
+#modalText{margin-bottom:12px;font-size:14px}
+#modalButtons{display:flex;gap:12px;justify-content:center}
+</style>
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <h2>Admin</h2>
-    <button onclick="showSection('users')">Users</button>
-    <button onclick="showSection('rooms')">Rooms</button>
-    <button onclick="showSection('shop')">Shop</button>
-    <button onclick="showSection('purchases')">Purchases</button>
-    <button onclick="showSection('claims')">Claims</button>
-  </div>
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>ADMIN</h2>
+  <button data-view="rooms" class="active" onclick="navigate(event)">Rooms</button>
+  <button data-view="users" onclick="navigate(event)">Users</button>
+  <button data-view="shop" onclick="navigate(event)">Shop</button>
+  <button data-view="claims" onclick="navigate(event)">Claims</button>
+  <button data-view="logs" onclick="navigate(event)">Logs</button>
+  <div style="flex:1"></div>
+  <button data-view="meta" onclick="navigate(event)">Admin Profile</button>
+</div>
 
-  <!-- Main Content -->
-  <div class="content">
-
-    <!-- USERS -->
-    <section id="users" class="section active">
-      <h2>Users</h2>
-      <label><input type="checkbox" id="vipFilter"> Show only VIPs</label>
-      <table id="usersTable">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Username</th>
-            <th>Phone</th>
-            <th>Invited By</th>
-            <th>Stars</th>
-            <th>Cash</th>
-            <th>VIP</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <!-- ROOMS -->
-    <section id="rooms" class="section">
-      <h2>Rooms</h2>
-      <p>Here we’ll show active chatrooms, timeout users, and number of online users.</p>
-    </section>
-
-    <!-- SHOP -->
-    <section id="shop" class="section">
-      <h2>Shop</h2>
-      <p>Manage shop items here.</p>
-    </section>
-
-    <!-- PURCHASES -->
-    <section id="purchases" class="section">
-      <h2>Purchases</h2>
-      <p>Comprehensive spreadsheet-style purchases log.</p>
-    </section>
-
-    <!-- CLAIMS -->
-    <section id="claims" class="section">
-      <h2>Claims</h2>
-      <p>Manage and refund claims here.</p>
-    </section>
-
-  </div>
-
-  <!-- Modal -->
-  <div id="adminModal" class="modal">
-    <div class="modal-content">
-      <h3 id="modalTitle"></h3>
-      <p id="modalMessage"></p>
-      <div class="modal-actions">
-        <button id="modalCancel" class="btn-secondary">Cancel</button>
-        <button id="modalConfirm" class="btn-danger">Confirm</button>
-      </div>
+<div class="main">
+  <div class="topbar">
+    <div class="left">
+      <div class="brand">🎛️ Admin Dashboard</div>
+      <div class="small">PC layout — realtime</div>
+    </div>
+    <div class="admin-info">
+      <div id="adminDisplay" class="small">Not signed (admin)</div>
+      <div id="adminBalances" class="small badge">⭐ 0 — ₦0</div>
+      <button class="btn" onclick="refreshAll()">Refresh</button>
     </div>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js"></script>
-  <script>
-    // TODO: replace with your Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
-};
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <div class="content">
 
-    // Section navigation
-    function showSection(id) {
-      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
+    <!-- ROOMS -->
+    <div id="view-rooms" class="col">
+      <div class="card">
+        <h3>Rooms</h3>
+        <div style="display:flex;gap:8px;">
+          <select id="roomSelect"></select>
+          <button class="btn" id="btnToggleMute">Toggle Mute</button>
+          <button class="btn" id="btnToggleSlow">Toggle SlowChat</button>
+          <button class="btn ghost" id="btnResetRoom">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Room Stats</h3>
+        <div class="small">Selected: <span id="roomName">—</span></div>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <div class="small">Users: <span id="roomUserCount">0</span></div>
+          <div class="small">Hosts: <span id="roomHostCount">0</span></div>
+          <div class="small">Banned: <span id="roomBannedCount">0</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Broadcast</h3>
+        <textarea id="broadcastText" rows="3" placeholder="Message to all users in selected room"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="sendBroadcastBtn">Send</button><button class="btn ghost" id="previewBroadcastBtn">Preview</button></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="view-users" class="col" style="display:none">
+      <div class="card">
+        <h3>Users</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="userSearch" placeholder="Search email / name / id">
+          <select id="userFilter"><option value="all">All</option><option value="hosts">Hosts</option><option value="vip">VIP</option><option value="banned">Banned</option><option value="kicked">Kicked</option><option value="timedout">Timed out</option></select>
+          <button class="btn" id="userSearchBtn">Search</button>
+        </div>
+
+        <table class="table">
+          <thead><tr>
+            <th>User</th><th>Host</th><th>Stars</th><th>Cash</th><th>Status</th>
+            <th>Invited By</th><th>Phone</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="userList"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Quick Gift / Timeout</h3>
+        <div style="display:flex;gap:8px">
+          <input id="selectedUserId" placeholder="User id (click a user to auto-fill)">
+          <input id="giftStars" type="number" placeholder="Stars">
+          <input id="giftCash" type="number" placeholder="Cash">
+          <button class="btn" id="quickGiftBtn">Give</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="timeoutSec" type="number" placeholder="Timeout seconds">
+          <button class="btn" id="quickTimeoutBtn">Timeout</button>
+          <button class="btn ghost" id="quickClearTimeoutBtn">Clear Timeout</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHOP -->
+    <div id="view-shop" class="col" style="display:none">
+      <div class="card">
+        <h3>Shop Items</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="shopSearch" placeholder="Search items">
+          <select id="shopViewMode"><option value="admin">Admin</option><option value="host">Host</option><option value="user">User</option></select>
+          <button class="btn" id="shopRefreshBtn">Refresh</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>HostOnly</th><th>Actions</th></tr></thead>
+          <tbody id="shopList"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Add / Edit Product</h3>
+        <input id="productName" placeholder="Name">
+        <input id="productImg" placeholder="Image URL (optional)">
+        <input id="productCost" type="number" placeholder="Cost (stars)">
+        <input id="productCash" type="number" placeholder="Cash reward (₦)">
+        <input id="productStock" type="number" placeholder="Stock">
+        <label><input id="productHostOnly" type="checkbox"> Host only</label>
+        <div style="margin-top:8px"><button class="btn" id="saveProductBtn">Save</button><button class="btn ghost" id="clearProductBtn">Clear</button></div>
+      </div>
+    </div>
+
+    <!-- CLAIMS -->
+    <div id="view-claims" class="col" style="display:none">
+      <div class="card">
+        <h3>Claims / Purchases</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="claimSearch" placeholder="Search by user / product / id">
+          <button class="btn" id="claimsRefreshBtn">Refresh</button>
+        </div>
+        <ul class="claims-list" id="claimsList"></ul>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="view-logs" class="col" style="display:none">
+      <div class="card">
+        <h3>Action Logs</h3>
+        <button class="btn" id="logsRefreshBtn">Refresh</button>
+        <ul class="log-list" id="logList"></ul>
+      </div>
+    </div>
+
+    <!-- META -->
+    <div id="view-meta" class="col" style="display:none">
+      <div class="card">
+        <h3>Admin Profile</h3>
+        <input id="adminName" placeholder="Admin display name (chatId)">
+        <input id="adminEmail" placeholder="Admin email">
+        <input id="adminStars" type="number" placeholder="Stars">
+        <input id="adminCash" type="number" placeholder="Cash">
+        <div style="margin-top:8px"><button class="btn" id="saveAdminBtn">Save</button><button class="btn ghost" id="clearAdminBtn">Clear</button></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">© 2025 NNAMDI Admin Dashboard</div>
+</div>
+
+<!-- ---------- MODAL ---------- -->
+<div id="adminModal">
+  <div class="modal-content">
+    <div id="modalText"></div>
+    <div id="modalButtons">
+      <button id="modalConfirm" class="btn">Confirm</button>
+      <button id="modalCancel" class="btn ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- NAVIGATION ---------- */
+function navigate(e){
+  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  const view = e.currentTarget.dataset.view;
+  document.querySelectorAll('.col').forEach(c=>c.style.display='none');
+  document.getElementById('view-'+view).style.display='block';
+}
+
+/* ---------- MODAL ---------- */
+function showModal(message, onConfirm){
+  const modal = document.getElementById('adminModal');
+  const modalConfirm = document.getElementById('modalConfirm');
+  const modalCancel = document.getElementById('modalCancel');
+  document.getElementById('modalText').textContent = message;
+  modal.style.display='flex';
+  const cleanup = ()=>{
+    modal.style.display='none';
+    modalConfirm.onclick=null;
+    modalCancel.onclick=null;
+  }
+  modalConfirm.onclick=()=>{cleanup(); onConfirm();}
+  modalCancel.onclick=cleanup;
+}
+
+/* ---------- MOCK DATA / FIRESTORE SIMULATION ---------- */
+let users = [
+  {id:'u001', name:'Ada', email:'ada@example.com', host:true, stars:120, cash:2500, status:'active', invitedBy:'u003', phone:'+2348012345678'},
+  {id:'u002', name:'Ben', email:'ben@example.com', host:false, stars:40, cash:800, status:'vip', invitedBy:'u001', phone:'+2348098765432'},
+  {id:'u003', name:'Caro', email:'caro@example.com', host:false, stars:20, cash:500, status:'banned', invitedBy:'u002', phone:'+2348076543210'},
+];
+
+function renderUsers(filter='all',search=''){
+  const tbody = document.getElementById('userList');
+  tbody.innerHTML='';
+  users.filter(u=>{
+    if(filter==='vip' && u.status!=='vip') return false;
+    if(filter==='hosts' && !u.host) return false;
+    if(filter==='banned' && u.status!=='banned') return false;
+    if(filter==='kicked' && u.status==='kicked') return false;
+    if(filter==='timedout' && u.status==='timedout') return false;
+    if(search && !(`${u.name} ${u.email} ${u.id}`.toLowerCase().includes(search.toLowerCase()))) return false;
+    return true;
+  }).forEach(u=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML=`
+      <td>${u.name}<br><span class="small">${u.email}</span></td>
+      <td>${u.host?'Yes':'No'}</td>
+      <td>${u.stars}</td>
+      <td>₦${u.cash}</td>
+      <td>${u.status}</td>
+      <td>${u.invitedBy || '-'}</td>
+      <td>${u.phone || '-'}</td>
+      <td class="actions-wrap">
+        <button class="btn ghost" onclick="confirmAction('kick','${u.id}')">Kick</button>
+        <button class="btn ghost" onclick="confirmAction('ban','${u.id}')">Ban</button>
+        <button class="btn ghost" onclick="confirmAction('timeout','${u.id}')">Timeout</button>
+        <button class="btn ghost" onclick="confirmAction('toggleHost','${u.id}')">Prom/Demote Host</button>
+      </td>
+    `;
+    tr.onclick=()=>document.getElementById('selectedUserId').value=u.id;
+    tbody.appendChild(tr);
+  });
+}
+
+function confirmAction(action,userId){
+  const user = users.find(u=>u.id===userId);
+  if(!user) return;
+  let msg='';
+  switch(action){
+    case 'kick': msg=`Are you sure you want to kick ${user.name}?`; break;
+    case 'ban': msg=`Are you sure you want to ban ${user.name}?`; break;
+    case 'timeout': msg=`Are you sure you want to timeout ${user.name}?`; break;
+    case 'toggleHost': msg=`Are you sure you want to toggle host status for ${user.name}?`; break;
+  }
+  showModal(msg,()=>{
+    // MOCK update
+    switch(action){
+      case 'kick': user.status='kicked'; break;
+      case 'ban': user.status='banned'; break;
+      case 'timeout': user.status='timedout'; break;
+      case 'toggleHost': user.host=!user.host; break;
     }
+    renderUsers(document.getElementById('userFilter').value,document.getElementById('userSearch').value);
+  });
+}
 
-    // Modal handler
-    function showModal(title, message, onConfirm) {
-      const modal = document.getElementById("adminModal");
-      document.getElementById("modalTitle").innerText = title;
-      document.getElementById("modalMessage").innerText = message;
-      modal.style.display = "flex";
+document.getElementById('userFilter').addEventListener('change',()=>renderUsers(document.getElementById('userFilter').value,document.getElementById('userSearch').value));
+document.getElementById('userSearchBtn').addEventListener('click',()=>renderUsers(document.getElementById('userFilter').value,document.getElementById('userSearch').value));
 
-      document.getElementById("modalConfirm").onclick = () => {
-        modal.style.display = "none";
-        onConfirm();
-      };
-      document.getElementById("modalCancel").onclick = () => {
-        modal.style.display = "none";
-      };
-    }
+/* INITIAL RENDER */
+renderUsers();
 
-    // Load users
-    const usersTableBody = document.querySelector("#usersTable tbody");
-    const vipFilter = document.getElementById("vipFilter");
-
-    async function loadUsers() {
-      usersTableBody.innerHTML = "";
-      const snapshot = await db.collection("users").get();
-      snapshot.forEach(doc => {
-        const u = doc.data();
-        if (vipFilter.checked && !u.isVIP) return;
-
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${u.email || "-"}</td>
-          <td>${u.username || "-"}</td>
-          <td>${u.phone || "-"}</td>
-          <td>${u.invitedBy || "-"}</td>
-          <td>${u.stars || 0}</td>
-          <td>${u.cash || 0}</td>
-          <td>${u.isVIP ? "✅" : "❌"}</td>
-          <td>
-            <button class="btn btn-action" onclick="confirmAction('Kick ${u.username}', 'Kick ${u.username}?', () => kickUser('${doc.id}'))">Kick</button>
-            <button class="btn btn-action" onclick="confirmAction('Ban ${u.username}', 'Ban ${u.username}?', () => banUser('${doc.id}'))">Ban</button>
-            <button class="btn btn-action" onclick="confirmAction('Demote ${u.username}', 'Demote ${u.username}?', () => demoteUser('${doc.id}'))">Demote</button>
-            <button class="btn btn-action" onclick="confirmAction('Timeout ${u.username}', 'Timeout ${u.username}?', () => timeoutUser('${doc.id}'))">Timeout</button>
-            <button class="btn btn-action" onclick="confirmAction('Gift Stars', 'Gift 100 stars?', () => giftStars('${doc.id}', 100))">+⭐</button>
-            <button class="btn btn-action" onclick="confirmAction('Gift Cash', 'Gift $10?', () => giftCash('${doc.id}', 10))">+$</button>
-          </td>
-        `;
-        usersTableBody.appendChild(row);
-      });
-    }
-
-    function confirmAction(title, msg, action) {
-      showModal(title, msg, action);
-    }
-
-    // Placeholder functions (replace with Firestore logic)
-    function kickUser(uid) { console.log("Kick", uid); }
-    function banUser(uid) { console.log("Ban", uid); }
-    function demoteUser(uid) { console.log("Demote", uid); }
-    function timeoutUser(uid) { console.log("Timeout", uid); }
-    function giftStars(uid, amt) { console.log("Gift", amt, "stars to", uid); }
-    function giftCash(uid, amt) { console.log("Gift", amt, "cash to", uid); }
-
-    vipFilter.addEventListener("change", loadUsers);
-    loadUsers();
-  </script>
+</script>
 </body>
 </html>
