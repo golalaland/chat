@@ -328,14 +328,19 @@ submitBtn.addEventListener('click', async ()=>{
     messageEl.textContent = 'Please fill all fields.';
     return;
   }
+
+  if(gender === 'Male' && !isVIP){
+    messageEl.textContent = "Look, buddy, you gotta go VIP!";
+    return;
+  }
+
   if(!isVIP && gender !== 'Female'){
     messageEl.textContent = 'Only females can sign up as hosts.';
     return;
   }
 
-  // Show spinner
-  submitBtn.classList.add('loading');
   messageEl.textContent = 'Signing up...';
+  submitBtn.classList.add('loading');
 
   const uidKey = sanitizeKey(email);
   const userRef = doc(db, "users", uidKey);
@@ -357,6 +362,7 @@ submitBtn.addEventListener('click', async ()=>{
     email,
     phone,
     gender,
+    whitelisted: false, // default false
     createdAt: serverTimestamp()
   };
 
@@ -364,7 +370,14 @@ submitBtn.addEventListener('click', async ()=>{
     if(!userSnap.exists()){
       await setDoc(userRef, userData);
     } else {
-      await updateDoc(userRef, userData); // update existing
+      await updateDoc(userRef, userData);
+    }
+
+    // ----- Auto-whitelist logic -----
+    if(isVIP || invitedBy){
+      const whitelistRef = doc(db, "whitelist", uidKey);
+      await setDoc(whitelistRef, { email, phone, whitelisted: true, createdAt: serverTimestamp() });
+      await updateDoc(userRef, { whitelisted: true });
     }
 
     localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
@@ -374,7 +387,6 @@ submitBtn.addEventListener('click', async ()=>{
     console.error(e);
     messageEl.textContent = 'Signup failed. Try again.';
   } finally {
-    // Hide spinner
     submitBtn.classList.remove('loading');
   }
 });
