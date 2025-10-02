@@ -215,6 +215,40 @@ header {
   object-fit: cover;
 }
 
+/* ---------- PAGE LOADER ---------- */
+#page-loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  transition: opacity 0.3s ease;
+}
+
+#page-loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #eee;
+  border-top: 6px solid transparent;
+  border-image: var(--theme-gradient) 1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  background: conic-gradient(from 0deg, #ff6a00, #ee0979, #9d00ff, #ff6a00);
+  -webkit-mask: radial-gradient(farthest-side, transparent 70%, black 71%);
+          mask: radial-gradient(farthest-side, transparent 70%, black 71%);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* IMAGE PREVIEW */
 #imagePreview {
   position: fixed;
@@ -408,7 +442,10 @@ header {
     <img id="previewImg" src="" alt="Preview">
   </div>
 </div>
-
+<!-- PAGE LOADER -->
+<div id="page-loader">
+  <div class="spinner"></div>
+</div>
 <!-- Firebase + App JS -->
 <script type="module">
 // ---------- Firebase Setup ----------
@@ -465,6 +502,13 @@ const animateNumber = (el, from, to, duration = 600) => {
     if (progress < 1) requestAnimationFrame(update);
   };
   requestAnimationFrame(update);
+};
+// ---------- Loader Control ----------
+const showLoader = () => {
+  document.getElementById('page-loader').classList.remove('hidden');
+};
+const hideLoader = () => {
+  document.getElementById('page-loader').classList.add('hidden');
 };
 
 // ---------- Confetti ----------
@@ -645,6 +689,7 @@ const redeemProduct = async product => {
   if (product.available <= 0) return showMessageModal('Sold Out', 'This item is no longer available.');
 
   showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
+    showLoader(); // 🔥 start spinner when user confirms
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const productRef = doc(db, 'shopItems', String(product.id));
@@ -669,8 +714,12 @@ const redeemProduct = async product => {
         if (available <= 0) throw new Error('Out of stock');
 
         newStars = Number(userData.stars) - cost;
-        newCash = productData.name?.toLowerCase() === 'redeem cash balance' ? 0 : Number(userData.cash) + (Number(productData.cashReward) || 0);
-        redeemedCash = productData.name?.toLowerCase() === 'redeem cash balance' ? Number(userData.cash) : 0;
+        newCash = productData.name?.toLowerCase() === 'redeem cash balance' 
+          ? 0 
+          : Number(userData.cash) + (Number(productData.cashReward) || 0);
+        redeemedCash = productData.name?.toLowerCase() === 'redeem cash balance' 
+          ? Number(userData.cash) 
+          : 0;
 
         transaction.update(userRef, { stars: newStars, cash: newCash });
         transaction.update(productRef, { available: available - 1 });
@@ -700,12 +749,17 @@ const redeemProduct = async product => {
       await renderShop();
       triggerConfetti();
 
-      if (redeemedCash > 0) showMessageModal('Cash Redeemed', `You redeemed ₦${formatNumber(redeemedCash)}. We will process the payout.`, 3000);
-      else showMessageModal('Success', `"${product.name}" redeemed successfully!`, 2000);
+      if (redeemedCash > 0) {
+        showMessageModal('Cash Redeemed', `You redeemed ₦${formatNumber(redeemedCash)}. We will process the payout.`, 3000);
+      } else {
+        showMessageModal('Success', `"${product.name}" redeemed successfully!`, 2000);
+      }
 
     } catch (err) {
       console.error('Redemption error:', err);
       showMessageModal('Error', err.message || String(err), 2400);
+    } finally {
+      hideLoader(); // 🔥 stop spinner after transaction (success or error)
     }
   });
 };
