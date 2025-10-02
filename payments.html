@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Subscribe with Paystack</title>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+<body>
+  <button type="button" onclick="payWithPaystack()">Subscribe</button>
+
+  <script>
+    function payWithPaystack() {
+      var handler = PaystackPop.setup({
+        key: 'YOUR_PUBLIC_KEY', // from Paystack Dashboard
+        email: 'customer@email.com', // customer email
+        amount: 500000, // amount in kobo (5000 NGN)
+        plan: 'PLN_abcd1234', // your plan code from Paystack
+        ref: ''+Math.floor((Math.random() * 1000000000) + 1), // unique transaction ref
+        callback: function(response){
+          // what happens after payment
+          alert('Subscription successful. Transaction ref is ' + response.reference);
+        },
+        onClose: function(){
+          alert('Payment window closed.');
+        }
+      });
+      handler.openIframe();
+    }
+  </script>
+</body>
+</html>
