@@ -1,240 +1,677 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin Dashboard — Full</title>
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#fff; --accent:#ff33cc; --muted:#888;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);display:flex;height:100vh;overflow:hidden;color:#111}
+.sidebar{width:220px;background:#0f1720;color:#fff;display:flex;flex-direction:column;padding:16px;gap:8px}
+.sidebar h2{margin:0 0 8px 0;font-size:18px;text-align:center}
+.sidebar button{background:none;border:none;color:#cbd5e1;padding:10px;border-radius:6px;text-align:left;cursor:pointer}
+.sidebar button.active, .sidebar button:hover{background:var(--accent);color:#fff}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #e6e9ee}
+.topbar .left{display:flex;gap:12px;align-items:center}
+.topbar .brand{font-weight:700}
+.content{display:flex;flex:1;overflow:auto;padding:16px;gap:16px}
 
-  <style>
-    body {
-      margin: 0; font-family: Arial, sans-serif;
-      display: flex; height: 100vh; overflow: hidden;
-      background: #f3f3f3;
-    }
-    /* Sidebar */
-    .sidebar {
-      width: 220px; background: #111; color: #fff;
-      display: flex; flex-direction: column;
-    }
-    .sidebar h2 { padding: 20px; margin: 0; background:#222; font-size: 18px; }
-    .sidebar button {
-      padding: 12px; border: none; background: none; color: #ccc;
-      text-align: left; cursor: pointer; transition: 0.2s;
-    }
-    .sidebar button:hover { background: #333; color:#fff; }
+/* column layout */
+.col{flex:1;min-width:360px;max-width:1200px}
 
-    /* Main */
-    .main {
-      flex: 1; padding: 20px; overflow-y: auto;
-    }
-    .view { display: none; }
-    .card {
-      background:#fff; padding:15px; margin-bottom:15px; border-radius:6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-    h3 { margin-top:0; }
-    .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { padding: 8px; border-bottom: 1px solid #ddd; }
-    .action { padding:6px 10px; margin:2px; background:#007bff; color:#fff; border:none; cursor:pointer; border-radius:4px; }
-    .action:hover { background:#0056b3; }
-    input, select {
-      padding:8px; margin:5px 0; width:100%; border:1px solid #ccc; border-radius:4px;
-    }
-    label { display:block; margin-top:5px; }
-  </style>
+/* card */
+.card{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(8,12,20,0.06);margin-bottom:12px}
+h3{margin:0 0 8px 0}
+
+/* small UI */
+input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e3e7ee;margin:6px 0}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
+.btn{background:var(--accent);color:#fff;border:none;padding:7px 10px;border-radius:6px;cursor:pointer;margin:0 4px}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid #eef2f6}
+.inline{display:inline-block}
+
+/* small bits */
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.kv{display:flex;gap:8px;align-items:center}
+.small{font-size:13px;color:var(--muted)}
+.actions-wrap{display:flex;gap:6px;flex-wrap:wrap}
+.log-list{max-height:260px;overflow:auto;padding:0;margin:0;list-style:none}
+.claims-list{max-height:220px;overflow:auto;padding:0;margin:0;list-style:none}
+.footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
+</style>
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <h2>Admin Panel</h2>
-    <button onclick="showView('view-rooms')">Rooms</button>
-    <button onclick="showView('view-users')">Users</button>
-    <button onclick="showView('view-shop')">Shop</button>
-    <button onclick="showView('view-settings')">Settings</button>
-    <button onclick="showView('view-logs')">Logs</button>
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>ADMIN PANEL</h2>
+  <button class="active" data-view="rooms" onclick="showView(event)">Rooms</button>
+  <button data-view="users" onclick="showView(event)">Users</button>
+  <button data-view="shop" onclick="showView(event)">Shop</button>
+  <button data-view="claims" onclick="showView(event)">Claims</button>
+  <button data-view="logs" onclick="showView(event)">Logs</button>
+  <div style="flex:1"></div>
+  <button data-view="meta" onclick="showView(event)">Admin Profile</button>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="left">
+      <div class="brand">🎛️ Admin Dashboard</div>
+      <div class="small"> — compact, functional, Firestore-ready</div>
+    </div>
+    <div class="right">
+      <button class="btn" onclick="refreshAll()">Refresh</button>
+    </div>
   </div>
 
-  <!-- Main -->
-  <div class="main">
-    <!-- Rooms -->
-    <div id="view-rooms" class="view">
+  <div class="content">
+
+    <!-- ROOMS VIEW -->
+    <div class="col" id="view-rooms">
       <div class="card">
-        <h3>Room Controls</h3>
-        <button class="action">Mute All</button>
-        <button class="action">Slow Mode</button>
-        <button class="action">Broadcast Announcement</button>
+        <h3>Rooms Controls</h3>
+        <div class="controls">
+          <select id="roomSelect"></select>
+          <button class="btn" id="toggleMuteBtn">Toggle Mute</button>
+          <button class="btn" id="toggleSlowBtn">Toggle Slow Chat</button>
+          <button class="btn" id="resetRoomBtn">Reset Room</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Room Stats</h3>
+        <div class="kv"><div class="small">Selected Room:</div><div id="roomName" class="small"></div></div>
+        <div class="kv"><div class="small">Total users:</div><div id="roomUserCount" class="small">0</div></div>
+        <div class="kv"><div class="small">Hosts:</div><div id="roomHostCount" class="small">0</div></div>
+        <div class="kv"><div class="small">Banned:</div><div id="roomBannedCount" class="small">0</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Broadcast</h3>
+        <textarea id="broadcastText" rows="3" placeholder="Write broadcast to send to selected room"></textarea>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" id="sendBroadcastBtn">Send Broadcast</button>
+          <button class="btn ghost" onclick="logAction('broadcast_preview','preview')">Preview</button>
+        </div>
       </div>
     </div>
 
-    <!-- Users -->
-    <div id="view-users" class="view">
+    <!-- USERS VIEW -->
+    <div class="col" id="view-users" style="display:none">
       <div class="card">
         <h3>Users</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input id="userSearch" placeholder="Search by email / name / id">
+          <select id="userFilter">
+            <option value="all">All</option>
+            <option value="hosts">Hosts</option>
+            <option value="banned">Banned</option>
+            <option value="kicked">Kicked</option>
+            <option value="timedout">Timed out</option>
+          </select>
+          <button class="btn" onclick="loadUsers(currentRoomId)">Search / Refresh</button>
+        </div>
+
         <table class="table">
-          <thead><tr><th>Name</th><th>Email</th><th>Host</th><th>Actions</th></tr></thead>
+          <thead><tr><th>User</th><th>Host</th><th>Stars</th><th>Cash</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="userList"></tbody>
         </table>
       </div>
+
+      <div class="card">
+        <h3>Quick Gift / Timeout</h3>
+        <div style="display:flex;gap:8px;">
+          <input id="selectedUserId" placeholder="Target user id (click a user to auto-fill)">
+          <input id="giftStars" type="number" placeholder="Stars to gift">
+          <input id="giftCash" type="number" placeholder="Cash to gift">
+          <button class="btn" onclick="giftToUser()">Give</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input id="timeoutSeconds" type="number" placeholder="Timeout seconds (e.g. 60)">
+          <button class="btn" onclick="timeoutUser()">Timeout</button>
+          <button class="btn ghost" onclick="clearTimeoutUser()">Clear Timeout</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Shop -->
-    <div id="view-shop" class="view">
+    <!-- SHOP VIEW -->
+    <div class="col" id="view-shop" style="display:none">
       <div class="card">
-        <h3>Shop Items</h3>
+        <h3>Shop Items (Admin)</h3>
         <table class="table">
-          <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>Host Only</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>HostOnly</th><th>Actions</th></tr></thead>
           <tbody id="shopList"></tbody>
         </table>
       </div>
 
       <div class="card">
         <h3>Add / Edit Item</h3>
-        <input id="productName" placeholder="Product Name">
-        <input id="productImg" placeholder="Image URL">
-        <input type="number" id="productCost" placeholder="Cost in Stars">
-        <input type="number" id="productCashReward" placeholder="Cash Reward">
-        <input type="number" id="productStock" placeholder="Available">
-        <label><input type="checkbox" id="productHostOnly"> Host Only</label>
-        <button class="action" id="saveProductBtn">Save Product</button>
+        <input id="productName" placeholder="Product name">
+        <input id="productImg" placeholder="Image URL (optional)">
+        <input id="productCost" type="number" placeholder="Cost (stars)">
+        <input id="productCash" type="number" placeholder="Cash reward (₦)">
+        <input id="productStock" type="number" placeholder="Available stock">
+        <label><input id="productHostOnly" type="checkbox"> Host only</label>
+        <div style="margin-top:8px">
+          <button class="btn" id="saveProductBtn">Save / Add</button>
+          <button class="btn ghost" onclick="clearProductForm()">Clear</button>
+        </div>
       </div>
+    </div>
 
+    <!-- CLAIMS VIEW -->
+    <div class="col" id="view-claims" style="display:none">
       <div class="card">
-        <h3>Preview Mode</h3>
-        <select id="shopViewMode">
-          <option value="admin">Admin View</option>
-          <option value="user">Normal User View</option>
-          <option value="host">Host View</option>
-        </select>
-        <div id="shopPreview"></div>
+        <h3>Claims / Purchases</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input id="claimSearch" placeholder="Search by user id / product / claim id">
+          <button class="btn" onclick="loadClaims()">Refresh</button>
+        </div>
+        <ul class="claims-list" id="claimsList"></ul>
       </div>
     </div>
 
-    <!-- Settings -->
-    <div id="view-settings" class="view">
-      <div class="card"><h3>Global Settings</h3>
-        <button class="action">Toggle Maintenance Mode</button>
-        <button class="action">Reset Room Data</button>
-      </div>
-    </div>
-
-    <!-- Logs -->
-    <div id="view-logs" class="view">
+    <!-- LOGS VIEW -->
+    <div class="col" id="view-logs" style="display:none">
       <div class="card">
         <h3>Action Logs</h3>
-        <ul id="logList"></ul>
+        <button class="btn" onclick="loadLogs()">Refresh</button>
+        <ul class="log-list" id="logList"></ul>
       </div>
     </div>
+
+    <!-- META / ADMIN PROFILE -->
+    <div class="col" id="view-meta" style="display:none">
+      <div class="card">
+        <h3>Admin Profile (local)</h3>
+        <div class="small">You can store a small admin profile in Firestore so the dashboard shows your username and balances.</div>
+        <input id="adminName" placeholder="Admin display name">
+        <input id="adminEmail" placeholder="Admin email (optional)">
+        <input id="adminStars" type="number" placeholder="Your Stars balance">
+        <input id="adminCash" type="number" placeholder="Your Cash balance">
+        <div style="margin-top:8px">
+          <button class="btn" onclick="saveAdminProfile()">Save Profile</button>
+          <button class="btn ghost" onclick="loadAdminProfile()">Reload</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  <div class="footer">Built for NNAMDI — replace firebase config with yours and secure rules before production.</div>
+</div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
-};
+<!-- Firebase + App logic -->
+<script type="module">
+  // FIREBASE SDK
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, getDocs, doc, getDoc, setDoc,
+    addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  // --------- REPLACE WITH YOUR FIREBASE CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "PUT_YOUR_API_KEY",
+    authDomain: "PUT_YOUR_AUTH_DOMAIN",
+    projectId: "PUT_YOUR_PROJECT_ID",
+    // optional: storageBucket, messagingSenderId, appId
+  };
+  // -----------------------------------------------------
 
-    // ---------- Views ----------
-    function showView(id) {
-      document.querySelectorAll('.view').forEach(v => v.style.display='none');
-      document.getElementById(id).style.display='block';
-    }
-    showView('view-rooms'); // default
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    // ---------- Shop ----------
-    const shopList = document.getElementById("shopList");
-    const saveProductBtn = document.getElementById("saveProductBtn");
+  // DOM refs + state
+  const views = {
+    rooms: document.getElementById('view-rooms'),
+    users: document.getElementById('view-users'),
+    shop: document.getElementById('view-shop'),
+    claims: document.getElementById('view-claims'),
+    logs: document.getElementById('view-logs'),
+    meta: document.getElementById('view-meta'),
+  };
 
-    async function loadShop() {
-      shopList.innerHTML = '';
-      const snap = await getDocs(collection(db, 'shopItems'));
-      snap.forEach(docSnap => {
-        const p = { id: docSnap.id, ...docSnap.data() };
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${p.name}</td>
-          <td>${p.cost}</td>
-          <td>${p.cashReward}</td>
-          <td>${p.available}</td>
-          <td>${p.hostOnly ? "✅" : "—"}</td>
-          <td>
-            <button class="action" onclick="editShopItem('${p.id}')">Edit</button>
-            <button class="action" onclick="deleteShopItem('${p.id}')">Delete</button>
-          </td>
-        `;
-        shopList.appendChild(row);
+  let currentRoomId = null;
+  let currentProductEditId = null;
+
+  // UI elements
+  const roomSelect = document.getElementById('roomSelect');
+  const roomNameEl = document.getElementById('roomName');
+  const roomUserCount = document.getElementById('roomUserCount');
+  const roomHostCount = document.getElementById('roomHostCount');
+  const roomBannedCount = document.getElementById('roomBannedCount');
+
+  const userListEl = document.getElementById('userList');
+  const userSearch = document.getElementById('userSearch');
+  const userFilter = document.getElementById('userFilter');
+  const selectedUserIdEl = document.getElementById('selectedUserId');
+  const giftStarsEl = document.getElementById('giftStars');
+  const giftCashEl = document.getElementById('giftCash');
+  const timeoutSecondsEl = document.getElementById('timeoutSeconds');
+
+  const shopListEl = document.getElementById('shopList');
+  const productName = document.getElementById('productName');
+  const productImg = document.getElementById('productImg');
+  const productCost = document.getElementById('productCost');
+  const productCash = document.getElementById('productCash');
+  const productStock = document.getElementById('productStock');
+  const productHostOnly = document.getElementById('productHostOnly');
+  const saveProductBtn = document.getElementById('saveProductBtn');
+
+  const claimsListEl = document.getElementById('claimsList');
+  const logListEl = document.getElementById('logList');
+
+  const adminNameEl = document.getElementById('adminName');
+  const adminEmailEl = document.getElementById('adminEmail');
+  const adminStarsEl = document.getElementById('adminStars');
+  const adminCashEl = document.getElementById('adminCash');
+
+  // ----------------- HELPERS -----------------
+  function showView(e){
+    const view = e.currentTarget?.dataset?.view || e;
+    Object.values(views).forEach(v=>v.style.display='none');
+    views[view].style.display='block';
+    // set active button
+    document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
+    const btn = [...document.querySelectorAll('.sidebar button')].find(b=>b.dataset.view===view);
+    if(btn) btn.classList.add('active');
+  }
+
+  window.showView = showView;
+
+  function now() { return Date.now(); }
+  function tsPlusSeconds(s){ return now() + (Number(s)||0)*1000; }
+
+  async function logAction(type, detail = {}) {
+    try {
+      await addDoc(collection(db,'logs'), {
+        type, detail, createdAt: serverTimestamp()
       });
-    }
-    window.loadShop = loadShop;
-    loadShop();
+    } catch(e){ console.error('logErr', e); }
+  }
 
-    window.editShopItem = async (id) => {
-      const snap = await getDoc(doc(db, 'shopItems', id));
-      const p = snap.data();
-      productName.value = p.name;
-      productImg.value = p.img;
-      productCost.value = p.cost;
-      productCashReward.value = p.cashReward;
-      productStock.value = p.available;
-      productHostOnly.checked = p.hostOnly;
-      saveProductBtn.onclick = async () => {
-        await updateDoc(doc(db, 'shopItems', id), {
-          name: productName.value,
-          img: productImg.value,
-          cost: Number(productCost.value),
-          cashReward: Number(productCashReward.value),
-          available: Number(productStock.value),
-          hostOnly: productHostOnly.checked
-        });
-        loadShop(); alert('Updated!');
+  // ----------------- ROOMS -----------------
+  async function loadRooms(){
+    roomSelect.innerHTML = '<option>Loading...</option>';
+    const snap = await getDocs(collection(db,'rooms'));
+    roomSelect.innerHTML = '';
+    snap.forEach(d=>{
+      const r = { id: d.id, ...d.data() };
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = r.name || r.id;
+      roomSelect.appendChild(opt);
+    });
+    if(roomSelect.options.length) {
+      currentRoomId = roomSelect.value = roomSelect.options[0].value;
+      await refreshRoomStats();
+      await loadUsers(currentRoomId);
+    }
+  }
+  roomSelect.onchange = async ()=> {
+    currentRoomId = roomSelect.value;
+    await refreshRoomStats();
+    await loadUsers(currentRoomId);
+  };
+
+  document.getElementById('toggleMuteBtn').onclick = async ()=>{
+    if(!currentRoomId) return alert('Select a room');
+    const rRef = doc(db,'rooms',currentRoomId);
+    const rSnap = await getDoc(rRef);
+    const cur = rSnap.exists()? rSnap.data().globalMute || false : false;
+    await updateDoc(rRef, { globalMute: !cur }).catch(async ()=>{
+      await setDoc(rRef, { globalMute: true }, { merge:true });
+    });
+    await logAction('toggle_mute', { room: currentRoomId, value: !cur });
+    alert('Toggled mute -> ' + !cur);
+  };
+
+  document.getElementById('toggleSlowBtn').onclick = async ()=>{
+    if(!currentRoomId) return alert('Select a room');
+    const rRef = doc(db,'rooms',currentRoomId);
+    const rSnap = await getDoc(rRef);
+    const cur = rSnap.exists()? rSnap.data().slowChat || false : false;
+    await updateDoc(rRef, { slowChat: !cur }).catch(async ()=>{
+      await setDoc(rRef, { slowChat: true }, { merge:true });
+    });
+    await logAction('toggle_slow', { room: currentRoomId, value: !cur });
+    alert('Toggled slow chat -> ' + !cur);
+  };
+
+  document.getElementById('resetRoomBtn').onclick = async ()=>{
+    if(!currentRoomId) return alert('Select a room');
+    await updateDoc(doc(db,'rooms',currentRoomId), { globalMute: false, slowChat: false }).catch(()=>{});
+    await logAction('reset_room', { room: currentRoomId });
+    alert('Room reset');
+  };
+
+  async function refreshRoomStats(){
+    if(!currentRoomId) return;
+    const usersSnap = await getDocs(collection(db,'users'));
+    // if you store users per room, adapt with where('roomId','==',currentRoomId)
+    let total = 0, hosts=0, banned=0;
+    usersSnap.forEach(u=>{
+      const d = u.data();
+      // change logic to check room membership if you store roomId per user
+      // Example: if(d.roomId !== currentRoomId) return;
+      total++;
+      if(d.isHost) hosts++;
+      if(d.banned) banned++;
+    });
+    roomUserCount.textContent = total;
+    roomHostCount.textContent = hosts;
+    roomBannedCount.textContent = banned;
+    const rSnap = await getDoc(doc(db,'rooms',currentRoomId)).catch(()=>null);
+    roomNameEl.textContent = rSnap?.exists()? (rSnap.data().name || currentRoomId) : currentRoomId;
+  }
+
+  // ----------------- USERS -----------------
+  async function loadUsers(roomId){
+    userListEl.innerHTML = '<tr><td colspan=6>Loading...</td></tr>';
+    const snap = await getDocs(collection(db,'users')); // adapt query by room if needed
+    userListEl.innerHTML = '';
+    const filter = userFilter.value;
+    const q = userSearch.value?.toLowerCase() || '';
+
+    snap.forEach(docSnap => {
+      const u = { id: docSnap.id, ...docSnap.data() };
+      // If you store roomId in users, only include those in current room:
+      // if(u.roomId && roomId && u.roomId !== roomId) return;
+      // Filters:
+      if(filter === 'hosts' && !u.isHost) return;
+      if(filter === 'banned' && !u.banned) return;
+      if(filter === 'kicked' && !u.kicked) return;
+      if(filter === 'timedout' && (!u.timeoutUntil || u.timeoutUntil < Date.now())) return;
+      if(q){
+        const s = `${u.email||''} ${u.displayName||''} ${u.id}`.toLowerCase();
+        if(!s.includes(q)) return;
       }
-    }
 
-    window.deleteShopItem = async (id) => {
-      await deleteDoc(doc(db, 'shopItems', id));
-      loadShop();
-    }
+      const tr = document.createElement('tr');
+      const statusParts = [];
+      if(u.banned) statusParts.push('banned');
+      if(u.kicked) statusParts.push('kicked');
+      if(u.timeoutUntil && u.timeoutUntil > Date.now()) statusParts.push('timed out');
 
-    saveProductBtn.onclick = async () => {
-      await setDoc(doc(collection(db,'shopItems')), {
-        name: productName.value,
-        img: productImg.value,
-        cost: Number(productCost.value),
-        cashReward: Number(productCashReward.value),
-        available: Number(productStock.value),
-        hostOnly: productHostOnly.checked
-      });
-      loadShop(); alert('Added!');
-    }
+      tr.innerHTML = `
+        <td style="max-width:220px">${u.displayName || u.email || u.id}<br><span class="small">${u.email||u.id}</span></td>
+        <td>${u.isHost? '✅' : '—'}</td>
+        <td>${u.stars||0}</td>
+        <td>₦${u.cash||0}</td>
+        <td>${statusParts.join(', ') || 'ok'}</td>
+        <td>
+          <div class="actions-wrap">
+            <button class="btn" onclick="promoteHost('${u.id}', ${!u.isHost})">${u.isHost? 'Demote' : 'Promote'}</button>
+            <button class="btn" onclick="kickUser('${u.id}')">Kick</button>
+            <button class="btn" onclick="banUser('${u.id}')">Ban</button>
+            <button class="btn" onclick="viewClaimsForUser('${u.id}')">Claims</button>
+            <button class="btn ghost" onclick="selectUserId('${u.id}')">Select</button>
+          </div>
+        </td>
+      `;
+      userListEl.appendChild(tr);
+    });
+  }
+  window.loadUsers = loadUsers;
 
-    // ---------- Shop Preview ----------
-    const shopViewMode = document.getElementById("shopViewMode");
-    const shopPreview = document.getElementById("shopPreview");
+  window.selectUserId = (id) => { selectedUserIdEl.value = id; }
 
-    async function renderShopPreview() {
-      shopPreview.innerHTML = '';
-      const mode = shopViewMode.value;
-      const snap = await getDocs(collection(db,'shopItems'));
-      snap.forEach(docSnap => {
-        const p = docSnap.data();
-        if (mode === 'user' && p.hostOnly) return;
-        const div = document.createElement('div');
-        div.innerHTML = `<b>${p.name}</b> (${p.cost}⭐) ${p.hostOnly ? "[Host]" : ""}`;
-        shopPreview.appendChild(div);
-      });
+  window.promoteHost = async (uid, setTo) => {
+    await updateDoc(doc(db,'users',uid), { isHost: setTo }).catch(async ()=>{
+      await setDoc(doc(db,'users',uid), { isHost: setTo }, { merge:true });
+    });
+    await logAction('promoteHost', { uid, to: setTo });
+    await loadUsers(currentRoomId);
+  }
+
+  window.kickUser = async (uid) => {
+    await updateDoc(doc(db,'users',uid), { kicked: true }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { kicked:true }, { merge:true }); });
+    await logAction('kick', { uid });
+    alert('User kicked');
+    await loadUsers(currentRoomId);
+  }
+
+  window.banUser = async (uid) => {
+    await updateDoc(doc(db,'users',uid), { banned: true }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { banned:true }, { merge:true }); });
+    await logAction('ban', { uid });
+    alert('User banned');
+    await loadUsers(currentRoomId);
+  }
+
+  // Gift stars/cash
+  window.giftToUser = async () => {
+    const uid = selectedUserIdEl.value;
+    if(!uid) return alert('Select user id first');
+    const addStars = Number(giftStarsEl.value) || 0;
+    const addCash = Number(giftCashEl.value) || 0;
+    const uRef = doc(db,'users',uid);
+    const snap = await getDoc(uRef);
+    const u = snap.exists()? snap.data() : {};
+    const newStars = (u.stars || 0) + addStars;
+    const newCash = (u.cash || 0) + addCash;
+    await updateDoc(uRef, { stars: newStars, cash: newCash }).catch(async ()=>{ await setDoc(uRef, { stars:newStars, cash:newCash }, { merge:true }); });
+    await logAction('gift', { uid, addStars, addCash });
+    alert(`Gave ${addStars}⭐ and ₦${addCash} to ${uid}`);
+    await loadUsers(currentRoomId);
+  }
+
+  // Timeout user
+  window.timeoutUser = async () => {
+    const uid = selectedUserIdEl.value;
+    if(!uid) return alert('Select user id first');
+    const s = Number(timeoutSecondsEl.value) || 0;
+    const until = tsPlusSeconds(s);
+    await updateDoc(doc(db,'users',uid), { timeoutUntil: until }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { timeoutUntil: until }, { merge:true }); });
+    await logAction('timeout', { uid, seconds: s, until });
+    alert(`User timed out for ${s} seconds`);
+    await loadUsers(currentRoomId);
+  }
+
+  window.clearTimeoutUser = async () => {
+    const uid = selectedUserIdEl.value;
+    if(!uid) return alert('Select user id first');
+    await updateDoc(doc(db,'users',uid), { timeoutUntil: 0 }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { timeoutUntil: 0 }, { merge:true }); });
+    await logAction('clear_timeout', { uid });
+    alert('Timeout cleared');
+    await loadUsers(currentRoomId);
+  }
+
+  // ----------------- SHOP -----------------
+  async function loadShop(){
+    shopListEl.innerHTML = '<tr><td colspan=6>Loading...</td></tr>';
+    const snap = await getDocs(collection(db,'shopItems'));
+    shopListEl.innerHTML = '';
+    snap.forEach(docSnap => {
+      const p = { id: docSnap.id, ...docSnap.data() };
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.name}</td>
+        <td>${p.cost||0} ⭐</td>
+        <td>₦${p.cashReward||0}</td>
+        <td>${p.available||0}</td>
+        <td>${p.hostOnly? '✅' : '—'}</td>
+        <td>
+          <button class="btn" onclick="editProduct('${p.id}')">Edit</button>
+          <button class="btn" onclick="deleteProduct('${p.id}')">Delete</button>
+        </td>
+      `;
+      shopListEl.appendChild(tr);
+    });
+  }
+  window.loadShop = loadShop;
+
+  window.editProduct = async (id) => {
+    currentProductEditId = id;
+    const snap = await getDoc(doc(db,'shopItems',id));
+    const p = snap.data();
+    productName.value = p.name || '';
+    productImg.value = p.img || '';
+    productCost.value = p.cost || 0;
+    productCash.value = p.cashReward || 0;
+    productStock.value = p.available || 0;
+    productHostOnly.checked = p.hostOnly || false;
+    window.scrollTo(0,document.body.scrollHeight);
+  }
+
+  window.deleteProduct = async (id) => {
+    if(!confirm('Delete product?')) return;
+    await deleteDoc(doc(db,'shopItems',id));
+    await logAction('delete_product',{id});
+    await loadShop();
+  }
+
+  saveProductBtn.onclick = async () => {
+    const data = {
+      name: productName.value,
+      img: productImg.value,
+      cost: Number(productCost.value) || 0,
+      cashReward: Number(productCash.value) || 0,
+      available: Number(productStock.value) || 0,
+      hostOnly: !!productHostOnly.checked
+    };
+    if(currentProductEditId){
+      await updateDoc(doc(db,'shopItems',currentProductEditId), data).catch(()=>setDoc(doc(db,'shopItems',currentProductEditId), data, { merge:true }));
+      await logAction('update_product',{id:currentProductEditId, data});
+      currentProductEditId = null;
+    } else {
+      await addDoc(collection(db,'shopItems'), { ...data, createdAt: serverTimestamp() });
+      await logAction('create_product',{data});
     }
-    shopViewMode.onchange = renderShopPreview;
-    renderShopPreview();
-  </script>
+    clearProductForm();
+    await loadShop();
+  }
+
+  function clearProductForm(){
+    currentProductEditId = null;
+    productName.value = productImg.value = '';
+    productCost.value = productCash.value = productStock.value = '';
+    productHostOnly.checked = false;
+  }
+
+  // ----------------- CLAIMS -----------------
+  async function loadClaims(){
+    claimsListEl.innerHTML = '<li>Loading...</li>';
+    const snap = await getDocs(collection(db,'claims'));
+    claimsListEl.innerHTML = '';
+    snap.forEach(cl=>{
+      const c = { id: cl.id, ...cl.data() };
+      const li = document.createElement('li');
+      li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
+      li.innerHTML = `<div style="display:flex;justify-content:space-between">
+        <div><b>${c.productName||c.productId}</b> — <span class="small">by ${c.userId || c.userEmail}</span><br><span class="small">${new Date((c.createdAt && c.createdAt.seconds? c.createdAt.seconds*1000 : Date.now())).toLocaleString()}</span></div>
+        <div>
+          <button class="btn" onclick="refundClaim('${c.id}')">Refund</button>
+          <button class="btn ghost" onclick="viewClaimDetails('${c.id}')">View</button>
+        </div>
+      </div>`;
+      claimsListEl.appendChild(li);
+    });
+  }
+  window.loadClaims = loadClaims;
+
+  window.viewClaimsForUser = async (uid) => {
+    const snap = await getDocs(collection(db,'claims'));
+    const arr = [];
+    snap.forEach(d=>{
+      const c = { id: d.id, ...d.data() };
+      if(c.userId === uid) arr.push(c);
+    });
+    if(!arr.length) return alert('No claims for user');
+    // show a simple popup of claims
+    alert(JSON.stringify(arr, null, 2));
+  }
+
+  window.refundClaim = async (claimId) => {
+    // implement refund logic as needed — here we'll mark claim refunded
+    await updateDoc(doc(db,'claims',claimId), { refunded: true }).catch(()=>{});
+    await logAction('refund_claim', { claimId });
+    alert('Claim marked refunded');
+    await loadClaims();
+  }
+
+  window.viewClaimDetails = async (id) => {
+    const snap = await getDoc(doc(db,'claims',id));
+    alert(JSON.stringify(snap.data(), null, 2));
+  }
+
+  // ----------------- LOGS -----------------
+  async function loadLogs(){
+    logListEl.innerHTML = '<li>Loading...</li>';
+    const snap = await getDocs(collection(db,'logs'));
+    logListEl.innerHTML = '';
+    snap.forEach(d=>{
+      const l = d.data();
+      const li = document.createElement('li');
+      li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
+      li.textContent = `${l.type} — ${JSON.stringify(l.detail || '')} — ${l.createdAt? l.createdAt.seconds : ''}`;
+      logListEl.appendChild(li);
+    });
+  }
+  window.loadLogs = loadLogs;
+
+  // ----------------- ADMIN PROFILE (meta/adminProfile) -----------------
+  async function loadAdminProfile(){
+    const ref = doc(db,'meta','adminProfile');
+    const snap = await getDoc(ref);
+    if(snap.exists()){
+      const p = snap.data();
+      adminNameEl.value = p.name || '';
+      adminEmailEl.value = p.email || '';
+      adminStarsEl.value = p.stars || 0;
+      adminCashEl.value = p.cash || 0;
+    } else {
+      adminNameEl.value = adminEmailEl.value = '';
+      adminStarsEl.value = adminCashEl.value = 0;
+    }
+  }
+
+  window.loadAdminProfile = loadAdminProfile;
+
+  async function saveAdminProfile(){
+    const ref = doc(db,'meta','adminProfile');
+    const data = {
+      name: adminNameEl.value,
+      email: adminEmailEl.value,
+      stars: Number(adminStarsEl.value) || 0,
+      cash: Number(adminCashEl.value) || 0,
+      updatedAt: serverTimestamp()
+    };
+    await setDoc(ref, data, { merge:true });
+    await logAction('save_admin_profile', data);
+    alert('Saved admin profile');
+  }
+  window.saveAdminProfile = saveAdminProfile;
+
+  // ----------------- UTILS / START -----------------
+  async function refreshAll(){
+    await loadRooms();
+    await loadUsers(currentRoomId);
+    await loadShop();
+    await loadClaims();
+    await loadLogs();
+    await loadAdminProfile();
+  }
+
+  // Load once
+  (async ()=>{ await refreshAll(); })();
+
+  // expose a few functions to window for buttons used in markup
+  window.loadUsers = loadUsers;
+  window.loadShop = loadShop;
+  window.loadClaims = loadClaims;
+  window.loadLogs = loadLogs;
+  window.giftToUser = giftToUser;
+  window.timeoutUser = timeoutUser;
+  window.clearTimeoutUser = clearTimeoutUser;
+
+</script>
 </body>
 </html>
