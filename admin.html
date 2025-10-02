@@ -1,122 +1,106 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Admin Dashboard — Full</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Dashboard — NNAMDI</title>
 <style>
 :root{
-  --bg:#f5f6f8; --panel:#fff; --accent:#ff33cc; --muted:#888;
+  --bg:#f5f6f8; --panel:#fff; --accent:#ff33cc; --muted:#6b7280; --text:#0f1720;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);display:flex;height:100vh;overflow:hidden;color:#111}
-.sidebar{width:220px;background:#0f1720;color:#fff;display:flex;flex-direction:column;padding:16px;gap:8px}
-.sidebar h2{margin:0 0 8px 0;font-size:18px;text-align:center}
-.sidebar button{background:none;border:none;color:#cbd5e1;padding:10px;border-radius:6px;text-align:left;cursor:pointer}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
+.sidebar{width:220px;background:#0b1220;color:#fff;display:flex;flex-direction:column;padding:14px;gap:8px}
+.sidebar h2{margin:0 0 6px 0;font-size:16px;text-align:center}
+.sidebar button{background:none;border:none;color:#cbd5e1;padding:10px;border-radius:8px;text-align:left;cursor:pointer}
 .sidebar button.active, .sidebar button:hover{background:var(--accent);color:#fff}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:56px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #e6e9ee}
-.topbar .left{display:flex;gap:12px;align-items:center}
-.topbar .brand{font-weight:700}
-.content{display:flex;flex:1;overflow:auto;padding:16px;gap:16px}
-
-/* column layout */
-.col{flex:1;min-width:360px;max-width:1200px}
-
-/* card */
+.topbar{height:64px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #e6e9ee}
+.topbar .left{display:flex;align-items:center;gap:12px}
+.brand{font-weight:700}
+.admin-info{display:flex;gap:12px;align-items:center;font-size:14px}
+.content{display:flex;flex:1;overflow:auto;padding:18px;gap:18px}
+.col{flex:1;min-width:420px;max-width:1200px;overflow:auto}
 .card{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(8,12,20,0.06);margin-bottom:12px}
 h3{margin:0 0 8px 0}
-
-/* small UI */
-input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e3e7ee;margin:6px 0}
+input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e3e7ee;margin:6px 0;font-size:14px}
 .table{width:100%;border-collapse:collapse}
-.table th,.table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
-.btn{background:var(--accent);color:#fff;border:none;padding:7px 10px;border-radius:6px;cursor:pointer;margin:0 4px}
+.table th,.table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px;vertical-align:middle}
+.btn{background:var(--accent);color:#fff;border:none;padding:7px 10px;border-radius:8px;cursor:pointer}
 .btn.ghost{background:transparent;color:var(--muted);border:1px solid #eef2f6}
-.inline{display:inline-block}
-
-/* small bits */
 .controls{display:flex;gap:8px;flex-wrap:wrap}
-.kv{display:flex;gap:8px;align-items:center}
 .small{font-size:13px;color:var(--muted)}
+.log-list, .claims-list{max-height:360px;overflow:auto;padding:0;margin:0;list-style:none}
 .actions-wrap{display:flex;gap:6px;flex-wrap:wrap}
-.log-list{max-height:260px;overflow:auto;padding:0;margin:0;list-style:none}
-.claims-list{max-height:220px;overflow:auto;padding:0;margin:0;list-style:none}
 .footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
+.badge{background:#eef2f6;color:#111;padding:4px 6px;border-radius:6px;font-size:12px}
 </style>
 </head>
 <body>
 
 <!-- Sidebar -->
 <div class="sidebar">
-  <h2>ADMIN PANEL</h2>
-  <button class="active" data-view="rooms" onclick="showView(event)">Rooms</button>
-  <button data-view="users" onclick="showView(event)">Users</button>
-  <button data-view="shop" onclick="showView(event)">Shop</button>
-  <button data-view="claims" onclick="showView(event)">Claims</button>
-  <button data-view="logs" onclick="showView(event)">Logs</button>
+  <h2>ADMIN</h2>
+  <button data-view="rooms" class="active" onclick="navigate(event)">Rooms</button>
+  <button data-view="users" onclick="navigate(event)">Users</button>
+  <button data-view="shop" onclick="navigate(event)">Shop</button>
+  <button data-view="claims" onclick="navigate(event)">Claims</button>
+  <button data-view="logs" onclick="navigate(event)">Logs</button>
   <div style="flex:1"></div>
-  <button data-view="meta" onclick="showView(event)">Admin Profile</button>
+  <button data-view="meta" onclick="navigate(event)">Admin Profile</button>
 </div>
 
-<!-- Main -->
 <div class="main">
   <div class="topbar">
     <div class="left">
       <div class="brand">🎛️ Admin Dashboard</div>
-      <div class="small"> — compact, functional, Firestore-ready</div>
+      <div class="small">PC layout — realtime</div>
     </div>
-    <div class="right">
+    <div class="admin-info">
+      <div id="adminDisplay" class="small">Not signed (admin)</div>
+      <div id="adminBalances" class="small badge">⭐ 0 — ₦0</div>
       <button class="btn" onclick="refreshAll()">Refresh</button>
     </div>
   </div>
 
   <div class="content">
-
-    <!-- ROOMS VIEW -->
-    <div class="col" id="view-rooms">
+    <!-- ROOMS -->
+    <div id="view-rooms" class="col">
       <div class="card">
-        <h3>Rooms Controls</h3>
-        <div class="controls">
+        <h3>Rooms</h3>
+        <div style="display:flex;gap:8px;">
           <select id="roomSelect"></select>
-          <button class="btn" id="toggleMuteBtn">Toggle Mute</button>
-          <button class="btn" id="toggleSlowBtn">Toggle Slow Chat</button>
-          <button class="btn" id="resetRoomBtn">Reset Room</button>
+          <button class="btn" id="btnToggleMute">Toggle Mute</button>
+          <button class="btn" id="btnToggleSlow">Toggle SlowChat</button>
+          <button class="btn ghost" id="btnResetRoom">Reset</button>
         </div>
       </div>
 
       <div class="card">
         <h3>Room Stats</h3>
-        <div class="kv"><div class="small">Selected Room:</div><div id="roomName" class="small"></div></div>
-        <div class="kv"><div class="small">Total users:</div><div id="roomUserCount" class="small">0</div></div>
-        <div class="kv"><div class="small">Hosts:</div><div id="roomHostCount" class="small">0</div></div>
-        <div class="kv"><div class="small">Banned:</div><div id="roomBannedCount" class="small">0</div></div>
+        <div class="small">Selected: <span id="roomName">—</span></div>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <div class="small">Users: <span id="roomUserCount">0</span></div>
+          <div class="small">Hosts: <span id="roomHostCount">0</span></div>
+          <div class="small">Banned: <span id="roomBannedCount">0</span></div>
+        </div>
       </div>
 
       <div class="card">
         <h3>Broadcast</h3>
-        <textarea id="broadcastText" rows="3" placeholder="Write broadcast to send to selected room"></textarea>
-        <div style="display:flex;gap:8px;">
-          <button class="btn" id="sendBroadcastBtn">Send Broadcast</button>
-          <button class="btn ghost" onclick="logAction('broadcast_preview','preview')">Preview</button>
-        </div>
+        <textarea id="broadcastText" rows="3" placeholder="Message to all users in selected room"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="sendBroadcastBtn">Send</button><button class="btn ghost" onclick="logAction('broadcast_preview')">Preview</button></div>
       </div>
     </div>
 
-    <!-- USERS VIEW -->
-    <div class="col" id="view-users" style="display:none">
+    <!-- USERS -->
+    <div id="view-users" class="col" style="display:none">
       <div class="card">
         <h3>Users</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <input id="userSearch" placeholder="Search by email / name / id">
-          <select id="userFilter">
-            <option value="all">All</option>
-            <option value="hosts">Hosts</option>
-            <option value="banned">Banned</option>
-            <option value="kicked">Kicked</option>
-            <option value="timedout">Timed out</option>
-          </select>
-          <button class="btn" onclick="loadUsers(currentRoomId)">Search / Refresh</button>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="userSearch" placeholder="Search email / name / id">
+          <select id="userFilter"><option value="all">All</option><option value="hosts">Hosts</option><option value="vip">VIP</option><option value="banned">Banned</option><option value="kicked">Kicked</option><option value="timedout">Timed out</option></select>
+          <button class="btn" onclick="loadUsers()">Search</button>
         </div>
 
         <table class="table">
@@ -127,24 +111,29 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
 
       <div class="card">
         <h3>Quick Gift / Timeout</h3>
-        <div style="display:flex;gap:8px;">
-          <input id="selectedUserId" placeholder="Target user id (click a user to auto-fill)">
-          <input id="giftStars" type="number" placeholder="Stars to gift">
-          <input id="giftCash" type="number" placeholder="Cash to gift">
+        <div style="display:flex;gap:8px">
+          <input id="selectedUserId" placeholder="User id (click a user to auto-fill)">
+          <input id="giftStars" type="number" placeholder="Stars">
+          <input id="giftCash" type="number" placeholder="Cash">
           <button class="btn" onclick="giftToUser()">Give</button>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <input id="timeoutSeconds" type="number" placeholder="Timeout seconds (e.g. 60)">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="timeoutSec" type="number" placeholder="Timeout seconds">
           <button class="btn" onclick="timeoutUser()">Timeout</button>
           <button class="btn ghost" onclick="clearTimeoutUser()">Clear Timeout</button>
         </div>
       </div>
     </div>
 
-    <!-- SHOP VIEW -->
-    <div class="col" id="view-shop" style="display:none">
+    <!-- SHOP -->
+    <div id="view-shop" class="col" style="display:none">
       <div class="card">
-        <h3>Shop Items (Admin)</h3>
+        <h3>Shop Items</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="shopSearch" placeholder="Search items">
+          <select id="shopViewMode"><option value="admin">Admin</option><option value="host">Host</option><option value="user">User</option></select>
+          <button class="btn" onclick="loadShop()">Refresh</button>
+        </div>
         <table class="table">
           <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>HostOnly</th><th>Actions</th></tr></thead>
           <tbody id="shopList"></tbody>
@@ -152,34 +141,31 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
       </div>
 
       <div class="card">
-        <h3>Add / Edit Item</h3>
-        <input id="productName" placeholder="Product name">
+        <h3>Add / Edit Product</h3>
+        <input id="productName" placeholder="Name">
         <input id="productImg" placeholder="Image URL (optional)">
         <input id="productCost" type="number" placeholder="Cost (stars)">
         <input id="productCash" type="number" placeholder="Cash reward (₦)">
-        <input id="productStock" type="number" placeholder="Available stock">
+        <input id="productStock" type="number" placeholder="Stock">
         <label><input id="productHostOnly" type="checkbox"> Host only</label>
-        <div style="margin-top:8px">
-          <button class="btn" id="saveProductBtn">Save / Add</button>
-          <button class="btn ghost" onclick="clearProductForm()">Clear</button>
-        </div>
+        <div style="margin-top:8px"><button class="btn" id="saveProductBtn">Save</button><button class="btn ghost" onclick="clearProductForm()">Clear</button></div>
       </div>
     </div>
 
-    <!-- CLAIMS VIEW -->
-    <div class="col" id="view-claims" style="display:none">
+    <!-- CLAIMS -->
+    <div id="view-claims" class="col" style="display:none">
       <div class="card">
         <h3>Claims / Purchases</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <input id="claimSearch" placeholder="Search by user id / product / claim id">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="claimSearch" placeholder="Search by user / product / id">
           <button class="btn" onclick="loadClaims()">Refresh</button>
         </div>
         <ul class="claims-list" id="claimsList"></ul>
       </div>
     </div>
 
-    <!-- LOGS VIEW -->
-    <div class="col" id="view-logs" style="display:none">
+    <!-- LOGS -->
+    <div id="view-logs" class="col" style="display:none">
       <div class="card">
         <h3>Action Logs</h3>
         <button class="btn" onclick="loadLogs()">Refresh</button>
@@ -187,494 +173,487 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
       </div>
     </div>
 
-    <!-- META / ADMIN PROFILE -->
-    <div class="col" id="view-meta" style="display:none">
+    <!-- META -->
+    <div id="view-meta" class="col" style="display:none">
       <div class="card">
-        <h3>Admin Profile (local)</h3>
-        <div class="small">You can store a small admin profile in Firestore so the dashboard shows your username and balances.</div>
-        <input id="adminName" placeholder="Admin display name">
-        <input id="adminEmail" placeholder="Admin email (optional)">
-        <input id="adminStars" type="number" placeholder="Your Stars balance">
-        <input id="adminCash" type="number" placeholder="Your Cash balance">
-        <div style="margin-top:8px">
-          <button class="btn" onclick="saveAdminProfile()">Save Profile</button>
-          <button class="btn ghost" onclick="loadAdminProfile()">Reload</button>
-        </div>
+        <h3>Admin Profile</h3>
+        <input id="adminName" placeholder="Admin display name (chatId)">
+        <input id="adminEmail" placeholder="Admin email">
+        <input id="adminStars" type="number" placeholder="Stars">
+        <input id="adminCash" type="number" placeholder="Cash">
+        <div style="margin-top:8px"><button class="btn" onclick="saveAdminProfile()">Save</button><button class="btn ghost" onclick="loadAdminProfile()">Load</button></div>
       </div>
     </div>
 
   </div>
 
-  <div class="footer">Built for NNAMDI — replace firebase config with yours and secure rules before production.</div>
+  <div class="footer">Built for NNAMDI — replace anything you want. Secure Firestore rules before production.</div>
 </div>
 
-<!-- Firebase + App logic -->
+<!-- Firebase + JS -->
 <script type="module">
-  // FIREBASE SDK
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import {
-    getFirestore, collection, getDocs, doc, getDoc, setDoc,
-    addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+/* ---------- FIREBASE v10 imports ---------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, getDocs, addDoc, doc, getDoc, setDoc, updateDoc,
+  deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, increment
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // --------- REPLACE WITH YOUR FIREBASE CONFIG ----------
+/* ---------- Use your project config (you provided earlier) ---------- */
 const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
 
-  // -----------------------------------------------------
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+/* ---------- DOM refs ---------- */
+const adminDisplay = document.getElementById('adminDisplay');
+const adminBalances = document.getElementById('adminBalances');
 
-  // DOM refs + state
-  const views = {
-    rooms: document.getElementById('view-rooms'),
-    users: document.getElementById('view-users'),
-    shop: document.getElementById('view-shop'),
-    claims: document.getElementById('view-claims'),
-    logs: document.getElementById('view-logs'),
-    meta: document.getElementById('view-meta'),
-  };
+const roomSelect = document.getElementById('roomSelect');
+const roomNameEl = document.getElementById('roomName');
+const roomUserCount = document.getElementById('roomUserCount');
+const roomHostCount = document.getElementById('roomHostCount');
+const roomBannedCount = document.getElementById('roomBannedCount');
+const btnToggleMute = document.getElementById('btnToggleMute');
+const btnToggleSlow = document.getElementById('btnToggleSlow');
+const btnResetRoom = document.getElementById('btnResetRoom');
+const broadcastText = document.getElementById('broadcastText');
+const sendBroadcastBtn = document.getElementById('sendBroadcastBtn');
 
-  let currentRoomId = null;
-  let currentProductEditId = null;
+const userList = document.getElementById('userList');
+const userSearch = document.getElementById('userSearch');
+const userFilter = document.getElementById('userFilter');
+const selectedUserId = document.getElementById('selectedUserId');
+const giftStars = document.getElementById('giftStars');
+const giftCash = document.getElementById('giftCash');
+const timeoutSec = document.getElementById('timeoutSec');
 
-  // UI elements
-  const roomSelect = document.getElementById('roomSelect');
-  const roomNameEl = document.getElementById('roomName');
-  const roomUserCount = document.getElementById('roomUserCount');
-  const roomHostCount = document.getElementById('roomHostCount');
-  const roomBannedCount = document.getElementById('roomBannedCount');
+const shopList = document.getElementById('shopList');
+const shopViewMode = document.getElementById('shopViewMode');
+const shopSearch = document.getElementById('shopSearch');
 
-  const userListEl = document.getElementById('userList');
-  const userSearch = document.getElementById('userSearch');
-  const userFilter = document.getElementById('userFilter');
-  const selectedUserIdEl = document.getElementById('selectedUserId');
-  const giftStarsEl = document.getElementById('giftStars');
-  const giftCashEl = document.getElementById('giftCash');
-  const timeoutSecondsEl = document.getElementById('timeoutSeconds');
+const claimsList = document.getElementById('claimsList');
+const logList = document.getElementById('logList');
 
-  const shopListEl = document.getElementById('shopList');
-  const productName = document.getElementById('productName');
-  const productImg = document.getElementById('productImg');
-  const productCost = document.getElementById('productCost');
-  const productCash = document.getElementById('productCash');
-  const productStock = document.getElementById('productStock');
-  const productHostOnly = document.getElementById('productHostOnly');
-  const saveProductBtn = document.getElementById('saveProductBtn');
+const productName = document.getElementById('productName');
+const productImg = document.getElementById('productImg');
+const productCost = document.getElementById('productCost');
+const productCash = document.getElementById('productCash');
+const productStock = document.getElementById('productStock');
+const productHostOnly = document.getElementById('productHostOnly');
+const saveProductBtn = document.getElementById('saveProductBtn');
 
-  const claimsListEl = document.getElementById('claimsList');
-  const logListEl = document.getElementById('logList');
+const adminName = document.getElementById('adminName');
+const adminEmail = document.getElementById('adminEmail');
+const adminStars = document.getElementById('adminStars');
+const adminCash = document.getElementById('adminCash');
 
-  const adminNameEl = document.getElementById('adminName');
-  const adminEmailEl = document.getElementById('adminEmail');
-  const adminStarsEl = document.getElementById('adminStars');
-  const adminCashEl = document.getElementById('adminCash');
+/* ---------- State ---------- */
+let currentRoomId = null;
+let adminProfile = null;
+let editingProductId = null;
 
-  // ----------------- HELPERS -----------------
-  function showView(e){
-    const view = e.currentTarget?.dataset?.view || e;
-    Object.values(views).forEach(v=>v.style.display='none');
-    views[view].style.display='block';
-    // set active button
-    document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
-    const btn = [...document.querySelectorAll('.sidebar button')].find(b=>b.dataset.view===view);
-    if(btn) btn.classList.add('active');
-  }
+/* ---------- Navigation ---------- */
+function navigate(e){
+  const view = e.currentTarget.dataset.view;
+  document.querySelectorAll('.col').forEach(c=>c.style.display='none');
+  document.getElementById('view-' + view).style.display = 'block';
+  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+}
+window.navigate = navigate;
 
-  window.showView = showView;
+/* ---------- LOGGING ---------- */
+async function logAction(type, detail = {}){
+  try { await addDoc(collection(db,'logs'), { type, detail, createdAt: serverTimestamp() }); } catch(e){ console.warn('log failed',e); }
+}
 
-  function now() { return Date.now(); }
-  function tsPlusSeconds(s){ return now() + (Number(s)||0)*1000; }
-
-  async function logAction(type, detail = {}) {
-    try {
-      await addDoc(collection(db,'logs'), {
-        type, detail, createdAt: serverTimestamp()
-      });
-    } catch(e){ console.error('logErr', e); }
-  }
-
-  // ----------------- ROOMS -----------------
-  async function loadRooms(){
-    roomSelect.innerHTML = '<option>Loading...</option>';
-    const snap = await getDocs(collection(db,'rooms'));
-    roomSelect.innerHTML = '';
-    snap.forEach(d=>{
-      const r = { id: d.id, ...d.data() };
-      const opt = document.createElement('option');
-      opt.value = r.id;
-      opt.textContent = r.name || r.id;
-      roomSelect.appendChild(opt);
-    });
-    if(roomSelect.options.length) {
-      currentRoomId = roomSelect.value = roomSelect.options[0].value;
-      await refreshRoomStats();
-      await loadUsers(currentRoomId);
-    }
-  }
-  roomSelect.onchange = async ()=> {
-    currentRoomId = roomSelect.value;
+/* ---------- ROOMS ---------- */
+async function loadRooms(){
+  roomSelect.innerHTML = '<option>Loading...</option>';
+  const snap = await getDocs(collection(db,'rooms'));
+  roomSelect.innerHTML = '';
+  snap.forEach(d=>{
+    const r = { id: d.id, ...d.data() };
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = r.name || r.id;
+    roomSelect.appendChild(opt);
+  });
+  if(roomSelect.options.length){
+    currentRoomId = roomSelect.value = roomSelect.options[0].value;
     await refreshRoomStats();
-    await loadUsers(currentRoomId);
-  };
-
-  document.getElementById('toggleMuteBtn').onclick = async ()=>{
-    if(!currentRoomId) return alert('Select a room');
-    const rRef = doc(db,'rooms',currentRoomId);
-    const rSnap = await getDoc(rRef);
-    const cur = rSnap.exists()? rSnap.data().globalMute || false : false;
-    await updateDoc(rRef, { globalMute: !cur }).catch(async ()=>{
-      await setDoc(rRef, { globalMute: true }, { merge:true });
-    });
-    await logAction('toggle_mute', { room: currentRoomId, value: !cur });
-    alert('Toggled mute -> ' + !cur);
-  };
-
-  document.getElementById('toggleSlowBtn').onclick = async ()=>{
-    if(!currentRoomId) return alert('Select a room');
-    const rRef = doc(db,'rooms',currentRoomId);
-    const rSnap = await getDoc(rRef);
-    const cur = rSnap.exists()? rSnap.data().slowChat || false : false;
-    await updateDoc(rRef, { slowChat: !cur }).catch(async ()=>{
-      await setDoc(rRef, { slowChat: true }, { merge:true });
-    });
-    await logAction('toggle_slow', { room: currentRoomId, value: !cur });
-    alert('Toggled slow chat -> ' + !cur);
-  };
-
-  document.getElementById('resetRoomBtn').onclick = async ()=>{
-    if(!currentRoomId) return alert('Select a room');
-    await updateDoc(doc(db,'rooms',currentRoomId), { globalMute: false, slowChat: false }).catch(()=>{});
-    await logAction('reset_room', { room: currentRoomId });
-    alert('Room reset');
-  };
-
-  async function refreshRoomStats(){
-    if(!currentRoomId) return;
-    const usersSnap = await getDocs(collection(db,'users'));
-    // if you store users per room, adapt with where('roomId','==',currentRoomId)
-    let total = 0, hosts=0, banned=0;
-    usersSnap.forEach(u=>{
-      const d = u.data();
-      // change logic to check room membership if you store roomId per user
-      // Example: if(d.roomId !== currentRoomId) return;
-      total++;
-      if(d.isHost) hosts++;
-      if(d.banned) banned++;
-    });
-    roomUserCount.textContent = total;
-    roomHostCount.textContent = hosts;
-    roomBannedCount.textContent = banned;
-    const rSnap = await getDoc(doc(db,'rooms',currentRoomId)).catch(()=>null);
-    roomNameEl.textContent = rSnap?.exists()? (rSnap.data().name || currentRoomId) : currentRoomId;
+    await loadUsers();
   }
+}
+roomSelect.onchange = async ()=>{ currentRoomId = roomSelect.value; await refreshRoomStats(); await loadUsers(); };
 
-  // ----------------- USERS -----------------
-  async function loadUsers(roomId){
-    userListEl.innerHTML = '<tr><td colspan=6>Loading...</td></tr>';
-    const snap = await getDocs(collection(db,'users')); // adapt query by room if needed
-    userListEl.innerHTML = '';
-    const filter = userFilter.value;
-    const q = userSearch.value?.toLowerCase() || '';
+btnToggleMute.onclick = async ()=>{
+  if(!currentRoomId) return alert('Select room');
+  const rRef = doc(db,'rooms',currentRoomId);
+  const rSnap = await getDoc(rRef);
+  const cur = rSnap.exists()? rSnap.data().globalMute||false : false;
+  await updateDoc(rRef, { globalMute: !cur }).catch(async ()=> setDoc(rRef,{ globalMute: true }, { merge:true }));
+  await logAction('toggle_mute',{room:currentRoomId, value:!cur});
+  alert('Global mute: ' + !cur);
+};
 
-    snap.forEach(docSnap => {
-      const u = { id: docSnap.id, ...docSnap.data() };
-      // If you store roomId in users, only include those in current room:
-      // if(u.roomId && roomId && u.roomId !== roomId) return;
-      // Filters:
-      if(filter === 'hosts' && !u.isHost) return;
-      if(filter === 'banned' && !u.banned) return;
-      if(filter === 'kicked' && !u.kicked) return;
-      if(filter === 'timedout' && (!u.timeoutUntil || u.timeoutUntil < Date.now())) return;
-      if(q){
-        const s = `${u.email||''} ${u.displayName||''} ${u.id}`.toLowerCase();
-        if(!s.includes(q)) return;
-      }
+btnToggleSlow.onclick = async ()=>{
+  if(!currentRoomId) return alert('Select room');
+  const rRef = doc(db,'rooms',currentRoomId);
+  const rSnap = await getDoc(rRef);
+  const cur = rSnap.exists()? rSnap.data().slowChat||false:false;
+  await updateDoc(rRef,{ slowChat: !cur }).catch(async ()=> setDoc(rRef,{ slowChat: true }, { merge:true }));
+  await logAction('toggle_slow',{room:currentRoomId, value:!cur});
+  alert('Slow chat: ' + !cur);
+};
 
-      const tr = document.createElement('tr');
-      const statusParts = [];
-      if(u.banned) statusParts.push('banned');
-      if(u.kicked) statusParts.push('kicked');
-      if(u.timeoutUntil && u.timeoutUntil > Date.now()) statusParts.push('timed out');
+btnResetRoom.onclick = async ()=>{
+  if(!currentRoomId) return;
+  await updateDoc(doc(db,'rooms',currentRoomId), { globalMute:false, slowChat:false }).catch(()=>{});
+  await logAction('reset_room',{room:currentRoomId});
+  alert('Room reset');
+};
 
-      tr.innerHTML = `
-        <td style="max-width:220px">${u.displayName || u.email || u.id}<br><span class="small">${u.email||u.id}</span></td>
-        <td>${u.isHost? '✅' : '—'}</td>
-        <td>${u.stars||0}</td>
-        <td>₦${u.cash||0}</td>
-        <td>${statusParts.join(', ') || 'ok'}</td>
-        <td>
-          <div class="actions-wrap">
-            <button class="btn" onclick="promoteHost('${u.id}', ${!u.isHost})">${u.isHost? 'Demote' : 'Promote'}</button>
-            <button class="btn" onclick="kickUser('${u.id}')">Kick</button>
-            <button class="btn" onclick="banUser('${u.id}')">Ban</button>
-            <button class="btn" onclick="viewClaimsForUser('${u.id}')">Claims</button>
-            <button class="btn ghost" onclick="selectUserId('${u.id}')">Select</button>
-          </div>
-        </td>
-      `;
-      userListEl.appendChild(tr);
-    });
-  }
-  window.loadUsers = loadUsers;
+sendBroadcastBtn.onclick = async ()=>{
+  if(!currentRoomId) return alert('Select a room');
+  const msg = broadcastText.value.trim();
+  if(!msg) return alert('Type message');
+  // store as a broadcast doc under rooms/{room}/broadcasts for clients to listen
+  await addDoc(collection(db,`rooms/${currentRoomId}/broadcasts`), { text: msg, createdAt: serverTimestamp() });
+  await logAction('broadcast',{room:currentRoomId, text:msg});
+  alert('Broadcast sent');
+};
 
-  window.selectUserId = (id) => { selectedUserIdEl.value = id; }
+/* ---------- ROOM STATS ---------- */
+async function refreshRoomStats(){
+  if(!currentRoomId) return;
+  const usersSnap = await getDocs(collection(db,'users')); // adapt if you store roomId per user
+  let total=0, hosts=0, banned=0;
+  usersSnap.forEach(u=>{
+    const d=u.data();
+    // if(d.roomId && currentRoomId && d.roomId !== currentRoomId) return; // un-comment if you have per-user roomId
+    total++;
+    if(d.isHost) hosts++;
+    if(d.banned) banned++;
+  });
+  roomUserCount.textContent = total;
+  roomHostCount.textContent = hosts;
+  roomBannedCount.textContent = banned;
+  const rSnap = await getDoc(doc(db,'rooms',currentRoomId)).catch(()=>null);
+  roomNameEl.textContent = rSnap?.exists()? (rSnap.data().name || currentRoomId) : currentRoomId;
+}
 
-  window.promoteHost = async (uid, setTo) => {
-    await updateDoc(doc(db,'users',uid), { isHost: setTo }).catch(async ()=>{
-      await setDoc(doc(db,'users',uid), { isHost: setTo }, { merge:true });
-    });
-    await logAction('promoteHost', { uid, to: setTo });
-    await loadUsers(currentRoomId);
-  }
+/* ---------- USERS (realtime) ---------- */
+let usersUnsub = null;
+function startUsersListener(){
+  if(usersUnsub) usersUnsub(); // detach previous
+  const q = query(collection(db,'users'), orderBy('createdAt','desc'));
+  usersUnsub = onSnapshot(q, snap => {
+    renderUsersSnapshot(snap);
+    refreshRoomStats();
+  });
+}
+async function renderUsersSnapshot(snap){
+  userList.innerHTML = '';
+  const filter = userFilter.value;
+  const qstr = (userSearch.value||'').toLowerCase();
+  snap.forEach(docSnap=>{
+    const u = { id: docSnap.id, ...docSnap.data() };
+    // optional room membership filter here if you use roomId per user
+    // filter conditions
+    if(filter==='hosts' && !u.isHost) return;
+    if(filter==='vip' && !u.isVIP) return;
+    if(filter==='banned' && !u.banned) return;
+    if(filter==='kicked' && !u.kicked) return;
+    if(filter==='timedout' && !(u.timeoutUntil && u.timeoutUntil > Date.now())) return;
+    if(qstr){
+      const s = `${u.email||''} ${u.chatId||''} ${u.id}`.toLowerCase();
+      if(!s.includes(qstr)) return;
+    }
 
-  window.kickUser = async (uid) => {
-    await updateDoc(doc(db,'users',uid), { kicked: true }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { kicked:true }, { merge:true }); });
-    await logAction('kick', { uid });
-    alert('User kicked');
-    await loadUsers(currentRoomId);
-  }
+    const tr = document.createElement('tr');
+    const status = [];
+    if(u.banned) status.push('banned');
+    if(u.kicked) status.push('kicked');
+    if(u.timeoutUntil && u.timeoutUntil > Date.now()) status.push('timeout');
 
-  window.banUser = async (uid) => {
-    await updateDoc(doc(db,'users',uid), { banned: true }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { banned:true }, { merge:true }); });
-    await logAction('ban', { uid });
-    alert('User banned');
-    await loadUsers(currentRoomId);
-  }
+    tr.innerHTML = `
+      <td style="max-width:220px">${u.chatId || u.email || u.id}<br><span class="small">${u.email || u.id}</span></td>
+      <td>${u.isHost? '✅' : '—'}</td>
+      <td>${u.stars||0}</td>
+      <td>₦${u.cash||0}</td>
+      <td>${status.join(', ') || 'ok'}</td>
+      <td>
+        <div class="actions-wrap">
+          <button class="btn" onclick="toggleHost('${u.id}', ${!u.isHost})">${u.isHost? 'Demote' : 'Promote'}</button>
+          <button class="btn" onclick="kickUser('${u.id}')">Kick</button>
+          <button class="btn" onclick="banUser('${u.id}')">Ban</button>
+          <button class="btn" onclick="viewClaimsForUser('${u.id}')">Claims</button>
+          <button class="btn ghost" onclick="selectUser('${u.id}')">Select</button>
+        </div>
+      </td>
+    `;
+    userList.appendChild(tr);
+  });
+}
 
-  // Gift stars/cash
-  window.giftToUser = async () => {
-    const uid = selectedUserIdEl.value;
-    if(!uid) return alert('Select user id first');
-    const addStars = Number(giftStarsEl.value) || 0;
-    const addCash = Number(giftCashEl.value) || 0;
-    const uRef = doc(db,'users',uid);
-    const snap = await getDoc(uRef);
-    const u = snap.exists()? snap.data() : {};
-    const newStars = (u.stars || 0) + addStars;
-    const newCash = (u.cash || 0) + addCash;
-    await updateDoc(uRef, { stars: newStars, cash: newCash }).catch(async ()=>{ await setDoc(uRef, { stars:newStars, cash:newCash }, { merge:true }); });
-    await logAction('gift', { uid, addStars, addCash });
-    alert(`Gave ${addStars}⭐ and ₦${addCash} to ${uid}`);
-    await loadUsers(currentRoomId);
-  }
+/* User actions */
+window.selectUser = (id)=>{ selectedUserId.value = id; }
+window.toggleHost = async (uid, setTo) => {
+  await updateDoc(doc(db,'users',uid), { isHost: setTo }).catch(async ()=> setDoc(doc(db,'users',uid), { isHost:setTo }, { merge:true }));
+  await logAction('toggle_host',{uid,setTo});
+  alert('Updated host flag');
+};
+window.kickUser = async (uid) => {
+  await updateDoc(doc(db,'users',uid), { kicked:true }).catch(async ()=> setDoc(doc(db,'users',uid), { kicked:true }, { merge:true }));
+  await logAction('kick',{uid});
+  alert('User kicked');
+};
+window.banUser = async (uid) => {
+  await updateDoc(doc(db,'users',uid), { banned:true }).catch(async ()=> setDoc(doc(db,'users',uid), { banned:true }, { merge:true }));
+  await logAction('ban',{uid});
+  alert('User banned');
+};
 
-  // Timeout user
-  window.timeoutUser = async () => {
-    const uid = selectedUserIdEl.value;
-    if(!uid) return alert('Select user id first');
-    const s = Number(timeoutSecondsEl.value) || 0;
-    const until = tsPlusSeconds(s);
-    await updateDoc(doc(db,'users',uid), { timeoutUntil: until }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { timeoutUntil: until }, { merge:true }); });
-    await logAction('timeout', { uid, seconds: s, until });
-    alert(`User timed out for ${s} seconds`);
-    await loadUsers(currentRoomId);
-  }
+/* gifts and timeouts */
+window.giftToUser = async () => {
+  const uid = selectedUserId.value || selectedUserId.placeholder && selectedUserId.placeholder.value || selectedUserId.value;
+  if(!uid) return alert('Select user id');
+  const addStars = Number(giftStars.value) || 0;
+  const addCash = Number(giftCash.value) || 0;
+  const uRef = doc(db,'users',uid);
+  const snap = await getDoc(uRef);
+  const u = snap.exists()? snap.data() : {};
+  const newStars = (u.stars||0) + addStars;
+  const newCash = (u.cash||0) + addCash;
+  await updateDoc(uRef, { stars: newStars, cash: newCash }).catch(async ()=> setDoc(uRef,{ stars:newStars, cash:newCash }, { merge:true }));
+  await logAction('gift',{uid,addStars,addCash});
+  alert(`Gave ${addStars} stars and ₦${addCash} to ${uid}`);
+};
+window.timeoutUser = async () => {
+  const uid = selectedUserId.value;
+  if(!uid) return alert('Select user id');
+  const s = Number(timeoutSec.value) || 60;
+  const until = Date.now() + s*1000;
+  await updateDoc(doc(db,'users',uid), { timeoutUntil: until }).catch(async ()=> setDoc(doc(db,'users',uid), { timeoutUntil: until }, { merge:true }));
+  await logAction('timeout',{uid,seconds:s});
+  alert(`Timed out for ${s} seconds`);
+};
+window.clearTimeoutUser = async () => {
+  const uid = selectedUserId.value;
+  if(!uid) return alert('Select user id');
+  await updateDoc(doc(db,'users',uid), { timeoutUntil: 0 }).catch(async ()=> setDoc(doc(db,'users',uid), { timeoutUntil: 0 }, { merge:true }));
+  await logAction('clear_timeout',{uid});
+  alert('Timeout cleared');
+};
 
-  window.clearTimeoutUser = async () => {
-    const uid = selectedUserIdEl.value;
-    if(!uid) return alert('Select user id first');
-    await updateDoc(doc(db,'users',uid), { timeoutUntil: 0 }).catch(async ()=>{ await setDoc(doc(db,'users',uid), { timeoutUntil: 0 }, { merge:true }); });
-    await logAction('clear_timeout', { uid });
-    alert('Timeout cleared');
-    await loadUsers(currentRoomId);
-  }
-
-  // ----------------- SHOP -----------------
-  async function loadShop(){
-    shopListEl.innerHTML = '<tr><td colspan=6>Loading...</td></tr>';
-    const snap = await getDocs(collection(db,'shopItems'));
-    shopListEl.innerHTML = '';
-    snap.forEach(docSnap => {
-      const p = { id: docSnap.id, ...docSnap.data() };
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${p.name}</td>
-        <td>${p.cost||0} ⭐</td>
-        <td>₦${p.cashReward||0}</td>
-        <td>${p.available||0}</td>
-        <td>${p.hostOnly? '✅' : '—'}</td>
-        <td>
+/* ---------- SHOP ---------- */
+let shopUnsub = null;
+function startShopListener(){
+  if(shopUnsub) shopUnsub();
+  const q = query(collection(db,'shopItems'), orderBy('createdAt','desc'));
+  shopUnsub = onSnapshot(q, snap => {
+    renderShop(snap);
+  });
+}
+function renderShop(snap){
+  shopList.innerHTML = '';
+  const mode = shopViewMode.value;
+  const qstr = (shopSearch.value||'').toLowerCase();
+  snap.forEach(d=>{
+    const p = { id: d.id, ...d.data() };
+    if(qstr && !(p.name||'').toLowerCase().includes(qstr)) return;
+    // in 'user' mode hide hostOnly items
+    if(mode==='user' && p.hostOnly) return;
+    // create row
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.name}</td>
+      <td>${p.cost||0} ⭐</td>
+      <td>₦${p.cashReward||0}</td>
+      <td>${p.available||0}</td>
+      <td>${p.hostOnly? '✅' : '—'}</td>
+      <td>
+        <div class="actions-wrap">
           <button class="btn" onclick="editProduct('${p.id}')">Edit</button>
           <button class="btn" onclick="deleteProduct('${p.id}')">Delete</button>
-        </td>
-      `;
-      shopListEl.appendChild(tr);
-    });
-  }
-  window.loadShop = loadShop;
-
-  window.editProduct = async (id) => {
-    currentProductEditId = id;
-    const snap = await getDoc(doc(db,'shopItems',id));
-    const p = snap.data();
-    productName.value = p.name || '';
-    productImg.value = p.img || '';
-    productCost.value = p.cost || 0;
-    productCash.value = p.cashReward || 0;
-    productStock.value = p.available || 0;
-    productHostOnly.checked = p.hostOnly || false;
-    window.scrollTo(0,document.body.scrollHeight);
-  }
-
-  window.deleteProduct = async (id) => {
-    if(!confirm('Delete product?')) return;
-    await deleteDoc(doc(db,'shopItems',id));
-    await logAction('delete_product',{id});
-    await loadShop();
-  }
-
-  saveProductBtn.onclick = async () => {
-    const data = {
-      name: productName.value,
-      img: productImg.value,
-      cost: Number(productCost.value) || 0,
-      cashReward: Number(productCash.value) || 0,
-      available: Number(productStock.value) || 0,
-      hostOnly: !!productHostOnly.checked
-    };
-    if(currentProductEditId){
-      await updateDoc(doc(db,'shopItems',currentProductEditId), data).catch(()=>setDoc(doc(db,'shopItems',currentProductEditId), data, { merge:true }));
-      await logAction('update_product',{id:currentProductEditId, data});
-      currentProductEditId = null;
-    } else {
-      await addDoc(collection(db,'shopItems'), { ...data, createdAt: serverTimestamp() });
-      await logAction('create_product',{data});
-    }
-    clearProductForm();
-    await loadShop();
-  }
-
-  function clearProductForm(){
-    currentProductEditId = null;
-    productName.value = productImg.value = '';
-    productCost.value = productCash.value = productStock.value = '';
-    productHostOnly.checked = false;
-  }
-
-  // ----------------- CLAIMS -----------------
-  async function loadClaims(){
-    claimsListEl.innerHTML = '<li>Loading...</li>';
-    const snap = await getDocs(collection(db,'claims'));
-    claimsListEl.innerHTML = '';
-    snap.forEach(cl=>{
-      const c = { id: cl.id, ...cl.data() };
-      const li = document.createElement('li');
-      li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
-      li.innerHTML = `<div style="display:flex;justify-content:space-between">
-        <div><b>${c.productName||c.productId}</b> — <span class="small">by ${c.userId || c.userEmail}</span><br><span class="small">${new Date((c.createdAt && c.createdAt.seconds? c.createdAt.seconds*1000 : Date.now())).toLocaleString()}</span></div>
-        <div>
-          <button class="btn" onclick="refundClaim('${c.id}')">Refund</button>
-          <button class="btn ghost" onclick="viewClaimDetails('${c.id}')">View</button>
         </div>
-      </div>`;
-      claimsListEl.appendChild(li);
-    });
-  }
-  window.loadClaims = loadClaims;
+      </td>
+    `;
+    shopList.appendChild(tr);
+  });
+}
 
-  window.viewClaimsForUser = async (uid) => {
-    const snap = await getDocs(collection(db,'claims'));
-    const arr = [];
-    snap.forEach(d=>{
-      const c = { id: d.id, ...d.data() };
-      if(c.userId === uid) arr.push(c);
-    });
-    if(!arr.length) return alert('No claims for user');
-    // show a simple popup of claims
-    alert(JSON.stringify(arr, null, 2));
-  }
+window.editProduct = async (id) => {
+  editingProductId = id;
+  const snap = await getDoc(doc(db,'shopItems',id));
+  const p = snap.data() || {};
+  productName.value = p.name || '';
+  productImg.value = p.img || '';
+  productCost.value = p.cost || 0;
+  productCash.value = p.cashReward || 0;
+  productStock.value = p.available || 0;
+  productHostOnly.checked = p.hostOnly || false;
+  window.scrollTo(0,document.body.scrollHeight);
+};
 
-  window.refundClaim = async (claimId) => {
-    // implement refund logic as needed — here we'll mark claim refunded
-    await updateDoc(doc(db,'claims',claimId), { refunded: true }).catch(()=>{});
-    await logAction('refund_claim', { claimId });
-    alert('Claim marked refunded');
-    await loadClaims();
-  }
+window.deleteProduct = async (id) => {
+  if(!confirm('Delete product?')) return;
+  await deleteDoc(doc(db,'shopItems',id));
+  await logAction('delete_product',{id});
+  alert('Deleted');
+};
 
-  window.viewClaimDetails = async (id) => {
-    const snap = await getDoc(doc(db,'claims',id));
-    alert(JSON.stringify(snap.data(), null, 2));
+saveProductBtn.onclick = async ()=>{
+  const data = {
+    name: productName.value,
+    img: productImg.value || '',
+    cost: Number(productCost.value) || 0,
+    cashReward: Number(productCash.value) || 0,
+    available: Number(productStock.value) || 0,
+    hostOnly: !!productHostOnly.checked,
+    createdAt: serverTimestamp()
+  };
+  if(editingProductId){
+    await updateDoc(doc(db,'shopItems',editingProductId), data).catch(async ()=> setDoc(doc(db,'shopItems',editingProductId), data, { merge:true }));
+    await logAction('update_product',{id:editingProductId});
+    editingProductId = null;
+  } else {
+    await addDoc(collection(db,'shopItems'), data);
+    await logAction('create_product',{name:data.name});
   }
+  clearProductForm();
+  alert('Saved');
+};
+function clearProductForm(){
+  editingProductId = null;
+  productName.value = productImg.value = productCost.value = productCash.value = productStock.value = '';
+  productHostOnly.checked = false;
+}
 
-  // ----------------- LOGS -----------------
-  async function loadLogs(){
-    logListEl.innerHTML = '<li>Loading...</li>';
-    const snap = await getDocs(collection(db,'logs'));
-    logListEl.innerHTML = '';
+/* ---------- CLAIMS ---------- */
+let claimsUnsub = null;
+function startClaimsListener(){
+  if(claimsUnsub) claimsUnsub();
+  const q = query(collection(db,'claims'), orderBy('createdAt','desc'));
+  claimsUnsub = onSnapshot(q, snap => {
+    renderClaims(snap);
+  });
+}
+function renderClaims(snap){
+  claimsList.innerHTML = '';
+  snap.forEach(d=>{
+    const c = { id: d.id, ...d.data() };
+    const li = document.createElement('li');
+    li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
+    li.innerHTML = `<div style="display:flex;justify-content:space-between">
+      <div><b>${c.productName || c.productId}</b> — <span class="small">by ${c.chatId||c.uid}</span><br><span class="small">${new Date((c.createdAt && c.createdAt.seconds ? c.createdAt.seconds*1000 : Date.now())).toLocaleString()}</span></div>
+      <div>
+        <button class="btn" onclick="refundClaim('${c.id}')">Refund</button>
+        <button class="btn ghost" onclick="viewClaim('${c.id}')">View</button>
+      </div>
+    </div>`;
+    claimsList.appendChild(li);
+  });
+}
+window.loadClaims = ()=> startClaimsListener();
+window.viewClaimsForUser = async (uid) => {
+  const snap = await getDocs(collection(db,'claims'));
+  const arr = [];
+  snap.forEach(d=>{ const c = { id:d.id, ...d.data() }; if(c.uid===uid) arr.push(c); });
+  if(!arr.length) return alert('No claims');
+  alert(JSON.stringify(arr, null, 2));
+};
+window.refundClaim = async (id) => {
+  await updateDoc(doc(db,'claims',id), { refunded: true }).catch(()=> setDoc(doc(db,'claims',id), { refunded:true }, { merge:true }));
+  await logAction('refund',{id});
+  alert('Marked refunded');
+};
+window.viewClaim = async (id) => {
+  const snap = await getDoc(doc(db,'claims',id));
+  alert(JSON.stringify(snap.data(), null, 2));
+};
+
+/* ---------- LOGS ---------- */
+let logsUnsub = null;
+function startLogsListener(){
+  if(logsUnsub) logsUnsub();
+  const q = query(collection(db,'logs'), orderBy('createdAt','desc'));
+  logsUnsub = onSnapshot(q, snap => {
+    logList.innerHTML = '';
     snap.forEach(d=>{
       const l = d.data();
       const li = document.createElement('li');
       li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
-      li.textContent = `${l.type} — ${JSON.stringify(l.detail || '')} — ${l.createdAt? l.createdAt.seconds : ''}`;
-      logListEl.appendChild(li);
+      li.textContent = `${l.type} — ${JSON.stringify(l.detail||'')} — ${l.createdAt? l.createdAt.seconds : ''}`;
+      logList.appendChild(li);
     });
+  });
+}
+window.loadLogs = ()=> startLogsListener();
+
+/* ---------- ADMIN PROFILE (meta/adminProfile) ---------- */
+async function loadAdminProfile(){
+  const ref = doc(db,'meta','adminProfile');
+  const snap = await getDoc(ref);
+  if(snap.exists()){
+    adminProfile = snap.data();
+    adminName.value = adminProfile.name || '';
+    adminEmail.value = adminProfile.email || '';
+    adminStars.value = adminProfile.stars || 0;
+    adminCash.value = adminProfile.cash || 0;
+    // show topbar
+    adminDisplay.textContent = `${adminProfile.name || 'Admin'}`;
+    adminBalances.textContent = `⭐ ${adminProfile.stars||0} — ₦${adminProfile.cash||0}`;
+  } else {
+    adminProfile = null;
+    adminDisplay.textContent = 'Admin (not set)';
+    adminBalances.textContent = '⭐ 0 — ₦0';
   }
-  window.loadLogs = loadLogs;
+}
+window.loadAdminProfile = loadAdminProfile;
 
-  // ----------------- ADMIN PROFILE (meta/adminProfile) -----------------
-  async function loadAdminProfile(){
-    const ref = doc(db,'meta','adminProfile');
-    const snap = await getDoc(ref);
-    if(snap.exists()){
-      const p = snap.data();
-      adminNameEl.value = p.name || '';
-      adminEmailEl.value = p.email || '';
-      adminStarsEl.value = p.stars || 0;
-      adminCashEl.value = p.cash || 0;
-    } else {
-      adminNameEl.value = adminEmailEl.value = '';
-      adminStarsEl.value = adminCashEl.value = 0;
-    }
-  }
+async function saveAdminProfile(){
+  const data = { name: adminName.value, email: adminEmail.value, stars: Number(adminStars.value)||0, cash: Number(adminCash.value)||0, updatedAt: serverTimestamp() };
+  await setDoc(doc(db,'meta','adminProfile'), data, { merge:true });
+  await logAction('save_admin', data);
+  await loadAdminProfile();
+  alert('Saved');
+}
+window.saveAdminProfile = saveAdminProfile;
 
-  window.loadAdminProfile = loadAdminProfile;
+/* ---------- REFRESH ALL ---------- */
+async function refreshAll(){
+  await loadRooms();
+  startUsersListener();
+  startShopListener();
+  startClaimsListener();
+  startLogsListener();
+  await loadAdminProfile();
+}
 
-  async function saveAdminProfile(){
-    const ref = doc(db,'meta','adminProfile');
-    const data = {
-      name: adminNameEl.value,
-      email: adminEmailEl.value,
-      stars: Number(adminStarsEl.value) || 0,
-      cash: Number(adminCashEl.value) || 0,
-      updatedAt: serverTimestamp()
-    };
-    await setDoc(ref, data, { merge:true });
-    await logAction('save_admin_profile', data);
-    alert('Saved admin profile');
-  }
-  window.saveAdminProfile = saveAdminProfile;
+/* ---------- START ---------- */
+refreshAll();
 
-  // ----------------- UTILS / START -----------------
-  async function refreshAll(){
-    await loadRooms();
-    await loadUsers(currentRoomId);
-    await loadShop();
-    await loadClaims();
-    await loadLogs();
-    await loadAdminProfile();
-  }
-
-  // Load once
-  (async ()=>{ await refreshAll(); })();
-
-  // expose a few functions to window for buttons used in markup
-  window.loadUsers = loadUsers;
-  window.loadShop = loadShop;
-  window.loadClaims = loadClaims;
-  window.loadLogs = loadLogs;
-  window.giftToUser = giftToUser;
-  window.timeoutUser = timeoutUser;
-  window.clearTimeoutUser = clearTimeoutUser;
-
+/* expose functions globally used by buttons */
+window.loadUsers = ()=> startUsersListener();
+window.loadShop = ()=> startShopListener();
+window.loadClaims = ()=> startClaimsListener();
+window.loadLogs = ()=> startLogsListener();
+window.giftToUser = window.giftToUser;
+window.timeoutUser = window.timeoutUser;
+window.clearTimeoutUser = window.clearTimeoutUser;
+window.logAction = logAction;
 </script>
 </body>
 </html>
