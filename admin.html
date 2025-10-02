@@ -13,265 +13,205 @@
   --btn-bg: #ff33cc;
   --btn-text: #fff;
 }
+* { box-sizing: border-box; }
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-}
-header {
-  background: var(--card-bg);
-  padding: 1rem 2rem;
-  font-size: 1.8rem;
-  font-weight: bold;
-  border-bottom: 1px solid #ddd;
-  text-align: center;
-}
-.container {
   display: flex;
-  flex-wrap: wrap;
-  padding: 1rem;
-  gap: 1rem;
+  height: 100vh;
 }
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: #222;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+.sidebar h2 { margin: 0 0 1.5rem 0; text-align: center; }
+.sidebar button {
+  background: none;
+  border: none;
+  color: #eee;
+  text-align: left;
+  padding: 0.6rem 1rem;
+  margin: 0.2rem 0;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.sidebar button:hover, .sidebar button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; }
+.topbar {
+  background: var(--card-bg);
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #ddd;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.content { flex: 1; overflow-y: auto; padding: 1rem; }
 .card {
   background: var(--card-bg);
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  flex: 1 1 300px;
+  margin-bottom: 1rem;
 }
-.card h3 {
-  margin-top: 0;
-}
-button {
+.card h3 { margin-top: 0; }
+button.action {
   background: var(--btn-bg);
   color: var(--btn-text);
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
-  margin: 0.3rem 0;
   transition: background 0.2s;
 }
-button:hover {
-  background: #ff66d6;
-}
+button.action:hover { background: #ff66d6; }
 input, select {
-  width: 100%;
-  padding: 0.4rem;
+  width: 100%; padding: 0.4rem;
   margin: 0.3rem 0 0.8rem 0;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+  border-radius: 5px; border: 1px solid #ccc;
 }
-.user-list, .shop-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-.user-item, .shop-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.3rem 0;
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td {
+  padding: 0.6rem;
   border-bottom: 1px solid #eee;
+  text-align: left;
 }
+.table th { background: #f0f0f0; }
 </style>
 </head>
 <body>
 
-<header>🎛️ Admin Dashboard</header>
-
-<div class="container">
-
-  <!-- Rooms Control -->
-  <div class="card">
-    <h3>Rooms</h3>
-    <select id="roomSelect"></select>
-    <div>
-      <button id="muteRoomBtn">Toggle Mute</button>
-      <button id="slowChatBtn">Toggle Slow Chat</button>
-    </div>
-  </div>
-
-  <!-- Users Management -->
-  <div class="card">
-    <h3>Users in Room</h3>
-    <div class="user-list" id="userList"></div>
-  </div>
-
-  <!-- Shop Management -->
-  <div class="card">
-    <h3>Shop Items</h3>
-    <div class="shop-list" id="shopList"></div>
-    <h4>Add / Edit Item</h4>
-    <input type="text" id="productName" placeholder="Product Name">
-    <input type="text" id="productImg" placeholder="Image URL">
-    <input type="number" id="productCost" placeholder="Cost in Stars">
-    <input type="number" id="productCashReward" placeholder="Cash Reward">
-    <input type="number" id="productStock" placeholder="Available">
-    <button id="saveProductBtn">Save / Add Product</button>
-  </div>
-
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>🎛️ Admin</h2>
+  <button class="active" onclick="showView('rooms')">Rooms</button>
+  <button onclick="showView('users')">Users</button>
+  <button onclick="showView('shop')">Shop</button>
+  <button onclick="showView('quick')">Quick Actions</button>
+  <button onclick="showView('settings')">Settings</button>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <span>Admin Dashboard</span>
+    <button class="action">Logout</button>
+  </div>
+  <div class="content">
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    <!-- Rooms -->
+    <div id="view-rooms" class="view">
+      <div class="card">
+        <h3>Rooms Control</h3>
+        <select id="roomSelect"></select>
+        <div>
+          <button class="action" id="muteRoomBtn">Toggle Mute</button>
+          <button class="action" id="slowChatBtn">Toggle Slow Chat</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Room Stats</h3>
+        <p>Total Users: <span id="roomUserCount">0</span></p>
+        <p>Hosts: <span id="roomHostCount">0</span></p>
+        <p>Banned: <span id="roomBannedCount">0</span></p>
+      </div>
+      <div class="card">
+        <h3>Broadcast Message</h3>
+        <textarea id="broadcastMsg" rows="3" style="width:100%"></textarea>
+        <button class="action" id="sendBroadcastBtn">Send Broadcast</button>
+      </div>
+    </div>
 
-// ---------- DOM Refs ----------
-const roomSelect = document.getElementById('roomSelect');
-const muteRoomBtn = document.getElementById('muteRoomBtn');
-const slowChatBtn = document.getElementById('slowChatBtn');
-const userList = document.getElementById('userList');
-const shopList = document.getElementById('shopList');
-const productName = document.getElementById('productName');
-const productImg = document.getElementById('productImg');
-const productCost = document.getElementById('productCost');
-const productCashReward = document.getElementById('productCashReward');
-const productStock = document.getElementById('productStock');
-const saveProductBtn = document.getElementById('saveProductBtn');
+    <!-- Users -->
+    <div id="view-users" class="view" style="display:none">
+      <div class="card">
+        <h3>Users in Room</h3>
+        <input type="text" id="userSearch" placeholder="Search user...">
+        <select id="userFilter">
+          <option value="all">All</option>
+          <option value="hosts">Hosts</option>
+          <option value="banned">Banned</option>
+          <option value="kicked">Kicked</option>
+        </select>
+        <table class="table">
+          <thead>
+            <tr><th>User</th><th>Host</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="userList"></tbody>
+        </table>
+      </div>
+    </div>
 
-let currentRoomId = null;
+    <!-- Shop -->
+    <div id="view-shop" class="view" style="display:none">
+      <div class="card">
+        <h3>Shop Items</h3>
+        <label>Preview as: 
+          <select id="shopViewMode">
+            <option value="admin">Admin</option>
+            <option value="host">Host</option>
+            <option value="user">Normal User</option>
+          </select>
+        </label>
+        <table class="table">
+          <thead>
+            <tr><th>Item</th><th>Cost</th><th>Cash Reward</th><th>Stock</th><th>Host Only</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="shopList"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Add / Edit Item</h3>
+        <input type="text" id="productName" placeholder="Product Name">
+        <input type="text" id="productImg" placeholder="Image URL">
+        <input type="number" id="productCost" placeholder="Cost in Stars">
+        <input type="number" id="productCashReward" placeholder="Cash Reward">
+        <input type="number" id="productStock" placeholder="Available">
+        <label><input type="checkbox" id="productHostOnly"> Host Only</label>
+        <button class="action" id="saveProductBtn">Save / Add Product</button>
+      </div>
+    </div>
 
-// ---------- Rooms ----------
-async function loadRooms() {
-  const querySnap = await getDocs(collection(db, 'rooms'));
-  roomSelect.innerHTML = '';
-  querySnap.forEach(docSnap => {
-    const room = { id: docSnap.id, ...docSnap.data() };
-    const opt = document.createElement('option');
-    opt.value = room.id;
-    opt.textContent = room.name;
-    roomSelect.appendChild(opt);
-  });
-  if(querySnap.size > 0) {
-    currentRoomId = querySnap.docs[0].id;
-    loadUsers(currentRoomId);
-  }
+    <!-- Quick Actions -->
+    <div id="view-quick" class="view" style="display:none">
+      <div class="card">
+        <h3>Quick Actions</h3>
+        <button class="action" onclick="clearKicks()">Clear All Kicks</button>
+        <button class="action" onclick="resetRoomControls()">Reset Mute/Slowchat</button>
+        <button class="action" onclick="giveDemoCredits()">Give Demo Credits</button>
+        <button class="action" onclick="loadUsers(currentRoomId)">Refresh Users</button>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="view-settings" class="view" style="display:none">
+      <div class="card">
+        <h3>Settings</h3>
+        <p>Later: dark mode toggle, admin roles/permissions, etc.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+  document.getElementById('view-' + id).style.display = 'block';
+  document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
 }
-roomSelect.onchange = () => {
-  currentRoomId = roomSelect.value;
-  loadUsers(currentRoomId);
-}
-
-// ---------- Users ----------
-async function loadUsers(roomId) {
-  userList.innerHTML = '';
-  const querySnap = await getDocs(collection(db, 'users'));
-  querySnap.forEach(docSnap => {
-    const u = docSnap.data();
-    const div = document.createElement('div');
-    div.className = 'user-item';
-    div.innerHTML = `<span>${u.chatId || u.email}</span>
-                     <span>
-                       <button onclick="kickUser('${docSnap.id}')">Kick</button>
-                       <button onclick="banUser('${docSnap.id}')">Ban</button>
-                     </span>`;
-    userList.appendChild(div);
-  });
-}
-window.kickUser = async (uid) => {
-  const userRef = doc(db, 'users', uid);
-  await updateDoc(userRef, { kicked: true });
-  alert('User kicked!');
-}
-window.banUser = async (uid) => {
-  const userRef = doc(db, 'users', uid);
-  await updateDoc(userRef, { banned: true });
-  alert('User banned!');
-}
-
-// ---------- Room Controls ----------
-muteRoomBtn.onclick = async () => {
-  if(!currentRoomId) return;
-  const roomRef = doc(db, 'rooms', currentRoomId);
-  const snap = await getDoc(roomRef);
-  const isMuted = snap.data()?.globalMute || false;
-  await updateDoc(roomRef, { globalMute: !isMuted });
-  alert('Global Mute toggled: ' + !isMuted);
-}
-slowChatBtn.onclick = async () => {
-  if(!currentRoomId) return;
-  const roomRef = doc(db, 'rooms', currentRoomId);
-  const snap = await getDoc(roomRef);
-  const slow = snap.data()?.slowChat || false;
-  await updateDoc(roomRef, { slowChat: !slow });
-  alert('Slow Chat toggled: ' + !slow);
-}
-
-// ---------- Shop ----------
-async function loadShop() {
-  shopList.innerHTML = '';
-  const querySnap = await getDocs(collection(db, 'shopItems'));
-  querySnap.forEach(docSnap => {
-    const p = { id: docSnap.id, ...docSnap.data() };
-    const div = document.createElement('div');
-    div.className = 'shop-item';
-    div.innerHTML = `<span>${p.name} (${p.cost} ⭐ | ₦${p.cashReward})</span>
-                     <span>
-                       <button onclick="editShopItem('${docSnap.id}')">Edit</button>
-                       <button onclick="deleteShopItem('${docSnap.id}')">Delete</button>
-                     </span>`;
-    shopList.appendChild(div);
-  });
-}
-
-window.editShopItem = async (id) => {
-  const pRef = doc(db, 'shopItems', id);
-  const snap = await getDoc(pRef);
-  const data = snap.data();
-  productName.value = data.name;
-  productImg.value = data.img;
-  productCost.value = data.cost;
-  productCashReward.value = data.cashReward;
-  productStock.value = data.available;
-  saveProductBtn.onclick = async () => {
-    await updateDoc(pRef, {
-      name: productName.value,
-      img: productImg.value,
-      cost: Number(productCost.value),
-      cashReward: Number(productCashReward.value),
-      available: Number(productStock.value)
-    });
-    loadShop();
-    alert('Item updated!');
-  }
-}
-
-window.deleteShopItem = async (id) => {
-  const pRef = doc(db, 'shopItems', id);
-  await deleteDoc(pRef);
-  loadShop();
-  alert('Item deleted!');
-}
-
-saveProductBtn.onclick = async () => {
-  const colRef = collection(db, 'shopItems');
-  await setDoc(doc(colRef), {
-    name: productName.value,
-    img: productImg.value,
-    cost: Number(productCost.value),
-    cashReward: Number(productCashReward.value),
-    available: Number(productStock.value)
-  });
-  loadShop();
-  alert('Item added!');
-}
-
-loadRooms();
-loadShop();
-
 </script>
 </body>
 </html>
