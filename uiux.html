@@ -744,7 +744,7 @@ document.addEventListener('click', ev => {
         <button id="copyVipLink" class="themed-btn">Copy Link</button>
       </div>`;
     document.getElementById('copyVipLink')?.addEventListener('click', () => {
-      navigator.clipboard.writeText(`https://yourapp.com/ref/${currentUser?.uid || ''}`)
+      navigator.clipboard.writeText(`https://golalaland.github.io/chats/signup222.html/ref/${currentUser?.uid || ''}`)
         .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500))
         .catch(err => { showMessageModal('Error', 'Failed to copy link.', 1800); console.error(err); });
     });
