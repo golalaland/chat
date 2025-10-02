@@ -217,12 +217,13 @@ header {
 
 /* ---------- PAGE LOADER ---------- */
 #page-loader {
-  position: fixed;
-  inset: 0;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0); /* fully transparent */
+  /* or a very subtle dim, like: rgba(0,0,0,0.1) */
   display: flex;
   justify-content: center;
   align-items: center;
+  position: fixed;
+  inset: 0;
   z-index: 2000;
   transition: opacity 0.3s ease;
 }
