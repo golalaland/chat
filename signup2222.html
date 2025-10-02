@@ -165,13 +165,6 @@ h2 {
   text-shadow:0 0 8px gold;
 }
 
-.role-message {
-  text-align:center;
-  font-size:0.85rem;
-  margin-bottom:1rem;
-  color:#ccc;
-}
-
 /* Submit Button */
 .submit-btn {
   width:50%;
@@ -185,7 +178,7 @@ h2 {
   cursor:pointer;
   margin-bottom:1rem;
   transition:0.2s;
-  position: relative;
+  position: relative; /* Needed for spinner positioning */
   overflow: hidden;
 }
 
@@ -194,11 +187,13 @@ h2 {
 .message {
   text-align:center;
   font-size:0.85rem;
+  margin-bottom: 0.5rem;
+  color: #ffcccb;
 }
 
 /* Spinner styles */
 .spinner {
-  display: none;
+  display: none; /* hidden by default */
   border: 3px solid rgba(255,255,255,0.3);
   border-top: 3px solid #fff;
   border-radius: 50%;
@@ -226,7 +221,7 @@ h2 {
   <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Placeholder Video" frameborder="0" allowfullscreen></iframe>
 </div>
 
-<h2>Signup</h2>
+<h2>VIP/Host Signup</h2>
 <p id="host-info">You're in <span id="host-username">HostName</span>'s VIP Tab</p>
 
 <div class="form-group">
@@ -250,13 +245,13 @@ h2 {
   <span class="vip-circle"></span>
 </div>
 <div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
-<div class="role-message" id="roleMessage"></div>
+
+<div class="message" id="message"></div>
 
 <button class="submit-btn" id="submitBtn">
   <span class="btn-text">Sign Up</span>
   <div class="spinner"></div>
 </button>
-<div class="message" id="message"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -281,7 +276,6 @@ const db = getFirestore(app);
 const vipToggle = document.getElementById('vipToggle');
 const vipLabel = document.getElementById('vipLabel');
 const vipMessage = document.getElementById('vipMessage');
-const roleMessage = document.getElementById('roleMessage');
 const femaleBtn = document.getElementById('femaleBtn');
 const maleBtn = document.getElementById('maleBtn');
 const submitBtn = document.getElementById('submitBtn');
@@ -294,6 +288,7 @@ const emailInput = document.getElementById('email');
 let isVIP = false;
 let gender = '';
 const hostUsername = new URLSearchParams(window.location.search).get('host') || '';
+document.getElementById("host-username").textContent = hostUsername || "HostName";
 const hostLink = hostUsername ? `https://golalaland.github.io/chat/signup/signup?host=${hostUsername}` : '';
 const invitedBy = hostUsername || null;
 
@@ -303,39 +298,32 @@ vipToggle.addEventListener('click', ()=>{
   vipToggle.classList.toggle('on', isVIP);
   vipLabel.classList.toggle('on', isVIP);
   vipMessage.style.opacity = isVIP ? '1' : '0';
-  updateRoleMessage();
 });
 
 femaleBtn.addEventListener('click', ()=>{
   gender = 'Female';
   femaleBtn.classList.add('selected');
   maleBtn.classList.remove('selected');
-  updateRoleMessage();
 });
 
 maleBtn.addEventListener('click', ()=>{
   gender = 'Male';
   maleBtn.classList.add('selected');
   femaleBtn.classList.remove('selected');
-  updateRoleMessage();
 });
 
-// --------- Role Message ---------
-function updateRoleMessage(){
-  if(gender === 'Female' && !isVIP){
-    roleMessage.textContent = "You're signing up as a Host.";
-    roleMessage.style.color = "#ff4081";
-  } else if(isVIP){
-    roleMessage.textContent = "You're signing up as VIP.";
-    roleMessage.style.color = "gold";
-  } else {
-    roleMessage.textContent = "";
-  }
+// --------- Validators ---------
+function isValidEmail(email) {
+  const re = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+  return re.test(email);
 }
 
-// --------- Helper ---------
-function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
-function validEmail(email){ return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email); }
+function isValidPhone(phone) {
+  const re = /^[0-9]{7,15}$/; // only digits, 7–15 length
+  return re.test(phone);
+}
+
+function sanitizeKey(key){ return key.replace(/[.#$[\\]]/g, ','); }
 
 // --------- Submit Logic ---------
 submitBtn.addEventListener('click', async ()=>{
@@ -347,14 +335,22 @@ submitBtn.addEventListener('click', async ()=>{
     messageEl.textContent = 'Please fill all fields.';
     return;
   }
-  if(!validEmail(email)){
+
+  if(!isValidEmail(email)){
     messageEl.textContent = 'Please enter a valid email address.';
     return;
   }
-  if(gender === 'Male' && !isVIP){
-    messageEl.textContent = "Sorry bro, you must go VIP to sign up.";
+
+  if(!isValidPhone(phone)){
+    messageEl.textContent = 'Phone number must be digits only (7–15 digits).';
     return;
   }
+
+  if(gender === 'Male' && !isVIP){
+    messageEl.textContent = "Look, buddy, you gotta go VIP!";
+    return;
+  }
+
   if(!isVIP && gender !== 'Female'){
     messageEl.textContent = 'Only females can sign up as hosts.';
     return;
@@ -383,7 +379,7 @@ submitBtn.addEventListener('click', async ()=>{
     email,
     phone,
     gender,
-    whitelisted: false,
+    whitelisted: false, // default false
     createdAt: serverTimestamp()
   };
 
@@ -394,6 +390,7 @@ submitBtn.addEventListener('click', async ()=>{
       await updateDoc(userRef, userData);
     }
 
+    // ----- Auto-whitelist logic -----
     if(isVIP || invitedBy){
       const whitelistRef = doc(db, "whitelist", uidKey);
       await setDoc(whitelistRef, { email, phone, whitelisted: true, createdAt: serverTimestamp() });
@@ -401,6 +398,7 @@ submitBtn.addEventListener('click', async ()=>{
     }
 
     localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
+    messageEl.style.color = "lightgreen";
     messageEl.textContent = `Successfully signed up as ${isVIP ? 'VIP' : 'Host'}!`;
 
   } catch(e){
