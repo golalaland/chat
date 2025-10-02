@@ -192,14 +192,15 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
 
 <!-- Firebase + JS -->
 <script type="module">
-/* ---------- FIREBASE v10 imports ---------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, collection, getDocs, addDoc, doc, getDoc, setDoc, updateDoc,
-  deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, increment
+import { 
+  initializeApp 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import { 
+  getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, query, where, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ---------- Use your project config (you provided earlier) ---------- */
+// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -207,453 +208,152 @@ const firebaseConfig = {
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------- DOM refs ---------- */
-const adminDisplay = document.getElementById('adminDisplay');
-const adminBalances = document.getElementById('adminBalances');
+// ---------- ROOM COLLECTIONS ----------
+const chatCollections = [
+  "messages",
+  "messages_room",
+  "messages_room2",
+  "messages_room4",
+  "messages_room5"
+];
 
-const roomSelect = document.getElementById('roomSelect');
-const roomNameEl = document.getElementById('roomName');
-const roomUserCount = document.getElementById('roomUserCount');
-const roomHostCount = document.getElementById('roomHostCount');
-const roomBannedCount = document.getElementById('roomBannedCount');
-const btnToggleMute = document.getElementById('btnToggleMute');
-const btnToggleSlow = document.getElementById('btnToggleSlow');
-const btnResetRoom = document.getElementById('btnResetRoom');
-const broadcastText = document.getElementById('broadcastText');
-const sendBroadcastBtn = document.getElementById('sendBroadcastBtn');
-
-const userList = document.getElementById('userList');
-const userSearch = document.getElementById('userSearch');
-const userFilter = document.getElementById('userFilter');
-const selectedUserId = document.getElementById('selectedUserId');
-const giftStars = document.getElementById('giftStars');
-const giftCash = document.getElementById('giftCash');
-const timeoutSec = document.getElementById('timeoutSec');
-
-const shopList = document.getElementById('shopList');
-const shopViewMode = document.getElementById('shopViewMode');
-const shopSearch = document.getElementById('shopSearch');
-
-const claimsList = document.getElementById('claimsList');
-const logList = document.getElementById('logList');
-
-const productName = document.getElementById('productName');
-const productImg = document.getElementById('productImg');
-const productCost = document.getElementById('productCost');
-const productCash = document.getElementById('productCash');
-const productStock = document.getElementById('productStock');
-const productHostOnly = document.getElementById('productHostOnly');
-const saveProductBtn = document.getElementById('saveProductBtn');
-
-const adminName = document.getElementById('adminName');
-const adminEmail = document.getElementById('adminEmail');
-const adminStars = document.getElementById('adminStars');
-const adminCash = document.getElementById('adminCash');
-
-/* ---------- State ---------- */
 let currentRoomId = null;
-let adminProfile = null;
-let editingProductId = null;
 
-/* ---------- Navigation ---------- */
-function navigate(e){
-  const view = e.currentTarget.dataset.view;
-  document.querySelectorAll('.col').forEach(c=>c.style.display='none');
-  document.getElementById('view-' + view).style.display = 'block';
-  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
-  e.currentTarget.classList.add('active');
-}
-window.navigate = navigate;
+// ---------- DOM ELEMENTS ----------
+const roomSelect = document.getElementById('roomSelect');
+const usersTable = document.getElementById('usersTable');
+const statsBox = document.getElementById('statsBox');
+const broadcastBtn = document.getElementById('broadcastBtn');
+const broadcastInput = document.getElementById('broadcastInput');
 
-/* ---------- LOGGING ---------- */
-async function logAction(type, detail = {}){
-  try { await addDoc(collection(db,'logs'), { type, detail, createdAt: serverTimestamp() }); } catch(e){ console.warn('log failed',e); }
-}
-
-/* ---------- ROOMS ---------- */
+// ---------- LOAD ROOMS ----------
 async function loadRooms(){
-  roomSelect.innerHTML = '<option>Loading...</option>';
-  const snap = await getDocs(collection(db,'rooms'));
   roomSelect.innerHTML = '';
-  snap.forEach(d=>{
-    const r = { id: d.id, ...d.data() };
+  chatCollections.forEach(roomId=>{
     const opt = document.createElement('option');
-    opt.value = r.id;
-    opt.textContent = r.name || r.id;
+    opt.value = roomId;
+    opt.textContent = roomId;
     roomSelect.appendChild(opt);
   });
+
   if(roomSelect.options.length){
     currentRoomId = roomSelect.value = roomSelect.options[0].value;
     await refreshRoomStats();
     await loadUsers();
   }
 }
-roomSelect.onchange = async ()=>{ currentRoomId = roomSelect.value; await refreshRoomStats(); await loadUsers(); };
 
-btnToggleMute.onclick = async ()=>{
-  if(!currentRoomId) return alert('Select room');
-  const rRef = doc(db,'rooms',currentRoomId);
-  const rSnap = await getDoc(rRef);
-  const cur = rSnap.exists()? rSnap.data().globalMute||false : false;
-  await updateDoc(rRef, { globalMute: !cur }).catch(async ()=> setDoc(rRef,{ globalMute: true }, { merge:true }));
-  await logAction('toggle_mute',{room:currentRoomId, value:!cur});
-  alert('Global mute: ' + !cur);
-};
+roomSelect.addEventListener('change', async ()=>{
+  currentRoomId = roomSelect.value;
+  await refreshRoomStats();
+  await loadUsers();
+});
 
-btnToggleSlow.onclick = async ()=>{
-  if(!currentRoomId) return alert('Select room');
-  const rRef = doc(db,'rooms',currentRoomId);
-  const rSnap = await getDoc(rRef);
-  const cur = rSnap.exists()? rSnap.data().slowChat||false:false;
-  await updateDoc(rRef,{ slowChat: !cur }).catch(async ()=> setDoc(rRef,{ slowChat: true }, { merge:true }));
-  await logAction('toggle_slow',{room:currentRoomId, value:!cur});
-  alert('Slow chat: ' + !cur);
-};
-
-btnResetRoom.onclick = async ()=>{
-  if(!currentRoomId) return;
-  await updateDoc(doc(db,'rooms',currentRoomId), { globalMute:false, slowChat:false }).catch(()=>{});
-  await logAction('reset_room',{room:currentRoomId});
-  alert('Room reset');
-};
-
-sendBroadcastBtn.onclick = async ()=>{
-  if(!currentRoomId) return alert('Select a room');
-  const msg = broadcastText.value.trim();
-  if(!msg) return alert('Type message');
-  // store as a broadcast doc under rooms/{room}/broadcasts for clients to listen
-  await addDoc(collection(db,`rooms/${currentRoomId}/broadcasts`), { text: msg, createdAt: serverTimestamp() });
-  await logAction('broadcast',{room:currentRoomId, text:msg});
-  alert('Broadcast sent');
-};
-
-/* ---------- ROOM STATS ---------- */
+// ---------- REFRESH ROOM STATS ----------
 async function refreshRoomStats(){
-  if(!currentRoomId) return;
-  const usersSnap = await getDocs(collection(db,'users')); // adapt if you store roomId per user
-  let total=0, hosts=0, banned=0;
-  usersSnap.forEach(u=>{
-    const d=u.data();
-    // if(d.roomId && currentRoomId && d.roomId !== currentRoomId) return; // un-comment if you have per-user roomId
-    total++;
+  const q = await getDocs(collection(db,"users"));
+  let totalUsers = 0, hosts = 0, vips = 0;
+
+  q.forEach(docSnap=>{
+    totalUsers++;
+    const d = docSnap.data();
     if(d.isHost) hosts++;
-    if(d.banned) banned++;
+    if(d.isVIP) vips++;
   });
-  roomUserCount.textContent = total;
-  roomHostCount.textContent = hosts;
-  roomBannedCount.textContent = banned;
-  const rSnap = await getDoc(doc(db,'rooms',currentRoomId)).catch(()=>null);
-  roomNameEl.textContent = rSnap?.exists()? (rSnap.data().name || currentRoomId) : currentRoomId;
+
+  statsBox.innerHTML = `
+    <div>Total Users: <b>${totalUsers}</b></div>
+    <div>Hosts: <b>${hosts}</b></div>
+    <div>VIPs: <b>${vips}</b></div>
+    <div>Current Room: <b>${currentRoomId}</b></div>
+  `;
 }
 
-/* ---------- USERS (realtime) ---------- */
-let usersUnsub = null;
-function startUsersListener(){
-  if(usersUnsub) usersUnsub(); // detach previous
-  const q = query(collection(db,'users'), orderBy('createdAt','desc'));
-  usersUnsub = onSnapshot(q, snap => {
-    renderUsersSnapshot(snap);
-    refreshRoomStats();
-  });
-}
-async function renderUsersSnapshot(snap){
-  userList.innerHTML = '';
-  const filter = userFilter.value;
-  const qstr = (userSearch.value||'').toLowerCase();
-  snap.forEach(docSnap=>{
-    const u = { id: docSnap.id, ...docSnap.data() };
-    // optional room membership filter here if you use roomId per user
-    // filter conditions
-    if(filter==='hosts' && !u.isHost) return;
-    if(filter==='vip' && !u.isVIP) return;
-    if(filter==='banned' && !u.banned) return;
-    if(filter==='kicked' && !u.kicked) return;
-    if(filter==='timedout' && !(u.timeoutUntil && u.timeoutUntil > Date.now())) return;
-    if(qstr){
-      const s = `${u.email||''} ${u.chatId||''} ${u.id}`.toLowerCase();
-      if(!s.includes(qstr)) return;
-    }
+// ---------- LOAD USERS ----------
+async function loadUsers(){
+  usersTable.innerHTML = `
+    <tr>
+      <th>Username</th>
+      <th>Email</th>
+      <th>Stars</th>
+      <th>Cash</th>
+      <th>Role</th>
+      <th>Actions</th>
+    </tr>
+  `;
 
-    const tr = document.createElement('tr');
-    const status = [];
-    if(u.banned) status.push('banned');
-    if(u.kicked) status.push('kicked');
-    if(u.timeoutUntil && u.timeoutUntil > Date.now()) status.push('timeout');
-
-    tr.innerHTML = `
-      <td style="max-width:220px">${u.chatId || u.email || u.id}<br><span class="small">${u.email || u.id}</span></td>
-      <td>${u.isHost? '✅' : '—'}</td>
-      <td>${u.stars||0}</td>
-      <td>₦${u.cash||0}</td>
-      <td>${status.join(', ') || 'ok'}</td>
-      <td>
-        <div class="actions-wrap">
-          <button class="btn" onclick="toggleHost('${u.id}', ${!u.isHost})">${u.isHost? 'Demote' : 'Promote'}</button>
-          <button class="btn" onclick="kickUser('${u.id}')">Kick</button>
-          <button class="btn" onclick="banUser('${u.id}')">Ban</button>
-          <button class="btn" onclick="viewClaimsForUser('${u.id}')">Claims</button>
-          <button class="btn ghost" onclick="selectUser('${u.id}')">Select</button>
-        </div>
-      </td>
-    `;
-    userList.appendChild(tr);
-  });
-}
-
-/* User actions */
-window.selectUser = (id)=>{ selectedUserId.value = id; }
-window.toggleHost = async (uid, setTo) => {
-  await updateDoc(doc(db,'users',uid), { isHost: setTo }).catch(async ()=> setDoc(doc(db,'users',uid), { isHost:setTo }, { merge:true }));
-  await logAction('toggle_host',{uid,setTo});
-  alert('Updated host flag');
-};
-window.kickUser = async (uid) => {
-  await updateDoc(doc(db,'users',uid), { kicked:true }).catch(async ()=> setDoc(doc(db,'users',uid), { kicked:true }, { merge:true }));
-  await logAction('kick',{uid});
-  alert('User kicked');
-};
-window.banUser = async (uid) => {
-  await updateDoc(doc(db,'users',uid), { banned:true }).catch(async ()=> setDoc(doc(db,'users',uid), { banned:true }, { merge:true }));
-  await logAction('ban',{uid});
-  alert('User banned');
-};
-
-/* gifts and timeouts */
-window.giftToUser = async () => {
-  const uid = selectedUserId.value || selectedUserId.placeholder && selectedUserId.placeholder.value || selectedUserId.value;
-  if(!uid) return alert('Select user id');
-  const addStars = Number(giftStars.value) || 0;
-  const addCash = Number(giftCash.value) || 0;
-  const uRef = doc(db,'users',uid);
-  const snap = await getDoc(uRef);
-  const u = snap.exists()? snap.data() : {};
-  const newStars = (u.stars||0) + addStars;
-  const newCash = (u.cash||0) + addCash;
-  await updateDoc(uRef, { stars: newStars, cash: newCash }).catch(async ()=> setDoc(uRef,{ stars:newStars, cash:newCash }, { merge:true }));
-  await logAction('gift',{uid,addStars,addCash});
-  alert(`Gave ${addStars} stars and ₦${addCash} to ${uid}`);
-};
-window.timeoutUser = async () => {
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select user id');
-  const s = Number(timeoutSec.value) || 60;
-  const until = Date.now() + s*1000;
-  await updateDoc(doc(db,'users',uid), { timeoutUntil: until }).catch(async ()=> setDoc(doc(db,'users',uid), { timeoutUntil: until }, { merge:true }));
-  await logAction('timeout',{uid,seconds:s});
-  alert(`Timed out for ${s} seconds`);
-};
-window.clearTimeoutUser = async () => {
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select user id');
-  await updateDoc(doc(db,'users',uid), { timeoutUntil: 0 }).catch(async ()=> setDoc(doc(db,'users',uid), { timeoutUntil: 0 }, { merge:true }));
-  await logAction('clear_timeout',{uid});
-  alert('Timeout cleared');
-};
-
-/* ---------- SHOP ---------- */
-let shopUnsub = null;
-function startShopListener(){
-  if(shopUnsub) shopUnsub();
-  const q = query(collection(db,'shopItems'), orderBy('createdAt','desc'));
-  shopUnsub = onSnapshot(q, snap => {
-    renderShop(snap);
-  });
-}
-function renderShop(snap){
-  shopList.innerHTML = '';
-  const mode = shopViewMode.value;
-  const qstr = (shopSearch.value||'').toLowerCase();
-  snap.forEach(d=>{
-    const p = { id: d.id, ...d.data() };
-    if(qstr && !(p.name||'').toLowerCase().includes(qstr)) return;
-    // in 'user' mode hide hostOnly items
-    if(mode==='user' && p.hostOnly) return;
-    // create row
+  const q = await getDocs(collection(db,"users"));
+  q.forEach(docSnap=>{
+    const u = docSnap.data();
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${p.name}</td>
-      <td>${p.cost||0} ⭐</td>
-      <td>₦${p.cashReward||0}</td>
-      <td>${p.available||0}</td>
-      <td>${p.hostOnly? '✅' : '—'}</td>
+      <td>${u.chatId || '-'}</td>
+      <td>${u.email || '-'}</td>
+      <td>${u.stars || 0}</td>
+      <td>$${u.cash || 0}</td>
+      <td>${u.isHost ? 'Host' : u.isVIP ? 'VIP' : 'User'}</td>
       <td>
-        <div class="actions-wrap">
-          <button class="btn" onclick="editProduct('${p.id}')">Edit</button>
-          <button class="btn" onclick="deleteProduct('${p.id}')">Delete</button>
-        </div>
+        <button onclick="giftStars('${docSnap.id}',10)">+10⭐</button>
+        <button onclick="giftCash('${docSnap.id}',5)">+5💵</button>
+        <button onclick="timeoutUser('${docSnap.id}')">Timeout</button>
       </td>
     `;
-    shopList.appendChild(tr);
+    usersTable.appendChild(tr);
   });
 }
 
-window.editProduct = async (id) => {
-  editingProductId = id;
-  const snap = await getDoc(doc(db,'shopItems',id));
-  const p = snap.data() || {};
-  productName.value = p.name || '';
-  productImg.value = p.img || '';
-  productCost.value = p.cost || 0;
-  productCash.value = p.cashReward || 0;
-  productStock.value = p.available || 0;
-  productHostOnly.checked = p.hostOnly || false;
-  window.scrollTo(0,document.body.scrollHeight);
-};
-
-window.deleteProduct = async (id) => {
-  if(!confirm('Delete product?')) return;
-  await deleteDoc(doc(db,'shopItems',id));
-  await logAction('delete_product',{id});
-  alert('Deleted');
-};
-
-saveProductBtn.onclick = async ()=>{
-  const data = {
-    name: productName.value,
-    img: productImg.value || '',
-    cost: Number(productCost.value) || 0,
-    cashReward: Number(productCash.value) || 0,
-    available: Number(productStock.value) || 0,
-    hostOnly: !!productHostOnly.checked,
-    createdAt: serverTimestamp()
-  };
-  if(editingProductId){
-    await updateDoc(doc(db,'shopItems',editingProductId), data).catch(async ()=> setDoc(doc(db,'shopItems',editingProductId), data, { merge:true }));
-    await logAction('update_product',{id:editingProductId});
-    editingProductId = null;
-  } else {
-    await addDoc(collection(db,'shopItems'), data);
-    await logAction('create_product',{name:data.name});
-  }
-  clearProductForm();
-  alert('Saved');
-};
-function clearProductForm(){
-  editingProductId = null;
-  productName.value = productImg.value = productCost.value = productCash.value = productStock.value = '';
-  productHostOnly.checked = false;
-}
-
-/* ---------- CLAIMS ---------- */
-let claimsUnsub = null;
-function startClaimsListener(){
-  if(claimsUnsub) claimsUnsub();
-  const q = query(collection(db,'claims'), orderBy('createdAt','desc'));
-  claimsUnsub = onSnapshot(q, snap => {
-    renderClaims(snap);
-  });
-}
-function renderClaims(snap){
-  claimsList.innerHTML = '';
-  snap.forEach(d=>{
-    const c = { id: d.id, ...d.data() };
-    const li = document.createElement('li');
-    li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
-    li.innerHTML = `<div style="display:flex;justify-content:space-between">
-      <div><b>${c.productName || c.productId}</b> — <span class="small">by ${c.chatId||c.uid}</span><br><span class="small">${new Date((c.createdAt && c.createdAt.seconds ? c.createdAt.seconds*1000 : Date.now())).toLocaleString()}</span></div>
-      <div>
-        <button class="btn" onclick="refundClaim('${c.id}')">Refund</button>
-        <button class="btn ghost" onclick="viewClaim('${c.id}')">View</button>
-      </div>
-    </div>`;
-    claimsList.appendChild(li);
-  });
-}
-window.loadClaims = ()=> startClaimsListener();
-window.viewClaimsForUser = async (uid) => {
-  const snap = await getDocs(collection(db,'claims'));
-  const arr = [];
-  snap.forEach(d=>{ const c = { id:d.id, ...d.data() }; if(c.uid===uid) arr.push(c); });
-  if(!arr.length) return alert('No claims');
-  alert(JSON.stringify(arr, null, 2));
-};
-window.refundClaim = async (id) => {
-  await updateDoc(doc(db,'claims',id), { refunded: true }).catch(()=> setDoc(doc(db,'claims',id), { refunded:true }, { merge:true }));
-  await logAction('refund',{id});
-  alert('Marked refunded');
-};
-window.viewClaim = async (id) => {
-  const snap = await getDoc(doc(db,'claims',id));
-  alert(JSON.stringify(snap.data(), null, 2));
-};
-
-/* ---------- LOGS ---------- */
-let logsUnsub = null;
-function startLogsListener(){
-  if(logsUnsub) logsUnsub();
-  const q = query(collection(db,'logs'), orderBy('createdAt','desc'));
-  logsUnsub = onSnapshot(q, snap => {
-    logList.innerHTML = '';
-    snap.forEach(d=>{
-      const l = d.data();
-      const li = document.createElement('li');
-      li.style.padding='8px'; li.style.borderBottom='1px solid #eef2f6';
-      li.textContent = `${l.type} — ${JSON.stringify(l.detail||'')} — ${l.createdAt? l.createdAt.seconds : ''}`;
-      logList.appendChild(li);
-    });
-  });
-}
-window.loadLogs = ()=> startLogsListener();
-
-/* ---------- ADMIN PROFILE (meta/adminProfile) ---------- */
-async function loadAdminProfile(){
-  const ref = doc(db,'meta','adminProfile');
+// ---------- GIFT STARS ----------
+window.giftStars = async (uid,amount)=>{
+  const ref = doc(db,"users",uid);
   const snap = await getDoc(ref);
   if(snap.exists()){
-    adminProfile = snap.data();
-    adminName.value = adminProfile.name || '';
-    adminEmail.value = adminProfile.email || '';
-    adminStars.value = adminProfile.stars || 0;
-    adminCash.value = adminProfile.cash || 0;
-    // show topbar
-    adminDisplay.textContent = `${adminProfile.name || 'Admin'}`;
-    adminBalances.textContent = `⭐ ${adminProfile.stars||0} — ₦${adminProfile.cash||0}`;
-  } else {
-    adminProfile = null;
-    adminDisplay.textContent = 'Admin (not set)';
-    adminBalances.textContent = '⭐ 0 — ₦0';
+    const newStars = (snap.data().stars||0)+amount;
+    await updateDoc(ref,{stars:newStars});
+    alert(`Gave ${amount}⭐ to ${snap.data().chatId}`);
+    await loadUsers();
   }
 }
-window.loadAdminProfile = loadAdminProfile;
 
-async function saveAdminProfile(){
-  const data = { name: adminName.value, email: adminEmail.value, stars: Number(adminStars.value)||0, cash: Number(adminCash.value)||0, updatedAt: serverTimestamp() };
-  await setDoc(doc(db,'meta','adminProfile'), data, { merge:true });
-  await logAction('save_admin', data);
-  await loadAdminProfile();
-  alert('Saved');
-}
-window.saveAdminProfile = saveAdminProfile;
-
-/* ---------- REFRESH ALL ---------- */
-async function refreshAll(){
-  await loadRooms();
-  startUsersListener();
-  startShopListener();
-  startClaimsListener();
-  startLogsListener();
-  await loadAdminProfile();
+// ---------- GIFT CASH ----------
+window.giftCash = async (uid,amount)=>{
+  const ref = doc(db,"users",uid);
+  const snap = await getDoc(ref);
+  if(snap.exists()){
+    const newCash = (snap.data().cash||0)+amount;
+    await updateDoc(ref,{cash:newCash});
+    alert(`Gave $${amount} to ${snap.data().chatId}`);
+    await loadUsers();
+  }
 }
 
-/* ---------- START ---------- */
-refreshAll();
+// ---------- TIMEOUT USER ----------
+window.timeoutUser = async (uid)=>{
+  const ref = doc(db,"users",uid);
+  await updateDoc(ref,{ timeoutUntil: Date.now()+5*60*1000 });
+  alert(`User has been timed out for 5 minutes.`);
+}
 
-/* expose functions globally used by buttons */
-window.loadUsers = ()=> startUsersListener();
-window.loadShop = ()=> startShopListener();
-window.loadClaims = ()=> startClaimsListener();
-window.loadLogs = ()=> startLogsListener();
-window.giftToUser = window.giftToUser;
-window.timeoutUser = window.timeoutUser;
-window.clearTimeoutUser = window.clearTimeoutUser;
-window.logAction = logAction;
+// ---------- BROADCAST ----------
+broadcastBtn.addEventListener('click', async ()=>{
+  const msg = broadcastInput.value.trim();
+  if(!msg) return;
+
+  // Write to broadcasts for the current room
+  await addDoc(collection(db,`${currentRoomId}_broadcasts`),{
+    text: msg,
+    createdAt: serverTimestamp()
+  });
+  alert(`Broadcast sent to ${currentRoomId}`);
+  broadcastInput.value = '';
+});
+
+// ---------- INIT ----------
+loadRooms();
 </script>
 </body>
 </html>
