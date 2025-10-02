@@ -186,6 +186,39 @@ h2 {
   text-align:center;
   font-size:0.85rem;
 }
+.submit-btn {
+  position: relative; /* Needed for spinner positioning */
+  overflow: hidden;
+}
+
+/* Spinner styles */
+.spinner {
+  display: none; /* hidden by default */
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top: 3px solid #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -9px 0 0 -9px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* When loading */
+.submit-btn.loading .spinner {
+  display: block;
+}
+
+.submit-btn.loading .btn-text {
+  visibility: hidden; /* hide text when spinner shows */
+}
 </style>
 </head>
 <body>
@@ -219,8 +252,10 @@ h2 {
 </div>
 <div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
 
-<button class="submit-btn" id="submitBtn">Sign Up</button>
-<div class="message" id="message"></div>
+<button class="submit-btn" id="submitBtn">
+  <span class="btn-text">Sign Up</span>
+  <div class="spinner"></div>
+</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -298,6 +333,8 @@ submitBtn.addEventListener('click', async ()=>{
     return;
   }
 
+  // Show spinner
+  submitBtn.classList.add('loading');
   messageEl.textContent = 'Signing up...';
 
   const uidKey = sanitizeKey(email);
@@ -330,17 +367,15 @@ submitBtn.addEventListener('click', async ()=>{
       await updateDoc(userRef, userData); // update existing
     }
 
-    // Save locally to persist login across pages
     localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
-
     messageEl.textContent = `Successfully signed up as ${isVIP ? 'VIP' : 'Host'}!`;
-
-    // Optional: redirect or show next step
-    // window.location.href = "/chat.html";
 
   } catch(e){
     console.error(e);
     messageEl.textContent = 'Signup failed. Try again.';
+  } finally {
+    // Hide spinner
+    submitBtn.classList.remove('loading');
   }
 });
 </script>
