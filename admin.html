@@ -197,7 +197,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import { 
-  getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, query, where, serverTimestamp 
+  getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ---------- FIREBASE CONFIG ----------
@@ -213,7 +213,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- ROOM COLLECTIONS ----------
+// ---------- DOM ----------
+const roomSelect = document.getElementById('roomSelect');
+const usersTable = document.getElementById('usersTable');
+const statsBox = document.getElementById('statsBox');
+const broadcastBtn = document.getElementById('broadcastBtn');
+const broadcastInput = document.getElementById('broadcastInput');
+const shopTable = document.getElementById('shopTable');
+const adminInfo = document.getElementById('adminInfo');
+
+// ---------- ROOMS ----------
 const chatCollections = [
   "messages",
   "messages_room",
@@ -221,15 +230,7 @@ const chatCollections = [
   "messages_room4",
   "messages_room5"
 ];
-
 let currentRoomId = null;
-
-// ---------- DOM ELEMENTS ----------
-const roomSelect = document.getElementById('roomSelect');
-const usersTable = document.getElementById('usersTable');
-const statsBox = document.getElementById('statsBox');
-const broadcastBtn = document.getElementById('broadcastBtn');
-const broadcastInput = document.getElementById('broadcastInput');
 
 // ---------- LOAD ROOMS ----------
 async function loadRooms(){
@@ -245,6 +246,7 @@ async function loadRooms(){
     currentRoomId = roomSelect.value = roomSelect.options[0].value;
     await refreshRoomStats();
     await loadUsers();
+    await loadPurchases();
   }
 }
 
@@ -252,13 +254,13 @@ roomSelect.addEventListener('change', async ()=>{
   currentRoomId = roomSelect.value;
   await refreshRoomStats();
   await loadUsers();
+  await loadPurchases();
 });
 
-// ---------- REFRESH ROOM STATS ----------
+// ---------- ROOM STATS ----------
 async function refreshRoomStats(){
   const q = await getDocs(collection(db,"users"));
   let totalUsers = 0, hosts = 0, vips = 0;
-
   q.forEach(docSnap=>{
     totalUsers++;
     const d = docSnap.data();
@@ -267,14 +269,14 @@ async function refreshRoomStats(){
   });
 
   statsBox.innerHTML = `
-    <div>Total Users: <b>${totalUsers}</b></div>
-    <div>Hosts: <b>${hosts}</b></div>
-    <div>VIPs: <b>${vips}</b></div>
-    <div>Current Room: <b>${currentRoomId}</b></div>
+    <div><b>Total Users:</b> ${totalUsers}</div>
+    <div><b>Hosts:</b> ${hosts}</div>
+    <div><b>VIPs:</b> ${vips}</div>
+    <div><b>Current Room:</b> ${currentRoomId}</div>
   `;
 }
 
-// ---------- LOAD USERS ----------
+// ---------- USERS ----------
 async function loadUsers(){
   usersTable.innerHTML = `
     <tr>
@@ -307,43 +309,63 @@ async function loadUsers(){
   });
 }
 
-// ---------- GIFT STARS ----------
+// ---------- SHOP CLAIMS ----------
+async function loadPurchases(){
+  shopTable.innerHTML = `
+    <tr>
+      <th>User</th>
+      <th>Item</th>
+      <th>Price</th>
+      <th>Claimed At</th>
+    </tr>
+  `;
+  const q = await getDocs(collection(db,"purchases"));
+  q.forEach(p=>{
+    const d = p.data();
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${d.userEmail || d.userId}</td>
+      <td>${d.itemName || '-'}</td>
+      <td>${d.price || 0}</td>
+      <td>${d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString() : '-'}</td>
+    `;
+    shopTable.appendChild(tr);
+  });
+}
+
+// ---------- ACTIONS ----------
 window.giftStars = async (uid,amount)=>{
   const ref = doc(db,"users",uid);
   const snap = await getDoc(ref);
   if(snap.exists()){
     const newStars = (snap.data().stars||0)+amount;
     await updateDoc(ref,{stars:newStars});
-    alert(`Gave ${amount}⭐ to ${snap.data().chatId}`);
+    alert(`+${amount}⭐ to ${snap.data().chatId}`);
     await loadUsers();
   }
 }
 
-// ---------- GIFT CASH ----------
 window.giftCash = async (uid,amount)=>{
   const ref = doc(db,"users",uid);
   const snap = await getDoc(ref);
   if(snap.exists()){
     const newCash = (snap.data().cash||0)+amount;
     await updateDoc(ref,{cash:newCash});
-    alert(`Gave $${amount} to ${snap.data().chatId}`);
+    alert(`+$${amount} to ${snap.data().chatId}`);
     await loadUsers();
   }
 }
 
-// ---------- TIMEOUT USER ----------
 window.timeoutUser = async (uid)=>{
   const ref = doc(db,"users",uid);
   await updateDoc(ref,{ timeoutUntil: Date.now()+5*60*1000 });
-  alert(`User has been timed out for 5 minutes.`);
+  alert(`User timed out for 5 minutes.`);
 }
 
 // ---------- BROADCAST ----------
 broadcastBtn.addEventListener('click', async ()=>{
   const msg = broadcastInput.value.trim();
   if(!msg) return;
-
-  // Write to broadcasts for the current room
   await addDoc(collection(db,`${currentRoomId}_broadcasts`),{
     text: msg,
     createdAt: serverTimestamp()
@@ -352,8 +374,28 @@ broadcastBtn.addEventListener('click', async ()=>{
   broadcastInput.value = '';
 });
 
+// ---------- ADMIN INFO ----------
+async function loadAdminInfo(){
+  // pull from localStorage vipUser set at signup
+  const vip = JSON.parse(localStorage.getItem('vipUser'));
+  if(vip?.email){
+    const uid = vip.email.replace(/[.#$\[\]]/g, ',');
+    const ref = doc(db,"users",uid);
+    const snap = await getDoc(ref);
+    if(snap.exists()){
+      const d = snap.data();
+      adminInfo.innerHTML = `
+        <b>Logged in as:</b> ${d.chatId || vip.email}<br>
+        <b>Stars:</b> ${d.stars || 0} ⭐ | <b>Cash:</b> $${d.cash || 0}
+      `;
+    }
+  } else {
+    adminInfo.textContent = "Logged in as Admin (no local data)";
+  }
+}
+
 // ---------- INIT ----------
 loadRooms();
+loadAdminInfo();
+
 </script>
-</body>
-</html>
