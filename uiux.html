@@ -494,23 +494,23 @@ const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) :
 const parseNumberFromText = text => Number((text || '').replace(/[^\d\-]/g, '')) || 0;
 
 const animateNumber = (el, from, to, duration = 600) => {
-  const start = performance.now();
-  const update = timestamp => {
-    const progress = Math.min((timestamp - start) / duration, 1);
-    const value = Math.floor(from + (to - from) * progress);
-    if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
-    else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
-    if (progress < 1) requestAnimationFrame(update);
-  };
-  requestAnimationFrame(update);
+  return new Promise(resolve => {
+    const start = performance.now();
+    const update = timestamp => {
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const value = Math.floor(from + (to - from) * progress);
+      if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
+      else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
+      if (progress < 1) requestAnimationFrame(update);
+      else resolve();
+    };
+    requestAnimationFrame(update);
+  });
 };
+
 // ---------- Loader Control ----------
-const showLoader = () => {
-  document.getElementById('page-loader').classList.remove('hidden');
-};
-const hideLoader = () => {
-  document.getElementById('page-loader').classList.add('hidden');
-};
+const showLoader = () => document.getElementById('page-loader').classList.remove('hidden');
+const hideLoader = () => document.getElementById('page-loader').classList.add('hidden');
 
 // ---------- Confetti ----------
 const triggerConfetti = () => {
@@ -524,7 +524,6 @@ const triggerConfetti = () => {
 // ---------- Modals ----------
 let activeConfirmHandler = null;
 
-// ---------- Confirm Modal ----------
 const showConfirmModal = (title, text, onYes) => {
   DOM.confirmTitle.textContent = title;
   DOM.confirmText.textContent = text;
@@ -539,9 +538,9 @@ const showConfirmModal = (title, text, onYes) => {
   };
 
   DOM.confirmYes.onclick = async () => {
-    cleanup(); // hide modal first
+    cleanup();
     try {
-      await onYes(); // properly await async redemption
+      await onYes();
     } catch (err) {
       console.error('Error in confirm modal callback:', err);
       showMessageModal('Error', err.message || String(err), 2400);
@@ -557,10 +556,9 @@ const previewImage = src => {
   DOM.imagePreview.style.display = 'flex';
 };
 
-// Close button
 document.getElementById('closePreview').addEventListener('click', () => {
   DOM.imagePreview.style.display = 'none';
-  DOM.previewImg.src = ''; // optional, clears the image
+  DOM.previewImg.src = '';
 });
 
 // ---------- Current User ----------
@@ -574,7 +572,7 @@ const loadCurrentUser = async () => {
   DOM.stars.textContent = `0 ⭐️`;
   DOM.cash.textContent = `₦0`;
 
-  renderShop();
+  await renderShop();
 
   if (!vip?.email) { currentUser = null; DOM.hostTabs.style.display = 'none'; return; }
 
@@ -612,7 +610,6 @@ const loadCurrentUser = async () => {
 
 // ---------- Host Panels ----------
 const updateHostPanels = () => {
-  // Hide host tabs and vertical stack if not a host
   if (!currentUser?.isHost) {
     DOM.hostTabs.style.display = 'none';
     DOM.tabContent.style.display = 'none';
@@ -620,15 +617,11 @@ const updateHostPanels = () => {
     return;
   }
 
-  // Show host tabs
   DOM.hostTabs.style.display = '';
-  
-  // Update host stats (if you have small counters somewhere)
   DOM.vipCount && (DOM.vipCount.textContent = formatNumber(currentUser.hostVIP || 0));
   DOM.friendsCount && (DOM.friendsCount.textContent = formatNumber((currentUser.hostFriends || []).length));
   DOM.badgesCount && (DOM.badgesCount.textContent = currentUser.hostBadge || 'Gold');
 
-  // Render the vertical stack inside tab-content
   DOM.tabContent.style.display = '';
   DOM.tabContent.innerHTML = `
     <div class="stat-block">
@@ -675,7 +668,6 @@ const createProductCard = product => {
   if ((product.hostOnly && !currentUser?.isHost) || avail <= 0) btn.disabled = true;
 
   card.append(badge, img, title, price, btn);
-
   btn.addEventListener('click', () => redeemProduct(product));
 
   return card;
@@ -687,7 +679,6 @@ const redeemProduct = async product => {
   if (currentUser.stars < product.cost) return showMessageModal('Not Enough Stars', 'You do not have enough stars.');
   if (product.available <= 0) return showMessageModal('Sold Out', 'This item is no longer available.');
 
-  // Capture product locally so async callback always has it
   const localProduct = { ...product };
 
   showConfirmModal(
@@ -743,21 +734,21 @@ const redeemProduct = async product => {
           });
         });
 
-        // Update UI balances
         const prevStars = parseNumberFromText(DOM.stars.textContent);
         const prevCash = parseNumberFromText(DOM.cash.textContent);
         currentUser.stars = newStars;
         currentUser.cash = newCash;
 
-        animateNumber(DOM.stars, prevStars, newStars);
-        animateNumber(DOM.cash, prevCash, newCash);
+        // Animate balances first
+        await Promise.all([
+          animateNumber(DOM.stars, prevStars, newStars),
+          animateNumber(DOM.cash, prevCash, newCash)
+        ]);
 
-        // Render shop safely
-        try { await renderShop(); } catch (err) { console.error(err); }
-
+        await renderShop();
         triggerConfetti();
 
-        // ---------- Guaranteed success message ----------
+        // Success modal
         if (redeemedCash > 0) {
           showMessageModal(
             'Redemption Success',
@@ -837,6 +828,6 @@ document.addEventListener('click', ev => {
 loadCurrentUser();
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { DOM.imagePreview.style.display = 'none'; closeModal(); }
+  if (e.key === 'Escape') { DOM.imagePreview.style.display = 'none'; }
 });
 </script>
