@@ -67,12 +67,10 @@ header {
   font-size: 1rem;
   font-weight: bold;
   color: var(--theme-solid);
-  font-family: 'Courier New', Courier, monospace; /* fixes horizontal alignment */
   display: inline-flex;
   align-items: center;
   gap: 4px; /* space between number and emoji */
-}}
-
+}
 /* ---------- HOST TABS ---------- */
 .host-tabs {
   display: flex;
@@ -562,9 +560,14 @@ const animateNumber = (el, from, to, duration = 600) => {
   const update = timestamp => {
     const progress = Math.min((timestamp - start) / duration, 1);
     const value = Math.floor(from + (to - from) * progress);
-    
-    const numSpan = el.querySelector('.num');
-    if(numSpan) numSpan.textContent = formatNumber(value);
+
+    if (el === DOM.stars) {
+      // replace only the number, keep the star
+      el.textContent = `${formatNumber(value)} ⭐️`;
+    } else if (el === DOM.cash) {
+      // replace only the number, keep the currency symbol
+      el.textContent = `₦${formatNumber(value)}`;
+    }
 
     if (progress < 1) requestAnimationFrame(update);
   };
