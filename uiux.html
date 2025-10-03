@@ -687,14 +687,18 @@ const redeemProduct = async product => {
   if (currentUser.stars < product.cost) return showMessageModal('Not Enough Stars', 'You do not have enough stars.');
   if (product.available <= 0) return showMessageModal('Sold Out', 'This item is no longer available.');
 
+  // Capture product locally so async callback always has it
+  const localProduct = { ...product };
+
   showConfirmModal(
     'Confirm Redemption',
-    `Redeem "${product.name}" for ${product.cost} ⭐?`,
+    `Redeem "${localProduct.name}" for ${localProduct.cost} ⭐?`,
     async () => {
-      showLoader(); // start spinner
+      showLoader();
       try {
         const userRef = doc(db, 'users', currentUser.uid);
-        const productRef = doc(db, 'shopItems', String(product.id));
+        const productRef = doc(db, 'shopItems', String(localProduct.id));
+
         let newStars = 0, newCash = 0, redeemedCash = 0;
 
         await runTransaction(db, async transaction => {
@@ -730,8 +734,8 @@ const redeemProduct = async product => {
             userId: currentUser.uid,
             email: userData.email || '',
             phone: userData.phone || '',
-            productId: String(productData.id || product.id),
-            productName: productData.name || product.name,
+            productId: String(productData.id || localProduct.id),
+            productName: productData.name || localProduct.name,
             cost,
             cashReward: Number(productData.cashReward) || 0,
             redeemedCash,
@@ -739,7 +743,7 @@ const redeemProduct = async product => {
           });
         });
 
-        // ---------- Update UI Balances ----------
+        // Update UI balances
         const prevStars = parseNumberFromText(DOM.stars.textContent);
         const prevCash = parseNumberFromText(DOM.cash.textContent);
         currentUser.stars = newStars;
@@ -748,31 +752,26 @@ const redeemProduct = async product => {
         animateNumber(DOM.stars, prevStars, newStars);
         animateNumber(DOM.cash, prevCash, newCash);
 
-        // ---------- Re-render Shop Safely ----------
-        try {
-          await renderShop();
-        } catch (err) {
-          console.error('Failed to render shop after redeem:', err);
-          DOM.shopItems.innerHTML = '<div style="padding:1rem;color:#ccc;text-align:center;">Failed to load shop items.</div>';
-        }
+        // Render shop safely
+        try { await renderShop(); } catch (err) { console.error(err); }
 
         triggerConfetti();
 
-        // ---------- Redeem Success Messages ----------
+        // ---------- Guaranteed success message ----------
         if (redeemedCash > 0) {
           showMessageModal(
             'Redemption Success',
             `You redeemed your full cash balance of ₦${redeemedCash.toLocaleString()}! 🎉`
           );
-        } else if (Number(product.cashReward) > 0) {
+        } else if (Number(localProduct.cashReward) > 0) {
           showMessageModal(
             'Redemption Success',
-            `You successfully redeemed "${product.name}" and received ₦${Number(product.cashReward).toLocaleString()}! ⭐`
+            `You successfully redeemed "${localProduct.name}" and received ₦${Number(localProduct.cashReward).toLocaleString()}! ⭐`
           );
         } else {
           showMessageModal(
             'Redemption Success',
-            `You successfully redeemed "${product.name}" for ${product.cost} ⭐! 🎉`
+            `You successfully redeemed "${localProduct.name}" for ${localProduct.cost} ⭐! 🎉`
           );
         }
 
@@ -780,7 +779,7 @@ const redeemProduct = async product => {
         console.error('Redemption error:', err);
         showMessageModal('Error', err.message || String(err), 2400);
       } finally {
-        hideLoader(); // always hide spinner
+        hideLoader();
       }
     }
   );
