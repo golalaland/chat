@@ -388,8 +388,8 @@ header {
 .stars-count,
 .cash-count {
   display: inline-block;
-  min-width: 60px;   /* 👈 adjust until they align perfectly */
-  text-align: right; /* makes numbers line up neatly */
+  min-width: 60px;   /* adjust until numbers align */
+  text-align: right; /* right-align digits */
 }
 /* small helper */
 .muted { color:#999; font-size:0.9rem; }
@@ -404,7 +404,7 @@ header {
   <div id="user-info">
     <div class="profile-card">
       <div id="username">Guest</div>
-     <div id="balances">
+    <div id="balances">
   <div class="balance-row">
     <span class="balance-label">Stars:</span>
     <span class="balance-value">
@@ -419,8 +419,6 @@ header {
     </span>
   </div>
 </div>
-    </div>
-  </div>
 
   <!-- HOST TABS (hidden for regular users) -->
   <div class="host-tabs" id="hostTabs" style="display:none;">
@@ -501,8 +499,10 @@ const db = getFirestore(app);
 // ---------- DOM References ----------
 const DOM = {
   username: document.getElementById('username'),
-  stars: document.getElementById('stars-count'),
-  cash: document.getElementById('cash-count'),
+const starsEl = document.getElementById('starsBalance');
+const cashEl = document.getElementById('cashBalance');
+animateNumber(starsEl, prevStars, newStars);
+animateNumber(cashEl, prevCash, newCash);
   shopItems: document.getElementById('shop-items'),
   hostTabs: document.getElementById('hostTabs'),
   vipCount: document.getElementById('vip-count'),
