@@ -34,12 +34,6 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
 .actions-wrap{display:flex;gap:6px;flex-wrap:wrap}
 .footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
 .badge{background:#eef2f6;color:#111;padding:4px 6px;border-radius:6px;font-size:12px}
-
-/* ---------- Modal ---------- */
-.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1000}
-.modal{background:#fff;padding:20px;border-radius:10px;min-width:300px;max-width:400px;text-align:center}
-.modal h4{margin-bottom:12px}
-.modal button{margin:6px}
 </style>
 </head>
 <body>
@@ -50,6 +44,7 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
   <button data-view="rooms" class="active" onclick="navigate(event)">Rooms</button>
   <button data-view="users" onclick="navigate(event)">Users</button>
   <button data-view="shop" onclick="navigate(event)">Shop</button>
+  <button data-view="purchases" onclick="navigate(event)">Purchases</button>
   <button data-view="claims" onclick="navigate(event)">Claims</button>
   <button data-view="logs" onclick="navigate(event)">Logs</button>
   <div style="flex:1"></div>
@@ -60,7 +55,7 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
   <div class="topbar">
     <div class="left">
       <div class="brand">🎛️ Admin Dashboard</div>
-      <div class="small">PC layout — realtime</div>
+      <div class="small">Realtime — Firestore</div>
     </div>
     <div class="admin-info">
       <div id="adminDisplay" class="small">Not signed (admin)</div>
@@ -70,9 +65,30 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
   </div>
 
   <div class="content">
+    <!-- ROOMS -->
+    <div id="view-rooms" class="col">
+      <div class="card">
+        <h3>Rooms</h3>
+        <div style="display:flex;gap:8px;">
+          <select id="roomSelect"></select>
+          <button class="btn" id="btnToggleMute">Toggle Mute</button>
+          <button class="btn" id="btnToggleSlow">Toggle SlowChat</button>
+          <button class="btn ghost" id="btnResetRoom">Reset</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Room Stats</h3>
+        <div class="small">Selected: <span id="roomName">—</span></div>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <div class="small">Users: <span id="roomUserCount">0</span></div>
+          <div class="small">Hosts: <span id="roomHostCount">0</span></div>
+          <div class="small">VIPs: <span id="roomVIPCount">0</span></div>
+        </div>
+      </div>
+    </div>
 
     <!-- USERS -->
-    <div id="view-users" class="col">
+    <div id="view-users" class="col" style="display:none">
       <div class="card">
         <h3>Users</h3>
         <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -82,205 +98,217 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
             <option value="hosts">Hosts</option>
             <option value="vip">VIP</option>
             <option value="banned">Banned</option>
-            <option value="kicked">Kicked</option>
             <option value="timedout">Timed out</option>
           </select>
-          <button class="btn" id="userSearchBtn">Search</button>
+          <button class="btn" onclick="loadUsers()">Search</button>
         </div>
-
         <table class="table">
-          <thead><tr><th>User</th><th>Host</th><th>Stars</th><th>Cash</th><th>Status</th><th>Invited By</th><th>Phone</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>User</th><th>Email</th><th>Phone</th><th>Invited By</th><th>Stars</th><th>Cash</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
           <tbody id="userList"></tbody>
         </table>
       </div>
+    </div>
 
+    <!-- SHOP -->
+    <div id="view-shop" class="col" style="display:none">
       <div class="card">
-        <h3>Quick Gift / Timeout</h3>
-        <div style="display:flex;gap:8px">
-          <input id="selectedUserId" placeholder="User id (click a user to auto-fill)">
-          <input id="giftStars" type="number" placeholder="Stars">
-          <input id="giftCash" type="number" placeholder="Cash">
-          <button class="btn" id="quickGiftBtn">Give</button>
+        <h3>Shop Items</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="shopSearch" placeholder="Search items">
+          <select id="shopViewMode"><option value="admin">Admin</option><option value="host">Host</option><option value="user">User</option></select>
+          <button class="btn" onclick="loadShop()">Refresh</button>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <input id="timeoutSec" type="number" placeholder="Timeout seconds">
-          <button class="btn" id="quickTimeoutBtn">Timeout</button>
-          <button class="btn ghost" id="quickClearTimeoutBtn">Clear Timeout</button>
+        <table class="table">
+          <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>HostOnly</th><th>Actions</th></tr></thead>
+          <tbody id="shopList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PURCHASES -->
+    <div id="view-purchases" class="col" style="display:none">
+      <div class="card">
+        <h3>Purchases</h3>
+        <table class="table">
+          <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Item</th><th>Stars Spent</th><th>Fulfilled</th><th>Date</th></tr></thead>
+          <tbody id="purchasesList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CLAIMS -->
+    <div id="view-claims" class="col" style="display:none">
+      <div class="card">
+        <h3>Claims / Refunds</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="claimSearch" placeholder="Search by user / product / id">
+          <button class="btn" onclick="loadClaims()">Refresh</button>
         </div>
+        <ul class="claims-list" id="claimsList"></ul>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="view-logs" class="col" style="display:none">
+      <div class="card">
+        <h3>Action Logs</h3>
+        <button class="btn" onclick="loadLogs()">Refresh</button>
+        <ul class="log-list" id="logList"></ul>
+      </div>
+    </div>
+
+    <!-- META -->
+    <div id="view-meta" class="col" style="display:none">
+      <div class="card">
+        <h3>Admin Profile</h3>
+        <input id="adminName" placeholder="Admin display name (chatId)">
+        <input id="adminEmail" placeholder="Admin email">
+        <input id="adminStars" type="number" placeholder="Stars">
+        <input id="adminCash" type="number" placeholder="Cash">
+        <div style="margin-top:8px"><button class="btn" onclick="saveAdminProfile()">Save</button><button class="btn ghost" onclick="loadAdminProfile()">Load</button></div>
       </div>
     </div>
 
   </div>
-
-  <div class="footer">Built for NNAMDI — Secure Firestore rules before production.</div>
-</div>
-
-<!-- Modal -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal" id="modalContent">
-    <h4 id="modalMessage"></h4>
-    <button id="modalConfirm" class="btn">Confirm</button>
-    <button id="modalCancel" class="btn ghost">Cancel</button>
-  </div>
+  <div class="footer">Built for NNAMDI — secure Firestore rules before production.</div>
 </div>
 
 <!-- Firebase + JS -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, onSnapshot, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  initializeApp 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-/* ---------- FIREBASE CONFIG ---------- */
+import { 
+  getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------- DOM refs ---------- */
-const userList = document.getElementById('userList');
-const userSearch = document.getElementById('userSearch');
-const userFilter = document.getElementById('userFilter');
-const selectedUserId = document.getElementById('selectedUserId');
-const giftStars = document.getElementById('giftStars');
-const giftCash = document.getElementById('giftCash');
-const timeoutSec = document.getElementById('timeoutSec');
-const userSearchBtn = document.getElementById('userSearchBtn');
-const quickGiftBtn = document.getElementById('quickGiftBtn');
-const quickTimeoutBtn = document.getElementById('quickTimeoutBtn');
-const quickClearTimeoutBtn = document.getElementById('quickClearTimeoutBtn');
+// ---------- NAV ----------
+window.navigate = (e)=>{
+  const v = e.target.getAttribute("data-view");
+  document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
+  e.target.classList.add("active");
+  document.querySelectorAll(".col").forEach(c=>c.style.display="none");
+  document.getElementById("view-"+v).style.display="block";
+};
 
-const modalBg = document.getElementById('modalBg');
-const modalMessage = document.getElementById('modalMessage');
-const modalConfirm = document.getElementById('modalConfirm');
-const modalCancel = document.getElementById('modalCancel');
-
-let users = [];
-let pendingAction = null;
-
-/* ---------- Navigation ---------- */
-function navigate(e){
-  const view = e.currentTarget?.dataset?.view || e;
-  document.querySelectorAll('.col').forEach(c=>c.style.display='none');
-  document.getElementById('view-' + view).style.display = 'block';
-  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
-  const btn = [...document.querySelectorAll('.sidebar button')].find(b=>b.dataset.view===view);
-  if(btn) btn.classList.add('active');
-}
-window.navigate = navigate;
-
-/* ---------- Modal ---------- */
-function showModal(msg, confirmCb){
-  modalMessage.textContent = msg;
-  pendingAction = confirmCb;
-  modalBg.style.display = 'flex';
-}
-modalConfirm.onclick = ()=>{if(pendingAction) pendingAction(); modalBg.style.display='none'; pendingAction=null;}
-modalCancel.onclick = ()=>{modalBg.style.display='none'; pendingAction=null;}
-
-/* ---------- FETCH USERS ---------- */
-const usersRef = collection(db,'users');
-function renderUsers(){
-  const f = userFilter.value;
-  const s = userSearch.value.toLowerCase();
-  userList.innerHTML = '';
-  users.filter(u=>{
-    if(f==='vip' && u.status!=='vip') return false;
-    if(f==='hosts' && !u.host) return false;
-    if(f==='banned' && u.status!=='banned') return false;
-    if(f==='kicked' && u.status==='kicked') return false;
-    if(f==='timedout' && u.status==='timedout') return false;
-    if(s && !(`${u.name} ${u.email} ${u.id}`.toLowerCase().includes(s))) return false;
-    return true;
-  }).forEach(u=>{
-    const tr = document.createElement('tr');
-    tr.classList.add('user-row');
-    tr.innerHTML=`
-      <td>${u.name}<br><span class="small">${u.email}</span></td>
-      <td>${u.host?'Yes':'No'}</td>
-      <td>${u.stars||0}</td>
-      <td>₦${u.cash||0}</td>
-      <td>${u.status||'active'}</td>
-      <td>${u.invitedBy||'-'}</td>
-      <td>${u.phone||'-'}</td>
+// ---------- USERS ----------
+async function loadUsers(){
+  const tbody = document.getElementById("userList");
+  tbody.innerHTML = "";
+  const q = await getDocs(collection(db,"users"));
+  q.forEach(docSnap=>{
+    const u = docSnap.data();
+    const inviter = u.invitedBy ? `<a href="#" onclick="viewReferralChain('${u.invitedBy}')">${u.invitedBy}</a>` : "—";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.chatId || "-"}</td>
+      <td>${u.email || "-"}</td>
+      <td>${u.phone || "-"}</td>
+      <td>${inviter}</td>
+      <td>${u.stars || 0}</td>
+      <td>₦${u.cash || 0}</td>
+      <td>${u.isHost ? "Host" : u.isVIP ? "VIP" : "User"}</td>
       <td class="actions-wrap">
-        <button class="btn ghost" onclick="confirmAction('kick','${u.id}')">Kick</button>
-        <button class="btn ghost" onclick="confirmAction('ban','${u.id}')">Ban</button>
-        <button class="btn ghost" onclick="confirmAction('timeout','${u.id}')">Timeout</button>
-        <button class="btn ghost" onclick="confirmAction('toggleHost','${u.id}')">Prom/Demote</button>
+        <button onclick="giftStars('${docSnap.id}',10)">+10⭐</button>
+        <button onclick="giftCash('${docSnap.id}',5)">+5💵</button>
+        <button onclick="timeoutUser('${docSnap.id}')">Timeout</button>
+        <button onclick="banUser('${docSnap.id}')">Ban</button>
+        <button onclick="kickUser('${docSnap.id}')">Kick</button>
       </td>
     `;
-    tr.onclick=()=>selectedUserId.value=u.id;
-    userList.appendChild(tr);
+    tbody.appendChild(tr);
   });
 }
 
-function fetchUsersRealtime(){
-  onSnapshot(usersRef, snapshot=>{
-    users = snapshot.docs.map(doc=>({...doc.data(), id: doc.id}));
-    renderUsers();
-  });
-}
-fetchUsersRealtime();
-
-userSearchBtn.onclick = renderUsers;
-userFilter.onchange = renderUsers;
-
-/* ---------- USER ACTIONS ---------- */
-function updateUser(userId, updates){
-  const docRef = doc(db,'users',userId);
-  updateDoc(docRef,updates).catch(console.error);
-}
-
-quickGiftBtn.onclick=()=>{
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select a user');
-  const updates={};
-  if(Number(giftStars.value)) updates.stars = increment(Number(giftStars.value));
-  if(Number(giftCash.value)) updates.cash = increment(Number(giftCash.value));
-  updateUser(uid,updates);
-};
-
-quickTimeoutBtn.onclick=()=>{
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select a user');
-  const time = Number(timeoutSec.value) || 300;
-  updateUser(uid,{status:'timedout',timeoutUntil:serverTimestamp()});
-};
-
-quickClearTimeoutBtn.onclick=()=>{
-  const uid = selectedUserId.value;
-  if(!uid) return alert('Select a user');
-  updateUser(uid,{status:'active',timeoutUntil:null});
-};
-
-window.confirmAction = function(action,userId){
-  const user = users.find(u=>u.id===userId);
-  if(!user) return;
-  let msg='';
-  switch(action){
-    case 'kick': msg=`Kick ${user.name}?`; break;
-    case 'ban': msg=`Ban ${user.name}?`; break;
-    case 'timeout': msg=`Timeout ${user.name}?`; break;
-    case 'toggleHost': msg=`Toggle host status for ${user.name}?`; break;
-  }
-  showModal(msg,()=>{
-    switch(action){
-      case 'kick': updateUser(userId,{status:'kicked'}); break;
-      case 'ban': updateUser(userId,{status:'banned'}); break;
-      case 'timeout': updateUser(userId,{status:'timedout'}); break;
-      case 'toggleHost': updateUser(userId,{host:!user.host}); break;
+// ---------- REFERRAL CHAIN ----------
+window.viewReferralChain = async (uid, depth=0)=>{
+  if(depth>5) return;
+  const snap = await getDoc(doc(db,"users",uid));
+  if(!snap.exists()){ alert("User not found"); return; }
+  const user = snap.data();
+  let chain = [user.chatId || user.email || uid];
+  if(user.invitedBy){
+    const parent = await getDoc(doc(db,"users",user.invitedBy));
+    if(parent.exists()){
+      chain.unshift(parent.data().chatId || parent.data().email || user.invitedBy);
+    } else {
+      chain.unshift(user.invitedBy);
     }
-  });
+  }
+  alert("Referral chain:\n" + chain.join(" → "));
 };
 
-/* ---------- REFRESH ---------- */
-window.refreshAll = ()=>fetchUsersRealtime();
+// ---------- ADMIN ACTIONS ----------
+window.giftStars = async(uid,amount)=>{
+  const ref = doc(db,"users",uid);
+  const snap = await getDoc(ref);
+  if(snap.exists()){
+    const newStars = (snap.data().stars||0)+amount;
+    await updateDoc(ref,{stars:newStars});
+    alert(`+${amount}⭐ to ${snap.data().chatId}`);
+    loadUsers();
+  }
+}
+window.giftCash = async(uid,amount)=>{
+  const ref = doc(db,"users",uid);
+  const snap = await getDoc(ref);
+  if(snap.exists()){
+    const newCash = (snap.data().cash||0)+amount;
+    await updateDoc(ref,{cash:newCash});
+    alert(`+₦${amount} to ${snap.data().chatId}`);
+    loadUsers();
+  }
+}
+window.timeoutUser = async(uid)=>{
+  const ref = doc(db,"users",uid);
+  await updateDoc(ref,{ timeoutUntil: Date.now()+5*60*1000 });
+  alert(`User timed out for 5 minutes`);
+}
+window.banUser = async(uid)=>{ await updateDoc(doc(db,"users",uid),{banned:true}); alert("User banned"); loadUsers(); }
+window.kickUser = async(uid)=>{ await updateDoc(doc(db,"users",uid),{kicked:true}); alert("User kicked"); loadUsers(); }
+
+// ---------- PURCHASES ----------
+async function loadPurchases(){
+  const tbody=document.getElementById("purchasesList");
+  tbody.innerHTML="";
+  const q=await getDocs(collection(db,"purchases"));
+  q.forEach(p=>{
+    const d=p.data();
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${d.userId || "-"}</td>
+      <td>${d.userEmail || "-"}</td>
+      <td>${d.phone || "-"}</td>
+      <td>${d.itemName || "-"}</td>
+      <td>${d.starsSpent || 0}</td>
+      <td><input type="checkbox" ${d.fulfilled?"checked":""}></td>
+      <td>${d.createdAt?.toDate?d.createdAt.toDate().toLocaleString():"-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- INIT ----------
+loadUsers();
+loadPurchases();
 </script>
 </body>
 </html>
