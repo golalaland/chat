@@ -466,12 +466,13 @@ header {
 </div>
 <!-- Firebase + App JS -->
 <script type="module">
-// ---------- Firebase Setup ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp, query, where
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs,
+  runTransaction, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// ---------- Firebase Setup ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -492,6 +493,7 @@ const DOM = {
   cash: document.getElementById('cash-count'),
   shopItems: document.getElementById('shop-items'),
   hostTabs: document.getElementById('hostTabs'),
+  userTabs: document.getElementById('userTabs'),
   vipStat: document.getElementById('vip-stat'),
   tabContent: document.getElementById('tab-content'),
   ordersList: document.getElementById('orders-list'),
@@ -503,29 +505,13 @@ const DOM = {
   confirmNo: document.getElementById('confirmNo'),
   imagePreview: document.getElementById('imagePreview'),
   previewImg: document.getElementById('previewImg'),
-  copyLinkBtn: null  // will be added dynamically in VIP tab
+  copyLinkBtn: null
 };
 
-// ---------- Utilities ----------
+// ---------- Utils ----------
 const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) : '0';
-const parseNumberFromText = text => Number((text || '').replace(/[^\d\-]/g, '')) || 0;
-const animateNumber = (el, from, to, duration = 600) => {
-  const start = performance.now();
-  const update = timestamp => {
-    const progress = Math.min((timestamp - start) / duration, 1);
-    const value = Math.floor(from + (to - from) * progress);
-    if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
-    else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
-    if (progress < 1) requestAnimationFrame(update);
-  };
-  requestAnimationFrame(update);
-};
-
-// ---------- Loader ----------
 const showLoader = () => document.getElementById('page-loader').classList.remove('hidden');
 const hideLoader = () => document.getElementById('page-loader').classList.add('hidden');
-
-// ---------- Confetti ----------
 const triggerConfetti = () => {
   if (window.__confettiLoaded) return confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
   const script = document.createElement('script');
@@ -537,25 +523,18 @@ const triggerConfetti = () => {
 // ---------- Modal ----------
 let _themedTimeout = null;
 const closeModal = () => {
-  try { 
-    DOM.confirmModal.style.display = 'none'; 
-    DOM.confirmYes.onclick = null; 
-    DOM.confirmNo.onclick = null;
-    DOM.confirmYes.style.display = ''; 
-    DOM.confirmNo.style.display = '';
-  } catch (e) {}
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
+  DOM.confirmModal.style.display = 'none';
+  DOM.confirmYes.onclick = null;
+  DOM.confirmNo.onclick = null;
 };
 const showConfirmModal = (title, text, onYes) => {
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
   DOM.confirmTitle.textContent = title;
   DOM.confirmText.textContent = text;
   DOM.confirmYes.style.display = '';
   DOM.confirmNo.style.display = '';
   DOM.confirmModal.style.display = 'flex';
-  const cleanup = () => { DOM.confirmYes.onclick = null; DOM.confirmNo.onclick = null; DOM.confirmModal.style.display = 'none'; };
-  DOM.confirmYes.onclick = async () => { cleanup(); if (typeof onYes === 'function') await onYes(); };
-  DOM.confirmNo.onclick = cleanup;
+  DOM.confirmYes.onclick = async () => { closeModal(); if (onYes) await onYes(); };
+  DOM.confirmNo.onclick = closeModal;
 };
 const showThemedMessage = (title, message, duration = 2000) => {
   DOM.confirmTitle.textContent = title;
@@ -576,11 +555,10 @@ let currentUser = null;
 const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
+
   DOM.username.textContent = 'Guest';
   DOM.stars.textContent = `1 ⭐️`;
   DOM.cash.textContent = `₦3,000`;
-
-  await renderShop();
 
   if (!vip?.email) { currentUser = null; DOM.hostTabs.style.display = 'none'; return; }
 
@@ -602,204 +580,133 @@ const loadCurrentUser = async () => {
 
   updateHostPanels();
   await renderShop();
-
+  
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data(); if (!data) return;
     currentUser = { uid, ...data };
     DOM.username.textContent = currentUser.chatId || vip.displayName || vip.email || 'Guest';
-    currentUser.stars = Number(currentUser.stars) || 0;
-    currentUser.cash = Number(currentUser.cash) || 0;
-    DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+    DOM.stars.textContent = `${formatNumber(currentUser.stars || 0)} ⭐️`;
+    DOM.cash.textContent = `₦${formatNumber(currentUser.cash || 0)}`;
     DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
     renderShop().catch(err => console.error('renderShop snapshot failed:', err));
   });
 };
 
-// ---------- Host Panels (VIP/Friends/Badges) ----------
+// ---------- Host Panels ----------
 const updateHostPanels = async () => {
   if (!currentUser?.isHost) { DOM.hostTabs.style.display = 'none'; DOM.tabContent.style.display = 'none'; DOM.tabContent.innerHTML = ''; return; }
   DOM.hostTabs.style.display = '';
 
   const content = DOM.tabContent;
   content.style.display = 'block';
-  content.innerHTML = ''; // clear previous
+  content.innerHTML = '';
 
-  // VIP Section
-  const vipBlock = document.createElement('div');
-  vipBlock.className = 'stat-block';
-  const vipList = document.createElement('div');
-  vipList.className = 'vip-list';
+  // VIP
+  const vipBlock = document.createElement('div'); vipBlock.className = 'stat-block';
   vipBlock.innerHTML = `<div class="stat-value" id="vip-count">0</div><div class="stat-label">VIPs</div>`;
-  const copyBtn = document.createElement('button');
-  copyBtn.textContent = 'Copy VIP Link';
-  copyBtn.className = 'themed-btn';
-  copyBtn.style.marginTop = '0.5rem';
-  copyBtn.onclick = () => {
-    navigator.clipboard.writeText('https://example.com/ref/' + currentUser.uid).then(() => {
-      showThemedMessage('Copied', 'VIP link copied!');
-    });
-  };
+  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy VIP Link'; copyBtn.className='themed-btn';
+  copyBtn.onclick = () => navigator.clipboard.writeText('https://example.com/ref/' + currentUser.uid).then(() => showThemedMessage('Copied', 'VIP link copied!'));
   vipBlock.appendChild(copyBtn);
-  content.appendChild(vipBlock);
-  DOM.copyLinkBtn = copyBtn;
+  content.appendChild(vipBlock); DOM.copyLinkBtn = copyBtn;
 
-  // Friends Section
+  // Friends
   const friendsBlock = document.createElement('div'); friendsBlock.className = 'stat-block';
   friendsBlock.innerHTML = `<div class="stat-value" id="friends-count">0</div><div class="stat-label">Friends Invited</div>`;
-  const friendsListDiv = document.createElement('div'); friendsListDiv.id = 'friends-list';
-  friendsListDiv.style.marginTop = '0.5rem';
-  friendsBlock.appendChild(friendsListDiv);
-  content.appendChild(friendsBlock);
+  const friendsListDiv = document.createElement('div'); friendsListDiv.id='friends-list'; friendsListDiv.style.marginTop='0.5rem';
+  friendsBlock.appendChild(friendsListDiv); content.appendChild(friendsBlock);
 
-  // Badges Section
-  const badgesBlock = document.createElement('div'); badgesBlock.className = 'stat-block';
-  badgesBlock.innerHTML = `<div class="stat-value" id="badges-count">0</div><div class="stat-label">Badges Collected</div>`;
-  const badgesListDiv = document.createElement('div'); badgesListDiv.id = 'badges-list'; badgesListDiv.style.marginTop='0.5rem';
-  badgesBlock.appendChild(badgesListDiv);
-  content.appendChild(badgesBlock);
+  // Badges
+  const badgesBlock = document.createElement('div'); badgesBlock.className='stat-block';
+  badgesBlock.innerHTML=`<div class="stat-value" id="badges-count">0</div><div class="stat-label">Badges Collected</div>`;
+  const badgesListDiv=document.createElement('div'); badgesListDiv.id='badges-list'; badgesListDiv.style.marginTop='0.5rem';
+  badgesBlock.appendChild(badgesListDiv); content.appendChild(badgesBlock);
 
-  // Fetch VIP count
-  try {
-    const q = query(collection(db, 'users'), where('isHost', '==', true));
-    const snap = await getDocs(q);
-    document.getElementById('vip-count').textContent = snap.size;
-  } catch (err) { console.error('VIP fetch error:', err); }
+  // VIP count
+  try { const q=query(collection(db,'users'), where('isHost','==',true)); const snap=await getDocs(q); document.getElementById('vip-count').textContent = snap.size; } 
+  catch(e){ console.error(e); }
 
-  // Fetch Friends count
-  try {
-    const friendsSnap = await getDocs(collection(db, 'users', currentUser.uid, 'invites'));
-    document.getElementById('friends-count').textContent = friendsSnap.size;
-    const friendsList = document.getElementById('friends-list');
-    friendsList.innerHTML = '';
-    friendsSnap.forEach(f => {
-      const data = f.data();
-      const div = document.createElement('div');
-      div.textContent = data.name || data.email || 'Unknown';
-      div.style.fontSize = '0.85rem';
-      friendsList.appendChild(div);
-    });
-  } catch (err) { console.error('Friends fetch error:', err); }
+  // Friends
+  try { const friendsSnap=await getDocs(collection(db,'users',currentUser.uid,'invites')); document.getElementById('friends-count').textContent = friendsSnap.size;
+    const list=document.getElementById('friends-list'); list.innerHTML=''; friendsSnap.forEach(f=>{const d=f.data(); const div=document.createElement('div'); div.textContent=d.name||d.email||'Unknown'; div.style.fontSize='0.85rem'; list.appendChild(div);});
+  } catch(e){ console.error(e); }
 
-  // Fetch Badges
-  try {
-    const badgesSnap = await getDocs(collection(db, 'users', currentUser.uid, 'badges'));
-    document.getElementById('badges-count').textContent = badgesSnap.size;
-    const badgesList = document.getElementById('badges-list');
-    badgesList.innerHTML = '';
-    badgesSnap.forEach(b => {
-      const data = b.data();
-      const div = document.createElement('div');
-      div.textContent = data.name || 'Badge';
-      div.style.fontSize = '0.85rem';
-      badgesList.appendChild(div);
-    });
-  } catch (err) { console.error('Badges fetch error:', err); }
+  // Badges
+  try { const badgesSnap=await getDocs(collection(db,'users',currentUser.uid,'badges')); document.getElementById('badges-count').textContent = badgesSnap.size;
+    const list=document.getElementById('badges-list'); list.innerHTML=''; badgesSnap.forEach(b=>{const d=b.data(); const div=document.createElement('div'); div.textContent=d.name||'Badge'; div.style.fontSize='0.85rem'; list.appendChild(div);});
+  } catch(e){ console.error(e); }
 };
 
-// ---------- Product Card ----------
+// ---------- Shop ----------
 const createProductCard = product => {
-  const card = document.createElement('div'); card.className = 'product-card';
-  const img = document.createElement('img'); img.src = product.img || 'https://via.placeholder.com/300'; img.alt = product.name || 'Item';
-  img.addEventListener('click', () => previewImage(img.src));
-  const badge = document.createElement('span'); badge.className = 'availability-badge';
-  const avail = Number(product.available) || 0; badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out'; if (avail <= 0) badge.style.background = '#666';
-  const title = document.createElement('h3'); title.textContent = product.name || 'Unnamed';
-  const price = document.createElement('div'); price.className = 'price'; price.textContent = `${Number(product.cost) || 0} ⭐`;
-  const btn = document.createElement('button'); btn.className = 'buy-btn'; btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
-  if (avail <= 0) btn.disabled = true;
-  if (product.hostOnly && currentUser && !currentUser.isHost) btn.disabled = true;
-  if (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && (Number(currentUser.cash) || 0) <= 0) btn.disabled = true;
-  card.append(badge, img, title, price, btn);
-  btn.addEventListener('click', () => redeemProduct(product));
-  return card;
+  const card=document.createElement('div'); card.className='product-card';
+  const img=document.createElement('img'); img.src=product.img||'https://via.placeholder.com/300'; img.alt=product.name||'Item'; img.addEventListener('click',()=>previewImage(img.src));
+  const badge=document.createElement('span'); badge.className='availability-badge'; const avail=Number(product.available)||0; badge.textContent=avail>0?`${avail} Left`:'Sold Out'; if(avail<=0) badge.style.background='#666';
+  const title=document.createElement('h3'); title.textContent=product.name||'Unnamed';
+  const price=document.createElement('div'); price.className='price'; price.textContent=`${Number(product.cost)||0} ⭐`;
+  const btn=document.createElement('button'); btn.className='buy-btn'; btn.textContent=product.hostOnly?(currentUser?.isHost?'Redeem':'Host Only'):'Redeem';
+  if(avail<=0) btn.disabled=true; if(product.hostOnly && currentUser && !currentUser.isHost) btn.disabled=true; if(product.name?.toLowerCase()==='redeem cash balance' && currentUser && (Number(currentUser.cash)||0)<=0) btn.disabled=true;
+  card.append(badge,img,title,price,btn); btn.addEventListener('click',()=>redeemProduct(product)); return card;
 };
 
-// ---------- Redeem Logic ----------
+const renderShop = async ()=>{
+  const snap=await getDocs(collection(db,'shopItems')); DOM.shopItems.innerHTML=''; snap.forEach(d=>DOM.shopItems.appendChild(createProductCard({id:d.id,...d.data()})));
+};
+
+// ---------- Redeem ----------
 const redeemProduct = async product => {
-  if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
-  if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
-  if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
-  if (product.name?.toLowerCase() === 'redeem cash balance' && (Number(currentUser.cash) || 0) <= 0) return showThemedMessage('No Cash', 'Sorry, you have no cash to redeem');
-  
-  const localProduct = { ...product };
-  showConfirmModal(
-    'Confirm Redemption', `Redeem "${localProduct.name}" for ${localProduct.cost} ⭐?`,
-    async () => {
-      showLoader();
-      try {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const productRef = doc(db, 'shopItems', String(localProduct.id));
-        let newStars = 0, newCash = 0, redeemedCash = 0;
-        await runTransaction(db, async transaction => {
-          const [userSnap, productSnap] = await Promise.all([transaction.get(userRef), transaction.get(productRef)]);
-          if (!userSnap.exists()) throw new Error('User not found');
-          if (!productSnap.exists()) throw new Error('Product not found');
-          const userData = userSnap.data();
-          const productData = productSnap.data();
-          if ((userData.stars || 0) < localProduct.cost) throw new Error('Insufficient stars');
-          if ((productData.available || 0) <= 0) throw new Error('Item sold out');
-          newStars = (userData.stars || 0) - localProduct.cost;
-          transaction.update(userRef, { stars: newStars });
-          transaction.update(productRef, { available: (productData.available || 0) - 1 });
-          if (localProduct.name?.toLowerCase() === 'redeem cash balance') {
-            redeemedCash = Number(userData.cash || 0);
-            newCash = 0;
-            transaction.update(userRef, { cash: 0 });
-          }
-          transaction.set(collection(db, 'users', currentUser.uid, 'orders').doc(), { product: localProduct.name, stars: localProduct.cost, cash: redeemedCash, timestamp: serverTimestamp() });
-        });
-        DOM.stars.textContent = `${formatNumber(newStars)} ⭐️`;
-        if (redeemedCash > 0) DOM.cash.textContent = `₦${formatNumber(newCash)}`;
-        triggerConfetti();
-        showThemedMessage('Success', `Redeemed ${localProduct.name}!`);
-        renderOrders();
-      } catch (err) {
-        console.error('Redeem failed:', err);
-        showThemedMessage('Error', err.message || 'Redemption failed');
-      } finally { hideLoader(); }
-    }
-  );
-};
+  if(!currentUser) return showThemedMessage('Not Logged In','Please sign in to redeem items.');
+  if(currentUser.stars<product.cost) return showThemedMessage('Not Enough Stars','You do not have enough stars.');
+  if(product.available<=0) return showThemedMessage('Sold Out','This item is no longer available.');
+  if(product.name?.toLowerCase()==='redeem cash balance' && (Number(currentUser.cash)||0)<=0) return showThemedMessage('No Cash','Sorry, you have no cash to redeem');
 
-// ---------- Shop Rendering ----------
-const renderShop = async () => {
-  const shopRef = collection(db, 'shopItems');
-  const snap = await getDocs(shopRef);
-  DOM.shopItems.innerHTML = '';
-  snap.forEach(doc => {
-    DOM.shopItems.appendChild(createProductCard({ id: doc.id, ...doc.data() }));
+  showConfirmModal('Confirm Redemption',`Redeem "${product.name}" for ${product.cost} ⭐?`, async ()=>{
+    showLoader();
+    try {
+      const userRef=doc(db,'users',currentUser.uid);
+      const productRef=doc(db,'shopItems',String(product.id));
+      let newStars=0,newCash=0,redeemedCash=0;
+      await runTransaction(db, async transaction=>{
+        const [userSnap, productSnap]=await Promise.all([transaction.get(userRef),transaction.get(productRef)]);
+        if(!userSnap.exists()) throw new Error('User not found');
+        if(!productSnap.exists()) throw new Error('Product not found');
+        const userData=userSnap.data(); const productData=productSnap.data();
+        if((userData.stars||0)<product.cost) throw new Error('Insufficient stars');
+        if((productData.available||0)<=0) throw new Error('Item sold out');
+        newStars=(userData.stars||0)-product.cost;
+        transaction.update(userRef,{stars:newStars});
+        transaction.update(productRef,{available:(productData.available||0)-1});
+        if(product.name?.toLowerCase()==='redeem cash balance'){redeemedCash=Number(userData.cash||0); newCash=0; transaction.update(userRef,{cash:0});}
+        else newCash=userData.cash||0;
+
+        const ordersRef=collection(db,'users',currentUser.uid,'orders');
+        const newOrderRef=doc(ordersRef);
+        transaction.set(newOrderRef,{product:product.name,cash:redeemedCash||0,stars:product.cost,timestamp:serverTimestamp()});
+      });
+      currentUser.stars=newStars; currentUser.cash=newCash; DOM.stars.textContent=`${formatNumber(currentUser.stars)} ⭐`; DOM.cash.textContent=`₦${formatNumber(currentUser.cash)}`;
+      triggerConfetti();
+      showThemedMessage('Success',`You redeemed "${product.name}"!`);
+    } catch(e){ console.error(e); showThemedMessage('Error',e.message||'Failed to redeem'); }
+    hideLoader();
   });
 };
 
-// ---------- Orders Rendering ----------
-const renderOrders = async () => {
-  if (!currentUser) return;
-  const ordersRef = collection(db, 'users', currentUser.uid, 'orders');
-  const snap = await getDocs(ordersRef);
-  DOM.ordersContent.innerHTML = '';
-  snap.forEach(doc => {
-    const data = doc.data();
-    const div = document.createElement('div');
-    div.className = 'order-item';
-    div.style.borderBottom = '1px solid #ccc';
-    div.style.padding = '0.4rem 0';
-    div.style.display = 'flex';
-    div.style.justifyContent = 'space-between';
-    div.style.fontSize = '0.9rem';
-    const nameDiv = document.createElement('div'); nameDiv.textContent = data.product || 'Item';
-    const infoDiv = document.createElement('div'); infoDiv.textContent = `${data.stars || 0} ⭐${data.cash ? ' / ₦' + formatNumber(data.cash) : ''}`;
-    div.append(nameDiv, infoDiv);
-    DOM.ordersContent.appendChild(div);
+// ---------- Tab Switching ----------
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const parentTabs=btn.closest('.tabs-container');
+    if(!parentTabs) return;
+    parentTabs.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const target=btn.dataset.tab;
+    document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
+    if(target==='shop') DOM.shopItems.style.display='grid';
+    else if(target==='orders') DOM.ordersContent.style.display='block';
+    else DOM.tabContent.style.display='block';
   });
-};
+});
 
 // ---------- Initialize ----------
-window.addEventListener('DOMContentLoaded', async () => {
-  showLoader();
-  try { await loadCurrentUser(); await renderOrders(); } 
-  catch(e){ console.error(e); } 
-  finally{ hideLoader(); }
-});
+loadCurrentUser().catch(err=>console.error(err));
 </script>
