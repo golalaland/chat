@@ -538,50 +538,45 @@ const closeModal = () => {
 };
 
 // showConfirmModal stays interactive (Yes/No)
-const showConfirmModal = (title, text, onYes) => {
-  // clear any auto-close themed message
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
-
-  DOM.confirmTitle.textContent = title;
-  DOM.confirmText.textContent = text;
-  DOM.confirmYes.style.display = '';
-  DOM.confirmNo.style.display = '';
+function showThemedModal(message, options = {}) {
+  DOM.confirmMsg.textContent = message;
   DOM.confirmModal.style.display = 'flex';
 
-  const cleanup = () => {
-    DOM.confirmYes.onclick = null;
-    DOM.confirmNo.onclick = null;
-    DOM.confirmModal.style.display = 'none';
-  };
+  const yesBtn = DOM.confirmYes;
+  const noBtn = DOM.confirmNo;
 
-  DOM.confirmYes.onclick = async () => {
-    cleanup(); // hide before running the callback
-    try {
-      await onYes();
-    } catch (err) {
-      console.error('Error in confirm modal callback:', err);
-      // show error as themed message
-      showThemedMessage('Error', err.message || String(err), 2400);
-    }
-  };
+  // Reset buttons
+  yesBtn.style.display = 'none';
+  noBtn.style.display = 'none';
+  yesBtn.onclick = null;
+  noBtn.onclick = null;
 
-  DOM.confirmNo.onclick = cleanup;
-};
+  if (options.type === 'confirm') {
+    // Show Yes/No buttons
+    yesBtn.style.display = 'inline-block';
+    noBtn.style.display = 'inline-block';
 
-// showThemedMessage uses same styled modal but auto-closes (matches confirmation modal visually)
-const showThemedMessage = (title, message, duration = 2000) => {
-  // ensure confirm modal buttons hidden
-  DOM.confirmTitle.textContent = title;
-  DOM.confirmText.textContent = message;
-  DOM.confirmYes.style.display = 'none';
-  DOM.confirmNo.style.display = 'none';
-  DOM.confirmModal.style.display = 'flex';
+    yesBtn.textContent = 'Yes';
+    noBtn.textContent = 'No';
 
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
-  _themedTimeout = setTimeout(() => {
-    closeModal();
-  }, duration);
-};
+    yesBtn.onclick = () => {
+      if (typeof options.onYes === 'function') options.onYes();
+      DOM.confirmModal.style.display = 'none';
+    };
+    noBtn.onclick = () => {
+      if (typeof options.onNo === 'function') options.onNo();
+      DOM.confirmModal.style.display = 'none';
+    };
+  } else {
+    // Success/info mode → just auto-close
+    yesBtn.style.display = 'none';
+    noBtn.style.display = 'none';
+
+    setTimeout(() => {
+      DOM.confirmModal.style.display = 'none';
+    }, options.timeout || 2000); // auto-close after 2s (customizable)
+  }
+}
 
 // ---------- Image Preview ----------
 const previewImage = src => {
