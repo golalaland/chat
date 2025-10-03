@@ -842,7 +842,7 @@ document.addEventListener('click', ev => {
         });
     });
   } else if (type === 'friends') {
-    DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value">${formatNumber(currentUser?.hostFriends?.length || 0)}</div><div class="stat-label">of your Friends are Hosts</div></div>`;
+    DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value">${formatNumber(currentUser?.hostFriends?.length || 0)}</div><div class="stat-label">Friends are Hosts</div></div>`;
   } else if (type === 'badges') {
     const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/100';
     DOM.tabContent.innerHTML = `<div class="stat-block"><img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;"><div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div><div class="stat-label">Badge Status</div></div>`;
