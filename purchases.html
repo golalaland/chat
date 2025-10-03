@@ -600,6 +600,7 @@ const loadCurrentUser = async () => {
   DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
   updateHostPanels();
   await renderShop();
+  loadOrdersRealtime();
 
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data(); if (!data) return;
@@ -612,6 +613,7 @@ const loadCurrentUser = async () => {
     DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
     renderShop().catch(err => console.error('renderShop snapshot failed:', err));
+    loadOrdersRealtime();
   });
 };
 
@@ -711,7 +713,7 @@ const renderShop = async () => {
   } catch (err) { console.error('renderShop failed:', err); }
 };
 
-// ---------- Orders (Real-time) ----------
+// ---------- Orders (Realtime) ----------
 let ordersUnsubscribe = null;
 const loadOrdersRealtime = () => {
   if (!DOM.ordersList || !currentUser) return;
@@ -737,13 +739,27 @@ const loadOrdersRealtime = () => {
   }, err => { console.error('Realtime orders error:', err); DOM.ordersList.innerHTML = "<p>Error loading orders.</p>"; });
 };
 
-// ---------- Tab Switch ----------
-const showTab = type => {
-  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-  if (type === 'shop') document.getElementById('shop-content').style.display = 'block';
-  else if (type === 'orders') { document.getElementById('orders-content').style.display = 'block'; loadOrdersRealtime(); }
+// ---------- Tab Switching ----------
+const initTabs = () => {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabType = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+      if (tabType === 'shop') DOM.shopItems.style.display = 'grid';
+      else DOM.shopItems.style.display = 'none';
+      if (tabType === 'orders') DOM.ordersContent.style.display = 'block', loadOrdersRealtime();
+      else DOM.ordersContent.style.display = 'none';
+      if (['vip','friends','badges'].includes(tabType)) DOM.tabContent.style.display = 'block';
+      else DOM.tabContent.style.display = 'none';
+    });
+  });
 };
 
 // ---------- Init ----------
-window.addEventListener('DOMContentLoaded', () => { loadCurrentUser().catch(console.error); });
+window.addEventListener('DOMContentLoaded', () => { 
+  initTabs();
+  loadCurrentUser().catch(console.error); 
+});
 </script>
