@@ -467,6 +467,7 @@ header {
 <!-- Firebase + App JS -->
 <script type="module">
 // ---------- Firebase Setup ----------
+// ---------- Firebase Setup ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp
@@ -591,9 +592,9 @@ let currentUser = null;
 const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
-  DOM.username.textContent = '******';
-  DOM.stars.textContent = `0 ⭐️`;
-  DOM.cash.textContent = `₦0`;
+  DOM.username.textContent = 'Guest';
+  DOM.stars.textContent = `1 ⭐️`;
+  DOM.cash.textContent = `₦3,000`;
   await renderShop();
   if (!vip?.email) { currentUser = null; DOM.hostTabs.style.display = 'none'; return; }
   const uid = vip.email.replace(/[.#$[\]]/g, ',');
@@ -695,54 +696,82 @@ const redeemProduct = async product => {
         const prevCash = parseNumberFromText(DOM.cash.textContent);
         currentUser.stars = newStars; currentUser.cash = newCash;
         animateNumber(DOM.stars, prevStars, newStars); animateNumber(DOM.cash, prevCash, newCash);
-        await renderShop();
-        orders.push({ id: product.id, name: product.name, cost: product.cost, cashReward: redeemedCash, time: Date.now() });
-        loadOrders();
         triggerConfetti();
-        if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}.`, 3000);
-        else if (Number(localProduct.cashReward) > 0) showThemedMessage('Redemption Success', `You redeemed "${localProduct.name}" and received ₦${Number(localProduct.cashReward).toLocaleString()}! ⭐`, 3000);
-        else showThemedMessage('Redemption Success', `"${localProduct.name}" redeemed successfully!`, 2000);
-      } catch (err) { console.error('Redemption error:', err); showThemedMessage('Error', err.message || String(err), 2400); }
-      finally { hideLoader(); }
+        hideLoader();
+        showThemedMessage('Success', `You redeemed "${localProduct.name}"!`);
+        await renderShop();
+        loadOrders();
+      } catch (e) { console.error('Redeem failed', e); hideLoader(); showThemedMessage('Error', e.message || 'Redemption failed'); }
     }
   );
 };
 
-// ---------- Render Shop ----------
+// ---------- Shop Rendering ----------
 const renderShop = async () => {
+  if (!DOM.shopItems) return;
   DOM.shopItems.innerHTML = '';
-  try {
-    const querySnap = await getDocs(collection(db, 'shopItems'));
-    querySnap.forEach(docSnap => {
-      const item = { id: docSnap.id, ...docSnap.data() };
-      const card = createProductCard(item);
-      if (card) DOM.shopItems.appendChild(card);
-    });
-  } catch (err) { console.error('Failed to load shop items', err); DOM.shopItems.innerHTML = '<div style="padding:1rem;color:#ccc;text-align:center;">Failed to load shop items.</div>'; }
+  const snap = await getDocs(collection(db, 'shopItems'));
+  snap.forEach(doc => {
+    const prod = doc.data();
+    prod.id = doc.id;
+    DOM.shopItems.appendChild(createProductCard(prod));
+  });
 };
 
-// ---------- Tabs ----------
+// ---------- TAB HANDLER ----------
 document.addEventListener('click', ev => {
-  const btn = ev.target.closest('.tab-btn');
-  if (!btn) return;
+  const btn = ev.target.closest('.tab-btn'); if (!btn) return;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const type = btn.dataset.tab; DOM.tabContent.innerHTML = '';
-  if (type === 'vip') {
-    DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div><div class="stat-label">VIPs Signed Up</div><button id="copyVipLink" class="themed-btn">Copy Link</button></div>`;
+  const type = btn.dataset.tab;
+  DOM.tabContent.style.display = 'none';
+  DOM.shopItems.style.display = 'none';
+  document.getElementById('orders-content').style.display = 'none';
+
+  // HOST PANELS
+  if (type === 'vip' && currentUser?.isHost) {
+    DOM.tabContent.style.display = 'block';
+    DOM.tabContent.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
+        <div class="stat-label">VIPs Signed Up</div>
+        <button id="copyVipLink" class="themed-btn">Copy Link</button>
+      </div>`;
     const copyBtn = document.getElementById('copyVipLink');
     copyBtn?.addEventListener('click', () => {
       const link = `https://golalaland.github.io/chat/signup2222.html/ref/${currentUser?.uid || ''}`;
-      navigator.clipboard.writeText(link).then(() => showThemedMessage('Copied!', 'VIP link copied to clipboard.', 1500)).catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
+      navigator.clipboard.writeText(link)
+        .then(() => showThemedMessage('Copied!', 'VIP link copied to clipboard.', 1500))
+        .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
     });
-  } else if (type === 'friends') DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value">${formatNumber(currentUser?.hostFriends?.length || 0)}</div><div class="stat-label">Friends Invited</div></div>`;
-  else if (type === 'badges') { const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/100'; DOM.tabContent.innerHTML = `<div class="stat-block"><img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;"><div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div><div class="stat-label">Badge Status</div></div>`; }
-  else DOM.tabContent.innerHTML = `<div class="stat-block">No data available</div>`;
+  } else if (type === 'friends' && currentUser?.isHost) {
+    DOM.tabContent.style.display = 'block';
+    DOM.tabContent.innerHTML = `
+      <div class="stat-block">
+        <div class="stat-value">${formatNumber(currentUser?.hostFriends?.length || 0)}</div>
+        <div class="stat-label">Friends Invited</div>
+      </div>`;
+  } else if (type === 'badges' && currentUser?.isHost) {
+    DOM.tabContent.style.display = 'block';
+    const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/100';
+    DOM.tabContent.innerHTML = `
+      <div class="stat-block">
+        <img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;">
+        <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
+        <div class="stat-label">Badge Status</div>
+      </div>`;
+  } 
+  // NORMAL / COMMON PANELS
+  else if (type === 'shop') {
+    DOM.shopItems.style.display = 'grid';
+  } else if (type === 'orders') {
+    document.getElementById('orders-content').style.display = 'block';
+    loadOrders();
+  }
 });
 
-// ---------- Init ----------
-loadCurrentUser();
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { DOM.imagePreview.style.display = 'none'; closeModal(); } });
+// ---------- INIT ----------
+window.addEventListener('load', () => { loadCurrentUser().catch(console.error); });
 </script>
 </body> 
 </html>
