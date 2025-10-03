@@ -139,118 +139,176 @@ html, body {
 .room-subtitle:hover{
   color:#fff;
 }
+#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 
-#messages{
-  flex:1;
-  overflow-y:auto;
-  padding:8px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  border-radius:8px;
-  background:#000;
-  margin-bottom:70px;
-  box-sizing:border-box;
+/* messages */
+/* 🔥 Chat messages container */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  background: #000;
+
+  /* ✅ give space so last message never hides behind bar */
+  margin-bottom: 70px;
+  box-sizing: border-box;
 }
 
-.msg{
-  padding:8px 10px;
-  border-radius:8px;
-  background:var(--glass);
-  max-width:100%;
-  display:flex;
-  gap:8px;
-  align-items:center;
+/* 🔥 Message bubble */
+.msg {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--glass);
+  max-width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.msg.me { background: rgba(255, 20, 147, 0.06); }
+.msg .meta {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 4px;
+  color: inherit;
+}
+.msg .content {
+  font-size: 13px;
+  color: #fff;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: inline-block;
 }
 
-.msg.me{
-  background: rgba(255,20,147,0.06);
-}
-
-.msg .meta{
-  font-weight:700;
-  font-size:13px;
-  white-space:nowrap;
-  margin-right:4px;
-  color:inherit;
-}
-
-.msg .content{
-  font-size:13px;
-  color:#fff;
-  white-space:pre-wrap;
-  word-break:break-word;
-  display:inline-block;
-}
-
-/* Send area */
+/* 🔥 Keypad (chat input) - always at bottom */
 .send-area {
-  position: fixed; /* stay rooted at bottom */
-  bottom: 0;
+  position: fixed;       
+  bottom: 0;           /* sits at the very bottom */
   left: 0;
   width: 100%;
-  background: rgba(255,255,255,0.05); /* glass effect */
-  backdrop-filter: blur(10px);
+  max-width: 480px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  padding: 8px;
-  z-index: 1000;
+  gap: 8px;
+  background: var(--card);
+  padding: 10px;
+  border-radius: 999px;  
+  box-sizing: border-box;
+  z-index: 100;           
+}
+
+/* 🔥 Chat input area */
+.send-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card, #111);
+  padding: 10px;
+  position: sticky;   /* sticky inside container */
+  bottom: 0;          /* always at bottom */
+  z-index: 10;
+  border-radius: 999px;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255,255,255,0.04);
 }
 
 .send-area input {
   flex: 1;
-  font-size: 16px; /* adjust if too big */
-  padding: 8px;
-}
-
-.send-area button {
-  margin-left: 8px;
-  padding: 8px 12px;
+  padding: 12px 16px;       /* your preferred size */
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #0e0e0e;
+  color: #fff;
   font-size: 16px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
 }
 
-.send-area input:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 12px rgba(255,20,147,0.15);
+.send-area input::placeholder {
+  color: var(--muted, #aaa);
+  opacity: 0.7;
 }
 
-.send-btn{
-  padding:10px 16px;
-  border-radius:999px;
-  background-color:var(--accent);
-  color:#000;
-  cursor:pointer;
-  font-weight:700;
-  border:none;
-  font-size:14px;
-  transition:all 0.2s ease;
+.send-area input:focus {
+  border-color: var(--accent, #FF1493);
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 
-.send-btn:hover{
-  background-color:#ff33a1;
-  transform:scale(1.05);
+.send-btn {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background-color: var(--accent, #FF1493);
+  color: #000;
+  cursor: pointer;
+  font-weight: 700;
+  border: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
-.buzz-btn{
-  padding:10px 12px;
-  border-radius:999px;
-  background:#1d1d1d;
-  color:var(--accent);
-  cursor:pointer;
-  font-weight:700;
-  font-size:14px;
-  border:1px solid rgba(255,20,147,0.18);
+.send-btn:hover {
+  background-color: #ff33a1;
+  transform: scale(1.05);
 }
 
-.buzz-btn:hover{
-  animation:buzzPulse 1.5s infinite;
+
+/* 🔥 Glass bar with neon accent glow under input */
+.glass-bar {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  margin-top: 6px; /* sits just under input */
+  z-index: 5;      /* stays beneath input */
+  
+  /* 🔥 Neon underglow */
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.25),
+              0 0 24px rgba(255, 20, 147, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
 }
 
-@keyframes buzzPulse{
-  0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18);}
-  70%{box-shadow:0 0 0 12px rgba(255,20,147,0);}
-  100%{box-shadow:0 0 0 0 rgba(255,20,147,0);}
+/* When typing/focused – stronger glow */
+.send-area:focus-within + .glass-bar {
+  transform: translateY(2px); 
+  box-shadow: 0 0 16px rgba(255, 20, 147, 0.45),
+              0 0 32px rgba(255, 20, 147, 0.25);
 }
+.buzz-content {
+  font-weight: 800;    /* really thick */
+  color: #000 !important;  /* force black text */
+  padding: 4px 6px;    /* make text breathe inside color */
+  border-radius: 4px;  /* rounded backdrop */
+  display: inline-block;
+}
+.room-subtitle {
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateY(0);
+}
+
+.room-subtitle.hidden {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none; /* optional: avoids ghost clicks */
+}
+
+.buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
+.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
+@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
 /* Profile box */
 .profile{
