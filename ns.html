@@ -66,8 +66,12 @@ header {
 .balance-value {
   font-size: 1rem;
   font-weight: bold;
-  color: var(--theme-solid); /* theme gradient fallback */
-}
+  color: var(--theme-solid);
+  font-family: 'Courier New', Courier, monospace; /* fixes horizontal alignment */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px; /* space between number and emoji */
+}}
 
 /* ---------- HOST TABS ---------- */
 .host-tabs {
@@ -430,14 +434,14 @@ header {
   <div class="profile-card">
     <div id="username">Guest</div>
     <div class="balances">
-      <div class="balance-item">
-        <div class="balance-label">Stars Balance</div>
-        <div class="balance-value" id="stars-count">1 ⭐️</div>
-      </div>
-      <div class="balance-item">
-        <div class="balance-label">Cash Balance</div>
-        <div class="balance-value" id="cash-count">₦3,000</div>
-      </div>
+     <div class="balance-item">
+  <div class="balance-label">Stars Balance</div>
+  <div class="balance-value" id="stars-count"><span class="num">1</span> ⭐️</div>
+</div>
+<div class="balance-item">
+  <div class="balance-label">Cash Balance</div>
+  <div class="balance-value" id="cash-count">₦<span class="num">3,000</span></div>
+</div>
     </div>
   </div>
 </div>
@@ -558,13 +562,14 @@ const animateNumber = (el, from, to, duration = 600) => {
   const update = timestamp => {
     const progress = Math.min((timestamp - start) / duration, 1);
     const value = Math.floor(from + (to - from) * progress);
-    if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
-    else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
+    
+    const numSpan = el.querySelector('.num');
+    if(numSpan) numSpan.textContent = formatNumber(value);
+
     if (progress < 1) requestAnimationFrame(update);
   };
   requestAnimationFrame(update);
 };
-
 // ---------- Loader ----------
 const showLoader = () => document.getElementById('page-loader').classList.remove('hidden');
 const hideLoader = () => document.getElementById('page-loader').classList.add('hidden');
