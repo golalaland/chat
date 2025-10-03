@@ -1,4 +1,4 @@
-// app.js
+// newchatroom.js
 
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -144,9 +144,6 @@ function attachMessagesListener() {
         const msgData = change.doc.data();
         lastMessagesArray.push({ id: change.doc.id, data: msgData });
         renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
-        if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
-          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-        }
       }
     });
   });
@@ -208,7 +205,6 @@ async function loginWhitelist(email, phone) {
         lastStarDate: new Date().toISOString().split("T")[0],
         cash: 0,
         usernameColor: randomColor(),
-        isAdmin: false,
         email,
         phone,
         createdAt: new Date()
@@ -226,8 +222,7 @@ async function loginWhitelist(email, phone) {
       chatIdLower: data.chatIdLower || (data.chatId || "").toLowerCase(),
       stars: data.stars || 0,
       cash: data.cash || 0,
-      usernameColor: data.usernameColor || randomColor(),
-      isAdmin: data.isAdmin || false
+      usernameColor: data.usernameColor || randomColor()
     };
 
     updateRedeemLink();
@@ -239,15 +234,12 @@ async function loginWhitelist(email, phone) {
 
     if(currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
 
-    const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-    if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
-    if (refs.authBox) refs.authBox.style.display = "none";
+    if(refs.authBox) refs.authBox.style.display = "none";
     if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
     if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
     if (refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
     if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
     if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
 
     return true;
 
@@ -257,7 +249,7 @@ async function loginWhitelist(email, phone) {
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval);
+  if (starInterval) clearInterval(starInterval); // clear existing
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
@@ -317,8 +309,6 @@ window.addEventListener("DOMContentLoaded", () => {
     cashCountEl: document.getElementById("cashCount"),
     redeemBtn: document.getElementById("redeemBtn"),
     onlineCountEl: document.getElementById("onlineCount"),
-    adminControlsEl: document.getElementById("adminControls"),
-    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
     chatIDModal: document.getElementById("chatIDModal"),
     chatIDInput: document.getElementById("chatIDInput"),
     chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
@@ -355,16 +345,12 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!currentUser) return showStarPopup("Sign in to chat");
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
+    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to send!");
 
-    // SEND cost only for non-admin/non-host
-    if (!currentUser.isAdmin && (currentUser.stars||0) < SEND_COST) return showStarPopup("Not enough stars to send message!");
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    if (!currentUser.isAdmin) {
-      currentUser.stars -= SEND_COST;
-      refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-      await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
-    }
-
+    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
     const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
       content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
       timestamp: serverTimestamp(), highlight:false, buzzColor:null
@@ -385,7 +371,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const userRef = doc(db,"users",currentUser.uid);
     const snap = await getDoc(userRef);
-    if ((snap.data()?.stars||0) < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ!");
+    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
 
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
     const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
@@ -442,7 +428,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
     nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
-
     videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
 
     let hideTimeout;
@@ -459,4 +444,5 @@ window.addEventListener("DOMContentLoaded", () => {
 
     loadVideo(0);
   }
+
 });
