@@ -35,11 +35,11 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
 .footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
 .badge{background:#eef2f6;color:#111;padding:4px 6px;border-radius:6px;font-size:12px}
 
-/* ---------- MODAL ---------- */
-#adminModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);justify-content:center;align-items:center;z-index:9999}
-#adminModal .modal-content{background:#fff;padding:18px;border-radius:12px;max-width:400px;width:90%;text-align:center}
-#modalText{margin-bottom:12px;font-size:14px}
-#modalButtons{display:flex;gap:12px;justify-content:center}
+/* ---------- Modal ---------- */
+.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal{background:#fff;padding:20px;border-radius:10px;min-width:300px;max-width:400px;text-align:center}
+.modal h4{margin-bottom:12px}
+.modal button{margin:6px}
 </style>
 </head>
 <body>
@@ -71,51 +71,25 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
 
   <div class="content">
 
-    <!-- ROOMS -->
-    <div id="view-rooms" class="col">
-      <div class="card">
-        <h3>Rooms</h3>
-        <div style="display:flex;gap:8px;">
-          <select id="roomSelect"></select>
-          <button class="btn" id="btnToggleMute">Toggle Mute</button>
-          <button class="btn" id="btnToggleSlow">Toggle SlowChat</button>
-          <button class="btn ghost" id="btnResetRoom">Reset</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Room Stats</h3>
-        <div class="small">Selected: <span id="roomName">—</span></div>
-        <div style="display:flex;gap:12px;margin-top:8px">
-          <div class="small">Users: <span id="roomUserCount">0</span></div>
-          <div class="small">Hosts: <span id="roomHostCount">0</span></div>
-          <div class="small">Banned: <span id="roomBannedCount">0</span></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Broadcast</h3>
-        <textarea id="broadcastText" rows="3" placeholder="Message to all users in selected room"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="sendBroadcastBtn">Send</button><button class="btn ghost" id="previewBroadcastBtn">Preview</button></div>
-      </div>
-    </div>
-
     <!-- USERS -->
-    <div id="view-users" class="col" style="display:none">
+    <div id="view-users" class="col">
       <div class="card">
         <h3>Users</h3>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input id="userSearch" placeholder="Search email / name / id">
-          <select id="userFilter"><option value="all">All</option><option value="hosts">Hosts</option><option value="vip">VIP</option><option value="banned">Banned</option><option value="kicked">Kicked</option><option value="timedout">Timed out</option></select>
+          <select id="userFilter">
+            <option value="all">All</option>
+            <option value="hosts">Hosts</option>
+            <option value="vip">VIP</option>
+            <option value="banned">Banned</option>
+            <option value="kicked">Kicked</option>
+            <option value="timedout">Timed out</option>
+          </select>
           <button class="btn" id="userSearchBtn">Search</button>
         </div>
 
         <table class="table">
-          <thead><tr>
-            <th>User</th><th>Host</th><th>Stars</th><th>Cash</th><th>Status</th>
-            <th>Invited By</th><th>Phone</th>
-            <th>Actions</th>
-          </tr></thead>
+          <thead><tr><th>User</th><th>Host</th><th>Stars</th><th>Cash</th><th>Status</th><th>Invited By</th><th>Phone</th><th>Actions</th></tr></thead>
           <tbody id="userList"></tbody>
         </table>
       </div>
@@ -136,176 +110,176 @@ input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid 
       </div>
     </div>
 
-    <!-- SHOP -->
-    <div id="view-shop" class="col" style="display:none">
-      <div class="card">
-        <h3>Shop Items</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="shopSearch" placeholder="Search items">
-          <select id="shopViewMode"><option value="admin">Admin</option><option value="host">Host</option><option value="user">User</option></select>
-          <button class="btn" id="shopRefreshBtn">Refresh</button>
-        </div>
-        <table class="table">
-          <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>HostOnly</th><th>Actions</th></tr></thead>
-          <tbody id="shopList"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3>Add / Edit Product</h3>
-        <input id="productName" placeholder="Name">
-        <input id="productImg" placeholder="Image URL (optional)">
-        <input id="productCost" type="number" placeholder="Cost (stars)">
-        <input id="productCash" type="number" placeholder="Cash reward (₦)">
-        <input id="productStock" type="number" placeholder="Stock">
-        <label><input id="productHostOnly" type="checkbox"> Host only</label>
-        <div style="margin-top:8px"><button class="btn" id="saveProductBtn">Save</button><button class="btn ghost" id="clearProductBtn">Clear</button></div>
-      </div>
-    </div>
-
-    <!-- CLAIMS -->
-    <div id="view-claims" class="col" style="display:none">
-      <div class="card">
-        <h3>Claims / Purchases</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="claimSearch" placeholder="Search by user / product / id">
-          <button class="btn" id="claimsRefreshBtn">Refresh</button>
-        </div>
-        <ul class="claims-list" id="claimsList"></ul>
-      </div>
-    </div>
-
-    <!-- LOGS -->
-    <div id="view-logs" class="col" style="display:none">
-      <div class="card">
-        <h3>Action Logs</h3>
-        <button class="btn" id="logsRefreshBtn">Refresh</button>
-        <ul class="log-list" id="logList"></ul>
-      </div>
-    </div>
-
-    <!-- META -->
-    <div id="view-meta" class="col" style="display:none">
-      <div class="card">
-        <h3>Admin Profile</h3>
-        <input id="adminName" placeholder="Admin display name (chatId)">
-        <input id="adminEmail" placeholder="Admin email">
-        <input id="adminStars" type="number" placeholder="Stars">
-        <input id="adminCash" type="number" placeholder="Cash">
-        <div style="margin-top:8px"><button class="btn" id="saveAdminBtn">Save</button><button class="btn ghost" id="clearAdminBtn">Clear</button></div>
-      </div>
-    </div>
-
   </div>
 
-  <div class="footer">© 2025 NNAMDI Admin Dashboard</div>
+  <div class="footer">Built for NNAMDI — Secure Firestore rules before production.</div>
 </div>
 
-<!-- ---------- MODAL ---------- -->
-<div id="adminModal">
-  <div class="modal-content">
-    <div id="modalText"></div>
-    <div id="modalButtons">
-      <button id="modalConfirm" class="btn">Confirm</button>
-      <button id="modalCancel" class="btn ghost">Cancel</button>
-    </div>
+<!-- Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalContent">
+    <h4 id="modalMessage"></h4>
+    <button id="modalConfirm" class="btn">Confirm</button>
+    <button id="modalCancel" class="btn ghost">Cancel</button>
   </div>
 </div>
 
-<script>
-/* ---------- NAVIGATION ---------- */
+<!-- Firebase + JS -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, deleteDoc, onSnapshot, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ---------- FIREBASE CONFIG ---------- */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ---------- DOM refs ---------- */
+const userList = document.getElementById('userList');
+const userSearch = document.getElementById('userSearch');
+const userFilter = document.getElementById('userFilter');
+const selectedUserId = document.getElementById('selectedUserId');
+const giftStars = document.getElementById('giftStars');
+const giftCash = document.getElementById('giftCash');
+const timeoutSec = document.getElementById('timeoutSec');
+const userSearchBtn = document.getElementById('userSearchBtn');
+const quickGiftBtn = document.getElementById('quickGiftBtn');
+const quickTimeoutBtn = document.getElementById('quickTimeoutBtn');
+const quickClearTimeoutBtn = document.getElementById('quickClearTimeoutBtn');
+
+const modalBg = document.getElementById('modalBg');
+const modalMessage = document.getElementById('modalMessage');
+const modalConfirm = document.getElementById('modalConfirm');
+const modalCancel = document.getElementById('modalCancel');
+
+let users = [];
+let pendingAction = null;
+
+/* ---------- Navigation ---------- */
 function navigate(e){
-  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
-  e.currentTarget.classList.add('active');
-  const view = e.currentTarget.dataset.view;
+  const view = e.currentTarget?.dataset?.view || e;
   document.querySelectorAll('.col').forEach(c=>c.style.display='none');
-  document.getElementById('view-'+view).style.display='block';
+  document.getElementById('view-' + view).style.display = 'block';
+  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
+  const btn = [...document.querySelectorAll('.sidebar button')].find(b=>b.dataset.view===view);
+  if(btn) btn.classList.add('active');
 }
+window.navigate = navigate;
 
-/* ---------- MODAL ---------- */
-function showModal(message, onConfirm){
-  const modal = document.getElementById('adminModal');
-  const modalConfirm = document.getElementById('modalConfirm');
-  const modalCancel = document.getElementById('modalCancel');
-  document.getElementById('modalText').textContent = message;
-  modal.style.display='flex';
-  const cleanup = ()=>{
-    modal.style.display='none';
-    modalConfirm.onclick=null;
-    modalCancel.onclick=null;
-  }
-  modalConfirm.onclick=()=>{cleanup(); onConfirm();}
-  modalCancel.onclick=cleanup;
+/* ---------- Modal ---------- */
+function showModal(msg, confirmCb){
+  modalMessage.textContent = msg;
+  pendingAction = confirmCb;
+  modalBg.style.display = 'flex';
 }
+modalConfirm.onclick = ()=>{if(pendingAction) pendingAction(); modalBg.style.display='none'; pendingAction=null;}
+modalCancel.onclick = ()=>{modalBg.style.display='none'; pendingAction=null;}
 
-/* ---------- MOCK DATA / FIRESTORE SIMULATION ---------- */
-let users = [
-  {id:'u001', name:'Ada', email:'ada@example.com', host:true, stars:120, cash:2500, status:'active', invitedBy:'u003', phone:'+2348012345678'},
-  {id:'u002', name:'Ben', email:'ben@example.com', host:false, stars:40, cash:800, status:'vip', invitedBy:'u001', phone:'+2348098765432'},
-  {id:'u003', name:'Caro', email:'caro@example.com', host:false, stars:20, cash:500, status:'banned', invitedBy:'u002', phone:'+2348076543210'},
-];
-
-function renderUsers(filter='all',search=''){
-  const tbody = document.getElementById('userList');
-  tbody.innerHTML='';
+/* ---------- FETCH USERS ---------- */
+const usersRef = collection(db,'users');
+function renderUsers(){
+  const f = userFilter.value;
+  const s = userSearch.value.toLowerCase();
+  userList.innerHTML = '';
   users.filter(u=>{
-    if(filter==='vip' && u.status!=='vip') return false;
-    if(filter==='hosts' && !u.host) return false;
-    if(filter==='banned' && u.status!=='banned') return false;
-    if(filter==='kicked' && u.status==='kicked') return false;
-    if(filter==='timedout' && u.status==='timedout') return false;
-    if(search && !(`${u.name} ${u.email} ${u.id}`.toLowerCase().includes(search.toLowerCase()))) return false;
+    if(f==='vip' && u.status!=='vip') return false;
+    if(f==='hosts' && !u.host) return false;
+    if(f==='banned' && u.status!=='banned') return false;
+    if(f==='kicked' && u.status==='kicked') return false;
+    if(f==='timedout' && u.status==='timedout') return false;
+    if(s && !(`${u.name} ${u.email} ${u.id}`.toLowerCase().includes(s))) return false;
     return true;
   }).forEach(u=>{
     const tr = document.createElement('tr');
+    tr.classList.add('user-row');
     tr.innerHTML=`
       <td>${u.name}<br><span class="small">${u.email}</span></td>
       <td>${u.host?'Yes':'No'}</td>
-      <td>${u.stars}</td>
-      <td>₦${u.cash}</td>
-      <td>${u.status}</td>
-      <td>${u.invitedBy || '-'}</td>
-      <td>${u.phone || '-'}</td>
+      <td>${u.stars||0}</td>
+      <td>₦${u.cash||0}</td>
+      <td>${u.status||'active'}</td>
+      <td>${u.invitedBy||'-'}</td>
+      <td>${u.phone||'-'}</td>
       <td class="actions-wrap">
         <button class="btn ghost" onclick="confirmAction('kick','${u.id}')">Kick</button>
         <button class="btn ghost" onclick="confirmAction('ban','${u.id}')">Ban</button>
         <button class="btn ghost" onclick="confirmAction('timeout','${u.id}')">Timeout</button>
-        <button class="btn ghost" onclick="confirmAction('toggleHost','${u.id}')">Prom/Demote Host</button>
+        <button class="btn ghost" onclick="confirmAction('toggleHost','${u.id}')">Prom/Demote</button>
       </td>
     `;
-    tr.onclick=()=>document.getElementById('selectedUserId').value=u.id;
-    tbody.appendChild(tr);
+    tr.onclick=()=>selectedUserId.value=u.id;
+    userList.appendChild(tr);
   });
 }
 
-function confirmAction(action,userId){
+function fetchUsersRealtime(){
+  onSnapshot(usersRef, snapshot=>{
+    users = snapshot.docs.map(doc=>({...doc.data(), id: doc.id}));
+    renderUsers();
+  });
+}
+fetchUsersRealtime();
+
+userSearchBtn.onclick = renderUsers;
+userFilter.onchange = renderUsers;
+
+/* ---------- USER ACTIONS ---------- */
+function updateUser(userId, updates){
+  const docRef = doc(db,'users',userId);
+  updateDoc(docRef,updates).catch(console.error);
+}
+
+quickGiftBtn.onclick=()=>{
+  const uid = selectedUserId.value;
+  if(!uid) return alert('Select a user');
+  const updates={};
+  if(Number(giftStars.value)) updates.stars = increment(Number(giftStars.value));
+  if(Number(giftCash.value)) updates.cash = increment(Number(giftCash.value));
+  updateUser(uid,updates);
+};
+
+quickTimeoutBtn.onclick=()=>{
+  const uid = selectedUserId.value;
+  if(!uid) return alert('Select a user');
+  const time = Number(timeoutSec.value) || 300;
+  updateUser(uid,{status:'timedout',timeoutUntil:serverTimestamp()});
+};
+
+quickClearTimeoutBtn.onclick=()=>{
+  const uid = selectedUserId.value;
+  if(!uid) return alert('Select a user');
+  updateUser(uid,{status:'active',timeoutUntil:null});
+};
+
+window.confirmAction = function(action,userId){
   const user = users.find(u=>u.id===userId);
   if(!user) return;
   let msg='';
   switch(action){
-    case 'kick': msg=`Are you sure you want to kick ${user.name}?`; break;
-    case 'ban': msg=`Are you sure you want to ban ${user.name}?`; break;
-    case 'timeout': msg=`Are you sure you want to timeout ${user.name}?`; break;
-    case 'toggleHost': msg=`Are you sure you want to toggle host status for ${user.name}?`; break;
+    case 'kick': msg=`Kick ${user.name}?`; break;
+    case 'ban': msg=`Ban ${user.name}?`; break;
+    case 'timeout': msg=`Timeout ${user.name}?`; break;
+    case 'toggleHost': msg=`Toggle host status for ${user.name}?`; break;
   }
   showModal(msg,()=>{
-    // MOCK update
     switch(action){
-      case 'kick': user.status='kicked'; break;
-      case 'ban': user.status='banned'; break;
-      case 'timeout': user.status='timedout'; break;
-      case 'toggleHost': user.host=!user.host; break;
+      case 'kick': updateUser(userId,{status:'kicked'}); break;
+      case 'ban': updateUser(userId,{status:'banned'}); break;
+      case 'timeout': updateUser(userId,{status:'timedout'}); break;
+      case 'toggleHost': updateUser(userId,{host:!user.host}); break;
     }
-    renderUsers(document.getElementById('userFilter').value,document.getElementById('userSearch').value);
   });
-}
+};
 
-document.getElementById('userFilter').addEventListener('change',()=>renderUsers(document.getElementById('userFilter').value,document.getElementById('userSearch').value));
-document.getElementById('userSearchBtn').addEventListener('click',()=>renderUsers(document.getElementById('userFilter').value,document.getElementById('userSearch').value));
-
-/* INITIAL RENDER */
-renderUsers();
-
+/* ---------- REFRESH ---------- */
+window.refreshAll = ()=>fetchUsersRealtime();
 </script>
 </body>
 </html>
