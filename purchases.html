@@ -51,38 +51,24 @@ header {
   font-size: 1.2rem;
   margin-bottom: 0.8rem;
 }
-#balances {
-  margin: 1rem 0;
-  font-size: 1.1rem;
-}
-
-.balance-row {
+.balances {
   display: flex;
-  justify-content: space-between;
-  margin: 0.3rem 0;
-}
-
-.balance-label {
-  font-weight: bold;
-  color: #ccc;
-}
-
-.balance-value {
-  display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 0.5rem;
 }
-
-.balance-number {
-  display: inline-block;
-  min-width: 60px;    /* 👈 ensures numbers align */
-  text-align: right;  /* 👈 makes them line up neatly */
+.balance-item { text-align: center; }
+.balance-label {
+  font-size: 0.85rem;
+  color: #555;  /* muted dark for label */
+  margin-bottom: 0.2rem;
+}
+.balance-value {
+  font-size: 1rem;
   font-weight: bold;
-  color: #fff;
+  color: var(--theme-solid); /* theme gradient fallback */
 }
 
-.balance-unit {
-  margin-left: 4px;   /* 👈 small spacing before the ⭐ */
-}
 /* ---------- HOST TABS ---------- */
 .host-tabs {
   display: flex;
@@ -310,6 +296,17 @@ header {
 }
 .close-btn:hover { color: var(--theme-solid); }
 
+.stars-number {
+  display: inline-block;
+  min-width: 3ch;   /* reserve space so numbers don’t jump when growing */
+  text-align: right;
+}
+
+.stars-icon {
+  margin-left: 4px; /* space between number and star */
+  font-size: 1rem;
+  vertical-align: middle;
+}
 /* ---------- AVAILABILITY BADGE ---------- */
 .availability-badge {
   position: absolute;
@@ -385,12 +382,6 @@ header {
 }
 #home-btn:hover { filter: brightness(1.1); }
 
-.stars-count,
-.cash-count {
-  display: inline-block;
-  min-width: 60px;   /* adjust until numbers align */
-  text-align: right; /* right-align digits */
-}
 /* small helper */
 .muted { color:#999; font-size:0.9rem; }
   </style>
@@ -404,21 +395,23 @@ header {
   <div id="user-info">
     <div class="profile-card">
       <div id="username">Guest</div>
-    <div id="balances">
+     <div id="balances">
   <div class="balance-row">
     <span class="balance-label">Stars:</span>
-    <span class="balance-value">
-      <span class="balance-number stars-count" id="starsBalance">0</span>
-      <span class="balance-unit">⭐</span>
+    <span class="balance-value" id="stars-count">
+      <span class="stars-number">0</span>
+      <span class="stars-icon">⭐️</span>
     </span>
   </div>
   <div class="balance-row">
     <span class="balance-label">Cash:</span>
-    <span class="balance-value">
-      <span class="balance-number cash-count" id="cashBalance">0</span>
+    <span class="balance-value" id="cashBalance">
+      ₦<span class="cash-number">0</span>
     </span>
   </div>
 </div>
+    </div>
+  </div>
 
   <!-- HOST TABS (hidden for regular users) -->
   <div class="host-tabs" id="hostTabs" style="display:none;">
@@ -499,10 +492,9 @@ const db = getFirestore(app);
 // ---------- DOM References ----------
 const DOM = {
   username: document.getElementById('username'),
-const starsEl = document.getElementById('starsBalance');
-const cashEl = document.getElementById('cashBalance');
-animateNumber(starsEl, prevStars, newStars);
-animateNumber(cashEl, prevCash, newCash);
+  stars: document.querySelector('.stars-number'),
+  starsIcon: document.querySelector('.stars-icon'),
+  cash: document.querySelector('.cash-number'),
   shopItems: document.getElementById('shop-items'),
   hostTabs: document.getElementById('hostTabs'),
   vipCount: document.getElementById('vip-count'),
