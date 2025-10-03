@@ -51,24 +51,38 @@ header {
   font-size: 1.2rem;
   margin-bottom: 0.8rem;
 }
-.balances {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-.balance-item { text-align: center; }
-.balance-label {
-  font-size: 0.85rem;
-  color: #555;  /* muted dark for label */
-  margin-bottom: 0.2rem;
-}
-.balance-value {
-  font-size: 1rem;
-  font-weight: bold;
-  color: var(--theme-solid); /* theme gradient fallback */
+#balances {
+  margin: 1rem 0;
+  font-size: 1.1rem;
 }
 
+.balance-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.3rem 0;
+}
+
+.balance-label {
+  font-weight: bold;
+  color: #ccc;
+}
+
+.balance-value {
+  display: flex;
+  align-items: center;
+}
+
+.balance-number {
+  display: inline-block;
+  min-width: 60px;    /* 👈 ensures numbers align */
+  text-align: right;  /* 👈 makes them line up neatly */
+  font-weight: bold;
+  color: #fff;
+}
+
+.balance-unit {
+  margin-left: 4px;   /* 👈 small spacing before the ⭐ */
+}
 /* ---------- HOST TABS ---------- */
 .host-tabs {
   display: flex;
@@ -384,16 +398,21 @@ header {
   <div id="user-info">
     <div class="profile-card">
       <div id="username">Guest</div>
-      <div class="balances">
-        <div class="balance-item">
-          <div class="balance-label">Stars Balance</div>
-          <div class="balance-value" id="stars-count">1 ⭐️</div>
-        </div>
-        <div class="balance-item">
-          <div class="balance-label">Cash Balance</div>
-          <div class="balance-value" id="cash-count">₦3,000</div>
-        </div>
-      </div>
+      <div id="balances">
+  <div class="balance-row">
+    <span class="balance-label">Stars:</span>
+    <span class="balance-value">
+      <span class="balance-number" id="starsBalance">0</span>
+      <span class="balance-unit">⭐</span>
+    </span>
+  </div>
+  <div class="balance-row">
+    <span class="balance-label">Cash:</span>
+    <span class="balance-value">
+      <span class="balance-number" id="cashBalance">0</span>
+    </span>
+  </div>
+</div>
     </div>
   </div>
 
