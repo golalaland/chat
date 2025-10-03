@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport"
-  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Xixi</title>
 <link rel="icon" href="data:," />
 <style>
@@ -79,8 +78,6 @@ html, body {
   border-radius:10px;
   overflow:hidden;
   background:#111;
-  position:sticky;
-  top:0;
   z-index:50;
 }
 
@@ -132,17 +129,25 @@ html, body {
   font-family: 'Montserrat', sans-serif;
   color:var(--accent);
   letter-spacing:0.5px;
-  opacity:0.85;
-  transition:color 0.2s ease;
+  opacity:1;
+  transition:opacity 0.4s ease, transform 0.4s ease;
 }
 
-.room-subtitle:hover{
-  color:#fff;
+.room-subtitle.hidden{
+  opacity:0;
+  transform:translateY(-6px);
+  pointer-events:none;
 }
-#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 
-/* messages */
-/* 🔥 Chat messages container */
+#guestMsg{
+  font-size:16px;
+  font-weight:700;
+  margin:4px 0;
+  color:var(--accent);
+  text-align:center;
+}
+
+/* Messages */
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -152,13 +157,10 @@ html, body {
   gap: 6px;
   border-radius: 8px;
   background: #000;
-
-  /* ✅ give space so last message never hides behind bar */
   margin-bottom: 70px;
   box-sizing: border-box;
 }
 
-/* 🔥 Message bubble */
 .msg {
   padding: 8px 10px;
   border-radius: 8px;
@@ -169,6 +171,7 @@ html, body {
   align-items: center;
 }
 .msg.me { background: rgba(255, 20, 147, 0.06); }
+
 .msg .meta {
   font-weight: 700;
   font-size: 13px;
@@ -176,6 +179,7 @@ html, body {
   margin-right: 4px;
   color: inherit;
 }
+
 .msg .content {
   font-size: 13px;
   color: #fff;
@@ -184,10 +188,18 @@ html, body {
   display: inline-block;
 }
 
-/* 🔥 Keypad (chat input) - always at bottom */
+.buzz-content {
+  font-weight: 800;
+  color: #000 !important;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Chat input area */
 .send-area {
-  position: fixed;       
-  bottom: 0;           /* sits at the very bottom */
+  position: fixed;
+  bottom: 0;
   left: 0;
   width: 100%;
   max-width: 480px;
@@ -197,30 +209,14 @@ html, body {
   gap: 8px;
   background: var(--card);
   padding: 10px;
-  border-radius: 999px;  
-  box-sizing: border-box;
-  z-index: 100;           
-}
-
-/* 🔥 Chat input area */
-.send-area {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--card, #111);
-  padding: 10px;
-  position: sticky;   /* sticky inside container */
-  bottom: 0;          /* always at bottom */
-  z-index: 10;
   border-radius: 999px;
-  width: 100%;
   box-sizing: border-box;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  z-index: 100;
 }
 
 .send-area input {
   flex: 1;
-  padding: 12px 16px;       /* your preferred size */
+  padding: 12px 16px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.08);
   background-color: #0e0e0e;
@@ -231,19 +227,19 @@ html, body {
 }
 
 .send-area input::placeholder {
-  color: var(--muted, #aaa);
+  color: var(--muted);
   opacity: 0.7;
 }
 
 .send-area input:focus {
-  border-color: var(--accent, #FF1493);
+  border-color: var(--accent);
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 
 .send-btn {
   padding: 10px 16px;
   border-radius: 999px;
-  background-color: var(--accent, #FF1493);
+  background-color: var(--accent);
   color: #000;
   cursor: pointer;
   font-weight: 700;
@@ -257,58 +253,24 @@ html, body {
   transform: scale(1.05);
 }
 
-
-/* 🔥 Glass bar with neon accent glow under input */
-.glass-bar {
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  box-sizing: border-box;
-  border-radius: 12px;
-  margin-top: 6px; /* sits just under input */
-  z-index: 5;      /* stays beneath input */
-  
-  /* 🔥 Neon underglow */
-  box-shadow: 0 0 12px rgba(255, 20, 147, 0.25),
-              0 0 24px rgba(255, 20, 147, 0.15);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+.buzz-btn {
+  padding:10px 12px;
+  border-radius:999px;
+  background:#1d1d1d;
+  color:var(--accent);
+  cursor:pointer;
+  font-weight:700;
+  font-size:14px;
+  border:1px solid rgba(255,20,147,0.18);
 }
-
-/* When typing/focused – stronger glow */
-.send-area:focus-within + .glass-bar {
-  transform: translateY(2px); 
-  box-shadow: 0 0 16px rgba(255, 20, 147, 0.45),
-              0 0 32px rgba(255, 20, 147, 0.25);
+.buzz-btn:hover{
+  animation:buzzPulse 1.5s infinite;
 }
-.buzz-content {
-  font-weight: 800;    /* really thick */
-  color: #000 !important;  /* force black text */
-  padding: 4px 6px;    /* make text breathe inside color */
-  border-radius: 4px;  /* rounded backdrop */
-  display: inline-block;
+@keyframes buzzPulse{
+  0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}
+  70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}
+  100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}
 }
-.room-subtitle {
-  opacity: 1;
-  transition: opacity 0.4s ease, transform 0.4s ease;
-  transform: translateY(0);
-}
-
-.room-subtitle.hidden {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none; /* optional: avoids ghost clicks */
-}
-
-.buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
-.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
-@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
 /* Profile box */
 .profile{
@@ -387,6 +349,7 @@ html, body {
   box-shadow:0 4px 10px rgba(255,20,147,0.3);
 }
 
+/* Star popup */
 .star-popup{
   position:fixed;
   left:50%;
@@ -404,7 +367,7 @@ html, body {
   text-align:center;
 }
 
-/* Auth buttons */
+/* Auth box */
 #authBox{
   display:flex;
   justify-content:center;
@@ -440,6 +403,7 @@ html, body {
   padding:2px;
 }
 
+/* Email auth wrapper */
 #emailAuthWrapper{
   display:flex;
   flex-direction:column;
@@ -470,6 +434,7 @@ html, body {
 </head>
 <body>
 <audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
+
 <div id="appWrapper">
   <div class="app">
     <div class="brand">乂丨乂丨</div>
@@ -481,25 +446,30 @@ html, body {
           <button class="arrow" id="prev">&#10094;</button>
           <button class="arrow" id="next">&#10095;</button>
         </div>
+
         <div id="helloText" aria-live="polite">HELLO</div>
-        <div class="room-desc">Chat. Own your vibe.
+        <div class="room-desc">
+          Chat. Own your vibe.
           <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
           <span id="onlineCount" class="onlineCount"></span>
           <div id="guestMsg"></div>
+
           <div id="authBox">
             <button id="googleSignInBtn" class="google-btn">
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
               Sign in with Google
             </button>
           </div>
+
           <div id="emailAuthWrapper">
-            <input type="tel" id="phoneInput" placeholder="Enter your phone number" class="auth-input" pattern="\+\d{1,4}\d{6,15}">
+            <input type="tel" id="phoneInput" placeholder="Enter your phone number" class="auth-input" pattern="\+?\d{6,15}">
             <input type="email" id="emailInput" placeholder="Enter your email" class="auth-input">
             <button id="whitelistLoginBtn" class="google-btn">
               <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
               VIP Access
             </button>
           </div>
+
           <div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
             <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
               <h3 style="margin-bottom:12px;color:var(--accent);">Choose your Chat ID</h3>
@@ -507,14 +477,18 @@ html, body {
               <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
             </div>
           </div>
+
           <div id="messages"></div>
         </div>
+
         <div class="send-area" id="sendArea" style="display:none;">
           <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
           <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
           <button id="sendBtn" class="send-btn">Send</button>
         </div>
+
       </div>
+
       <div class="profile" id="profileBox">
         <div class="profile-card">
           <div class="profile-top">
