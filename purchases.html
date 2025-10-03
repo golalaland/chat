@@ -714,31 +714,51 @@ const renderMyOrders = async () => {
   if(!ordersList) return;
   ordersList.innerHTML = '<div style="text-align:center;color:#555;">Loading orders...</div>';
 
-  if(!currentUser) { ordersList.innerHTML = '<div style="text-align:center;color:#555;">Not logged in.</div>'; return; }
+  if(!currentUser) {
+    ordersList.innerHTML = '<div style="text-align:center;color:#555;">Not logged in.</div>'; 
+    return;
+  }
 
   try {
-    const purchasesRef = collection(db,'purchases');
-    const q = query(purchasesRef, where('userId','==',currentUser.uid), orderBy('timestamp','desc'));
-    const snap = await getDocs(q);
-    if(snap.empty) {
-      ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet.</div>';
+    const purchasesRef = collection(db, 'purchases');
+    const snap = await getDocs(purchasesRef); // no orderBy
+
+    // Filter to current user
+    const userOrders = snap.docs
+      .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+      .filter(order => order.userId === currentUser.uid);
+
+    if(userOrders.length === 0) {
+      ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet</div>';
       return;
     }
 
+    // Optional: sort by timestamp if exists
+    userOrders.sort((a,b) => {
+      const tA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
+      const tB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
+      return tB - tA; // newest first
+    });
+
+    // Render nicely
     ordersList.innerHTML = '';
-    snap.forEach(docSnap => {
-      const order = docSnap.data();
+    userOrders.forEach(order => {
       const block = document.createElement('div');
       block.className = 'stat-block';
+      const dateText = order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : '';
       block.innerHTML = `
         <div class="stat-value">${order.productName || 'Unnamed'}</div>
         <div class="stat-label">${order.cost || 0} ⭐${order.cashReward ? ' - ₦'+order.cashReward.toLocaleString() : ''}</div>
-        <div class="muted">${order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : ''}</div>`;
+        ${dateText ? `<div class="muted">${dateText}</div>` : ''}
+      `;
       ordersList.appendChild(block);
     });
-  } catch(e){ console.error(e); ordersList.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load orders.</div>'; }
-};
 
+  } catch(e){
+    console.error(e);
+    ordersList.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load orders.</div>';
+  }
+};
 // ---------- Product Cards ----------
 const createProductCard = product => {
   const card = document.createElement('div'); card.className='product-card';
