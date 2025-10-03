@@ -1,14 +1,11 @@
 // newchatroom.js
 
-/* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
   onSnapshot, query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 /* ---------- Firebase config ---------- */
 const firebaseConfig = {
@@ -26,20 +23,18 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
-/* ---------- Room & chat ---------- */
 const ROOM_ID = "room5";
 const CHAT_COLLECTION = "messages_room5";
 
-/* ---------- State ---------- */
 let currentUser = null;
 let lastMessagesArray = [];
 let starInterval = null;
 
-/* ---------- Constants ---------- */
 const BUZZ_COST = 50;
 const SEND_COST = 1;
 
-/* ---------- Helpers ---------- */
+let refs = {};
+
 function generateGuestName() { return "GUEST " + Math.floor(1000 + Math.random() * 9000); }
 function formatNumberWithCommas(n) { return new Intl.NumberFormat('en-NG').format(n || 0); }
 function randomColor() { 
@@ -55,9 +50,6 @@ function showStarPopup(text) {
   setTimeout(() => { popup.style.display = "none"; }, 1700);
 }
 function sanitizeKey(key) { return key.replace(/[.#$[\]]/g, ','); }
-
-/* ---------- UI refs ---------- */
-let refs = {};
 
 /* ---------- Redeem link update ---------- */
 function updateRedeemLink() {
@@ -93,7 +85,7 @@ function setupUsersListener(){
 }
 setupUsersListener();
 
-/* ---------- Render messages ---------- */
+/* ---------- Render messages with twitch scroll logic ---------- */
 function renderMessagesFromArray(arr, isOwnMessage=false){
   if (!refs.messagesEl) return;
 
@@ -124,9 +116,7 @@ function renderMessagesFromArray(arr, isOwnMessage=false){
   });
 
   requestAnimationFrame(() => {
-    if (isOwnMessage || nearBottom) {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    }
+    if (isOwnMessage || nearBottom) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
   });
 }
 
@@ -194,7 +184,7 @@ async function loginWhitelist(email, phone) {
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    // Hide signup fields and text
+    // Hide sign-in elements
     if(refs.authBox) refs.authBox.style.display = "none";
     const signInText = document.getElementById("signInText");
     if(signInText) signInText.style.display = "none";
@@ -253,6 +243,9 @@ function startStarEarning(uid) {
 window.addEventListener("DOMContentLoaded", () => {
   refs = {
     authBox: document.getElementById("authBox"),
+    emailInput: document.getElementById("emailInput"),
+    phoneInput: document.getElementById("phoneInput"),
+    loginBtn: document.getElementById("whitelistLoginBtn"),
     messagesEl: document.getElementById("messages"),
     sendAreaEl: document.getElementById("sendArea"),
     messageInputEl: document.getElementById("messageInput"),
@@ -262,39 +255,28 @@ window.addEventListener("DOMContentLoaded", () => {
     redeemBtn: document.getElementById("redeemBtn")
   };
 
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
+  // Login button
+  refs.loginBtn?.addEventListener("click", async ()=>{
+    const email = (refs.emailInput.value||"").trim().toLowerCase();
+    const phone = (refs.phoneInput.value||"").trim();
+    if(!email || !phone){ alert("Enter your email and phone"); return; }
+    await loginWhitelist(email, phone);
+    updateRedeemLink();
+  });
 
-  if(loginBtn){
-    loginBtn.addEventListener("click", async ()=>{
-      const email = (emailInput.value||"").trim().toLowerCase();
-      const phone = (phoneInput.value||"").trim();
-      if(!email || !phone){ alert("Enter your email and phone to get access"); return; }
-      await loginWhitelist(email, phone);
-      updateRedeemLink();
-    });
-  }
-
-  // Auto-login
+  // Auto-login session
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if(vipUser?.email && vipUser?.phone){
-    (async ()=>{ await loginWhitelist(vipUser.email, vipUser.phone); updateRedeemLink(); })();
-  }
+  if(vipUser?.email && vipUser?.phone) loginWhitelist(vipUser.email, vipUser.phone);
 
-  /* ---------- Send & Buzz ---------- */
+  // Send message
   refs.sendBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to chat");
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
 
-    // Hosts/admin free message
     const isFree = currentUser.isAdmin;
-    if(!isFree && (currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to send message!");
-
-    if(!isFree) currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    if(!isFree) await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
+    if(!isFree && (currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars!");
+    if(!isFree) { currentUser.stars -= SEND_COST; refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars); await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) }); }
 
     const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
       content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
@@ -304,6 +286,7 @@ window.addEventListener("DOMContentLoaded", () => {
     renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
   });
 
+  // Buzz
   refs.buzzBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to BUZZ");
     const txt = refs.messageInputEl?.value.trim();
