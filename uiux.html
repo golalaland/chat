@@ -450,6 +450,7 @@ header {
 <!-- Firebase + App JS -->
 <script type="module">
 // ---------- Firebase Setup ----------
+// ---------- Firebase Setup ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp
@@ -494,18 +495,15 @@ const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) :
 const parseNumberFromText = text => Number((text || '').replace(/[^\d\-]/g, '')) || 0;
 
 const animateNumber = (el, from, to, duration = 600) => {
-  return new Promise(resolve => {
-    const start = performance.now();
-    const update = timestamp => {
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const value = Math.floor(from + (to - from) * progress);
-      if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
-      else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
-      if (progress < 1) requestAnimationFrame(update);
-      else resolve();
-    };
-    requestAnimationFrame(update);
-  });
+  const start = performance.now();
+  const update = timestamp => {
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const value = Math.floor(from + (to - from) * progress);
+    if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
+    else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
+    if (progress < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
 };
 
 // ---------- Loader Control ----------
@@ -524,6 +522,7 @@ const triggerConfetti = () => {
 // ---------- Modals ----------
 let activeConfirmHandler = null;
 
+// ---------- Confirm Modal ----------
 const showConfirmModal = (title, text, onYes) => {
   DOM.confirmTitle.textContent = title;
   DOM.confirmText.textContent = text;
@@ -538,10 +537,9 @@ const showConfirmModal = (title, text, onYes) => {
   };
 
   DOM.confirmYes.onclick = async () => {
-    cleanup();
-    try {
-      await onYes();
-    } catch (err) {
+    cleanup(); // hide modal first
+    try { await onYes(); } 
+    catch (err) { 
       console.error('Error in confirm modal callback:', err);
       showMessageModal('Error', err.message || String(err), 2400);
     }
@@ -555,7 +553,6 @@ const previewImage = src => {
   DOM.previewImg.src = src;
   DOM.imagePreview.style.display = 'flex';
 };
-
 document.getElementById('closePreview').addEventListener('click', () => {
   DOM.imagePreview.style.display = 'none';
   DOM.previewImg.src = '';
@@ -668,6 +665,7 @@ const createProductCard = product => {
   if ((product.hostOnly && !currentUser?.isHost) || avail <= 0) btn.disabled = true;
 
   card.append(badge, img, title, price, btn);
+
   btn.addEventListener('click', () => redeemProduct(product));
 
   return card;
@@ -681,99 +679,85 @@ const redeemProduct = async product => {
 
   const localProduct = { ...product };
 
-showConfirmModal(
-  'Confirm Redemption',
-  `Redeem "${localProduct.name}" for ${localProduct.cost} ⭐?`,
-  async () => {
-    showLoader();
-    try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      const productRef = doc(db, 'shopItems', String(localProduct.id));
+  showConfirmModal(
+    'Confirm Redemption',
+    `Redeem "${localProduct.name}" for ${localProduct.cost} ⭐?`,
+    async () => {
+      showLoader();
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const productRef = doc(db, 'shopItems', String(localProduct.id));
 
-      let newStars = 0, newCash = 0, redeemedCash = 0, cashReward = 0;
+        let newStars = 0, newCash = 0, redeemedCash = 0, cashReward = Number(localProduct.cashReward) || 0;
 
-      await runTransaction(db, async transaction => {
-        const [userSnap, productSnap] = await Promise.all([
-          transaction.get(userRef),
-          transaction.get(productRef)
-        ]);
+        await runTransaction(db, async transaction => {
+          const [userSnap, productSnap] = await Promise.all([transaction.get(userRef), transaction.get(productRef)]);
 
-        if (!userSnap.exists()) throw new Error('User not found');
-        if (!productSnap.exists()) throw new Error('Product not found');
+          if (!userSnap.exists()) throw new Error('User not found');
+          if (!productSnap.exists()) throw new Error('Product not found');
 
-        const userData = userSnap.data();
-        const productData = productSnap.data();
-        const cost = Number(productData.cost) || 0;
-        const available = Number(productData.available) || 0;
+          const userData = userSnap.data();
+          const productData = productSnap.data();
+          const cost = Number(productData.cost) || 0;
+          const available = Number(productData.available) || 0;
 
-        if (userData.stars < cost) throw new Error('Not enough stars');
-        if (available <= 0) throw new Error('Out of stock');
+          if (userData.stars < cost) throw new Error('Not enough stars');
+          if (available <= 0) throw new Error('Out of stock');
 
-        newStars = userData.stars - cost;
-        cashReward = Number(productData.cashReward) || 0;
-        newCash = productData.name?.toLowerCase() === 'redeem cash balance'
-          ? 0
-          : Number(userData.cash) + cashReward;
-        redeemedCash = productData.name?.toLowerCase() === 'redeem cash balance'
-          ? Number(userData.cash)
-          : 0;
+          newStars = userData.stars - cost;
+          newCash = productData.name?.toLowerCase() === 'redeem cash balance'
+            ? 0
+            : Number(userData.cash) + (Number(productData.cashReward) || 0);
+          redeemedCash = productData.name?.toLowerCase() === 'redeem cash balance'
+            ? Number(userData.cash)
+            : 0;
+          cashReward = Number(productData.cashReward) || 0;
 
-        transaction.update(userRef, { stars: newStars, cash: newCash });
-        transaction.update(productRef, { available: available - 1 });
+          transaction.update(userRef, { stars: newStars, cash: newCash });
+          transaction.update(productRef, { available: available - 1 });
 
-        transaction.set(doc(collection(db, 'purchases')), {
-          userId: currentUser.uid,
-          email: userData.email || '',
-          phone: userData.phone || '',
-          productId: String(productData.id || localProduct.id),
-          productName: productData.name || localProduct.name,
-          cost,
-          cashReward,
-          redeemedCash,
-          timestamp: serverTimestamp()
+          const purchasesCol = collection(db, 'purchases');
+          transaction.set(doc(purchasesCol), {
+            userId: currentUser.uid,
+            email: userData.email || '',
+            phone: userData.phone || '',
+            productId: String(productData.id || localProduct.id),
+            productName: productData.name || localProduct.name,
+            cost,
+            cashReward,
+            redeemedCash,
+            timestamp: serverTimestamp()
+          });
         });
-      });
 
-      // Update UI balances
-      const prevStars = parseNumberFromText(DOM.stars.textContent);
-      const prevCash = parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars = newStars;
-      currentUser.cash = newCash;
+        const prevStars = parseNumberFromText(DOM.stars.textContent);
+        const prevCash = parseNumberFromText(DOM.cash.textContent);
+        currentUser.stars = newStars;
+        currentUser.cash = newCash;
 
-      await Promise.all([
-        animateNumber(DOM.stars, prevStars, newStars),
-        animateNumber(DOM.cash, prevCash, newCash)
-      ]);
+        animateNumber(DOM.stars, prevStars, newStars);
+        animateNumber(DOM.cash, prevCash, newCash);
 
-      await renderShop();
-      triggerConfetti();
+        await renderShop();
+        triggerConfetti();
 
-      // ---------- Guaranteed success message ----------
-      if (redeemedCash > 0) {
-        showMessageModal(
-          'Redemption Success',
-          `You redeemed your full cash balance of ₦${redeemedCash.toLocaleString()}! 🎉`
-        );
-      } else if (cashReward > 0) {
-        showMessageModal(
-          'Redemption Success',
-          `You successfully redeemed "${localProduct.name}" and received ₦${cashReward.toLocaleString()}! ⭐`
-        );
-      } else {
-        showMessageModal(
-          'Redemption Success',
-          `You successfully redeemed "${localProduct.name}" for ${localProduct.cost} ⭐! 🎉`
-        );
+        if (redeemedCash > 0) {
+          showMessageModal('Redemption Success', `You redeemed your full cash balance of ₦${redeemedCash.toLocaleString()}! 🎉`);
+        } else if (cashReward > 0) {
+          showMessageModal('Redemption Success', `You successfully redeemed "${localProduct.name}" and received ₦${cashReward.toLocaleString()}! ⭐`);
+        } else {
+          showMessageModal('Redemption Success', `You successfully redeemed "${localProduct.name}" for ${localProduct.cost} ⭐! 🎉`);
+        }
+
+      } catch (err) {
+        console.error('Redemption error:', err);
+        showMessageModal('Error', err.message || String(err), 2400);
+      } finally {
+        hideLoader();
       }
-
-    } catch (err) {
-      console.error('Redemption error:', err);
-      showMessageModal('Error', err.message || String(err), 2400);
-    } finally {
-      hideLoader();
     }
-  }
-);
+  );
+};
 
 // ---------- Render Shop ----------
 const renderShop = async () => {
@@ -795,23 +779,29 @@ const renderShop = async () => {
 document.addEventListener('click', ev => {
   const btn = ev.target.closest('.tab-btn');
   if (!btn) return;
+
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const type = btn.dataset.tab;
   DOM.tabContent.innerHTML = '';
 
-  if (type === 'vip') {
+  if (type === 'vip' && currentUser) {
     DOM.tabContent.innerHTML = `
       <div class="stat-block">
-        <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
+        <div class="stat-value" id="vip-stat">${formatNumber(currentUser.hostVIP || 0)}</div>
         <div class="stat-label">VIPs Signed Up</div>
         <button id="copyVipLink" class="themed-btn">Copy Link</button>
       </div>`;
-    document.getElementById('copyVipLink')?.addEventListener('click', () => {
-      navigator.clipboard.writeText(`https://golalaland.github.io/chat/signup2222.html/ref/${currentUser?.uid || ''}`)
+    
+    document.getElementById('copyVipLink').addEventListener('click', () => {
+      const link = `https://golalaland.github.io/chat/signup2222.html/ref/${currentUser.uid}`;
+      navigator.clipboard.writeText(link)
         .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500))
-        .catch(err => { showMessageModal('Error', 'Failed to copy link.', 1800); console.error(err); });
+        .catch(err => { 
+          showMessageModal('Error', 'Failed to copy link.', 1800);
+          console.error(err); 
+        });
     });
   } else if (type === 'friends') {
     DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value">${formatNumber(currentUser?.hostFriends?.length || 0)}</div><div class="stat-label">Friends Hosts</div></div>`;
@@ -827,6 +817,6 @@ document.addEventListener('click', ev => {
 loadCurrentUser();
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { DOM.imagePreview.style.display = 'none'; }
+  if (e.key === 'Escape') { DOM.imagePreview.style.display = 'none'; closeModal(); }
 });
 </script>
