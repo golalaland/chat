@@ -40,7 +40,7 @@ const BUZZ_COST = 50;
 const SEND_COST = 1;
 
 /* ---------- Helpers ---------- */
-function generateGuestName() { return "GUEST " + Math.floor(1000 + Math.random()*9000); }
+function generateGuestName() { return "GUEST " + Math.floor(1000 + Math.random() * 9000); }
 function formatNumberWithCommas(n) { return new Intl.NumberFormat('en-NG').format(n || 0); }
 function randomColor() { 
   const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
@@ -94,13 +94,13 @@ function setupUsersListener(){
 setupUsersListener();
 
 /* ---------- Render messages ---------- */
-let scrollPending = false;
-function renderMessagesFromArray(arr){
+function renderMessagesFromArray(arr, isOwnMessage=false){
   if (!refs.messagesEl) return;
+
+  const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
 
   arr.forEach(item => {
     if (document.getElementById(item.id)) return;
-
     const m = item.data;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
@@ -123,16 +123,11 @@ function renderMessagesFromArray(arr){
     refs.messagesEl.appendChild(wrapper);
   });
 
-  if (!scrollPending) {
-    scrollPending = true;
-    requestAnimationFrame(() => {
-      const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
-      if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
-        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-      }
-      scrollPending = false;
-    });
-  }
+  requestAnimationFrame(() => {
+    if (isOwnMessage || nearBottom) {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    }
+  });
 }
 
 /* ---------- Messages listener ---------- */
@@ -146,41 +141,6 @@ function attachMessagesListener() {
         renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
       }
     });
-  });
-}
-
-/* ---------- ChatID modal ---------- */
-async function promptForChatID(userRef, userData){
-  if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
-  if(userData?.chatId && !userData.chatId.startsWith("GUEST")) return userData.chatId;
-
-  refs.chatIDInput.value = "";
-  refs.chatIDModal.style.display = "flex";
-  if(refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
-
-  return new Promise(resolve=>{
-    refs.chatIDConfirmBtn.onclick = async ()=>{
-      const chosenID = refs.chatIDInput.value.trim();
-      if(chosenID.length < 3 || chosenID.length > 12){ 
-        alert("Chat ID must be 3-12 characters"); return; 
-      }
-      const normalized = chosenID.toLowerCase();
-      try{
-        const q = query(collection(db,"users"), where("chatIdLower","==",normalized));
-        const snap = await getDocs(q);
-        let conflict = false;
-        snap.forEach(docSnap => { if(docSnap.id !== userRef.id) conflict = true; });
-        if(conflict){ alert("This Chat ID is taken"); return; }
-        await updateDoc(userRef, { chatId: chosenID, chatIdLower: normalized });
-        currentUser.chatId = chosenID;
-        currentUser.chatIdLower = normalized;
-      } catch(e){ console.error(e); alert("Failed to save ChatID"); return; }
-
-      refs.chatIDModal.style.display = "none";
-      if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-      showStarPopup(`Welcome ${currentUser.chatId}! 🎉`);
-      resolve(chosenID);
-    };
   });
 }
 
@@ -205,6 +165,7 @@ async function loginWhitelist(email, phone) {
         lastStarDate: new Date().toISOString().split("T")[0],
         cash: 0,
         usernameColor: randomColor(),
+        isAdmin: false,
         email,
         phone,
         createdAt: new Date()
@@ -222,7 +183,8 @@ async function loginWhitelist(email, phone) {
       chatIdLower: data.chatIdLower || (data.chatId || "").toLowerCase(),
       stars: data.stars || 0,
       cash: data.cash || 0,
-      usernameColor: data.usernameColor || randomColor()
+      usernameColor: data.usernameColor || randomColor(),
+      isAdmin: data.isAdmin || false
     };
 
     updateRedeemLink();
@@ -232,14 +194,10 @@ async function loginWhitelist(email, phone) {
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    if(currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
-
+    // Hide signup fields and text
     if(refs.authBox) refs.authBox.style.display = "none";
-    if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-    if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if (refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
-    if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    const signInText = document.getElementById("signInText");
+    if(signInText) signInText.style.display = "none";
 
     return true;
 
@@ -249,7 +207,8 @@ async function loginWhitelist(email, phone) {
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval); // clear existing
+  if (starInterval) clearInterval(starInterval);
+
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
@@ -271,10 +230,6 @@ function startStarEarning(uid) {
 
     if (animationTimeout) clearTimeout(animationTimeout);
     updateStarDisplay(targetStars);
-
-    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
-    }
   });
 
   starInterval = setInterval(async () => {
@@ -303,19 +258,10 @@ window.addEventListener("DOMContentLoaded", () => {
     messageInputEl: document.getElementById("messageInput"),
     sendBtn: document.getElementById("sendBtn"),
     buzzBtn: document.getElementById("buzzBtn"),
-    profileBoxEl: document.getElementById("profileBox"),
-    profileNameEl: document.getElementById("profileName"),
     starCountEl: document.getElementById("starCount"),
-    cashCountEl: document.getElementById("cashCount"),
-    redeemBtn: document.getElementById("redeemBtn"),
-    onlineCountEl: document.getElementById("onlineCount"),
-    chatIDModal: document.getElementById("chatIDModal"),
-    chatIDInput: document.getElementById("chatIDInput"),
-    chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
+    redeemBtn: document.getElementById("redeemBtn")
   };
-  if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- VIP login ---------- */
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
@@ -325,19 +271,15 @@ window.addEventListener("DOMContentLoaded", () => {
       const email = (emailInput.value||"").trim().toLowerCase();
       const phone = (phoneInput.value||"").trim();
       if(!email || !phone){ alert("Enter your email and phone to get access"); return; }
-
-      const success = await loginWhitelist(email, phone);
-      if(success) updateRedeemLink();
+      await loginWhitelist(email, phone);
+      updateRedeemLink();
     });
   }
 
-  /* ---------- Auto-login session ---------- */
+  // Auto-login
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
   if(vipUser?.email && vipUser?.phone){
-    (async ()=>{
-      const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if(success) updateRedeemLink();
-    })();
+    (async ()=>{ await loginWhitelist(vipUser.email, vipUser.phone); updateRedeemLink(); })();
   }
 
   /* ---------- Send & Buzz ---------- */
@@ -345,23 +287,21 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!currentUser) return showStarPopup("Sign in to chat");
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
-    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to send!");
 
-    currentUser.stars -= SEND_COST;
+    // Hosts/admin free message
+    const isFree = currentUser.isAdmin;
+    if(!isFree && (currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to send message!");
+
+    if(!isFree) currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    if(!isFree) await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
 
-    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
     const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
       content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
       timestamp: serverTimestamp(), highlight:false, buzzColor:null
     });
     refs.messageInputEl.value = "";
-
     renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
-
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
   });
 
   refs.buzzBtn?.addEventListener("click", async ()=>{
@@ -380,69 +320,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
     refs.messageInputEl.value = "";
     showStarPopup("BUZZ sent!");
-
-    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
-
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }], true);
   });
-
-  /* ---------- Hello text rotation ---------- */
-  const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
-  let helloIndex = 0;
-  const helloEl = document.getElementById("helloText");
-  setInterval(()=>{
-    if(!helloEl) return;
-    helloEl.style.opacity='0';
-    setTimeout(()=>{
-      helloEl.innerText = greetings[helloIndex++ % greetings.length];
-      helloEl.style.color = randomColor();
-      helloEl.style.opacity='1';
-    },220);
-  },1500);
-
-  /* ---------- Video nav & fade ---------- */
-  const videoPlayer = document.getElementById("videoPlayer");
-  const prevBtn = document.getElementById("prev");
-  const nextBtn = document.getElementById("next");
-  const container = document.querySelector(".video-container");
-  const navButtons = [prevBtn,nextBtn].filter(Boolean);
-
-  if(videoPlayer && navButtons.length){
-    const videos = [
-      "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
-      "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
-      "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
-    ];
-    let currentVideoIndex = 0;
-
-    function loadVideo(index){
-      if(index<0) index = videos.length-1;
-      if(index>=videos.length) index = 0;
-      currentVideoIndex=index;
-      videoPlayer.src=videos[currentVideoIndex];
-      videoPlayer.muted=true;
-      videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
-    }
-
-    prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
-    nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
-    videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
-
-    let hideTimeout;
-    function showButtons(){
-      navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
-      clearTimeout(hideTimeout);
-      hideTimeout=setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); },3000);
-    }
-    navButtons.forEach(btn=>{ btn.style.transition="opacity 0.6s"; btn.style.opacity="0"; btn.style.pointerEvents="none"; });
-    container?.addEventListener("mouseenter", showButtons);
-    container?.addEventListener("mousemove", showButtons);
-    container?.addEventListener("mouseleave", ()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); });
-    container?.addEventListener("click", showButtons);
-
-    loadVideo(0);
-  }
 
 });
