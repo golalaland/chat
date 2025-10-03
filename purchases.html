@@ -466,10 +466,11 @@ header {
 </div>
 <!-- Firebase + App JS -->
 <script type="module">
+<script type="module">
 // ---------- Firebase Setup ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -502,7 +503,8 @@ const DOM = {
   confirmYes: document.getElementById('confirmYes'),
   confirmNo: document.getElementById('confirmNo'),
   imagePreview: document.getElementById('imagePreview'),
-  previewImg: document.getElementById('previewImg')
+  previewImg: document.getElementById('previewImg'),
+  copyLinkBtn: null  // will be added dynamically in VIP tab
 };
 
 // ---------- Utilities ----------
@@ -598,9 +600,9 @@ const loadCurrentUser = async () => {
   DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
   DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
   DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+
   updateHostPanels();
   await renderShop();
-  loadOrdersRealtime();
 
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data(); if (!data) return;
@@ -613,14 +615,88 @@ const loadCurrentUser = async () => {
     DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
     renderShop().catch(err => console.error('renderShop snapshot failed:', err));
-    loadOrdersRealtime();
   });
 };
 
-// ---------- Host Panels ----------
-const updateHostPanels = () => {
+// ---------- Host Panels (VIP/Friends/Badges) ----------
+const updateHostPanels = async () => {
   if (!currentUser?.isHost) { DOM.hostTabs.style.display = 'none'; DOM.tabContent.style.display = 'none'; DOM.tabContent.innerHTML = ''; return; }
   DOM.hostTabs.style.display = '';
+
+  const content = DOM.tabContent;
+  content.style.display = 'block';
+  content.innerHTML = ''; // clear previous
+
+  // VIP Section
+  const vipBlock = document.createElement('div');
+  vipBlock.className = 'stat-block';
+  const vipList = document.createElement('div');
+  vipList.className = 'vip-list';
+  vipBlock.innerHTML = `<div class="stat-value" id="vip-count">0</div><div class="stat-label">VIPs</div>`;
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = 'Copy VIP Link';
+  copyBtn.className = 'themed-btn';
+  copyBtn.style.marginTop = '0.5rem';
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText('https://example.com/ref/' + currentUser.uid).then(() => {
+      showThemedMessage('Copied', 'VIP link copied!');
+    });
+  };
+  vipBlock.appendChild(copyBtn);
+  content.appendChild(vipBlock);
+  DOM.copyLinkBtn = copyBtn;
+
+  // Friends Section
+  const friendsBlock = document.createElement('div'); friendsBlock.className = 'stat-block';
+  friendsBlock.innerHTML = `<div class="stat-value" id="friends-count">0</div><div class="stat-label">Friends Invited</div>`;
+  const friendsListDiv = document.createElement('div'); friendsListDiv.id = 'friends-list';
+  friendsListDiv.style.marginTop = '0.5rem';
+  friendsBlock.appendChild(friendsListDiv);
+  content.appendChild(friendsBlock);
+
+  // Badges Section
+  const badgesBlock = document.createElement('div'); badgesBlock.className = 'stat-block';
+  badgesBlock.innerHTML = `<div class="stat-value" id="badges-count">0</div><div class="stat-label">Badges Collected</div>`;
+  const badgesListDiv = document.createElement('div'); badgesListDiv.id = 'badges-list'; badgesListDiv.style.marginTop='0.5rem';
+  badgesBlock.appendChild(badgesListDiv);
+  content.appendChild(badgesBlock);
+
+  // Fetch VIP count
+  try {
+    const q = query(collection(db, 'users'), where('isHost', '==', true));
+    const snap = await getDocs(q);
+    document.getElementById('vip-count').textContent = snap.size;
+  } catch (err) { console.error('VIP fetch error:', err); }
+
+  // Fetch Friends count
+  try {
+    const friendsSnap = await getDocs(collection(db, 'users', currentUser.uid, 'invites'));
+    document.getElementById('friends-count').textContent = friendsSnap.size;
+    const friendsList = document.getElementById('friends-list');
+    friendsList.innerHTML = '';
+    friendsSnap.forEach(f => {
+      const data = f.data();
+      const div = document.createElement('div');
+      div.textContent = data.name || data.email || 'Unknown';
+      div.style.fontSize = '0.85rem';
+      friendsList.appendChild(div);
+    });
+  } catch (err) { console.error('Friends fetch error:', err); }
+
+  // Fetch Badges
+  try {
+    const badgesSnap = await getDocs(collection(db, 'users', currentUser.uid, 'badges'));
+    document.getElementById('badges-count').textContent = badgesSnap.size;
+    const badgesList = document.getElementById('badges-list');
+    badgesList.innerHTML = '';
+    badgesSnap.forEach(b => {
+      const data = b.data();
+      const div = document.createElement('div');
+      div.textContent = data.name || 'Badge';
+      div.style.fontSize = '0.85rem';
+      badgesList.appendChild(div);
+    });
+  } catch (err) { console.error('Badges fetch error:', err); }
 };
 
 // ---------- Product Card ----------
@@ -663,103 +739,68 @@ const redeemProduct = async product => {
           if (!productSnap.exists()) throw new Error('Product not found');
           const userData = userSnap.data();
           const productData = productSnap.data();
-          const cost = Number(productData.cost) || 0;
-          const available = Number(productData.available) || 0;
-          if (Number(userData.stars) < cost) throw new Error('Not enough stars');
-          if (available <= 0) throw new Error('Out of stock');
-          newStars = Number(userData.stars) - cost;
-          newCash = productData.name?.toLowerCase() === 'redeem cash balance' ? 0 : Number(userData.cash) + (Number(productData.cashReward) || 0);
-          redeemedCash = productData.name?.toLowerCase() === 'redeem cash balance' ? Number(userData.cash) : 0;
-          transaction.update(userRef, { stars: newStars, cash: newCash });
-          transaction.update(productRef, { available: available - 1 });
-          const purchasesCol = collection(db, 'purchases');
-          transaction.set(doc(purchasesCol), {
-            userId: currentUser.uid,
-            email: userData.email || '',
-            phone: userData.phone || '',
-            productId: String(productData.id || localProduct.id),
-            productName: productData.name || localProduct.name,
-            cost,
-            cashReward: Number(productData.cashReward) || 0,
-            redeemedCash,
-            timestamp: serverTimestamp()
-          });
+          if ((userData.stars || 0) < localProduct.cost) throw new Error('Insufficient stars');
+          if ((productData.available || 0) <= 0) throw new Error('Item sold out');
+          newStars = (userData.stars || 0) - localProduct.cost;
+          transaction.update(userRef, { stars: newStars });
+          transaction.update(productRef, { available: (productData.available || 0) - 1 });
+          if (localProduct.name?.toLowerCase() === 'redeem cash balance') {
+            redeemedCash = Number(userData.cash || 0);
+            newCash = 0;
+            transaction.update(userRef, { cash: 0 });
+          }
+          transaction.set(collection(db, 'users', currentUser.uid, 'orders').doc(), { product: localProduct.name, stars: localProduct.cost, cash: redeemedCash, timestamp: serverTimestamp() });
         });
-        const prevStars = parseNumberFromText(DOM.stars.textContent);
-        const prevCash = parseNumberFromText(DOM.cash.textContent);
-        currentUser.stars = newStars; currentUser.cash = newCash;
-        animateNumber(DOM.stars, prevStars, newStars); animateNumber(DOM.cash, prevCash, newCash);
-        await renderShop();
+        DOM.stars.textContent = `${formatNumber(newStars)} ⭐️`;
+        if (redeemedCash > 0) DOM.cash.textContent = `₦${formatNumber(newCash)}`;
         triggerConfetti();
-        if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}.`, 3000);
-        else if (Number(localProduct.cashReward) > 0) showThemedMessage('Redemption Success', `You redeemed "${localProduct.name}" and received ₦${Number(localProduct.cashReward).toLocaleString()}! ⭐`, 3000);
-        else showThemedMessage('Redemption Success', `"${localProduct.name}" redeemed successfully!`, 2000);
-      } catch (err) { console.error('Redemption error:', err); showThemedMessage('Error', err.message || String(err), 2400); }
-      finally { hideLoader(); }
+        showThemedMessage('Success', `Redeemed ${localProduct.name}!`);
+        renderOrders();
+      } catch (err) {
+        console.error('Redeem failed:', err);
+        showThemedMessage('Error', err.message || 'Redemption failed');
+      } finally { hideLoader(); }
     }
   );
 };
 
-// ---------- Render Shop ----------
+// ---------- Shop Rendering ----------
 const renderShop = async () => {
+  const shopRef = collection(db, 'shopItems');
+  const snap = await getDocs(shopRef);
   DOM.shopItems.innerHTML = '';
-  try {
-    const querySnap = await getDocs(collection(db, 'shopItems'));
-    querySnap.forEach(docSnap => {
-      const item = { id: docSnap.id, ...docSnap.data() };
-      const card = createProductCard(item);
-      if (card) DOM.shopItems.appendChild(card);
-    });
-  } catch (err) { console.error('renderShop failed:', err); }
-};
-
-// ---------- Orders (Realtime) ----------
-let ordersUnsubscribe = null;
-const loadOrdersRealtime = () => {
-  if (!DOM.ordersList || !currentUser) return;
-  if (ordersUnsubscribe) ordersUnsubscribe();
-  DOM.ordersList.innerHTML = '';
-  const purchasesCol = collection(db, 'purchases');
-  ordersUnsubscribe = onSnapshot(purchasesCol, snapshot => {
-    const userOrders = [];
-    snapshot.forEach(docSnap => { const data = docSnap.data(); if (data.userId === currentUser.uid) userOrders.push(data); });
-    DOM.ordersList.innerHTML = '';
-    if (!userOrders.length) { DOM.ordersList.innerHTML = "<p>No orders yet.</p>"; return; }
-    userOrders.sort((a, b) => {
-      const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : new Date(a.timestamp).getTime();
-      const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestamp).getTime();
-      return tB - tA;
-    });
-    userOrders.forEach(order => {
-      const item = document.createElement('div'); item.className = 'order-item';
-      const time = order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : new Date().toLocaleString();
-      item.innerHTML = `<strong>${order.productName}</strong> <span>${order.cost} ⭐</span> <small>${time}</small>`;
-      DOM.ordersList.appendChild(item);
-    });
-  }, err => { console.error('Realtime orders error:', err); DOM.ordersList.innerHTML = "<p>Error loading orders.</p>"; });
-};
-
-// ---------- Tab Switching ----------
-const initTabs = () => {
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tabType = btn.getAttribute('data-tab');
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
-      if (tabType === 'shop') DOM.shopItems.style.display = 'grid';
-      else DOM.shopItems.style.display = 'none';
-      if (tabType === 'orders') DOM.ordersContent.style.display = 'block', loadOrdersRealtime();
-      else DOM.ordersContent.style.display = 'none';
-      if (['vip','friends','badges'].includes(tabType)) DOM.tabContent.style.display = 'block';
-      else DOM.tabContent.style.display = 'none';
-    });
+  snap.forEach(doc => {
+    DOM.shopItems.appendChild(createProductCard({ id: doc.id, ...doc.data() }));
   });
 };
 
-// ---------- Init ----------
-window.addEventListener('DOMContentLoaded', () => { 
-  initTabs();
-  loadCurrentUser().catch(console.error); 
+// ---------- Orders Rendering ----------
+const renderOrders = async () => {
+  if (!currentUser) return;
+  const ordersRef = collection(db, 'users', currentUser.uid, 'orders');
+  const snap = await getDocs(ordersRef);
+  DOM.ordersContent.innerHTML = '';
+  snap.forEach(doc => {
+    const data = doc.data();
+    const div = document.createElement('div');
+    div.className = 'order-item';
+    div.style.borderBottom = '1px solid #ccc';
+    div.style.padding = '0.4rem 0';
+    div.style.display = 'flex';
+    div.style.justifyContent = 'space-between';
+    div.style.fontSize = '0.9rem';
+    const nameDiv = document.createElement('div'); nameDiv.textContent = data.product || 'Item';
+    const infoDiv = document.createElement('div'); infoDiv.textContent = `${data.stars || 0} ⭐${data.cash ? ' / ₦' + formatNumber(data.cash) : ''}`;
+    div.append(nameDiv, infoDiv);
+    DOM.ordersContent.appendChild(div);
+  });
+};
+
+// ---------- Initialize ----------
+window.addEventListener('DOMContentLoaded', async () => {
+  showLoader();
+  try { await loadCurrentUser(); await renderOrders(); } 
+  catch(e){ console.error(e); } 
+  finally{ hideLoader(); }
 });
 </script>
