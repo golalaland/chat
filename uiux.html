@@ -749,6 +749,48 @@ const redeemProduct = async product => {
       await renderShop();
       triggerConfetti();
 
+      // ---------- Redeem Success Message ----------
+      if (redeemedCash > 0) {
+        // Redeemed full cash balance
+        showMessageModal(
+          'Redemption Success',
+          `You redeemed your full cash balance of ₦${redeemedCash.toLocaleString()}! 🎉`
+        );
+      } else if (Number(product.cashReward) > 0) {
+        // Redeemed item that gives cash reward
+        showMessageModal(
+          'Redemption Success',
+          `You successfully redeemed "${product.name}" and received ₦${Number(product.cashReward).toLocaleString()}! ⭐`
+        );
+      } else {
+        // Normal item redemption
+        showMessageModal(
+          'Redemption Success',
+          `You successfully redeemed "${product.name}" for ${product.cost} ⭐! 🎉`
+        );
+      }
+
+    } catch (err) {
+      console.error('Redemption error:', err);
+      showMessageModal('Error', err.message || String(err), 2400);
+    } finally {
+      hideLoader(); // always hide spinner
+    }
+  });
+};
+
+      // Update UI balances
+      const prevStars = parseNumberFromText(DOM.stars.textContent);
+      const prevCash = parseNumberFromText(DOM.cash.textContent);
+      currentUser.stars = newStars;
+      currentUser.cash = newCash;
+
+      animateNumber(DOM.stars, prevStars, newStars);
+      animateNumber(DOM.cash, prevCash, newCash);
+
+      await renderShop();
+      triggerConfetti();
+
       if (redeemedCash > 0) {
         showMessageModal('Cash Redeemed', `You redeemed ₦${formatNumber(redeemedCash)}. We will process the payout.`, 3000);
       } else {
