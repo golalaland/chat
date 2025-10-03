@@ -385,6 +385,12 @@ header {
 }
 #home-btn:hover { filter: brightness(1.1); }
 
+.stars-count,
+.cash-count {
+  display: inline-block;
+  min-width: 60px;   /* 👈 adjust until they align perfectly */
+  text-align: right; /* makes numbers line up neatly */
+}
 /* small helper */
 .muted { color:#999; font-size:0.9rem; }
   </style>
@@ -398,18 +404,18 @@ header {
   <div id="user-info">
     <div class="profile-card">
       <div id="username">Guest</div>
-      <div id="balances">
+     <div id="balances">
   <div class="balance-row">
     <span class="balance-label">Stars:</span>
     <span class="balance-value">
-      <span class="balance-number" id="starsBalance">0</span>
+      <span class="balance-number stars-count" id="starsBalance">0</span>
       <span class="balance-unit">⭐</span>
     </span>
   </div>
   <div class="balance-row">
     <span class="balance-label">Cash:</span>
     <span class="balance-value">
-      <span class="balance-number" id="cashBalance">0</span>
+      <span class="balance-number cash-count" id="cashBalance">0</span>
     </span>
   </div>
 </div>
