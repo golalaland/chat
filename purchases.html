@@ -1,35 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>乂丨乂丨Redeem</title>
+  <meta charset="UTF-8">
+  <title>乂丨乂丨Redeem</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
+  <style>
 /* ---------- THEME VARIABLES ---------- */
 :root {
   --theme-gradient: linear-gradient(135deg, #ff6a00, #ee0979, #9d00ff);
-  --theme-solid: #ee0979;
+  --theme-solid: #ee0979; /* fallback solid color for text */
 }
 
 /* ---------- GLOBAL ---------- */
-* { margin:0; padding:0; box-sizing:border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: Arial, sans-serif;
-  background: #fefefe;
-  color: #111;
+  background: #fefefe;    /* light white background */
+  color: #111;             /* dark text for readability */
   -webkit-font-smoothing: antialiased;
 }
 
 /* ---------- HEADER ---------- */
 header {
-  background: #fff;
+  background: #fff;        /* white header */
   padding: 1rem;
   text-align: center;
   font-size: 1.4rem;
   font-weight: bold;
-  color: #111;
-  border-bottom: 2px solid #ddd;
+  color: #111;             /* dark text */
+  border-bottom: 2px solid #ddd;  /* subtle divider */
 }
 
 /* ---------- PROFILE CARD ---------- */
@@ -46,233 +46,364 @@ header {
   text-align: center;
   min-width: 280px;
 }
-#username { font-weight:bold; font-size:1.2rem; margin-bottom:0.8rem; }
-.balances { display:flex; flex-direction:column; align-items:center; gap:0.5rem; }
-.balance-item { text-align:center; }
-.balance-label { font-size:0.85rem; color:#555; margin-bottom:0.2rem; }
-.balance-value { font-size:1rem; font-weight:bold; color:var(--theme-solid); }
+#username {
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+.balances {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.balance-item { text-align: center; }
+.balance-label {
+  font-size: 0.85rem;
+  color: #555;  /* muted dark for label */
+  margin-bottom: 0.2rem;
+}
+.balance-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--theme-solid); /* theme gradient fallback */
+}
 
-/* ---------- TABS ---------- */
+/* ---------- HOST TABS ---------- */
 .host-tabs {
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin:1rem auto 0;
-  background:#fff;
-  padding:8px;
-  border-radius:12px;
-  width:fit-content;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 1rem auto 0;
+  background: #fff;
+  padding: 8px;
+  border-radius: 12px;
+  width: fit-content;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .tab-btn {
-  background:transparent;
-  border:none;
-  color:#888;
-  font-weight:bold;
-  font-size:0.9rem;
-  padding:8px 16px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:all 0.2s;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-weight: bold;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 .tab-btn:hover { color: var(--theme-solid); }
 .tab-btn.active {
   background: var(--theme-gradient);
-  color:#fff;
+  color: #fff;
 }
 
 /* ---------- DYNAMIC PANEL ---------- */
 .tab-content {
-  background:#fff;
-  border-radius:12px;
-  padding:1rem;
-  margin:1rem auto;
-  width:260px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.1);
-  text-align:center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 1rem auto;
+  width: 260px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
 }
-.stat-block { display:flex; flex-direction:column; align-items:center; margin-bottom:0.5rem; }
-.stat-value { font-size:1.5rem; font-weight:bold; color:var(--theme-solid); }
-.stat-label { font-size:0.85rem; color:#555; }
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--theme-solid);
+}
+.stat-label {
+  font-size: 0.85rem;
+  color: #555;
+}
+.copy-btn:hover {
+  filter: brightness(1.1);
+}
 
 /* ---------- SHOP GRID ---------- */
 .shop-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
-  gap:1rem;
-  padding:1rem;
+  position: relative; /* needed so spinner overlays correctly */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.shop-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255,255,255,0.85);
+  border-radius: 12px;
+  z-index: 100;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.2s, opacity 0.2s;
+}
+
+.shop-spinner.active {
+  visibility: visible;
+  opacity: 1;
 }
 .product-card {
-  position:relative;
-  background:#fff;
-  border-radius:12px;
-  text-align:center;
-  padding:1rem;
-  box-shadow:0 4px 12px rgba(0,0,0,0.1);
-  transition:transform 0.2s;
-  min-height:230px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  text-align: center;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
-.product-card:hover { transform:translateY(-5px); }
+.product-card:hover { transform: translateY(-5px); }
 .product-card img {
-  width:100%;
-  max-height:120px;
-  object-fit:cover;
-  border-radius:10px;
-  cursor:pointer;
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  cursor: pointer;
   display:block;
 }
-.product-card h3 { margin:0.7rem 0 0.3rem; font-size:1rem; color:#111; }
-.product-card .price { font-size:0.95rem; margin-bottom:0.6rem; font-weight:bold; color:var(--theme-solid); }
+.product-card h3 {
+  margin: 0.7rem 0 0.3rem;
+  font-size: 1rem;
+  color: #111;
+}
+.product-card .price {
+  font-size: 0.95rem;
+  margin-bottom: 0.6rem;
+  font-weight: bold;
+  color: var(--theme-solid);
+}
 .buy-btn {
   background: var(--theme-gradient);
-  color:#fff;
-  border:none;
-  padding:0.5rem 1rem;
-  font-size:0.85rem;
-  border-radius:6px;
-  cursor:pointer;
-  transition:filter 0.2s;
-  width:100%;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: filter 0.2s;
+  width: 100%;
 }
 .buy-btn[disabled] {
-  background:#ccc;
-  color:#888;
-  cursor:not-allowed;
+  background: #ccc;
+  color: #888;
+  cursor: not-allowed;
 }
-.buy-btn:hover { filter:brightness(1.1); }
+.buy-btn:hover { filter: brightness(1.1); }
 
-/* ---------- CONFIRM MODAL ---------- */
-#confirmModal {
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.2);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:1000;
+.copy-link-btn {
+  background: var(--theme-gradient);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  transition: filter 0.3s ease;
 }
-#confirmModal .modal-content {
-  background:#fff;
-  padding:18px 20px;
-  border-radius:12px;
-  max-width:360px;
-  width:90%;
-  text-align:center;
-  box-shadow:0 6px 18px rgba(0,0,0,0.1);
-  animation:popIn 0.2s forwards;
-}
-#confirmModal h3 { margin-top:0; font-size:1.1rem; color:var(--theme-solid); }
-#confirmModal p { font-size:0.95rem; margin:10px 0 15px; color:#555; }
-#confirmModal .btn-row { display:flex; justify-content:center; gap:12px; margin-top:10px; }
-#confirmModal button {
-  background:var(--theme-gradient);
-  color:#fff;
-  border:none;
-  padding:0.5rem 1rem;
-  font-weight:bold;
-  font-size:0.9rem;
-  border-radius:6px;
-  cursor:pointer;
-  min-width:100px;
-}
-#confirmModal #confirmNo { background:#ccc; color:#555; }
-#confirmModal #confirmNo:hover { background:#bbb; }
-@keyframes popIn { from { transform:scale(0.9); opacity:0; } to { transform:scale(1); opacity:1; } }
 
-/* ---------- IMAGE PREVIEW ---------- */
-#imagePreview {
-  position:fixed;
-  inset:0;
-  display:none;
-  justify-content:center;
-  align-items:center;
-  background:rgba(255,255,255,0.95);
-  z-index:1200;
+.themed-btn {
+  background: var(--theme-gradient);
+  border: none;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.15s ease;
 }
-#imagePreview .preview-wrapper {
-  position:relative;
-  max-width:90%;
-  max-height:85%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  box-shadow:0 8px 30px rgba(0,0,0,0.15);
+.themed-btn:hover { transform: scale(1.05); }
+
+.themed-badge {
+  border-radius: 12px;
+  border: 2px solid var(--theme-solid);
+  object-fit: cover;
 }
-#imagePreview img {
-  max-width:100%;
-  max-height:100%;
-  object-fit:contain;
-  border-radius:8px;
-  display:block;
-}
-.close-btn {
-  position:absolute;
-  top:8px;
-  right:8px;
-  font-size:2rem;
-  font-weight:bold;
-  color:#111;
-  cursor:pointer;
-  background:transparent;
-  border:none;
-  padding:0;
-  text-shadow:0 0 4px rgba(0,0,0,0.2);
-}
-.close-btn:hover { color:var(--theme-solid); }
 
 /* ---------- PAGE LOADER ---------- */
 #page-loader {
-  background: rgba(255,255,255,0);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  position:fixed;
-  inset:0;
-  z-index:2000;
-  transition:opacity 0.3s ease;
+  background: rgba(255, 255, 255, 0); /* fully transparent */
+  /* or a very subtle dim, like: rgba(0,0,0,0.1) */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  transition: opacity 0.3s ease;
 }
-#page-loader.hidden { opacity:0; pointer-events:none; }
+
+#page-loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* make copy link sit farther from the writeup above it */
+.tab-content .themed-btn {
+  margin-top: 1.25rem; /* increase space below the description */
+}
+
 .spinner {
-  width:60px;
-  height:60px;
-  border:6px solid #eee;
-  border-top:6px solid transparent;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
+  width: 60px;
+  height: 60px;
+  border: 6px solid #eee;
+  border-top: 6px solid transparent;
+  border-image: var(--theme-gradient) 1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
   background: conic-gradient(from 0deg, #ff6a00, #ee0979, #9d00ff, #ff6a00);
   -webkit-mask: radial-gradient(farthest-side, transparent 70%, black 71%);
           mask: radial-gradient(farthest-side, transparent 70%, black 71%);
 }
-@keyframes spin { to { transform:rotate(360deg); } }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* IMAGE PREVIEW */
+#imagePreview {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255,255,255,0.95);
+  z-index: 1200;
+}
+#imagePreview .preview-wrapper {
+  position: relative;
+  max-width: 90%;
+  max-height: 85%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+#imagePreview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+}
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #111;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-shadow: 0 0 4px rgba(0,0,0,0.2);
+}
+.close-btn:hover { color: var(--theme-solid); }
+
+/* ---------- AVAILABILITY BADGE ---------- */
+.availability-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--theme-gradient);
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+}
+
+/* ---------- MODAL ---------- */
+#confirmModal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.2);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+#confirmModal .modal-content {
+  background: #fff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  animation: popIn 0.2s forwards;
+}
+#confirmModal h3 { margin-top: 0; font-size: 1.1rem; color: var(--theme-solid); }
+#confirmModal p { font-size: 0.95rem; margin: 10px 0 15px; color: #555; }
+#confirmModal .btn-row { display:flex; justify-content:center; gap:12px; margin-top: 10px; }
+#confirmModal button {
+  background: var(--theme-gradient);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 100px;
+}
+#confirmModal #confirmNo {
+  background: #ccc;
+  color: #555;
+}
+#confirmModal #confirmNo:hover { background: #bbb; }
+
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ---------- HOME BUTTON ---------- */
 #home-btn {
   background: var(--theme-gradient);
-  color:#fff;
-  border:none;
-  padding:0.7rem 2rem;
-  font-size:1rem;
-  font-weight:bold;
-  border-radius:6px;
-  cursor:pointer;
-  display:block;
-  margin:4rem auto 1.5rem;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  display: block;
+  margin: 4rem auto 1.5rem;
   transition: filter 0.2s;
 }
-#home-btn:hover { filter:brightness(1.1); }
+#home-btn:hover { filter: brightness(1.1); }
 
+/* small helper */
 .muted { color:#999; font-size:0.9rem; }
-</style>
+  </style>
 </head>
-
 <body>
 
-<header>乂丨乂丨Redeem</header>
-
+  <!-- HEADER -->
+  <header>乂丨乂丨Redeem</header>
 <div id="user-info">
   <div class="profile-card">
     <div id="username">Guest</div>
@@ -315,7 +446,12 @@ header {
   </div>
 </div>
 
-<div class="shop-grid" id="shop-items"></div>
+<div class="shop-grid" id="shop-items">
+  <!-- Spinner overlay -->
+  <div class="shop-spinner" id="shopSpinner">
+    <div class="spinner"></div>
+  </div>
+</div>
 
 <div class="tab-content" id="orders-content" style="display:none;">
   <h3 style="margin-bottom:1rem;">My Orders</h3>
@@ -664,16 +800,43 @@ const redeemProduct = async product => {
 };
 
 // ---------- Render Shop ----------
+// ---------- Render Shop ----------
 const renderShop = async () => {
-  DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">Loading items...</div>';
+  // Show loader while fetching
+  showLoader();
+  DOM.shopItems.innerHTML = '';
+
   try {
-    const shopSnap = await getDocs(collection(db,'shopItems'));
-    if(shopSnap.empty){ DOM.shopItems.innerHTML='<div style="text-align:center;color:#555;">No items found</div>'; return; }
-    DOM.shopItems.innerHTML=''; shopSnap.forEach(docSnap=>{
-      const product = docSnap.data(); product.id=docSnap.id;
-      DOM.shopItems.appendChild(createProductCard(product));
+    const shopSnap = await getDocs(collection(db, 'shopItems'));
+
+    if (shopSnap.empty) {
+      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items found</div>';
+      return;
+    }
+
+    let delay = 0;
+    DOM.shopItems.innerHTML = ''; // Clear previous items
+
+    shopSnap.forEach(docSnap => {
+      const product = docSnap.data();
+      product.id = docSnap.id;
+
+      const card = createProductCard(product);
+
+      // Fade-in animation with staggered delay
+      card.style.opacity = '0';
+      card.style.animation = `fadeInUp 0.35s forwards`;
+      card.style.animationDelay = `${delay}s`;
+      delay += 0.05; // 50ms between each card
+
+      DOM.shopItems.appendChild(card);
     });
-  } catch(e){ console.error(e); DOM.shopItems.innerHTML='<div style="text-align:center;color:#ccc;">Failed to load shop</div>'; }
+  } catch (e) {
+    console.error(e);
+    DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
+  } finally {
+    hideLoader(); // Hide spinner after render
+  }
 };
 
 // ---------- Init ----------
