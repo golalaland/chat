@@ -467,7 +467,6 @@ header {
 <!-- Firebase + App JS -->
 <script type="module">
 // ---------- Firebase Setup ----------
-// ---------- Firebase Setup ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp
@@ -493,19 +492,17 @@ const DOM = {
   cash: document.getElementById('cash-count'),
   shopItems: document.getElementById('shop-items'),
   hostTabs: document.getElementById('hostTabs'),
-  vipCount: document.getElementById('vip-count'),
-  friendsCount: document.getElementById('friends-count'),
-  badgesCount: document.getElementById('badges-count'),
   vipStat: document.getElementById('vip-stat'),
   tabContent: document.getElementById('tab-content'),
+  ordersList: document.getElementById('orders-list'),
+  ordersContent: document.getElementById('orders-content'),
   confirmModal: document.getElementById('confirmModal'),
   confirmTitle: document.getElementById('confirmTitle'),
   confirmText: document.getElementById('confirmText'),
   confirmYes: document.getElementById('confirmYes'),
   confirmNo: document.getElementById('confirmNo'),
   imagePreview: document.getElementById('imagePreview'),
-  previewImg: document.getElementById('previewImg'),
-  ordersList: document.getElementById('orders-list')
+  previewImg: document.getElementById('previewImg')
 };
 
 // ---------- Utilities ----------
@@ -523,7 +520,7 @@ const animateNumber = (el, from, to, duration = 600) => {
   requestAnimationFrame(update);
 };
 
-// ---------- Loader Control ----------
+// ---------- Loader ----------
 const showLoader = () => document.getElementById('page-loader').classList.remove('hidden');
 const hideLoader = () => document.getElementById('page-loader').classList.add('hidden');
 
@@ -536,16 +533,16 @@ const triggerConfetti = () => {
   document.body.appendChild(script);
 };
 
-// ---------- Modal helpers ----------
+// ---------- Modal ----------
 let _themedTimeout = null;
 const closeModal = () => {
-  try {
-    DOM.confirmModal.style.display = 'none';
-    DOM.confirmYes.onclick = null;
+  try { 
+    DOM.confirmModal.style.display = 'none'; 
+    DOM.confirmYes.onclick = null; 
     DOM.confirmNo.onclick = null;
-    DOM.confirmYes.style.display = '';
+    DOM.confirmYes.style.display = ''; 
     DOM.confirmNo.style.display = '';
-  } catch (e) { }
+  } catch (e) {}
   if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
 };
 const showConfirmModal = (title, text, onYes) => {
@@ -578,15 +575,24 @@ let currentUser = null;
 const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
-  DOM.username.textContent = '******';
-  DOM.stars.textContent = `0 ⭐️`;
-  DOM.cash.textContent = `₦0`;
+  DOM.username.textContent = 'Guest';
+  DOM.stars.textContent = `1 ⭐️`;
+  DOM.cash.textContent = `₦3,000`;
+
   await renderShop();
+
   if (!vip?.email) { currentUser = null; DOM.hostTabs.style.display = 'none'; return; }
+
   const uid = vip.email.replace(/[.#$[\]]/g, ',');
   const userRef = doc(db, 'users', uid);
   const snap = await getDoc(userRef);
-  if (!snap.exists()) { currentUser = { uid, stars: 0, cash: 0, isHost: false }; DOM.username.textContent = vip.displayName || vip.email || 'Guest'; DOM.hostTabs.style.display = 'none'; return; }
+  if (!snap.exists()) { 
+    currentUser = { uid, stars: 0, cash: 0, isHost: false }; 
+    DOM.username.textContent = vip.displayName || vip.email || 'Guest'; 
+    DOM.hostTabs.style.display = 'none'; 
+    return; 
+  }
+
   currentUser = { uid, ...snap.data() };
   DOM.username.textContent = currentUser.chatId || vip.displayName || vip.email || 'Guest';
   DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
@@ -594,7 +600,7 @@ const loadCurrentUser = async () => {
   DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
   updateHostPanels();
   await renderShop();
-  loadOrders(); // load orders on page load
+
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data(); if (!data) return;
     currentUser = { uid, ...data };
@@ -606,7 +612,6 @@ const loadCurrentUser = async () => {
     DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
     renderShop().catch(err => console.error('renderShop snapshot failed:', err));
-    loadOrders();
   });
 };
 
@@ -614,9 +619,6 @@ const loadCurrentUser = async () => {
 const updateHostPanels = () => {
   if (!currentUser?.isHost) { DOM.hostTabs.style.display = 'none'; DOM.tabContent.style.display = 'none'; DOM.tabContent.innerHTML = ''; return; }
   DOM.hostTabs.style.display = '';
-  DOM.vipCount && (DOM.vipCount.textContent = formatNumber(currentUser.hostVIP || 0));
-  DOM.friendsCount && (DOM.friendsCount.textContent = formatNumber((currentUser.hostFriends || []).length));
-  DOM.badgesCount && (DOM.badgesCount.textContent = currentUser.hostBadge || 'Gold');
 };
 
 // ---------- Product Card ----------
@@ -643,6 +645,7 @@ const redeemProduct = async product => {
   if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
   if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
   if (product.name?.toLowerCase() === 'redeem cash balance' && (Number(currentUser.cash) || 0) <= 0) return showThemedMessage('No Cash', 'Sorry, you have no cash to redeem');
+  
   const localProduct = { ...product };
   showConfirmModal(
     'Confirm Redemption', `Redeem "${localProduct.name}" for ${localProduct.cost} ⭐?`,
@@ -685,7 +688,6 @@ const redeemProduct = async product => {
         currentUser.stars = newStars; currentUser.cash = newCash;
         animateNumber(DOM.stars, prevStars, newStars); animateNumber(DOM.cash, prevCash, newCash);
         await renderShop();
-        loadOrders(); // <-- refresh orders after redeem
         triggerConfetti();
         if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}.`, 3000);
         else if (Number(localProduct.cashReward) > 0) showThemedMessage('Redemption Success', `You redeemed "${localProduct.name}" and received ₦${Number(localProduct.cashReward).toLocaleString()}! ⭐`, 3000);
@@ -706,47 +708,42 @@ const renderShop = async () => {
       const card = createProductCard(item);
       if (card) DOM.shopItems.appendChild(card);
     });
-  } catch (err) { console.error('Failed to load shop items', err); DOM.shopItems.innerHTML = '<div style="padding:1rem;color:#ccc;text-align:center;">Failed to load shop items.</div>'; }
+  } catch (err) { console.error('renderShop failed:', err); }
 };
 
-// ---------- Orders ----------
-const loadOrders = async () => {
-  if (!DOM.ordersList) return;
+// ---------- Orders (Real-time) ----------
+let ordersUnsubscribe = null;
+const loadOrdersRealtime = () => {
+  if (!DOM.ordersList || !currentUser) return;
+  if (ordersUnsubscribe) ordersUnsubscribe();
   DOM.ordersList.innerHTML = '';
-  if (!currentUser) {
-    DOM.ordersList.innerHTML = "<p>Please sign in to see orders.</p>";
-    return;
-  }
-
-  try {
-    const purchasesCol = collection(db, 'purchases');
-    const querySnap = await getDocs(purchasesCol);
+  const purchasesCol = collection(db, 'purchases');
+  ordersUnsubscribe = onSnapshot(purchasesCol, snapshot => {
     const userOrders = [];
-    querySnap.forEach(docSnap => { const data = docSnap.data(); if (data.userId === currentUser.uid) userOrders.push(data); });
-
-    if (userOrders.length === 0) { DOM.ordersList.innerHTML = "<p>No orders yet.</p>"; return; }
-
+    snapshot.forEach(docSnap => { const data = docSnap.data(); if (data.userId === currentUser.uid) userOrders.push(data); });
+    DOM.ordersList.innerHTML = '';
+    if (!userOrders.length) { DOM.ordersList.innerHTML = "<p>No orders yet.</p>"; return; }
+    userOrders.sort((a, b) => {
+      const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : new Date(a.timestamp).getTime();
+      const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestamp).getTime();
+      return tB - tA;
+    });
     userOrders.forEach(order => {
-      const item = document.createElement('div');
-      item.className = 'order-item';
-      item.innerHTML = `
-        <strong>${order.productName}</strong> 
-        <span>${order.cost} ⭐</span> 
-        <small>${order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : new Date().toLocaleString()}</small>`;
+      const item = document.createElement('div'); item.className = 'order-item';
+      const time = order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : new Date().toLocaleString();
+      item.innerHTML = `<strong>${order.productName}</strong> <span>${order.cost} ⭐</span> <small>${time}</small>`;
       DOM.ordersList.appendChild(item);
     });
-  } catch (err) { console.error('Failed to load orders', err); DOM.ordersList.innerHTML = "<p>Error loading orders.</p>"; }
+  }, err => { console.error('Realtime orders error:', err); DOM.ordersList.innerHTML = "<p>Error loading orders.</p>"; });
 };
 
 // ---------- Tab Switch ----------
 const showTab = type => {
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
   if (type === 'shop') document.getElementById('shop-content').style.display = 'block';
-  else if (type === 'orders') { document.getElementById('orders-content').style.display = 'block'; loadOrders(); }
+  else if (type === 'orders') { document.getElementById('orders-content').style.display = 'block'; loadOrdersRealtime(); }
 };
 
 // ---------- Init ----------
-window.addEventListener('DOMContentLoaded', () => { hideLoader(); loadCurrentUser().catch(err => console.error('Init error:', err)); });
+window.addEventListener('DOMContentLoaded', () => { loadCurrentUser().catch(console.error); });
 </script>
-</body>
-</html>
