@@ -573,28 +573,14 @@ const showThemedMessage = (title, message, duration = 2000) => {
 const previewImage = src => { DOM.previewImg.src = src; DOM.imagePreview.style.display = 'flex'; };
 document.getElementById('closePreview').addEventListener('click', () => { DOM.imagePreview.style.display = 'none'; DOM.previewImg.src = ''; });
 
-// ---------- Orders ----------
-let orders = [];
-const loadOrders = () => {
-  if (!DOM.ordersList) return;
-  DOM.ordersList.innerHTML = '';
-  if (orders.length === 0) DOM.ordersList.innerHTML = "<p>No orders yet.</p>";
-  orders.forEach(order => {
-    const item = document.createElement('div');
-    item.className = "order-item";
-    item.innerHTML = `<strong>${order.name}</strong> <span>${order.cost} ⭐</span> <small>${new Date(order.time).toLocaleString()}</small>`;
-    DOM.ordersList.appendChild(item);
-  });
-};
-
 // ---------- Current User ----------
 let currentUser = null;
 const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
-  DOM.username.textContent = 'Guest';
-  DOM.stars.textContent = `1 ⭐️`;
-  DOM.cash.textContent = `₦3,000`;
+  DOM.username.textContent = '******';
+  DOM.stars.textContent = `0 ⭐️`;
+  DOM.cash.textContent = `₦0`;
   await renderShop();
   if (!vip?.email) { currentUser = null; DOM.hostTabs.style.display = 'none'; return; }
   const uid = vip.email.replace(/[.#$[\]]/g, ',');
@@ -608,6 +594,7 @@ const loadCurrentUser = async () => {
   DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
   updateHostPanels();
   await renderShop();
+  loadOrders(); // load orders on page load
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data(); if (!data) return;
     currentUser = { uid, ...data };
@@ -619,6 +606,7 @@ const loadCurrentUser = async () => {
     DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
     renderShop().catch(err => console.error('renderShop snapshot failed:', err));
+    loadOrders();
   });
 };
 
@@ -696,82 +684,69 @@ const redeemProduct = async product => {
         const prevCash = parseNumberFromText(DOM.cash.textContent);
         currentUser.stars = newStars; currentUser.cash = newCash;
         animateNumber(DOM.stars, prevStars, newStars); animateNumber(DOM.cash, prevCash, newCash);
-        triggerConfetti();
-        hideLoader();
-        showThemedMessage('Success', `You redeemed "${localProduct.name}"!`);
         await renderShop();
-        loadOrders();
-      } catch (e) { console.error('Redeem failed', e); hideLoader(); showThemedMessage('Error', e.message || 'Redemption failed'); }
+        loadOrders(); // <-- refresh orders after redeem
+        triggerConfetti();
+        if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}.`, 3000);
+        else if (Number(localProduct.cashReward) > 0) showThemedMessage('Redemption Success', `You redeemed "${localProduct.name}" and received ₦${Number(localProduct.cashReward).toLocaleString()}! ⭐`, 3000);
+        else showThemedMessage('Redemption Success', `"${localProduct.name}" redeemed successfully!`, 2000);
+      } catch (err) { console.error('Redemption error:', err); showThemedMessage('Error', err.message || String(err), 2400); }
+      finally { hideLoader(); }
     }
   );
 };
 
-// ---------- Shop Rendering ----------
+// ---------- Render Shop ----------
 const renderShop = async () => {
-  if (!DOM.shopItems) return;
   DOM.shopItems.innerHTML = '';
-  const snap = await getDocs(collection(db, 'shopItems'));
-  snap.forEach(doc => {
-    const prod = doc.data();
-    prod.id = doc.id;
-    DOM.shopItems.appendChild(createProductCard(prod));
-  });
+  try {
+    const querySnap = await getDocs(collection(db, 'shopItems'));
+    querySnap.forEach(docSnap => {
+      const item = { id: docSnap.id, ...docSnap.data() };
+      const card = createProductCard(item);
+      if (card) DOM.shopItems.appendChild(card);
+    });
+  } catch (err) { console.error('Failed to load shop items', err); DOM.shopItems.innerHTML = '<div style="padding:1rem;color:#ccc;text-align:center;">Failed to load shop items.</div>'; }
 };
 
-// ---------- TAB HANDLER ----------
-document.addEventListener('click', ev => {
-  const btn = ev.target.closest('.tab-btn'); if (!btn) return;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const type = btn.dataset.tab;
-  DOM.tabContent.style.display = 'none';
-  DOM.shopItems.style.display = 'none';
-  document.getElementById('orders-content').style.display = 'none';
-
-  // HOST PANELS
-  if (type === 'vip' && currentUser?.isHost) {
-    DOM.tabContent.style.display = 'block';
-    DOM.tabContent.innerHTML = `
-      <div class="stat-block">
-        <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
-        <div class="stat-label">VIPs Signed Up</div>
-        <button id="copyVipLink" class="themed-btn">Copy Link</button>
-      </div>`;
-    const copyBtn = document.getElementById('copyVipLink');
-    copyBtn?.addEventListener('click', () => {
-      const link = `https://golalaland.github.io/chat/signup2222.html/ref/${currentUser?.uid || ''}`;
-      navigator.clipboard.writeText(link)
-        .then(() => showThemedMessage('Copied!', 'VIP link copied to clipboard.', 1500))
-        .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
-    });
-  } else if (type === 'friends' && currentUser?.isHost) {
-    DOM.tabContent.style.display = 'block';
-    DOM.tabContent.innerHTML = `
-      <div class="stat-block">
-        <div class="stat-value">${formatNumber(currentUser?.hostFriends?.length || 0)}</div>
-        <div class="stat-label">Friends Invited</div>
-      </div>`;
-  } else if (type === 'badges' && currentUser?.isHost) {
-    DOM.tabContent.style.display = 'block';
-    const badgeImg = currentUser?.hostBadgeImg || 'https://via.placeholder.com/100';
-    DOM.tabContent.innerHTML = `
-      <div class="stat-block">
-        <img src="${badgeImg}" alt="Badge" style="width:100px;height:100px;object-fit:contain;">
-        <div class="stat-value">${currentUser?.hostBadge || 'Gold'}</div>
-        <div class="stat-label">Badge Status</div>
-      </div>`;
-  } 
-  // NORMAL / COMMON PANELS
-  else if (type === 'shop') {
-    DOM.shopItems.style.display = 'grid';
-  } else if (type === 'orders') {
-    document.getElementById('orders-content').style.display = 'block';
-    loadOrders();
+// ---------- Orders ----------
+const loadOrders = async () => {
+  if (!DOM.ordersList) return;
+  DOM.ordersList.innerHTML = '';
+  if (!currentUser) {
+    DOM.ordersList.innerHTML = "<p>Please sign in to see orders.</p>";
+    return;
   }
-});
 
-// ---------- INIT ----------
-window.addEventListener('load', () => { loadCurrentUser().catch(console.error); });
+  try {
+    const purchasesCol = collection(db, 'purchases');
+    const querySnap = await getDocs(purchasesCol);
+    const userOrders = [];
+    querySnap.forEach(docSnap => { const data = docSnap.data(); if (data.userId === currentUser.uid) userOrders.push(data); });
+
+    if (userOrders.length === 0) { DOM.ordersList.innerHTML = "<p>No orders yet.</p>"; return; }
+
+    userOrders.forEach(order => {
+      const item = document.createElement('div');
+      item.className = 'order-item';
+      item.innerHTML = `
+        <strong>${order.productName}</strong> 
+        <span>${order.cost} ⭐</span> 
+        <small>${order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : new Date().toLocaleString()}</small>`;
+      DOM.ordersList.appendChild(item);
+    });
+  } catch (err) { console.error('Failed to load orders', err); DOM.ordersList.innerHTML = "<p>Error loading orders.</p>"; }
+};
+
+// ---------- Tab Switch ----------
+const showTab = type => {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  if (type === 'shop') document.getElementById('shop-content').style.display = 'block';
+  else if (type === 'orders') { document.getElementById('orders-content').style.display = 'block'; loadOrders(); }
+};
+
+// ---------- Init ----------
+window.addEventListener('DOMContentLoaded', () => { hideLoader(); loadCurrentUser().catch(err => console.error('Init error:', err)); });
 </script>
-</body> 
+</body>
 </html>
