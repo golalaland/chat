@@ -450,6 +450,7 @@ header {
 <!-- Firebase + App JS -->
 <script type="module">
 // ---------- Firebase Setup ----------
+<script type="module">
 // ---------- Firebase Setup ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -519,10 +520,41 @@ const triggerConfetti = () => {
   document.body.appendChild(script);
 };
 
+// ---------- Message Modal ----------
+const showMessageModal = (title, message, duration = 2000) => {
+  let modal = document.getElementById('messageModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'messageModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '20px';
+    modal.style.left = '50%';
+    modal.style.transform = 'translateX(-50%)';
+    modal.style.background = '#333';
+    modal.style.color = '#fff';
+    modal.style.padding = '1rem 1.5rem';
+    modal.style.borderRadius = '8px';
+    modal.style.fontFamily = 'Arial, sans-serif';
+    modal.style.fontSize = '14px';
+    modal.style.zIndex = '9999';
+    modal.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+    modal.style.opacity = '0';
+    modal.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `<strong>${title}</strong><div>${message}</div>`;
+  modal.style.opacity = '1';
+
+  clearTimeout(modal._hideTimeout);
+  modal._hideTimeout = setTimeout(() => {
+    modal.style.opacity = '0';
+  }, duration);
+};
+
 // ---------- Modals ----------
 let activeConfirmHandler = null;
 
-// ---------- Confirm Modal ----------
 const showConfirmModal = (title, text, onYes) => {
   DOM.confirmTitle.textContent = title;
   DOM.confirmText.textContent = text;
@@ -537,12 +569,9 @@ const showConfirmModal = (title, text, onYes) => {
   };
 
   DOM.confirmYes.onclick = async () => {
-    cleanup(); // hide modal first
-    try { await onYes(); } 
-    catch (err) { 
-      console.error('Error in confirm modal callback:', err);
-      showMessageModal('Error', err.message || String(err), 2400);
-    }
+    cleanup();
+    try { await onYes(); }
+    catch (err) { console.error('Error in confirm modal callback:', err); showMessageModal('Error', err.message || String(err), 2400); }
   };
 
   DOM.confirmNo.onclick = cleanup;
@@ -560,7 +589,6 @@ document.getElementById('closePreview').addEventListener('click', () => {
 
 // ---------- Current User ----------
 let currentUser = null;
-
 const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
@@ -665,7 +693,6 @@ const createProductCard = product => {
   if ((product.hostOnly && !currentUser?.isHost) || avail <= 0) btn.disabled = true;
 
   card.append(badge, img, title, price, btn);
-
   btn.addEventListener('click', () => redeemProduct(product));
 
   return card;
@@ -688,10 +715,13 @@ const redeemProduct = async product => {
         const userRef = doc(db, 'users', currentUser.uid);
         const productRef = doc(db, 'shopItems', String(localProduct.id));
 
-        let newStars = 0, newCash = 0, redeemedCash = 0, cashReward = Number(localProduct.cashReward) || 0;
+        let newStars = 0, newCash = 0, redeemedCash = 0;
 
         await runTransaction(db, async transaction => {
-          const [userSnap, productSnap] = await Promise.all([transaction.get(userRef), transaction.get(productRef)]);
+          const [userSnap, productSnap] = await Promise.all([
+            transaction.get(userRef),
+            transaction.get(productRef)
+          ]);
 
           if (!userSnap.exists()) throw new Error('User not found');
           if (!productSnap.exists()) throw new Error('Product not found');
@@ -711,7 +741,6 @@ const redeemProduct = async product => {
           redeemedCash = productData.name?.toLowerCase() === 'redeem cash balance'
             ? Number(userData.cash)
             : 0;
-          cashReward = Number(productData.cashReward) || 0;
 
           transaction.update(userRef, { stars: newStars, cash: newCash });
           transaction.update(productRef, { available: available - 1 });
@@ -724,7 +753,7 @@ const redeemProduct = async product => {
             productId: String(productData.id || localProduct.id),
             productName: productData.name || localProduct.name,
             cost,
-            cashReward,
+            cashReward: Number(productData.cashReward) || 0,
             redeemedCash,
             timestamp: serverTimestamp()
           });
@@ -741,10 +770,11 @@ const redeemProduct = async product => {
         await renderShop();
         triggerConfetti();
 
+        // ---------- Success Message ----------
         if (redeemedCash > 0) {
           showMessageModal('Redemption Success', `You redeemed your full cash balance of ₦${redeemedCash.toLocaleString()}! 🎉`);
-        } else if (cashReward > 0) {
-          showMessageModal('Redemption Success', `You successfully redeemed "${localProduct.name}" and received ₦${cashReward.toLocaleString()}! ⭐`);
+        } else if (Number(localProduct.cashReward) > 0) {
+          showMessageModal('Redemption Success', `You successfully redeemed "${localProduct.name}" and received ₦${Number(localProduct.cashReward).toLocaleString()}! ⭐`);
         } else {
           showMessageModal('Redemption Success', `You successfully redeemed "${localProduct.name}" for ${localProduct.cost} ⭐! 🎉`);
         }
@@ -752,9 +782,7 @@ const redeemProduct = async product => {
       } catch (err) {
         console.error('Redemption error:', err);
         showMessageModal('Error', err.message || String(err), 2400);
-      } finally {
-        hideLoader();
-      }
+      } finally { hideLoader(); }
     }
   );
 };
@@ -779,29 +807,23 @@ const renderShop = async () => {
 document.addEventListener('click', ev => {
   const btn = ev.target.closest('.tab-btn');
   if (!btn) return;
-
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const type = btn.dataset.tab;
   DOM.tabContent.innerHTML = '';
 
-  if (type === 'vip' && currentUser) {
+  if (type === 'vip') {
     DOM.tabContent.innerHTML = `
       <div class="stat-block">
-        <div class="stat-value" id="vip-stat">${formatNumber(currentUser.hostVIP || 0)}</div>
+        <div class="stat-value" id="vip-stat">${formatNumber(currentUser?.hostVIP || 0)}</div>
         <div class="stat-label">VIPs Signed Up</div>
         <button id="copyVipLink" class="themed-btn">Copy Link</button>
       </div>`;
-    
-    document.getElementById('copyVipLink').addEventListener('click', () => {
-      const link = `https://golalaland.github.io/chat/signup2222.html/ref/${currentUser.uid}`;
-      navigator.clipboard.writeText(link)
+    document.getElementById('copyVipLink')?.addEventListener('click', () => {
+      navigator.clipboard.writeText(`https://golalaland.github.io/chat/signup2222.html/ref/${currentUser?.uid || ''}`)
         .then(() => showMessageModal('Copied!', 'VIP link copied to clipboard.', 1500))
-        .catch(err => { 
-          showMessageModal('Error', 'Failed to copy link.', 1800);
-          console.error(err); 
-        });
+        .catch(err => { showMessageModal('Error', 'Failed to copy link.', 1800); console.error(err); });
     });
   } else if (type === 'friends') {
     DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value">${formatNumber(currentUser?.hostFriends?.length || 0)}</div><div class="stat-label">Friends Hosts</div></div>`;
@@ -817,6 +839,7 @@ document.addEventListener('click', ev => {
 loadCurrentUser();
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { DOM.imagePreview.style.display = 'none'; closeModal(); }
+  if (e.key === 'Escape') { DOM.imagePreview.style.display = 'none'; }
 });
+</script>
 </script>
