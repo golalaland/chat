@@ -536,9 +536,11 @@ header {
 
 <script type="module">
 
+// ===================== FIREBASE INIT =====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp, query, where, orderBy
+  getFirestore, doc, getDoc, onSnapshot, collection, getDocs,
+  runTransaction, serverTimestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -554,49 +556,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ------------------- Update Host Stats -------------------
-import { doc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const updateHostStats = async (newUser) => {
-  const referrerId = newUser.refHost;
-  if (!referrerId) return; // no host to update
-
-  const sanitizedId = referrerId.replace(/[.#$[\]]/g, ',');
-  const hostRef = doc(db, 'users', sanitizedId);
-
-  try {
-    await runTransaction(db, async (t) => {
-      const hostSnap = await t.get(hostRef);
-      if (!hostSnap.exists()) return;
-
-      const hostData = hostSnap.data();
-
-      // --- Friends list ---
-      const friends = hostData.hostFriends || [];
-      if (!friends.find(f => f.email === newUser.email)) {
-        friends.push({
-          email: newUser.email,
-          chatId: newUser.chatId || '',
-          isVIP: newUser.isVIP || false,
-          isHost: newUser.isHost || false
-        });
-      }
-
-      // --- VIP count ---
-      const hostVIP = hostData.hostVIP || 0;
-      const newVIP = newUser.isVIP ? hostVIP + 1 : hostVIP;
-
-      t.update(hostRef, {
-        hostFriends: friends,
-        hostVIP: newVIP
-      });
-    });
-  } catch (err) {
-    console.error('Failed to update host stats:', err);
-  }
-};
-
-// ---------- DOM References ----------
+// ===================== DOM REFERENCES =====================
 const DOM = {
   username: document.getElementById('username'),
   stars: document.getElementById('stars-count'),
@@ -618,7 +578,7 @@ const DOM = {
   previewImg: document.getElementById('previewImg')
 };
 
-// ---------- Utilities ----------
+// ===================== UTILITIES =====================
 const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) : '0';
 const parseNumberFromText = text => Number((text || '').replace(/[^\d\-]/g, '')) || 0;
 
@@ -627,24 +587,18 @@ const animateNumber = (el, from, to, duration = 600) => {
   const update = timestamp => {
     const progress = Math.min((timestamp - start) / duration, 1);
     const value = Math.floor(from + (to - from) * progress);
-
-    if (el === DOM.stars) {
-      // replace only the number, keep the star
-      el.textContent = `${formatNumber(value)} ⭐️`;
-    } else if (el === DOM.cash) {
-      // replace only the number, keep the currency symbol
-      el.textContent = `₦${formatNumber(value)}`;
-    }
-
+    if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
+    else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
     if (progress < 1) requestAnimationFrame(update);
   };
   requestAnimationFrame(update);
 };
-// ---------- Loader ----------
+
+// ===================== LOADER =====================
 const showLoader = () => document.getElementById('page-loader').classList.remove('hidden');
 const hideLoader = () => document.getElementById('page-loader').classList.add('hidden');
 
-// ---------- Confetti ----------
+// ===================== CONFETTI =====================
 const triggerConfetti = () => {
   if (window.__confettiLoaded) return confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
   const script = document.createElement('script');
@@ -653,9 +607,8 @@ const triggerConfetti = () => {
   document.body.appendChild(script);
 };
 
-// ---------- Modal helpers ----------
+// ===================== MODAL =====================
 let _themedTimeout = null;
-
 const closeModal = () => {
   DOM.confirmModal.style.display = 'none';
   DOM.confirmYes.onclick = null;
@@ -666,15 +619,13 @@ const closeModal = () => {
 };
 
 const showConfirmModal = (title, text, onYes) => {
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
   DOM.confirmTitle.textContent = title;
   DOM.confirmText.textContent = text;
   DOM.confirmYes.style.display = '';
   DOM.confirmNo.style.display = '';
   DOM.confirmModal.style.display = 'flex';
-  const cleanup = () => { closeModal(); };
-  DOM.confirmYes.onclick = async () => { cleanup(); if (onYes) await onYes(); };
-  DOM.confirmNo.onclick = cleanup;
+  DOM.confirmYes.onclick = async () => { closeModal(); if(onYes) await onYes(); };
+  DOM.confirmNo.onclick = closeModal;
 };
 
 const showThemedMessage = (title, message, duration = 2000) => {
@@ -683,11 +634,11 @@ const showThemedMessage = (title, message, duration = 2000) => {
   DOM.confirmYes.style.display = 'none';
   DOM.confirmNo.style.display = 'none';
   DOM.confirmModal.style.display = 'flex';
-  if (_themedTimeout) { clearTimeout(_themedTimeout); }
-  _themedTimeout = setTimeout(() => closeModal(), duration);
+  if (_themedTimeout) clearTimeout(_themedTimeout);
+  _themedTimeout = setTimeout(closeModal, duration);
 };
 
-// ---------- Image Preview ----------
+// ===================== IMAGE PREVIEW =====================
 const previewImage = src => {
   DOM.previewImg.src = src;
   DOM.imagePreview.style.display = 'flex';
@@ -697,14 +648,14 @@ document.getElementById('closePreview').addEventListener('click', () => {
   DOM.imagePreview.style.display = 'none';
 });
 
-// ---------- Current User ----------
+// ===================== CURRENT USER =====================
 let currentUser = null;
 
 const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
 
-  DOM.username.textContent = '******';
+  DOM.username.textContent = 'Guest';
   DOM.stars.textContent = `0 ⭐️`;
   DOM.cash.textContent = `₦0`;
 
@@ -730,18 +681,15 @@ const loadCurrentUser = async () => {
   DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
   updateHostPanels();
 
-if (currentUser) {
-  // If user has a referrer (invitedBy), update their host stats
-  const newUserData = {
-    email: currentUser.email || '',
-    chatId: currentUser.chatId || '',
-    isVIP: currentUser.isVIP || false,
-    isHost: currentUser.isHost || false,
-    invitedBy: currentUser.invitedBy || null
-  };
-  await updateHostStats(newUserData);
-}
-  await renderShop();
+  if(currentUser?.email) {
+    await updateHostStats({
+      email: currentUser.email,
+      chatId: currentUser.chatId || '',
+      isVIP: currentUser.isVIP || false,
+      isHost: currentUser.isHost || false,
+      invitedBy: currentUser.invitedBy || null
+    });
+  }
 
   onSnapshot(userRef, docSnap => {
     const data = docSnap.data(); if(!data) return;
@@ -751,377 +699,67 @@ if (currentUser) {
     DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
     DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
-    renderShop().catch(err => console.error(err));
+    renderShop().catch(console.error);
   });
 };
 
-// ===================== HOST DASHBOARD PANEL =====================
+// ===================== UPDATE HOST STATS =====================
+const updateHostStats = async newUser => {
+  const referrerId = newUser.refHost || newUser.invitedBy;
+  if (!referrerId) return;
+  const sanitizedId = referrerId.replace(/[.#$[\]]/g, ',');
+  const hostRef = doc(db, 'users', sanitizedId);
 
+  try {
+    await runTransaction(db, async t => {
+      const hostSnap = await t.get(hostRef);
+      if (!hostSnap.exists()) return;
+
+      const hostData = hostSnap.data();
+      const friends = hostData.hostFriends || [];
+      if (!friends.find(f => f.email === newUser.email)) {
+        friends.push({
+          email: newUser.email,
+          chatId: newUser.chatId || '',
+          isVIP: newUser.isVIP || false,
+          isHost: newUser.isHost || false
+        });
+      }
+      const hostVIP = hostData.hostVIP || 0;
+      const newVIP = newUser.isVIP ? hostVIP + 1 : hostVIP;
+
+      t.update(hostRef, { hostFriends: friends, hostVIP: newVIP });
+    });
+  } catch(err) { console.error('Failed to update host stats:', err); }
+};
+
+// ===================== HOST DASHBOARD =====================
 const updateHostPanels = () => {
-  if (!currentUser?.isHost) {
-    DOM.hostTabs.style.display = 'none';
-    DOM.tabContent.style.display = 'none';
-    return;
-  }
+  if(!currentUser?.isHost) { DOM.hostTabs.style.display='none'; DOM.tabContent.style.display='none'; return; }
   DOM.hostTabs.style.display = '';
   DOM.tabContent.style.display = '';
-  renderTabContent('vip'); // default tab
+  DOM.vipStat.textContent = formatNumber(currentUser.hostVIP || 0);
+  DOM.friendsStat.textContent = formatNumber((currentUser.hostFriends || []).length);
+  DOM.badgesStat.textContent = formatNumber(currentUser.hostBadges || 0);
 };
 
-// ===================== RENDER TAB CONTENT =====================
-
-const renderTabContent = (type) => {
-  DOM.tabContent.innerHTML = '';
-  if (!currentUser?.isHost) return;
-
-  const usersRef = collection(db, "users");
-
-  // ===== VIP TAB =====
-  if (type === 'vip') {
-    const q = query(usersRef, where("refHost", "==", currentUser.email), where("isVIP", "==", true));
-    onSnapshot(q, (snapshot) => {
-      const vipCount = snapshot.size;
-      const vipList = snapshot.docs.map(doc => doc.data());
-
-      DOM.tabContent.innerHTML = `
-        <div class="stat-block" style="margin-bottom:12px;">
-          <div class="stat-value" id="vip-stat">${vipCount}</div>
-          <div class="stat-label">VIPs Signed Up</div>
-          <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
-        </div>
-      `;
-
-      const fragment = document.createDocumentFragment();
-      vipList.forEach(f => {
-        const name = f.chatId || f.email?.split('@')[0] || 'Guest';
-        const handle = '@' + (f.chatIdLower || name.toLowerCase());
-        const emoji = '💫';
-        const color = 'gold';
-        const block = document.createElement('div');
-        block.className = 'friend-card';
-        block.innerHTML = `
-          <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:1.1rem;">${emoji}</span>
-            <span style="font-weight:600;color:${color};">${name}</span>
-          </div>
-          <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
-            ${handle}
-          </div>
-          <div style="height:1px;width:100%;background:#eee;margin:8px 0;"></div>
-        `;
-        fragment.appendChild(block);
-      });
-
-      DOM.tabContent.appendChild(fragment);
-
-      document.getElementById('copyVipLink')?.addEventListener('click', () => {
-        const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
-        navigator.clipboard.writeText(link)
-          .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
-          .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
-      });
-    });
-  }
-
-  // ===== FRIENDS TAB =====
-  else if (type === 'friends') {
-    const friends = currentUser.hostFriends || [];
-    if (friends.length === 0) {
-      DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
-      return;
-    }
-
-    // Sort VIP → Host → Normal
-    const sortedFriends = friends.sort((a, b) => {
-      if (a.isVIP && !b.isVIP) return -1;
-      if (!a.isVIP && b.isVIP) return 1;
-      if (a.isHost && !b.isHost) return -1;
-      if (!a.isHost && b.isHost) return 1;
-      return 0;
-    });
-
-    const fragment = document.createDocumentFragment();
-    sortedFriends.forEach(f => {
-      const name = f.chatId || f.email?.split('@')[0] || 'Guest';
-      const handle = '@' + (f.chatIdLower || name.toLowerCase());
-
-      let emoji = '👤';
-      let color = '#ccc';
-      if (f.isVIP) { emoji = '💫'; color = 'gold'; }
-      else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
-
-      const block = document.createElement('div');
-      block.className = 'friend-card';
-      block.innerHTML = `
-        <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:1.1rem;">${emoji}</span>
-          <span style="font-weight:600;color:${color};">${name}</span>
-        </div>
-        <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
-          ${handle}
-        </div>
-        <div style="height:1px;width:100%;background:#222;margin:8px 0;"></div>
-      `;
-      fragment.appendChild(block);
-    });
-
-    DOM.tabContent.appendChild(fragment);
-  }
-
-  // ===== BADGES TAB =====
-  else if (type === 'badges') {
-    const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
-    DOM.tabContent.innerHTML = `
-      <div class="stat-block">
-        <img src="${badgeImg}" style="width:100px;height:100px;">
-        <div class="stat-value">${currentUser.hostBadge || 'Gold'}</div>
-        <div class="stat-label">Badge Status</div>
-      </div>
-    `;
-  }
-};
-// ---------- Host Tabs Click ----------
-DOM.hostTabs.addEventListener('click', e=>{
-  const btn = e.target.closest('.tab-btn'); if(!btn) return;
-  DOM.hostTabs.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const type = btn.dataset.tab;
-  renderTabContent(type);
-});
-
-// ---------- User Tabs Click (Shop + My Orders) ----------
-const userTabs = document.getElementById('userTabs');
-userTabs.addEventListener('click', e => {
-  const btn = e.target.closest('.tab-btn');
-  if(!btn) return;
-  userTabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  if(btn.dataset.tab === 'shop') {
-    DOM.shopItems.style.display = 'grid';
-    DOM.ordersContent.style.display = 'none';
-  } else if(btn.dataset.tab === 'orders') {
-    DOM.shopItems.style.display = 'none';
-    DOM.ordersContent.style.display = 'block';
-    renderMyOrders();
-  }
-});
-
-// ---------- My Orders ----------
-const renderMyOrders = async () => {
-  const ordersList = DOM.ordersList;
-  if(!ordersList) return;
-  ordersList.innerHTML = '<div style="text-align:center;color:#555;">Loading orders...</div>';
-
-  if(!currentUser) {
-    ordersList.innerHTML = '<div style="text-align:center;color:#555;">Not logged in.</div>'; 
-    return;
-  }
-
-  try {
-    const purchasesRef = collection(db, 'purchases');
-    const snap = await getDocs(purchasesRef); // no orderBy
-
-    // Filter to current user
-    const userOrders = snap.docs
-      .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
-      .filter(order => order.userId === currentUser.uid);
-
-    if(userOrders.length === 0) {
-      ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet</div>';
-      return;
-    }
-
-    // Optional: sort by timestamp if exists
-    userOrders.sort((a,b) => {
-      const tA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
-      const tB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
-      return tB - tA; // newest first
-    });
-
-    // Render nicely
-    ordersList.innerHTML = '';
-    userOrders.forEach(order => {
-      const block = document.createElement('div');
-      block.className = 'stat-block';
-      const dateText = order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : '';
-      block.innerHTML = `
-        <div class="stat-value">${order.productName || 'Unnamed'}</div>
-        <div class="stat-label">${order.cost || 0} ⭐${order.cashReward ? ' - ₦'+order.cashReward.toLocaleString() : ''}</div>
-        ${dateText ? `<div class="muted">${dateText}</div>` : ''}
-      `;
-      ordersList.appendChild(block);
-    });
-
-  } catch(e){
-    console.error(e);
-    ordersList.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load orders.</div>';
-  }
-};
-// ---------- Product Cards ----------
-const createProductCard = product => {
-  const card = document.createElement('div'); card.className='product-card';
-  const img = document.createElement('img'); img.src = product.img||'https://via.placeholder.com/300'; img.alt=product.name||'Item';
-  img.addEventListener('click',()=>previewImage(img.src));
-  const badge = document.createElement('span'); badge.className='availability-badge';
-  const avail = Number(product.available)||0; badge.textContent = avail>0?`${avail} Left`:'Sold Out'; if(avail<=0) badge.style.background='#666';
-  const title = document.createElement('h3'); title.textContent=product.name||'Unnamed';
-  const price = document.createElement('div'); price.className='price'; price.textContent=`${Number(product.cost)||0} ⭐`;
-  const btn = document.createElement('button'); btn.className='buy-btn'; btn.textContent=product.hostOnly?(currentUser?.isHost?'Redeem':'Host Only'):'Redeem';
-  if(avail<=0|| (product.hostOnly && currentUser&&!currentUser.isHost) || (product.name?.toLowerCase()==='redeem cash balance' && currentUser && Number(currentUser.cash)<=0)) btn.disabled=true;
-  card.append(badge,img,title,price,btn);
-  btn.addEventListener('click',()=>redeemProduct(product));
-  return card;
-};
-
-// ---------- Redeem Product ----------
-const redeemProduct = async product => {
-  if(!currentUser) return showThemedMessage('Not Logged In','Please sign in to redeem items.');
-  if(currentUser.stars<product.cost) return showThemedMessage('Not Enough Stars','You do not have enough stars.');
-  if(product.available<=0) return showThemedMessage('Sold Out','This item is no longer available.');
-  if(product.name?.toLowerCase()==='redeem cash balance' && Number(currentUser.cash)<=0) return showThemedMessage('No Cash','You have no cash to redeem');
-
-  showConfirmModal('Confirm Redemption',`Redeem "${product.name}" for ${product.cost} ⭐?`, async ()=>{
-    showLoader();
-    try {
-      const userRef = doc(db,'users',currentUser.uid);
-      const productRef = doc(db,'shopItems',String(product.id));
-      let newStars=0,newCash=0,redeemedCash=0;
-      await runTransaction(db, async t=>{
-        const [uSnap,pSnap] = await Promise.all([t.get(userRef),t.get(productRef)]);
-        if(!uSnap.exists()) throw new Error('User not found'); if(!pSnap.exists()) throw new Error('Product not found');
-        const uData = uSnap.data(), pData=pSnap.data();
-        const cost=Number(pData.cost)||0, available=Number(pData.available)||0;
-        if(Number(uData.stars)<cost) throw new Error('Not enough stars'); if(available<=0) throw new Error('Out of stock');
-        newStars=Number(uData.stars)-cost;
-        newCash=pData.name?.toLowerCase()==='redeem cash balance'?0:Number(uData.cash)+Number(pData.cashReward||0);
-        redeemedCash=pData.name?.toLowerCase()==='redeem cash balance'?Number(uData.cash):0;
-        t.update(userRef,{stars:newStars,cash:newCash});
-        t.update(productRef,{available:available-1});
-        const purchasesCol = collection(db,'purchases');
-        t.set(doc(purchasesCol),{
-          userId:currentUser.uid,email:uData.email||'',phone:uData.phone||'',productId:String(pData.id),productName:pData.name,cost,cashReward:Number(pData.cashReward||0),redeemedCash,timestamp:serverTimestamp()
-        });
-      });
-      const prevStars=parseNumberFromText(DOM.stars.textContent);
-      const prevCash=parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars=newStars; currentUser.cash=newCash;
-      animateNumber(DOM.stars,prevStars,newStars); animateNumber(DOM.cash,prevCash,newCash);
-      await renderShop();
-      triggerConfetti();
-      if(redeemedCash>0) showThemedMessage('Cash Redeemed',`You redeemed ₦${redeemedCash.toLocaleString()}`,3000);
-      else if(Number(product.cashReward)>0) showThemedMessage('Redemption Success',`"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`,2500);
-      else showThemedMessage('Redemption Success',`"${product.name}" redeemed!`,2000);
-    } catch(e){ console.error(e); showThemedMessage('Redemption Failed',e.message||'Try again'); }
-    hideLoader();
-  });
-};
-
-// ---------- Render Shop ----------
-// ---------- Render Shop ----------
+// ===================== SHOP =====================
 const renderShop = async () => {
-  // Show loader while fetching
-  showLoader();
   DOM.shopItems.innerHTML = '';
-
+  showLoader();
   try {
-    const shopSnap = await getDocs(collection(db, 'shopItems'));
-
-    if (shopSnap.empty) {
-      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items found</div>';
-      return;
-    }
-
-    let delay = 0;
-    DOM.shopItems.innerHTML = ''; // Clear previous items
-
+    const shopSnap = await getDocs(collection(db, 'shop'));
     shopSnap.forEach(docSnap => {
-      const product = docSnap.data();
-      product.id = docSnap.id;
-
-      const card = createProductCard(product);
-
-      // Fade-in animation with staggered delay
-      card.style.opacity = '0';
-      card.style.animation = `fadeInUp 0.35s forwards`;
-      card.style.animationDelay = `${delay}s`;
-      delay += 0.05; // 50ms between each card
-
+      const data = docSnap.data();
+      const card = document.createElement('div');
+      card.className = 'shop-card';
+      card.innerHTML = `<h3>${data.name}</h3><p>₦${formatNumber(data.price)}</p>`;
       DOM.shopItems.appendChild(card);
     });
-  } catch (e) {
-    console.error(e);
-    DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
-  } finally {
-    hideLoader(); // Hide spinner after render
-  }
+  } catch(err) { console.error('Shop load error:', err); }
+  hideLoader();
 };
-// ===================== TAB SWITCHING =====================
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    const tabType = e.target.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-
-    // Hide all sections first
-    DOM.tabContent.style.display = 'none';
-    DOM.ordersContent.style.display = 'none';
-    DOM.shopItems.style.display = 'none';
-
-    if (tabType === 'shop') {
-      DOM.shopItems.style.display = 'grid';
-      await renderShop();
-    } 
-    else if (tabType === 'orders') {
-      DOM.ordersContent.style.display = 'block';
-      await renderOrders();
-    } 
-    else {
-      DOM.tabContent.style.display = 'block';
-      renderTabContent(tabType);
-    }
-  });
-});
-
-// ===================== RENDER ORDERS =====================
-
-async function renderOrders() {
-  if (!currentUser?.email) {
-    DOM.ordersList.innerHTML = `<div class="muted">No orders available.</div>`;
-    return;
-  }
-
-  const ordersRef = collection(db, "orders");
-  const q = query(ordersRef, where("buyerEmail", "==", currentUser.email), orderBy("timestamp", "desc"));
-
-  onSnapshot(q, (snapshot) => {
-    if (snapshot.empty) {
-      DOM.ordersList.innerHTML = `<div class="muted">You haven’t bought anything yet.</div>`;
-      return;
-    }
-
-    const fragment = document.createDocumentFragment();
-
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      const item = document.createElement("div");
-      item.classList.add("stat-block");
-      item.innerHTML = `
-        <div class="stat-value">${data.itemName || "Unnamed Item"}</div>
-        <div class="stat-label">Price: ₦${formatNumber(data.price || 0)}</div>
-        <div class="muted">${data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "Pending"}</div>
-      `;
-      fragment.appendChild(item);
-    });
-
-    DOM.ordersList.innerHTML = "";
-    DOM.ordersList.appendChild(fragment);
-  });
-}
-
-// ===================== INITIAL LOAD =====================
-window.addEventListener("DOMContentLoaded", loadCurrentUser);
-// ---------- Init ----------
-window.addEventListener('DOMContentLoaded',()=>{ loadCurrentUser().catch(err=>console.error(err)); });
-</script> 
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => loadCurrentUser().catch(console.error));
+</script>
