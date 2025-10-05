@@ -782,12 +782,18 @@ const renderTabContent = (type) => {
   if (!currentUser?.isHost) return;
 
   // ===== VIP TAB (Live Firestore Count) =====
+// ===== VIP TAB (Live Firestore Count) =====
 if (type === 'vip') {
   const vipRef = collection(db, "users");
-  const vipQuery = query(vipRef, where("referredBy", "==", currentUser.uid), where("isVIP", "==", true));
+  const vipQuery = query(
+    vipRef,
+    where("referredBy", "==", currentUser.uid),
+    where("isVIP", "==", true)
+  );
 
   onSnapshot(vipQuery, (snapshot) => {
     const vipCount = snapshot.size;
+
     DOM.tabContent.innerHTML = `
       <div class="stat-block" style="margin-bottom:12px;">
         <div class="stat-value" id="vip-stat">${vipCount}</div>
@@ -805,15 +811,18 @@ if (type === 'vip') {
   });
 }
 
-  // ===== FRIENDS TAB =====
-  else if (type === 'friends') {
-    const friends = currentUser.hostFriends || [];
-    if (friends.length === 0) {
+// ===== FRIENDS TAB (Live Firestore Data) =====
+else if (type === 'friends') {
+  const friendsRef = collection(db, "users");
+  const friendsQuery = query(friendsRef, where("referredBy", "==", currentUser.uid));
+
+  onSnapshot(friendsQuery, (snapshot) => {
+    if (snapshot.empty) {
       DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
       return;
     }
 
-    // Sort: VIP → Host → Normal
+    const friends = snapshot.docs.map(doc => doc.data());
     const sortedFriends = friends.sort((a, b) => {
       if (a.isVIP && !b.isVIP) return -1;
       if (!a.isVIP && b.isVIP) return 1;
@@ -827,35 +836,30 @@ if (type === 'vip') {
     sortedFriends.forEach(f => {
       const name = f.chatId || f.email?.split('@')[0] || 'Guest';
       const handle = '@' + (f.chatIdLower || name.toLowerCase());
-      let icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="#999"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>`;
-      let color = '#444';
-
-      if (f.isVIP) {
-        icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="#c9a033"><path d="M12 .587l3.668 7.431 8.2 1.193-5.934 5.782 1.4 8.172L12 18.896l-7.334 3.85 1.4-8.172L.132 9.211l8.2-1.193L12 .587z"/></svg>`;
-        color = '#c9a033';
-      } else if (f.isHost) {
-        icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="#ff66cc"><path d="M12 2v4l3 2-3 2v4l8-6-8-6zm-2 8l-8 6 8 6v-4l-3-2 3-2v-4z"/></svg>`;
-        color = '#ff66cc';
-      }
+      let emoji = '👤';
+      let color = '#ccc';
+      if (f.isVIP) { emoji = '💫'; color = 'gold'; }
+      else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
 
       const block = document.createElement('div');
       block.className = 'friend-card';
       block.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;">
-          ${icon}
-          <div>
-            <div style="font-weight:600;color:${color};">${name}</div>
-            <div style="font-size:0.85rem;color:#888;">${handle}</div>
-          </div>
+        <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:1.1rem;">${emoji}</span>
+          <span style="font-weight:600;color:${color};">${name}</span>
         </div>
-        <div style="height:1px;width:100%;background:#e5e5e5;margin:10px 0;"></div>
+        <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
+          ${handle}
+        </div>
+        <div style="height:1px;width:100%;background:#e0e0e0;margin:8px 0;"></div>
       `;
       fragment.appendChild(block);
     });
 
+    DOM.tabContent.innerHTML = '';
     DOM.tabContent.appendChild(fragment);
-  }
-
+  });
+}
   // ===== BADGES TAB =====
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
