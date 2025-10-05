@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIP/Host Signup</title>
+<title>VIP / Host Signup</title>
 <style>
 :root {
   --primary-color: #ff4081;
@@ -35,14 +35,14 @@ body {
   aspect-ratio:16/9;
 }
 
-video, iframe {
+iframe {
   width:100%;
   height:100%;
   object-fit:cover;
   border-radius:15px;
+  border:none;
 }
 
-/* Header */
 h2 {
   font-size:1.4rem;
   color:var(--primary-color);
@@ -57,7 +57,6 @@ h2 {
   margin-bottom:1rem;
 }
 
-/* Form fields */
 .form-group {
   width:90%;
   max-width:400px;
@@ -185,27 +184,22 @@ h2 {
 .message {
   text-align:center;
   font-size:0.85rem;
+  min-height:20px;
 }
 </style>
 </head>
 <body>
 
 <div class="video-container">
-  <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Placeholder Video" frameborder="0" allowfullscreen></iframe>
+  <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Promo Video" allowfullscreen></iframe>
 </div>
 
-<h2>VIP/Host Signup</h2>
-<p id="host-info">You're in <span id="host-username">HostName</span>'s VIP Tab</p>
+<h2>VIP / Host Signup</h2>
+<p id="host-info">You're in <span id="host-username">Main</span>'s VIP Tab</p>
 
-<div class="form-group">
-  <input id="name" type="text" placeholder="Full Name">
-</div>
-<div class="form-group">
-  <input id="phone" type="text" placeholder="Phone Number">
-</div>
-<div class="form-group">
-  <input id="email" type="email" placeholder="Email Address">
-</div>
+<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
+<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
+<div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 
 <div class="gender-label">Select Your Gender</div>
 <div class="gender-select">
@@ -214,9 +208,7 @@ h2 {
 </div>
 
 <div class="vip-label" id="vipLabel">VIP</div>
-<div class="vip-toggle" id="vipToggle">
-  <span class="vip-circle"></span>
-</div>
+<div class="vip-toggle" id="vipToggle"><span class="vip-circle"></span></div>
 <div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
 
 <button class="submit-btn" id="submitBtn">Sign Up</button>
@@ -225,24 +217,25 @@ h2 {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, serverTimestamp
+  getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --------- Firebase Config ---------
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
   projectId: "metaverse-1010",
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --------- UI Elements ---------
-// --------- UI Elements ---------
+// --- UI Elements ---
+let isVIP = false;
+let gender = '';
+
 const vipToggle = document.getElementById('vipToggle');
 const vipLabel = document.getElementById('vipLabel');
 const vipMessage = document.getElementById('vipMessage');
@@ -250,58 +243,53 @@ const femaleBtn = document.getElementById('femaleBtn');
 const maleBtn = document.getElementById('maleBtn');
 const submitBtn = document.getElementById('submitBtn');
 const messageEl = document.getElementById('message');
-
 const nameInput = document.getElementById('name');
 const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
 
-// ✅ 1. Get the "host" from URL (this will be from the invite link)
+// --- Host Referral Logic ---
 const urlParams = new URLSearchParams(window.location.search);
-const hostUsername = urlParams.get('host') || '';  // can be email, uid, etc.
-
-// ✅ 2. Display the host name dynamically in the header
+const hostUsername = urlParams.get('host') || '';
 document.getElementById('host-username').textContent = hostUsername || 'Main';
-
-// ✅ 3. Construct referral link for Firestore tracking
+const invitedBy = hostUsername || null;
 const hostLink = hostUsername
   ? `https://golalaland.github.io/chat/ref.html?host=${encodeURIComponent(hostUsername)}`
   : '';
 
-const invitedBy = hostUsername || null;
-
-// --------- UI Logic ---------
-vipToggle.addEventListener('click', ()=>{
+// --- VIP Toggle ---
+vipToggle.addEventListener('click', () => {
   isVIP = !isVIP;
   vipToggle.classList.toggle('on', isVIP);
   vipLabel.classList.toggle('on', isVIP);
   vipMessage.style.opacity = isVIP ? '1' : '0';
 });
 
-femaleBtn.addEventListener('click', ()=>{
+// --- Gender Buttons ---
+femaleBtn.addEventListener('click', () => {
   gender = 'Female';
   femaleBtn.classList.add('selected');
   maleBtn.classList.remove('selected');
 });
-
-maleBtn.addEventListener('click', ()=>{
+maleBtn.addEventListener('click', () => {
   gender = 'Male';
   maleBtn.classList.add('selected');
   femaleBtn.classList.remove('selected');
 });
 
-// --------- Helper ---------
+// --- Helper ---
 function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 
-// --------- Submit Logic ---------
+// --- Submit Logic ---
 submitBtn.addEventListener('click', async ()=>{
   const fullName = nameInput.value.trim();
   const phone = phoneInput.value.trim();
   const email = emailInput.value.trim().toLowerCase();
 
   if(!fullName || !phone || !email || !gender){
-    messageEl.textContent = 'Please fill all fields.';
+    messageEl.textContent = 'Please fill in all fields.';
     return;
   }
+
   if(!isVIP && gender !== 'Female'){
     messageEl.textContent = 'Only females can sign up as hosts.';
     return;
@@ -325,7 +313,7 @@ submitBtn.addEventListener('click', async ()=>{
     isVIP,
     isHost: !isVIP,
     hostLink: isVIP ? null : hostLink,
-    invitedBy: invitedBy,
+    invitedBy,
     email,
     phone,
     gender,
@@ -333,23 +321,17 @@ submitBtn.addEventListener('click', async ()=>{
   };
 
   try {
-    if(!userSnap.exists()){
-      await setDoc(userRef, userData);
-    } else {
-      await updateDoc(userRef, userData); // update existing
-    }
+    if(!userSnap.exists()) await setDoc(userRef, userData);
+    else await updateDoc(userRef, userData);
 
-    // Save locally to persist login across pages
     localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
 
-    messageEl.textContent = `Successfully signed up as ${isVIP ? 'VIP' : 'Host'}!`;
-
-    // Optional: redirect or show next step
-    // window.location.href = "/chat.html";
-
-  } catch(e){
+    messageEl.textContent = `✅ Successfully signed up as ${isVIP ? 'VIP' : 'Host'}!`;
+  } catch(e) {
     console.error(e);
-    messageEl.textContent = 'Signup failed. Try again.';
+    messageEl.textContent = '❌ Signup failed. Please try again.';
   }
 });
 </script>
+</body>
+</html>
