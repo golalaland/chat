@@ -242,6 +242,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // --------- UI Elements ---------
+// --------- UI Elements ---------
 const vipToggle = document.getElementById('vipToggle');
 const vipLabel = document.getElementById('vipLabel');
 const vipMessage = document.getElementById('vipMessage');
@@ -253,11 +254,19 @@ const messageEl = document.getElementById('message');
 const nameInput = document.getElementById('name');
 const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
+
+// ✅ 1. Get the "host" from URL (this will be from the invite link)
+const urlParams = new URLSearchParams(window.location.search);
+const hostUsername = urlParams.get('host') || '';  // can be email, uid, etc.
+
+// ✅ 2. Display the host name dynamically in the header
 document.getElementById('host-username').textContent = hostUsername || 'Main';
-let isVIP = false;
-let gender = '';
-const hostUsername = new URLSearchParams(window.location.search).get('host') || '';
-const hostLink = hostUsername ? `https://golalaland.github.io/chat/signup/signup?host=${hostUsername}` : '';
+
+// ✅ 3. Construct referral link for Firestore tracking
+const hostLink = hostUsername
+  ? `https://golalaland.github.io/chat/signup2222.html?host=${encodeURIComponent(hostUsername)}`
+  : '';
+
 const invitedBy = hostUsername || null;
 
 // --------- UI Logic ---------
