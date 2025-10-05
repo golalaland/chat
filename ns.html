@@ -700,7 +700,7 @@ const renderTabContent = (type) => {
         <button id="copyVipLink" class="themed-btn">Copy Link</button>
       </div>`;
     document.getElementById('copyVipLink')?.addEventListener('click', ()=>{
-      const link = `https://golalaland.github.io/chat/signup2222.html/ref/${currentUser.uid}`;
+      const link = `https://golalaland.github.io/chat/signup2222.html?ref=${encodeURIComponent(currentUser.uid)}`;
       navigator.clipboard.writeText(link)
         .then(()=>showThemedMessage('Copied!', 'VIP link copied.', 1500))
         .catch(()=>showThemedMessage('Error', 'Failed to copy link.',1800));
