@@ -533,15 +533,27 @@ const db = getFirestore(app);
 // ------------------- Update Host Stats -------------------
 const updateHostStats = async (newUser) => {
   const referrerId = newUser.invitedBy;
-  if (!referrerId) return; // no host to update
+  console.log('updateHostStats called for:', newUser.email, 'invitedBy:', referrerId);
 
-  const hostRef = doc(db, 'users', referrerId.replace(/[.#$[\]]/g, ','));
+  if (!referrerId) {
+    console.warn('No referrer for this user.');
+    return; // no host to update
+  }
+
+  const sanitizedId = referrerId.replace(/[.#$[\]]/g, ',');
+  const hostRef = doc(db, 'users', sanitizedId);
+  console.log('Looking up host with ID:', sanitizedId);
+
   try {
     await runTransaction(db, async (t) => {
       const hostSnap = await t.get(hostRef);
-      if (!hostSnap.exists()) return;
+      if (!hostSnap.exists()) {
+        console.warn('Host doc not found:', sanitizedId);
+        return;
+      }
 
       const hostData = hostSnap.data();
+      console.log('Host data before update:', hostData);
 
       // Add new user to friends list if not already there
       const friends = hostData.hostFriends || [];
@@ -562,6 +574,8 @@ const updateHostStats = async (newUser) => {
         hostFriends: friends,
         hostVIP: newVIP
       });
+
+      console.log('Host updated. New VIP:', newVIP, 'New friends list:', friends);
     });
   } catch (err) {
     console.error('Failed to update host stats:', err);
