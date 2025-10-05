@@ -692,6 +692,7 @@ const updateHostPanels = () => {
 
 const renderTabContent = (type) => {
   DOM.tabContent.innerHTML = '';
+
   if (type === 'vip') {
     DOM.tabContent.innerHTML = `
       <div class="stat-block">
@@ -705,8 +706,50 @@ const renderTabContent = (type) => {
         .then(()=>showThemedMessage('Copied!', 'VIP link copied.', 1500))
         .catch(()=>showThemedMessage('Error', 'Failed to copy link.',1800));
     });
+
   } else if (type === 'friends') {
-    DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value">${formatNumber(currentUser.hostFriends?.length||0)}</div><div class="stat-label">Friends Invited</div></div>`;
+    const friends = currentUser.hostFriends || [];
+
+    if (!friends.length) {
+      DOM.tabContent.innerHTML = '<div class="stat-block"><div style="text-align:center;color:#555;">No friends yet</div></div>';
+      return;
+    }
+
+    // Optional: sort VIPs first, then hosts
+    friends.sort((a,b)=>{
+      if (a.isVIP && !b.isVIP) return -1;
+      if (!a.isVIP && b.isVIP) return 1;
+      if (a.isHost && !b.isHost) return -1;
+      if (!a.isHost && b.isHost) return 1;
+      return 0;
+    });
+
+    // Add total friends count
+    const countBlock = document.createElement('div');
+    countBlock.className = 'stat-block';
+    countBlock.style.textAlign = 'center';
+    countBlock.style.padding = '6px';
+    countBlock.style.fontWeight = 'bold';
+    countBlock.textContent = `Total Friends: ${friends.length}`;
+    DOM.tabContent.appendChild(countBlock);
+
+    friends.forEach(f => {
+      const name = f.chatId || f.email || 'Guest';
+      const typeLabel = f.isVIP ? 'VIP' : (f.isHost ? 'HOST' : 'Friend');
+
+      const block = document.createElement('div');
+      block.className = 'stat-block';
+      block.style.display = 'flex';
+      block.style.justifyContent = 'space-between';
+      block.style.padding = '6px 12px';
+      block.style.borderBottom = '1px solid #eee';
+      block.innerHTML = `
+        <div>${name}</div>
+        <div style="font-weight:bold; color: var(--theme-solid)">${typeLabel}</div>
+      `;
+      DOM.tabContent.appendChild(block);
+    });
+
   } else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/svg/492657/crown';
     DOM.tabContent.innerHTML = `<div class="stat-block"><img src="${badgeImg}" style="width:100px;height:100px;"><div class="stat-value">${currentUser.hostBadge || 'Gold'}</div><div class="stat-label">Badge Status</div></div>`;
