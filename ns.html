@@ -781,16 +781,29 @@ const renderTabContent = (type) => {
   DOM.tabContent.innerHTML = '';
   if (!currentUser?.isHost) return;
 
-  // ===== VIP TAB =====
-  if (type === 'vip') {
-    const vipCount = currentUser.hostVIP || 0;
+  // ===== VIP TAB (Live Firestore Count) =====
+if (type === 'vip') {
+  const vipRef = collection(db, "users");
+  const vipQuery = query(vipRef, where("referredBy", "==", currentUser.uid), where("isVIP", "==", true));
+
+  onSnapshot(vipQuery, (snapshot) => {
+    const vipCount = snapshot.size;
     DOM.tabContent.innerHTML = `
       <div class="stat-block" style="margin-bottom:12px;">
-        <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+        <div class="stat-value" id="vip-stat">${vipCount}</div>
         <div class="stat-label">VIPs Signed Up</div>
         <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
       </div>
     `;
+
+    document.getElementById('copyVipLink')?.addEventListener('click', () => {
+      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
+      navigator.clipboard.writeText(link)
+        .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
+        .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
+    });
+  });
+}
     document.getElementById('copyVipLink')?.addEventListener('click', () => {
       const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
       navigator.clipboard.writeText(link)
