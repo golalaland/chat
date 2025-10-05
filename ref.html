@@ -329,7 +329,7 @@ submitBtn.addEventListener('click', async ()=>{
     isVIP,
     isHost: !isVIP,
     hostLink: !isVIP ? hostLink : null,
-    invitedBy: referrer || null,
+    refHost: referrer || null,   // ✅ this field connects VIPs → Host
     email,
     phone,
     gender,
