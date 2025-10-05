@@ -378,6 +378,31 @@ header {
   border-radius: 6px;
 }
 
+.friends-list {
+  display: flex;
+  flex-wrap: wrap; /* or flex-wrap: nowrap for horizontal scrolling */
+  gap: 12px;
+  overflow-x: auto; /* horizontal scroll if nowrap */
+  padding-bottom: 10px;
+}
+
+.friend-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 10px;
+  min-width: 160px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.friend-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
 /* ---------- MODAL ---------- */
 #confirmModal {
   position: fixed;
@@ -783,7 +808,7 @@ function renderFriendsList(container, friends) {
   container.innerHTML = '';
 
   if (!friends || friends.length === 0) {
-    container.innerHTML = `<div class="muted">No friends yet.</div>`;
+    container.innerHTML = `<div class="muted">No friends yet 😔</div>`;
     return;
   }
 
@@ -796,7 +821,8 @@ function renderFriendsList(container, friends) {
     return 0;
   });
 
-  const fragment = document.createDocumentFragment();
+  const list = document.createElement('div');
+  list.className = 'friends-list';
 
   sortedFriends.forEach(f => {
     const name = f.chatId || f.email?.split('@')[0] || 'Guest';
@@ -822,14 +848,12 @@ function renderFriendsList(container, friends) {
           <div style="font-size:0.85rem;color:#888;">${handle}</div>
         </div>
       </div>
-      <div style="height:1px;width:100%;background:#e5e5e5;margin:10px 0;"></div>
     `;
-    fragment.appendChild(block);
+    list.appendChild(block);
   });
 
-  container.appendChild(fragment);
+  container.appendChild(list);
 }
-
 // ---------- TAB CONTENT RENDER ----------
 const renderTabContent = (type) => {
   if (!currentUser?.isHost) return;
