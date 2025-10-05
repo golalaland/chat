@@ -13,9 +13,7 @@
   --input-border: #333;
   --vip-color: gold;
 }
-
 * { box-sizing:border-box; margin:0; padding:0; }
-
 body {
   background: var(--background-color);
   color: var(--text-color);
@@ -25,7 +23,6 @@ body {
   align-items:center;
   padding:1rem;
 }
-
 .video-container {
   width:100%;
   max-width:430px;
@@ -34,7 +31,6 @@ body {
   margin-bottom:1rem;
   aspect-ratio:16/9;
 }
-
 iframe {
   width:100%;
   height:100%;
@@ -42,27 +38,23 @@ iframe {
   border-radius:15px;
   border:none;
 }
-
 h2 {
   font-size:1.4rem;
   color:var(--primary-color);
   margin-bottom:0.25rem;
   text-align:center;
 }
-
 #host-info {
   font-size:0.85rem;
   color:#aaa;
   text-align:center;
   margin-bottom:1rem;
 }
-
 .form-group {
   width:90%;
   max-width:400px;
   margin-bottom:0.7rem;
 }
-
 .form-group input {
   width:100%;
   padding:0.65rem 1rem;
@@ -73,13 +65,10 @@ h2 {
   font-size:0.9rem;
   outline:none;
 }
-
 .form-group input:focus {
   border-color: var(--primary-color);
   box-shadow:0 0 8px rgba(255,64,129,0.5);
 }
-
-/* Gender buttons */
 .gender-label { text-align:center; font-weight:600; margin-bottom:0.3rem; }
 .gender-select {
   display:flex;
@@ -87,7 +76,6 @@ h2 {
   gap:15px;
   margin-bottom:1rem;
 }
-
 .gender-select button {
   width:50px;
   height:50px;
@@ -101,18 +89,14 @@ h2 {
   box-shadow:0 6px #000;
   transition:0.2s;
 }
-
 .gender-select button:active {
   transform:translateY(3px);
   box-shadow:0 2px #000;
 }
-
 .gender-select button.selected {
   background:var(--primary-color);
   box-shadow:0 0 15px var(--primary-color);
 }
-
-/* VIP Toggle */
 .vip-label {
   text-align:center;
   font-weight:bold;
@@ -121,7 +105,6 @@ h2 {
   color:#aaa;
   transition:0.3s;
 }
-
 .vip-toggle {
   width:80px;
   height:36px;
@@ -132,7 +115,6 @@ h2 {
   margin:0 auto 0.5rem auto;
   transition:0.3s;
 }
-
 .vip-toggle .vip-circle {
   width:34px;
   height:34px;
@@ -143,13 +125,11 @@ h2 {
   top:1px;
   transition:0.3s;
 }
-
 .vip-toggle.on .vip-circle {
   left:45px;
   background:gold;
   box-shadow:0 0 12px gold;
 }
-
 .vip-message {
   text-align:center;
   font-size:0.8rem;
@@ -158,13 +138,10 @@ h2 {
   transition:0.3s;
   margin-bottom:1rem;
 }
-
 .vip-label.on {
   color:gold;
   text-shadow:0 0 8px gold;
 }
-
-/* Submit Button */
 .submit-btn {
   width:50%;
   padding:0.65rem;
@@ -178,9 +155,7 @@ h2 {
   margin-bottom:1rem;
   transition:0.2s;
 }
-
 .submit-btn:hover { transform:scale(1.03); }
-
 .message {
   text-align:center;
   font-size:0.85rem;
@@ -236,7 +211,6 @@ const db = getFirestore(app);
 // --- UI Elements ---
 let isVIP = false;
 let gender = '';
-
 const vipToggle = document.getElementById('vipToggle');
 const vipLabel = document.getElementById('vipLabel');
 const vipMessage = document.getElementById('vipMessage');
@@ -277,15 +251,36 @@ maleBtn.addEventListener('click', () => {
   femaleBtn.classList.remove('selected');
 });
 
-// --- Helper ---
+// --- Helper Functions ---
 function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
-function cleanChatId(input){
-  return input.toLowerCase().replace(/[^a-z0-9_]/g, '');
-}
+function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
 async function isChatIdTaken(chatId) {
   const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
   const snapshot = await getDocs(q);
   return !snapshot.empty;
+}
+
+// --- Update Host Stats ---
+async function updateHostStats(userData) {
+  if(!userData.refHost) return;
+  try {
+    const hostDoc = doc(db, 'users', sanitizeKey(userData.refHost));
+    const hostSnap = await getDoc(hostDoc);
+    if(!hostSnap.exists()) return;
+
+    const hostData = hostSnap.data();
+    const newHostFriends = (hostData.hostFriends || 0) + 1;
+    const newHostVIP = userData.isVIP
+      ? (hostData.hostVIP || 0) + 1
+      : hostData.hostVIP || 0;
+
+    await updateDoc(hostDoc, {
+      hostFriends: newHostFriends,
+      hostVIP: newHostVIP
+    });
+  } catch(e){
+    console.error('Error updating host stats:', e);
+  }
 }
 
 // --- Submit Logic ---
@@ -329,7 +324,7 @@ submitBtn.addEventListener('click', async ()=>{
     isVIP,
     isHost: !isVIP,
     hostLink: !isVIP ? hostLink : null,
-    refHost: referrer || null,   // ✅ this field connects VIPs → Host
+    refHost: referrer || null,
     email,
     phone,
     gender,
@@ -340,8 +335,10 @@ submitBtn.addEventListener('click', async ()=>{
     if(!userSnap.exists()) await setDoc(userRef, userData);
     else await updateDoc(userRef, userData);
 
-    localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
+    // ✅ Update host stats automatically
+    await updateHostStats(userData);
 
+    localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
     messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
   } catch(e) {
     console.error(e);
