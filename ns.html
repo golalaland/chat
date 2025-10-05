@@ -755,7 +755,6 @@ const updateHostPanels = () => {
 
 const renderTabContent = (type) => {
   DOM.tabContent.innerHTML = '';
-
   if (!currentUser?.isHost) return;
 
   if (type === 'vip') {
@@ -773,41 +772,47 @@ const renderTabContent = (type) => {
         .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
         .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
     });
+  }
 
-  // Clear the tab first
-DOM.tabContent.innerHTML = '';
+  else if (type === 'friends') {
+    const friends = currentUser.hostFriends || [];
 
-// Sort friends however you like
-const sortedFriends = friends.sort((a, b) => {
-  if (a.isVIP && !b.isVIP) return -1;
-  if (!a.isVIP && b.isVIP) return 1;
-  return 0;
-});
+    if (friends.length === 0) {
+      DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
+      return;
+    }
 
-// Create a document fragment to batch DOM updates
-const fragment = document.createDocumentFragment();
+    // Sort by VIP > Host > Normal
+    const sortedFriends = friends.sort((a, b) => {
+      if (a.isVIP && !b.isVIP) return -1;
+      if (!a.isVIP && b.isVIP) return 1;
+      if (a.isHost && !b.isHost) return -1;
+      if (!a.isHost && b.isHost) return 1;
+      return 0;
+    });
 
-sortedFriends.forEach(f => {
-  const name = f.chatId || f.email || 'Guest';
-  let typeLabel = 'Friend';
-  if (f.isVIP) typeLabel = 'VIP';
-  else if (f.isHost) typeLabel = 'HOST';
+    const fragment = document.createDocumentFragment();
 
-  const block = document.createElement('div');
-  block.className = 'stat-block';
-  block.style.marginBottom = '8px';
-  block.innerHTML = `
-    <div class="stat-value">${name}</div>
-    <div class="stat-label" style="color: var(--theme-solid); font-weight:bold;">${typeLabel}</div>
-  `;
+    sortedFriends.forEach(f => {
+      const name = f.chatId || f.email || 'Guest';
+      let typeLabel = 'Friend';
+      if (f.isVIP) typeLabel = 'VIP';
+      else if (f.isHost) typeLabel = 'HOST';
 
-  fragment.appendChild(block);
-});
+      const block = document.createElement('div');
+      block.className = 'stat-block';
+      block.style.marginBottom = '8px';
+      block.innerHTML = `
+        <div class="stat-value">${name}</div>
+        <div class="stat-label" style="color: var(--theme-solid); font-weight:bold;">${typeLabel}</div>
+      `;
+      fragment.appendChild(block);
+    });
 
-// Append everything at once — much faster
-DOM.tabContent.appendChild(fragment);
+    DOM.tabContent.appendChild(fragment);
+  }
 
-  } else if (type === 'badges') {
+  else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/svg/492657/crown';
     DOM.tabContent.innerHTML = `
       <div class="stat-block">
