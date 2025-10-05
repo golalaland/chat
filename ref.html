@@ -247,14 +247,13 @@ const nameInput = document.getElementById('name');
 const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
 
-// --- Host Referral Logic ---
+// --- Capture Referral from URL ---
 const urlParams = new URLSearchParams(window.location.search);
-const hostUsername = urlParams.get('host') || '';
-document.getElementById('host-username').textContent = hostUsername || 'Main';
-const invitedBy = hostUsername || null;
-const hostLink = hostUsername
-  ? `https://golalaland.github.io/chat/ref.html?host=${encodeURIComponent(hostUsername)}`
-  : '';
+const referrer = urlParams.get('ref') || null;
+document.getElementById('host-username').textContent = referrer || 'Main';
+const hostLink = referrer
+  ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(referrer)}`
+  : null;
 
 // --- VIP Toggle ---
 vipToggle.addEventListener('click', () => {
@@ -312,8 +311,8 @@ submitBtn.addEventListener('click', async ()=>{
     isAdmin: false,
     isVIP,
     isHost: !isVIP,
-    hostLink: isVIP ? null : hostLink,
-    invitedBy,
+    hostLink: !isVIP ? hostLink : null,
+    invitedBy: referrer || null,
     email,
     phone,
     gender,
