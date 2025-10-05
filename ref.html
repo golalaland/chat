@@ -14,6 +14,8 @@
   --vip-color: gold;
 }
 
+* { box-sizing:border-box; margin:0; padding:0; }
+
 body {
   background: var(--background-color);
   color: var(--text-color);
@@ -24,57 +26,179 @@ body {
   padding:1rem;
 }
 
-.video-container { width:100%; max-width:430px; border-radius:15px; overflow:hidden; margin-bottom:1rem; aspect-ratio:16/9; }
-iframe { width:100%; height:100%; object-fit:cover; border:none; border-radius:15px; }
+.video-container {
+  width:100%;
+  max-width:430px;
+  border-radius:15px;
+  overflow:hidden;
+  margin-bottom:1rem;
+  aspect-ratio:16/9;
+}
 
-h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
-#host-info { font-size:0.85rem; color:#aaa; text-align:center; margin-bottom:1rem; }
+iframe {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:15px;
+  border:none;
+}
 
-.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; }
+h2 {
+  font-size:1.4rem;
+  color:var(--primary-color);
+  margin-bottom:0.25rem;
+  text-align:center;
+}
+
+#host-info {
+  font-size:0.85rem;
+  color:#aaa;
+  text-align:center;
+  margin-bottom:1rem;
+}
+
+.form-group {
+  width:90%;
+  max-width:400px;
+  margin-bottom:0.7rem;
+}
+
 .form-group input {
-  width:100%; padding:0.65rem 1rem; border-radius:30px;
-  border:1px solid var(--input-border); background:var(--input-bg);
-  color:var(--text-color); font-size:0.9rem; outline:none;
+  width:100%;
+  padding:0.65rem 1rem;
+  border-radius:30px;
+  border:1px solid var(--input-border);
+  background:var(--input-bg);
+  color:var(--text-color);
+  font-size:0.9rem;
+  outline:none;
 }
-.form-group input:focus { border-color:var(--primary-color); box-shadow:0 0 8px rgba(255,64,129,0.5); }
 
+.form-group input:focus {
+  border-color: var(--primary-color);
+  box-shadow:0 0 8px rgba(255,64,129,0.5);
+}
+
+/* Gender buttons */
 .gender-label { text-align:center; font-weight:600; margin-bottom:0.3rem; }
-.gender-select { display:flex; justify-content:center; gap:15px; margin-bottom:1rem; }
+.gender-select {
+  display:flex;
+  justify-content:center;
+  gap:15px;
+  margin-bottom:1rem;
+}
+
 .gender-select button {
-  width:50px; height:50px; border-radius:50%; border:none;
-  background:#333; color:#eee; font-weight:bold; font-size:1rem;
-  cursor:pointer; box-shadow:0 6px #000; transition:0.2s;
+  width:50px;
+  height:50px;
+  border-radius:50%;
+  border:none;
+  background:#333;
+  color:#eee;
+  font-weight:bold;
+  font-size:1rem;
+  cursor:pointer;
+  box-shadow:0 6px #000;
+  transition:0.2s;
 }
-.gender-select button:active { transform:translateY(3px); box-shadow:0 2px #000; }
-.gender-select button.selected { background:var(--primary-color); box-shadow:0 0 15px var(--primary-color); }
 
-.vip-label { text-align:center; font-weight:bold; font-size:1rem; margin-bottom:0.3rem; color:#aaa; transition:0.3s; }
-.vip-toggle { width:80px; height:36px; border-radius:18px; background:#444; position:relative; cursor:pointer; margin:0 auto 0.5rem auto; transition:0.3s; }
-.vip-toggle .vip-circle { width:34px; height:34px; border-radius:50%; background:#555; position:absolute; left:1px; top:1px; transition:0.3s; }
-.vip-toggle.on .vip-circle { left:45px; background:gold; box-shadow:0 0 12px gold; }
-.vip-message { text-align:center; font-size:0.8rem; color:gold; opacity:0; transition:0.3s; margin-bottom:1rem; }
-.vip-label.on { color:gold; text-shadow:0 0 8px gold; }
+.gender-select button:active {
+  transform:translateY(3px);
+  box-shadow:0 2px #000;
+}
 
+.gender-select button.selected {
+  background:var(--primary-color);
+  box-shadow:0 0 15px var(--primary-color);
+}
+
+/* VIP Toggle */
+.vip-label {
+  text-align:center;
+  font-weight:bold;
+  font-size:1rem;
+  margin-bottom:0.3rem;
+  color:#aaa;
+  transition:0.3s;
+}
+
+.vip-toggle {
+  width:80px;
+  height:36px;
+  border-radius:18px;
+  background:#444;
+  position:relative;
+  cursor:pointer;
+  margin:0 auto 0.5rem auto;
+  transition:0.3s;
+}
+
+.vip-toggle .vip-circle {
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#555;
+  position:absolute;
+  left:1px;
+  top:1px;
+  transition:0.3s;
+}
+
+.vip-toggle.on .vip-circle {
+  left:45px;
+  background:gold;
+  box-shadow:0 0 12px gold;
+}
+
+.vip-message {
+  text-align:center;
+  font-size:0.8rem;
+  color:gold;
+  opacity:0;
+  transition:0.3s;
+  margin-bottom:1rem;
+}
+
+.vip-label.on {
+  color:gold;
+  text-shadow:0 0 8px gold;
+}
+
+/* Submit Button */
 .submit-btn {
-  width:50%; padding:0.65rem; border:none; border-radius:30px;
-  font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color);
-  cursor:pointer; margin-bottom:1rem; transition:0.2s;
+  width:50%;
+  padding:0.65rem;
+  border:none;
+  border-radius:30px;
+  font-weight:bold;
+  font-size:0.9rem;
+  color:#fff;
+  background:var(--primary-color);
+  cursor:pointer;
+  margin-bottom:1rem;
+  transition:0.2s;
 }
+
 .submit-btn:hover { transform:scale(1.03); }
-.message { text-align:center; font-size:0.85rem; min-height:20px; }
+
+.message {
+  text-align:center;
+  font-size:0.85rem;
+  min-height:20px;
+}
 </style>
 </head>
 <body>
 
 <div class="video-container">
-  <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+  <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Promo Video" allowfullscreen></iframe>
 </div>
 
 <h2>VIP / Host Signup</h2>
 <p id="host-info">You're in <span id="host-username">Main</span>'s VIP Tab</p>
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
-<div class="form-group"><input id="chatId" type="text" placeholder="Preferred Chat Name (e.g. @queenB)"></div>
+<div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name (no @ or $)"></div>
 <div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 
@@ -93,7 +217,9 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Config ---
 const firebaseConfig = {
@@ -119,15 +245,17 @@ const maleBtn = document.getElementById('maleBtn');
 const submitBtn = document.getElementById('submitBtn');
 const messageEl = document.getElementById('message');
 const nameInput = document.getElementById('name');
-const chatInput = document.getElementById('chatId');
+const chatIdInput = document.getElementById('chatId');
 const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
 
-// --- Capture Referral ---
+// --- Capture Referral from URL ---
 const urlParams = new URLSearchParams(window.location.search);
 const referrer = urlParams.get('ref') || null;
 document.getElementById('host-username').textContent = referrer || 'Main';
-const hostLink = referrer ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(referrer)}` : null;
+const hostLink = referrer
+  ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(referrer)}`
+  : null;
 
 // --- VIP Toggle ---
 vipToggle.addEventListener('click', () => {
@@ -138,26 +266,47 @@ vipToggle.addEventListener('click', () => {
 });
 
 // --- Gender Buttons ---
-femaleBtn.addEventListener('click', () => { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
-maleBtn.addEventListener('click', () => { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
+femaleBtn.addEventListener('click', () => {
+  gender = 'Female';
+  femaleBtn.classList.add('selected');
+  maleBtn.classList.remove('selected');
+});
+maleBtn.addEventListener('click', () => {
+  gender = 'Male';
+  maleBtn.classList.add('selected');
+  femaleBtn.classList.remove('selected');
+});
 
 // --- Helper ---
 function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
+function cleanChatId(input){
+  return input.toLowerCase().replace(/[^a-z0-9_]/g, '');
+}
+async function isChatIdTaken(chatId) {
+  const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
+}
 
 // --- Submit Logic ---
 submitBtn.addEventListener('click', async ()=>{
   const fullName = nameInput.value.trim();
-  const chatId = chatInput.value.trim() || fullName.split(' ')[0] || emailInput.value.split('@')[0];
+  const chatId = cleanChatId(chatIdInput.value.trim());
   const phone = phoneInput.value.trim();
   const email = emailInput.value.trim().toLowerCase();
 
-  if(!fullName || !phone || !email || !gender){
+  if(!fullName || !chatId || !phone || !email || !gender){
     messageEl.textContent = 'Please fill in all fields.';
     return;
   }
 
   if(!isVIP && gender !== 'Female'){
     messageEl.textContent = 'Only females can sign up as hosts.';
+    return;
+  }
+
+  if(await isChatIdTaken(chatId)){
+    messageEl.textContent = 'That chat name is already taken. Try another one ✨';
     return;
   }
 
@@ -170,6 +319,7 @@ submitBtn.addEventListener('click', async ()=>{
   const userData = {
     chatId,
     chatIdLower: chatId.toLowerCase(),
+    fullName,
     stars: 50,
     starsToday: 0,
     lastStarDate: new Date().toISOString().split("T")[0],
@@ -190,8 +340,9 @@ submitBtn.addEventListener('click', async ()=>{
     if(!userSnap.exists()) await setDoc(userRef, userData);
     else await updateDoc(userRef, userData);
 
-    localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
-    messageEl.textContent = `✅ Welcome ${chatId}! Signed up as ${isVIP ? 'VIP' : 'Host'}!`;
+    localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
+
+    messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
   } catch(e) {
     console.error(e);
     messageEl.textContent = '❌ Signup failed. Please try again.';
