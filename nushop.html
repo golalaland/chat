@@ -1066,7 +1066,72 @@ const renderShop = async () => {
     hideLoader(); // Hide spinner after render
   }
 };
+// ===================== TAB SWITCHING =====================
 
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    const tabType = e.target.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+
+    // Hide all sections first
+    DOM.tabContent.style.display = 'none';
+    DOM.ordersContent.style.display = 'none';
+    DOM.shopItems.style.display = 'none';
+
+    if (tabType === 'shop') {
+      DOM.shopItems.style.display = 'grid';
+      await renderShop();
+    } 
+    else if (tabType === 'orders') {
+      DOM.ordersContent.style.display = 'block';
+      await renderOrders();
+    } 
+    else {
+      DOM.tabContent.style.display = 'block';
+      renderTabContent(tabType);
+    }
+  });
+});
+
+// ===================== RENDER ORDERS =====================
+
+async function renderOrders() {
+  if (!currentUser?.email) {
+    DOM.ordersList.innerHTML = `<div class="muted">No orders available.</div>`;
+    return;
+  }
+
+  const ordersRef = collection(db, "orders");
+  const q = query(ordersRef, where("buyerEmail", "==", currentUser.email), orderBy("timestamp", "desc"));
+
+  onSnapshot(q, (snapshot) => {
+    if (snapshot.empty) {
+      DOM.ordersList.innerHTML = `<div class="muted">You haven’t bought anything yet.</div>`;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      const item = document.createElement("div");
+      item.classList.add("stat-block");
+      item.innerHTML = `
+        <div class="stat-value">${data.itemName || "Unnamed Item"}</div>
+        <div class="stat-label">Price: ₦${formatNumber(data.price || 0)}</div>
+        <div class="muted">${data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "Pending"}</div>
+      `;
+      fragment.appendChild(item);
+    });
+
+    DOM.ordersList.innerHTML = "";
+    DOM.ordersList.appendChild(fragment);
+  });
+}
+
+// ===================== INITIAL LOAD =====================
+window.addEventListener("DOMContentLoaded", loadCurrentUser);
 // ---------- Init ----------
 window.addEventListener('DOMContentLoaded',()=>{ loadCurrentUser().catch(err=>console.error(err)); });
 </script> 
