@@ -778,7 +778,10 @@ const updateHostPanels = () => {
 };
 
 // ---------- FRIENDS HELPER ----------
+// ---------- Render Friends List ----------
 function renderFriendsList(container, friends) {
+  container.innerHTML = '';
+
   if (!friends || friends.length === 0) {
     container.innerHTML = `<div class="muted">No friends yet.</div>`;
     return;
@@ -824,7 +827,6 @@ function renderFriendsList(container, friends) {
     fragment.appendChild(block);
   });
 
-  container.innerHTML = '';
   container.appendChild(fragment);
 }
 
