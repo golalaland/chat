@@ -775,51 +775,53 @@ const renderTabContent = (type) => {
     });
 
   } else if (type === 'friends') {
-    const friends = currentUser.hostFriends || [];
+  const friends = currentUser.hostFriends || [];
+  DOM.tabContent.innerHTML = ''; // clear previous content
 
-    const countBlock = document.createElement('div');
-    countBlock.className = 'stat-block';
-    countBlock.style.textAlign = 'center';
-    countBlock.style.padding = '6px';
-    countBlock.style.fontWeight = 'bold';
-    countBlock.textContent = `Total Friends: ${friends.length}`;
-    DOM.tabContent.appendChild(countBlock);
+  // Total Friends count at the top
+  const totalBlock = document.createElement('div');
+  totalBlock.className = 'stat-block';
+  totalBlock.style.marginBottom = '12px';
+  totalBlock.innerHTML = `
+    <div class="stat-value">${friends.length}</div>
+    <div class="stat-label">Friends Invited</div>
+  `;
+  DOM.tabContent.appendChild(totalBlock);
 
-    if (!friends.length) {
-      const noFriends = document.createElement('div');
-      noFriends.className = 'stat-block';
-      noFriends.style.textAlign = 'center';
-      noFriends.style.color = '#555';
-      noFriends.textContent = 'No friends yet';
-      DOM.tabContent.appendChild(noFriends);
-      return;
-    }
+  if (!friends.length) {
+    const noFriends = document.createElement('div');
+    noFriends.className = 'stat-block';
+    noFriends.style.textAlign = 'center';
+    noFriends.style.color = '#555';
+    noFriends.textContent = 'No friends yet';
+    DOM.tabContent.appendChild(noFriends);
+    return;
+  }
 
-    // Sort VIPs first, then hosts
-    friends.sort((a, b) => {
-      if (a.isVIP && !b.isVIP) return -1;
-      if (!a.isVIP && b.isVIP) return 1;
-      if (a.isHost && !b.isHost) return -1;
-      if (!a.isHost && b.isHost) return 1;
-      return 0;
-    });
+  // Sort VIPs first, then hosts
+  friends.sort((a, b) => {
+    if (a.isVIP && !b.isVIP) return -1;
+    if (!a.isVIP && b.isVIP) return 1;
+    if (a.isHost && !b.isHost) return -1;
+    if (!a.isHost && b.isHost) return 1;
+    return 0;
+  });
 
-    friends.forEach(f => {
-      const name = f.chatId || f.email || 'Guest';
-      const typeLabel = f.isVIP ? 'VIP' : (f.isHost ? 'HOST' : 'Friend');
+  // Render each friend with the same style as VIP count
+  friends.forEach(f => {
+    const name = f.chatId || f.email || 'Guest';
+    const typeLabel = f.isVIP ? 'VIP' : (f.isHost ? 'HOST' : 'Friend');
 
-      const block = document.createElement('div');
-      block.className = 'stat-block';
-      block.style.display = 'flex';
-      block.style.justifyContent = 'space-between';
-      block.style.padding = '6px 12px';
-      block.style.borderBottom = '1px solid #eee';
-      block.innerHTML = `
-        <div>${name}</div>
-        <div style="font-weight:bold; color: var(--theme-solid)">${typeLabel}</div>
-      `;
-      DOM.tabContent.appendChild(block);
-    });
+    const block = document.createElement('div');
+    block.className = 'stat-block';
+    block.style.marginBottom = '8px';
+    block.innerHTML = `
+      <div class="stat-value">${name}</div>
+      <div class="stat-label" style="color: var(--theme-solid); font-weight:bold;">${typeLabel}</div>
+    `;
+    DOM.tabContent.appendChild(block);
+  });
+}
 
   } else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/svg/492657/crown';
