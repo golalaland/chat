@@ -530,6 +530,44 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// ------------------- Update Host Stats -------------------
+const updateHostStats = async (newUser) => {
+  const referrerId = newUser.invitedBy;
+  if (!referrerId) return; // no host to update
+
+  const hostRef = doc(db, 'users', referrerId.replace(/[.#$[\]]/g, ','));
+  try {
+    await runTransaction(db, async (t) => {
+      const hostSnap = await t.get(hostRef);
+      if (!hostSnap.exists()) return;
+
+      const hostData = hostSnap.data();
+
+      // Add new user to friends list if not already there
+      const friends = hostData.hostFriends || [];
+      if (!friends.find(f => f.email === newUser.email)) {
+        friends.push({
+          email: newUser.email,
+          chatId: newUser.chatId || '',
+          isVIP: newUser.isVIP || false,
+          isHost: newUser.isHost || false
+        });
+      }
+
+      // Increment VIP count if new user is VIP
+      const hostVIP = hostData.hostVIP || 0;
+      const newVIP = newUser.isVIP ? hostVIP + 1 : hostVIP;
+
+      t.update(hostRef, {
+        hostFriends: friends,
+        hostVIP: newVIP
+      });
+    });
+  } catch (err) {
+    console.error('Failed to update host stats:', err);
+  }
+};
+
 // ---------- DOM References ----------
 const DOM = {
   username: document.getElementById('username'),
@@ -664,6 +702,17 @@ const loadCurrentUser = async () => {
   DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
   updateHostPanels();
 
+if (currentUser) {
+  // If user has a referrer (invitedBy), update their host stats
+  const newUserData = {
+    email: currentUser.email || '',
+    chatId: currentUser.chatId || '',
+    isVIP: currentUser.isVIP || false,
+    isHost: currentUser.isHost || false,
+    invitedBy: currentUser.invitedBy || null
+  };
+  await updateHostStats(newUserData);
+}
   await renderShop();
 
   onSnapshot(userRef, docSnap => {
@@ -693,38 +742,27 @@ const updateHostPanels = () => {
 const renderTabContent = (type) => {
   DOM.tabContent.innerHTML = '';
 
+  if (!currentUser?.isHost) return;
+
   if (type === 'vip') {
+    const vipCount = currentUser.hostVIP || 0;
     DOM.tabContent.innerHTML = `
-      <div class="stat-block">
-        <div class="stat-value" id="vip-stat">${formatNumber(currentUser.hostVIP || 0)}</div>
+      <div class="stat-block" style="margin-bottom:12px;">
+        <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
         <div class="stat-label">VIPs Signed Up</div>
-        <button id="copyVipLink" class="themed-btn">Copy Link</button>
-      </div>`;
-    document.getElementById('copyVipLink')?.addEventListener('click', ()=>{
+        <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
+      </div>
+    `;
+    document.getElementById('copyVipLink')?.addEventListener('click', () => {
       const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
       navigator.clipboard.writeText(link)
-        .then(()=>showThemedMessage('Copied!', 'VIP link copied.', 1500))
-        .catch(()=>showThemedMessage('Error', 'Failed to copy link.',1800));
+        .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
+        .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
     });
 
   } else if (type === 'friends') {
     const friends = currentUser.hostFriends || [];
 
-    if (!friends.length) {
-      DOM.tabContent.innerHTML = '<div class="stat-block"><div style="text-align:center;color:#555;">No friends yet</div></div>';
-      return;
-    }
-
-    // Optional: sort VIPs first, then hosts
-    friends.sort((a,b)=>{
-      if (a.isVIP && !b.isVIP) return -1;
-      if (!a.isVIP && b.isVIP) return 1;
-      if (a.isHost && !b.isHost) return -1;
-      if (!a.isHost && b.isHost) return 1;
-      return 0;
-    });
-
-    // Add total friends count
     const countBlock = document.createElement('div');
     countBlock.className = 'stat-block';
     countBlock.style.textAlign = 'center';
@@ -732,6 +770,25 @@ const renderTabContent = (type) => {
     countBlock.style.fontWeight = 'bold';
     countBlock.textContent = `Total Friends: ${friends.length}`;
     DOM.tabContent.appendChild(countBlock);
+
+    if (!friends.length) {
+      const noFriends = document.createElement('div');
+      noFriends.className = 'stat-block';
+      noFriends.style.textAlign = 'center';
+      noFriends.style.color = '#555';
+      noFriends.textContent = 'No friends yet';
+      DOM.tabContent.appendChild(noFriends);
+      return;
+    }
+
+    // Sort VIPs first, then hosts
+    friends.sort((a, b) => {
+      if (a.isVIP && !b.isVIP) return -1;
+      if (!a.isVIP && b.isVIP) return 1;
+      if (a.isHost && !b.isHost) return -1;
+      if (!a.isHost && b.isHost) return 1;
+      return 0;
+    });
 
     friends.forEach(f => {
       const name = f.chatId || f.email || 'Guest';
@@ -752,7 +809,13 @@ const renderTabContent = (type) => {
 
   } else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/svg/492657/crown';
-    DOM.tabContent.innerHTML = `<div class="stat-block"><img src="${badgeImg}" style="width:100px;height:100px;"><div class="stat-value">${currentUser.hostBadge || 'Gold'}</div><div class="stat-label">Badge Status</div></div>`;
+    DOM.tabContent.innerHTML = `
+      <div class="stat-block">
+        <img src="${badgeImg}" style="width:100px;height:100px;">
+        <div class="stat-value">${currentUser.hostBadge || 'Gold'}</div>
+        <div class="stat-label">Badge Status</div>
+      </div>
+    `;
   }
 };
 
