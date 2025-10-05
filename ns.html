@@ -807,7 +807,6 @@ const renderTabContent = (type) => {
       return;
     }
 
-    // Sort by VIP first, then Hosts
     const sortedFriends = friends.sort((a, b) => {
       if (a.isVIP && !b.isVIP) return -1;
       if (!a.isVIP && b.isVIP) return 1;
@@ -819,24 +818,35 @@ const renderTabContent = (type) => {
     const fragment = document.createDocumentFragment();
 
     sortedFriends.forEach(f => {
-      const name = f.chatId || f.email?.split('@')[0] || 'Guest';
-      const handle = '@' + (f.chatIdLower || name.toLowerCase());
-      let emoji = '👤';
-      let color = '#ccc';
-      if (f.isVIP) { emoji = '💫'; color = 'gold'; }
-      else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
+      const name = f.chatId || f.name || f.email?.split('@')[0] || 'Guest';
+      const chatID = f.chatId || name.toLowerCase();
+      const handle = `ChatID: @${chatID}`;
+      let svg = '';
+      let color = '#bbb';
+
+      if (f.isVIP) {
+        svg = `<img src="https://www.svgrepo.com/show/532500/crown.svg" width="16" height="16" alt="vip" />`;
+        color = 'gold';
+      } else if (f.isHost) {
+        svg = `<img src="https://www.svgrepo.com/show/522338/target.svg" width="16" height="16" alt="host" />`;
+        color = '#ff66cc';
+      } else {
+        svg = `<img src="https://www.svgrepo.com/show/528453/user.svg" width="16" height="16" alt="friend" />`;
+      }
 
       const block = document.createElement('div');
       block.className = 'friend-card';
       block.innerHTML = `
-        <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:1.1rem;">${emoji}</span>
-          <span style="font-weight:600;color:${color};">${name}</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${svg}
+            <div style="display:flex;flex-direction:column;">
+              <span style="font-weight:600;color:${color};font-size:1rem;">${name}</span>
+              <span style="color:#888;font-size:0.85rem;">${handle}</span>
+            </div>
+          </div>
         </div>
-        <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
-          ${handle}
-        </div>
-        <div style="height:1px;width:100%;background:#222;margin:8px 0;"></div>
+        <div style="height:1px;width:100%;background:linear-gradient(to right,rgba(255,255,255,0.1),rgba(255,255,255,0.05),transparent);margin:6px 0;"></div>
       `;
       fragment.appendChild(block);
     });
