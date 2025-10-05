@@ -536,230 +536,191 @@ header {
 
 <script type="module">
 
-// ===================== FIREBASE INIT =====================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, getDoc, onSnapshot, collection, getDocs,
-  runTransaction, serverTimestamp, query, where
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// ========================== Firebase Init ==========================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getFirestore, doc, collection, getDoc, getDocs, updateDoc, runTransaction, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MSG_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// ===================== DOM REFERENCES =====================
-const DOM = {
-  username: document.getElementById('username'),
-  stars: document.getElementById('stars-count'),
-  cash: document.getElementById('cash-count'),
-  shopItems: document.getElementById('shop-items'),
-  hostTabs: document.getElementById('hostTabs'),
-  vipStat: document.getElementById('vip-stat'),
-  friendsStat: document.getElementById('friends-stat'),
-  badgesStat: document.getElementById('badges-stat'),
-  tabContent: document.getElementById('tab-content'),
-  ordersContent: document.getElementById('orders-content'),
-  ordersList: document.getElementById('orders-list'),
-  confirmModal: document.getElementById('confirmModal'),
-  confirmTitle: document.getElementById('confirmTitle'),
-  confirmText: document.getElementById('confirmText'),
-  confirmYes: document.getElementById('confirmYes'),
-  confirmNo: document.getElementById('confirmNo'),
-  imagePreview: document.getElementById('imagePreview'),
-  previewImg: document.getElementById('previewImg')
-};
+// ========================== DOM Helpers ==========================
+const $ = selector => document.querySelector(selector);
+const $$ = selector => document.querySelectorAll(selector);
 
-// ===================== UTILITIES =====================
-const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) : '0';
-const parseNumberFromText = text => Number((text || '').replace(/[^\d\-]/g, '')) || 0;
+function showLoader(show = true) {
+    const loader = $('#loader');
+    if(loader) loader.style.display = show ? 'block' : 'none';
+}
 
-const animateNumber = (el, from, to, duration = 600) => {
-  const start = performance.now();
-  const update = timestamp => {
-    const progress = Math.min((timestamp - start) / duration, 1);
-    const value = Math.floor(from + (to - from) * progress);
-    if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
-    else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
-    if (progress < 1) requestAnimationFrame(update);
-  };
-  requestAnimationFrame(update);
-};
+function showModal(msg) {
+    const modal = $('#modal');
+    const modalText = $('#modal-text');
+    modalText.textContent = msg;
+    modal.style.display = 'block';
+}
 
-// ===================== LOADER =====================
-const showLoader = () => document.getElementById('page-loader').classList.remove('hidden');
-const hideLoader = () => document.getElementById('page-loader').classList.add('hidden');
+function closeModal() {
+    $('#modal').style.display = 'none';
+}
 
-// ===================== CONFETTI =====================
-const triggerConfetti = () => {
-  if (window.__confettiLoaded) return confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
-  const script = document.createElement('script');
-  script.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
-  script.onload = () => { window.__confettiLoaded = true; triggerConfetti(); };
-  document.body.appendChild(script);
-};
-
-// ===================== MODAL =====================
-let _themedTimeout = null;
-const closeModal = () => {
-  DOM.confirmModal.style.display = 'none';
-  DOM.confirmYes.onclick = null;
-  DOM.confirmNo.onclick = null;
-  DOM.confirmYes.style.display = '';
-  DOM.confirmNo.style.display = '';
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
-};
-
-const showConfirmModal = (title, text, onYes) => {
-  DOM.confirmTitle.textContent = title;
-  DOM.confirmText.textContent = text;
-  DOM.confirmYes.style.display = '';
-  DOM.confirmNo.style.display = '';
-  DOM.confirmModal.style.display = 'flex';
-  DOM.confirmYes.onclick = async () => { closeModal(); if(onYes) await onYes(); };
-  DOM.confirmNo.onclick = closeModal;
-};
-
-const showThemedMessage = (title, message, duration = 2000) => {
-  DOM.confirmTitle.textContent = title;
-  DOM.confirmText.textContent = message;
-  DOM.confirmYes.style.display = 'none';
-  DOM.confirmNo.style.display = 'none';
-  DOM.confirmModal.style.display = 'flex';
-  if (_themedTimeout) clearTimeout(_themedTimeout);
-  _themedTimeout = setTimeout(closeModal, duration);
-};
-
-// ===================== IMAGE PREVIEW =====================
-const previewImage = src => {
-  DOM.previewImg.src = src;
-  DOM.imagePreview.style.display = 'flex';
-};
-document.getElementById('closePreview').addEventListener('click', () => {
-  DOM.previewImg.src = '';
-  DOM.imagePreview.style.display = 'none';
-});
-
-// ===================== CURRENT USER =====================
+// ========================== Auth & User ==========================
 let currentUser = null;
 
-const loadCurrentUser = async () => {
-  const vipRaw = localStorage.getItem('vipUser');
-  const vip = vipRaw ? JSON.parse(vipRaw) : null;
+onAuthStateChanged(auth, user => {
+    if(user) {
+        currentUser = user;
+        initDashboard();
+        renderShop();
+        renderMyOrders();
+    } else {
+        window.location.href = "/login.html";
+    }
+});
 
-  DOM.username.textContent = 'Guest';
-  DOM.stars.textContent = `0 ⭐️`;
-  DOM.cash.textContent = `₦0`;
+// ========================== Dashboard ==========================
+async function initDashboard() {
+    if(!currentUser) return;
+    
+    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+    if(userDoc.exists()) {
+        const data = userDoc.data();
+        $('#user-name').textContent = data.name || 'Guest';
+        $('#user-cash').textContent = data.cash || 0;
+    }
 
-  await renderShop();
-
-  if (!vip?.email) { currentUser = null; DOM.hostTabs.style.display = 'none'; return; }
-
-  const uid = vip.email.replace(/[.#$[\]]/g, ',');
-  const userRef = doc(db, 'users', uid);
-  const snap = await getDoc(userRef);
-
-  if (!snap.exists()) {
-    currentUser = { uid, stars: 0, cash: 0, isHost: false };
-    DOM.username.textContent = vip.displayName || vip.email || 'Guest';
-    DOM.hostTabs.style.display = 'none';
-    return;
-  }
-
-  currentUser = { uid, ...snap.data() };
-  DOM.username.textContent = currentUser.chatId || vip.displayName || vip.email || 'Guest';
-  DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-  DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-  DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
-  updateHostPanels();
-
-  if(currentUser?.email) {
-    await updateHostStats({
-      email: currentUser.email,
-      chatId: currentUser.chatId || '',
-      isVIP: currentUser.isVIP || false,
-      isHost: currentUser.isHost || false,
-      invitedBy: currentUser.invitedBy || null
-    });
-  }
-
-  onSnapshot(userRef, docSnap => {
-    const data = docSnap.data(); if(!data) return;
-    currentUser = { uid, ...data };
-    DOM.username.textContent = currentUser.chatId || vip.displayName || vip.email || 'Guest';
-    DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-    DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
-    updateHostPanels();
-    renderShop().catch(console.error);
-  });
-};
-
-// ===================== UPDATE HOST STATS =====================
-const updateHostStats = async newUser => {
-  const referrerId = newUser.refHost || newUser.invitedBy;
-  if (!referrerId) return;
-  const sanitizedId = referrerId.replace(/[.#$[\]]/g, ',');
-  const hostRef = doc(db, 'users', sanitizedId);
-
-  try {
-    await runTransaction(db, async t => {
-      const hostSnap = await t.get(hostRef);
-      if (!hostSnap.exists()) return;
-
-      const hostData = hostSnap.data();
-      const friends = hostData.hostFriends || [];
-      if (!friends.find(f => f.email === newUser.email)) {
-        friends.push({
-          email: newUser.email,
-          chatId: newUser.chatId || '',
-          isVIP: newUser.isVIP || false,
-          isHost: newUser.isHost || false
+    // Real-time badges
+    const badgesCol = collection(db, 'users', currentUser.uid, 'badges');
+    onSnapshot(badgesCol, snapshot => {
+        const container = $('#badges-container');
+        container.innerHTML = '';
+        snapshot.forEach(doc => {
+            const badge = document.createElement('div');
+            badge.classList.add('badge');
+            badge.textContent = doc.data().name;
+            container.appendChild(badge);
         });
-      }
-      const hostVIP = hostData.hostVIP || 0;
-      const newVIP = newUser.isVIP ? hostVIP + 1 : hostVIP;
-
-      t.update(hostRef, { hostFriends: friends, hostVIP: newVIP });
     });
-  } catch(err) { console.error('Failed to update host stats:', err); }
-};
+}
 
-// ===================== HOST DASHBOARD =====================
-const updateHostPanels = () => {
-  if(!currentUser?.isHost) { DOM.hostTabs.style.display='none'; DOM.tabContent.style.display='none'; return; }
-  DOM.hostTabs.style.display = '';
-  DOM.tabContent.style.display = '';
-  DOM.vipStat.textContent = formatNumber(currentUser.hostVIP || 0);
-  DOM.friendsStat.textContent = formatNumber((currentUser.hostFriends || []).length);
-  DOM.badgesStat.textContent = formatNumber(currentUser.hostBadges || 0);
-};
-
-// ===================== SHOP =====================
-const renderShop = async () => {
-  DOM.shopItems.innerHTML = '';
-  showLoader();
-  try {
-    const shopSnap = await getDocs(collection(db, 'shop'));
-    shopSnap.forEach(docSnap => {
-      const data = docSnap.data();
-      const card = document.createElement('div');
-      card.className = 'shop-card';
-      card.innerHTML = `<h3>${data.name}</h3><p>₦${formatNumber(data.price)}</p>`;
-      DOM.shopItems.appendChild(card);
+// ========================== Tabs ==========================
+$$('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+        const target = e.target.dataset.target;
+        $$('.tab-content').forEach(tc => tc.style.display = 'none');
+        $('#' + target).style.display = 'block';
+        $$('.tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
     });
-  } catch(err) { console.error('Shop load error:', err); }
-  hideLoader();
-};
+});
 
-// ===================== INIT =====================
-document.addEventListener('DOMContentLoaded', () => loadCurrentUser().catch(console.error));
+// ========================== Shop ==========================
+const shopItems = [];
+
+async function renderShop() {
+    const shopContainer = $('#shop-container');
+    shopContainer.innerHTML = '';
+    const shopSnapshot = await getDocs(collection(db, 'shop'));
+    
+    shopSnapshot.forEach(docSnap => {
+        const item = docSnap.data();
+        item.id = docSnap.id;
+        shopItems.push(item);
+        const div = document.createElement('div');
+        div.classList.add('shop-item');
+        div.innerHTML = `
+            <img src="${item.image}" alt="${item.name}" />
+            <h3>${item.name}</h3>
+            <p>Price: ${item.price}</p>
+            <button data-id="${item.id}" class="redeem-btn">Redeem</button>
+        `;
+        shopContainer.appendChild(div);
+    });
+
+    // Event delegation
+    shopContainer.addEventListener('click', async e => {
+        if(e.target.classList.contains('redeem-btn')) {
+            const itemId = e.target.dataset.id;
+            const item = shopItems.find(i => i.id === itemId);
+            if(item) await redeemItem(item);
+        }
+    });
+}
+
+// ========================== Redeem ==========================
+async function redeemItem(item) {
+    if(!currentUser) return;
+    showLoader(true);
+    
+    try {
+        await runTransaction(db, async t => {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const userSnap = await t.get(userRef);
+            if(!userSnap.exists()) throw "User not found";
+            const userCash = userSnap.data().cash || 0;
+            if(userCash < item.price) throw "Insufficient cash";
+            
+            t.update(userRef, { cash: userCash - item.price });
+            const orderRef = doc(collection(db, 'users', currentUser.uid, 'orders'));
+            t.set(orderRef, { itemId: item.id, name: item.name, price: item.price, timestamp: Date.now() });
+        });
+
+        showModal(`Successfully redeemed ${item.name}!`);
+        playConfetti();
+        renderMyOrders();
+        updateCashDisplay();
+    } catch(err) {
+        showModal(err);
+    } finally {
+        showLoader(false);
+    }
+}
+
+// ========================== Orders ==========================
+async function renderMyOrders() {
+    if(!currentUser) return;
+    const ordersContainer = $('#orders-container');
+    ordersContainer.innerHTML = '';
+    
+    const ordersSnapshot = await getDocs(collection(db, 'users', currentUser.uid, 'orders'));
+    ordersSnapshot.forEach(docSnap => {
+        const order = docSnap.data();
+        const div = document.createElement('div');
+        div.classList.add('order-item');
+        div.innerHTML = `
+            <h4>${order.name}</h4>
+            <p>Price: ${order.price}</p>
+            <small>${new Date(order.timestamp).toLocaleString()}</small>
+        `;
+        ordersContainer.appendChild(div);
+    });
+}
+
+// ========================== Confetti ==========================
+function playConfetti() {
+    if(typeof confetti === 'function') confetti();
+}
+
+// ========================== Cash Display ==========================
+async function updateCashDisplay() {
+    if(!currentUser) return;
+    const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+    if(userSnap.exists()) $('#user-cash').textContent = userSnap.data().cash || 0;
+}
+
+// ========================== Modals ==========================
+$('#modal-close').addEventListener('click', closeModal);
+window.addEventListener('click', e => {
+    if(e.target.id === 'modal') closeModal();
+});
 </script>
