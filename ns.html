@@ -834,52 +834,49 @@ const renderTabContent = (type) => {
   }
 
   // ===== FRIENDS TAB =====
-  else if (type === 'friends') {
-    const q = query(usersRef, where("invitedBy", "==", currentUser.email));
-    onSnapshot(q, (snapshot) => {
-      const friends = snapshot.docs.map(doc => doc.data());
-      if (friends.length === 0) {
-        DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
-        return;
-      }
-
-      const sortedFriends = friends.sort((a, b) => {
-        if (a.isVIP && !b.isVIP) return -1;
-        if (!a.isVIP && b.isVIP) return 1;
-        if (a.isHost && !b.isHost) return -1;
-        if (!a.isHost && b.isHost) return 1;
-        return 0;
-      });
-
-      const fragment = document.createDocumentFragment();
-      sortedFriends.forEach(f => {
-        const name = f.chatId || f.email?.split('@')[0] || 'Guest';
-        const handle = '@' + (f.chatIdLower || name.toLowerCase());
-        let emoji = '👤';
-        let color = '#999';
-        if (f.isVIP) { emoji = '💫'; color = 'gold'; }
-        else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
-
-        const block = document.createElement('div');
-        block.className = 'friend-card';
-        block.innerHTML = `
-          <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:1.1rem;">${emoji}</span>
-            <span style="font-weight:600;color:${color};">${name}</span>
-          </div>
-          <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
-            ${handle}
-          </div>
-          <div style="height:1px;width:100%;background:#eee;margin:8px 0;"></div>
-        `;
-        fragment.appendChild(block);
-      });
-
-      DOM.tabContent.innerHTML = '';
-      DOM.tabContent.appendChild(fragment);
-    });
+ else if (type === 'friends') {
+  const friends = currentUser.hostFriends || [];
+  if (friends.length === 0) {
+    DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
+    return;
   }
-};
+
+  // Sort by VIP first, then Hosts
+  const sortedFriends = friends.sort((a, b) => {
+    if (a.isVIP && !b.isVIP) return -1;
+    if (!a.isVIP && b.isVIP) return 1;
+    if (a.isHost && !b.isHost) return -1;
+    if (!a.isHost && b.isHost) return 1;
+    return 0;
+  });
+
+  const fragment = document.createDocumentFragment();
+
+  sortedFriends.forEach(f => {
+    const name = f.chatId || f.email?.split('@')[0] || 'Guest';
+    const handle = '@' + (f.chatIdLower || name.toLowerCase());
+    let emoji = '👤';
+    let color = '#ccc';
+    if (f.isVIP) { emoji = '💫'; color = 'gold'; }
+    else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
+
+    const block = document.createElement('div');
+    block.className = 'friend-card';
+    block.innerHTML = `
+      <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:1.1rem;">${emoji}</span>
+        <span style="font-weight:600;color:${color};">${name}</span>
+      </div>
+      <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
+        ${handle}
+      </div>
+      <div style="height:1px;width:100%;background:#222;margin:8px 0;"></div>
+    `;
+    fragment.appendChild(block);
+  });
+
+  DOM.tabContent.appendChild(fragment);
+}
   // ===== BADGES TAB =====
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
