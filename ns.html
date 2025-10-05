@@ -804,13 +804,6 @@ if (type === 'vip') {
     });
   });
 }
-    document.getElementById('copyVipLink')?.addEventListener('click', () => {
-      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
-      navigator.clipboard.writeText(link)
-        .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
-        .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
-    });
-  }
 
   // ===== FRIENDS TAB =====
   else if (type === 'friends') {
