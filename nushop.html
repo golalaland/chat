@@ -555,31 +555,23 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ------------------- Update Host Stats -------------------
-const updateHostStats = async (newUser) => {
-  const referrerId = newUser.invitedBy;
-  console.log('updateHostStats called for:', newUser.email, 'invitedBy:', referrerId);
+import { doc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  if (!referrerId) {
-    console.warn('No referrer for this user.');
-    return; // no host to update
-  }
+const updateHostStats = async (newUser) => {
+  const referrerId = newUser.refHost;
+  if (!referrerId) return; // no host to update
 
   const sanitizedId = referrerId.replace(/[.#$[\]]/g, ',');
   const hostRef = doc(db, 'users', sanitizedId);
-  console.log('Looking up host with ID:', sanitizedId);
 
   try {
     await runTransaction(db, async (t) => {
       const hostSnap = await t.get(hostRef);
-      if (!hostSnap.exists()) {
-        console.warn('Host doc not found:', sanitizedId);
-        return;
-      }
+      if (!hostSnap.exists()) return;
 
       const hostData = hostSnap.data();
-      console.log('Host data before update:', hostData);
 
-      // Add new user to friends list if not already there
+      // --- Friends list ---
       const friends = hostData.hostFriends || [];
       if (!friends.find(f => f.email === newUser.email)) {
         friends.push({
@@ -590,7 +582,7 @@ const updateHostStats = async (newUser) => {
         });
       }
 
-      // Increment VIP count if new user is VIP
+      // --- VIP count ---
       const hostVIP = hostData.hostVIP || 0;
       const newVIP = newUser.isVIP ? hostVIP + 1 : hostVIP;
 
@@ -598,8 +590,6 @@ const updateHostStats = async (newUser) => {
         hostFriends: friends,
         hostVIP: newVIP
       });
-
-      console.log('Host updated. New VIP:', newVIP, 'New friends list:', friends);
     });
   } catch (err) {
     console.error('Failed to update host stats:', err);
@@ -788,14 +778,14 @@ const renderTabContent = (type) => {
 
   // ===== VIP TAB =====
   if (type === 'vip') {
-    const q = query(usersRef, where("invitedBy", "==", currentUser.email), where("isVIP", "==", true));
+    const q = query(usersRef, where("refHost", "==", currentUser.email), where("isVIP", "==", true));
     onSnapshot(q, (snapshot) => {
       const vipCount = snapshot.size;
       const vipList = snapshot.docs.map(doc => doc.data());
 
       DOM.tabContent.innerHTML = `
         <div class="stat-block" style="margin-bottom:12px;">
-          <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+          <div class="stat-value" id="vip-stat">${vipCount}</div>
           <div class="stat-label">VIPs Signed Up</div>
           <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
         </div>
@@ -834,49 +824,50 @@ const renderTabContent = (type) => {
   }
 
   // ===== FRIENDS TAB =====
- else if (type === 'friends') {
-  const friends = currentUser.hostFriends || [];
-  if (friends.length === 0) {
-    DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
-    return;
+  else if (type === 'friends') {
+    const friends = currentUser.hostFriends || [];
+    if (friends.length === 0) {
+      DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
+      return;
+    }
+
+    // Sort VIP → Host → Normal
+    const sortedFriends = friends.sort((a, b) => {
+      if (a.isVIP && !b.isVIP) return -1;
+      if (!a.isVIP && b.isVIP) return 1;
+      if (a.isHost && !b.isHost) return -1;
+      if (!a.isHost && b.isHost) return 1;
+      return 0;
+    });
+
+    const fragment = document.createDocumentFragment();
+    sortedFriends.forEach(f => {
+      const name = f.chatId || f.email?.split('@')[0] || 'Guest';
+      const handle = '@' + (f.chatIdLower || name.toLowerCase());
+
+      let emoji = '👤';
+      let color = '#ccc';
+      if (f.isVIP) { emoji = '💫'; color = 'gold'; }
+      else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
+
+      const block = document.createElement('div');
+      block.className = 'friend-card';
+      block.innerHTML = `
+        <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:1.1rem;">${emoji}</span>
+          <span style="font-weight:600;color:${color};">${name}</span>
+        </div>
+        <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
+          ${handle}
+        </div>
+        <div style="height:1px;width:100%;background:#222;margin:8px 0;"></div>
+      `;
+      fragment.appendChild(block);
+    });
+
+    DOM.tabContent.appendChild(fragment);
   }
 
-  // Sort by VIP first, then Hosts
-  const sortedFriends = friends.sort((a, b) => {
-    if (a.isVIP && !b.isVIP) return -1;
-    if (!a.isVIP && b.isVIP) return 1;
-    if (a.isHost && !b.isHost) return -1;
-    if (!a.isHost && b.isHost) return 1;
-    return 0;
-  });
-
-  const fragment = document.createDocumentFragment();
-
-  sortedFriends.forEach(f => {
-    const name = f.chatId || f.email?.split('@')[0] || 'Guest';
-    const handle = '@' + (f.chatIdLower || name.toLowerCase());
-    let emoji = '👤';
-    let color = '#ccc';
-    if (f.isVIP) { emoji = '💫'; color = 'gold'; }
-    else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
-
-    const block = document.createElement('div');
-    block.className = 'friend-card';
-    block.innerHTML = `
-      <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:1.1rem;">${emoji}</span>
-        <span style="font-weight:600;color:${color};">${name}</span>
-      </div>
-      <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
-        ${handle}
-      </div>
-      <div style="height:1px;width:100%;background:#222;margin:8px 0;"></div>
-    `;
-    fragment.appendChild(block);
-  });
-
-  DOM.tabContent.appendChild(fragment);
-}
   // ===== BADGES TAB =====
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
@@ -889,7 +880,6 @@ const renderTabContent = (type) => {
     `;
   }
 };
-
 // ---------- Host Tabs Click ----------
 DOM.hostTabs.addEventListener('click', e=>{
   const btn = e.target.closest('.tab-btn'); if(!btn) return;
