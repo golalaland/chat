@@ -280,17 +280,18 @@ maleBtn.addEventListener('click', () => {
 function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 
 // --- Submit Logic ---
-submitBtn.addEventListener('click', async ()=>{
+submitBtn.addEventListener('click', async () => {
   const fullName = nameInput.value.trim();
   const phone = phoneInput.value.trim();
   const email = emailInput.value.trim().toLowerCase();
 
-  if(!fullName || !phone || !email || !gender){
+  if (!fullName || !phone || !email || !gender) {
     messageEl.textContent = 'Please fill in all fields.';
     return;
   }
 
-  if(!isVIP && gender !== 'Female'){
+  // Only females can be hosts if not VIP
+  if (!isVIP && gender !== 'Female') {
     messageEl.textContent = 'Only females can sign up as hosts.';
     return;
   }
@@ -299,7 +300,9 @@ submitBtn.addEventListener('click', async ()=>{
 
   const uidKey = sanitizeKey(email);
   const userRef = doc(db, "users", uidKey);
+  const userSnap = await getDoc(userRef);
 
+  // Prepare new user data
   const userData = {
     chatId: fullName || email.split('@')[0],
     chatIdLower: (fullName || email.split('@')[0]).toLowerCase(),
@@ -307,7 +310,7 @@ submitBtn.addEventListener('click', async ()=>{
     starsToday: 0,
     lastStarDate: new Date().toISOString().split("T")[0],
     cash: 0,
-    usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+    usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
     isAdmin: false,
     isVIP,
     isHost: !isVIP,
@@ -320,25 +323,35 @@ submitBtn.addEventListener('click', async ()=>{
   };
 
   try {
-    const userSnap = await getDoc(userRef);
-    if(!userSnap.exists()) await setDoc(userRef, userData);
+    // Save or update user
+    if (!userSnap.exists()) await setDoc(userRef, userData);
     else await updateDoc(userRef, userData);
 
-    // --- Update host stats if referred ---
-    if(referrer){
-      const hostRef = doc(db, "users", sanitizeKey(referrer));
-      const hostSnap = await getDoc(hostRef);
-      if(hostSnap.exists()){
-        await updateDoc(hostRef, {
-          hostFriends: arrayUnion(email),
-          hostVIP: isVIP ? increment(1) : increment(0)
-        });
+    // --- Update referrer stats ---
+    if (referrer) {
+      const refKey = sanitizeKey(referrer);
+      const refRef = doc(db, "users", refKey);
+      const refSnap = await getDoc(refRef);
+      if (refSnap.exists()) {
+        const refData = refSnap.data();
+
+        const hostFriends = refData.hostFriends || [];
+        const hostVIP = refData.hostVIP || 0;
+
+        // Only push new friend once
+        if (!hostFriends.includes(email)) hostFriends.push(email);
+
+        // Increment VIP count if new user is VIP
+        const newVIPCount = isVIP ? hostVIP + 1 : hostVIP;
+
+        await updateDoc(refRef, { hostFriends, hostVIP: newVIPCount });
       }
     }
 
     localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
     messageEl.textContent = `✅ Successfully signed up as ${isVIP ? 'VIP' : 'Host'}!`;
-  } catch(e){
+
+  } catch (e) {
     console.error(e);
     messageEl.textContent = '❌ Signup failed. Please try again.';
   }
