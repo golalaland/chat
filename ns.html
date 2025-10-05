@@ -781,6 +781,7 @@ const renderTabContent = (type) => {
   DOM.tabContent.innerHTML = '';
   if (!currentUser?.isHost) return;
 
+  // ===== VIP TAB =====
   if (type === 'vip') {
     const vipCount = currentUser.hostVIP || 0;
     DOM.tabContent.innerHTML = `
@@ -798,48 +799,52 @@ const renderTabContent = (type) => {
     });
   }
 
-else if (type === 'friends') {
-  const friends = currentUser.hostFriends || [];
+  // ===== FRIENDS TAB =====
+  else if (type === 'friends') {
+    const friends = currentUser.hostFriends || [];
+    if (friends.length === 0) {
+      DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
+      return;
+    }
 
-  if (friends.length === 0) {
-    DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
-    return;
+    // Sort by VIP first, then Hosts
+    const sortedFriends = friends.sort((a, b) => {
+      if (a.isVIP && !b.isVIP) return -1;
+      if (!a.isVIP && b.isVIP) return 1;
+      if (a.isHost && !b.isHost) return -1;
+      if (!a.isHost && b.isHost) return 1;
+      return 0;
+    });
+
+    const fragment = document.createDocumentFragment();
+
+    sortedFriends.forEach(f => {
+      const name = f.chatId || f.email?.split('@')[0] || 'Guest';
+      const handle = '@' + (f.chatIdLower || name.toLowerCase());
+      let emoji = '👤';
+      let color = '#ccc';
+      if (f.isVIP) { emoji = '💫'; color = 'gold'; }
+      else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
+
+      const block = document.createElement('div');
+      block.className = 'friend-card';
+      block.innerHTML = `
+        <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:1.1rem;">${emoji}</span>
+          <span style="font-weight:600;color:${color};">${name}</span>
+        </div>
+        <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
+          ${handle}
+        </div>
+        <div style="height:1px;width:100%;background:#222;margin:8px 0;"></div>
+      `;
+      fragment.appendChild(block);
+    });
+
+    DOM.tabContent.appendChild(fragment);
   }
 
-  // Sort: VIP first, then Host, then regular
-  const sortedFriends = friends.sort((a, b) => {
-    if (a.isVIP && !b.isVIP) return -1;
-    if (!a.isVIP && b.isVIP) return 1;
-    if (a.isHost && !b.isHost) return -1;
-    if (!a.isHost && b.isHost) return 1;
-    return 0;
-  });
-
-  const fragment = document.createDocumentFragment();
-
-  sortedFriends.forEach(f => {
-    const fullName = f.fullName || f.chatId || f.email || 'Guest';
-    const chatId = f.chatId || '';
-    const badgeIcon = f.isVIP ? '👑' : f.isHost ? '🎯' : '🤝';
-
-    const block = document.createElement('div');
-    block.className = 'stat-block';
-    block.style.marginBottom = '8px';
-    block.innerHTML = `
-      <div class="user-row">
-        <div class="user-name">
-          <span>${fullName}</span>
-          <span class="user-icon">${badgeIcon}</span>
-        </div>
-        <div class="chatid">@${chatId}</div>
-      </div>
-    `;
-    fragment.appendChild(block);
-  });
-
-  DOM.tabContent.appendChild(fragment);
-}
-
+  // ===== BADGES TAB =====
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/svg/492657/crown';
     DOM.tabContent.innerHTML = `
