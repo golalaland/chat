@@ -296,6 +296,30 @@ header {
           mask: radial-gradient(farthest-side, transparent 70%, black 71%);
 }
 
+.user-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.user-icon {
+  font-size: 1rem;
+  margin-left: 8px;
+}
+
+.chatid {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -774,43 +798,47 @@ const renderTabContent = (type) => {
     });
   }
 
-  else if (type === 'friends') {
-    const friends = currentUser.hostFriends || [];
+else if (type === 'friends') {
+  const friends = currentUser.hostFriends || [];
 
-    if (friends.length === 0) {
-      DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
-      return;
-    }
-
-    // Sort by VIP > Host > Normal
-    const sortedFriends = friends.sort((a, b) => {
-      if (a.isVIP && !b.isVIP) return -1;
-      if (!a.isVIP && b.isVIP) return 1;
-      if (a.isHost && !b.isHost) return -1;
-      if (!a.isHost && b.isHost) return 1;
-      return 0;
-    });
-
-    const fragment = document.createDocumentFragment();
-
-    sortedFriends.forEach(f => {
-      const name = f.chatId || f.email || 'Guest';
-      let typeLabel = 'Friend';
-      if (f.isVIP) typeLabel = 'VIP';
-      else if (f.isHost) typeLabel = 'HOST';
-
-      const block = document.createElement('div');
-      block.className = 'stat-block';
-      block.style.marginBottom = '8px';
-      block.innerHTML = `
-        <div class="stat-value">${name}</div>
-        <div class="stat-label" style="color: var(--theme-solid); font-weight:bold;">${typeLabel}</div>
-      `;
-      fragment.appendChild(block);
-    });
-
-    DOM.tabContent.appendChild(fragment);
+  if (friends.length === 0) {
+    DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
+    return;
   }
+
+  // Sort: VIP first, then Host, then regular
+  const sortedFriends = friends.sort((a, b) => {
+    if (a.isVIP && !b.isVIP) return -1;
+    if (!a.isVIP && b.isVIP) return 1;
+    if (a.isHost && !b.isHost) return -1;
+    if (!a.isHost && b.isHost) return 1;
+    return 0;
+  });
+
+  const fragment = document.createDocumentFragment();
+
+  sortedFriends.forEach(f => {
+    const fullName = f.fullName || f.chatId || f.email || 'Guest';
+    const chatId = f.chatId || '';
+    const badgeIcon = f.isVIP ? '👑' : f.isHost ? '🎯' : '🤝';
+
+    const block = document.createElement('div');
+    block.className = 'stat-block';
+    block.style.marginBottom = '8px';
+    block.innerHTML = `
+      <div class="user-row">
+        <div class="user-name">
+          <span>${fullName}</span>
+          <span class="user-icon">${badgeIcon}</span>
+        </div>
+        <div class="chatid">@${chatId}</div>
+      </div>
+    `;
+    fragment.appendChild(block);
+  });
+
+  DOM.tabContent.appendChild(fragment);
+}
 
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/svg/492657/crown';
