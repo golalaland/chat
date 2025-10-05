@@ -217,7 +217,8 @@ h2 {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp
+  getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp,
+  arrayUnion, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Config ---
@@ -298,7 +299,6 @@ submitBtn.addEventListener('click', async ()=>{
 
   const uidKey = sanitizeKey(email);
   const userRef = doc(db, "users", uidKey);
-  const userSnap = await getDoc(userRef);
 
   const userData = {
     chatId: fullName || email.split('@')[0],
@@ -307,7 +307,7 @@ submitBtn.addEventListener('click', async ()=>{
     starsToday: 0,
     lastStarDate: new Date().toISOString().split("T")[0],
     cash: 0,
-    usernameColor: '#'+Math.floor(Math.random()*16777215).toString(16),
+    usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
     isAdmin: false,
     isVIP,
     isHost: !isVIP,
@@ -320,13 +320,25 @@ submitBtn.addEventListener('click', async ()=>{
   };
 
   try {
+    const userSnap = await getDoc(userRef);
     if(!userSnap.exists()) await setDoc(userRef, userData);
     else await updateDoc(userRef, userData);
 
-    localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
+    // --- Update host stats if referred ---
+    if(referrer){
+      const hostRef = doc(db, "users", sanitizeKey(referrer));
+      const hostSnap = await getDoc(hostRef);
+      if(hostSnap.exists()){
+        await updateDoc(hostRef, {
+          hostFriends: arrayUnion(email),
+          hostVIP: isVIP ? increment(1) : increment(0)
+        });
+      }
+    }
 
+    localStorage.setItem('vipUser', JSON.stringify({ email, phone }));
     messageEl.textContent = `✅ Successfully signed up as ${isVIP ? 'VIP' : 'Host'}!`;
-  } catch(e) {
+  } catch(e){
     console.error(e);
     messageEl.textContent = '❌ Signup failed. Please try again.';
   }
