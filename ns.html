@@ -765,7 +765,8 @@ if (currentUser) {
   });
 };
 
-// ---------- Host Panels ----------
+// ===================== HOST DASHBOARD PANEL =====================
+
 const updateHostPanels = () => {
   if (!currentUser?.isHost) {
     DOM.hostTabs.style.display = 'none';
@@ -774,92 +775,111 @@ const updateHostPanels = () => {
   }
   DOM.hostTabs.style.display = '';
   DOM.tabContent.style.display = '';
-  renderTabContent('vip'); // default active tab
+  renderTabContent('vip'); // default tab
 };
+
+// ===================== RENDER TAB CONTENT =====================
 
 const renderTabContent = (type) => {
   DOM.tabContent.innerHTML = '';
   if (!currentUser?.isHost) return;
 
-  // ===== VIP TAB (Live Firestore Count) =====
-// ===== VIP TAB (Live Firestore Count) =====
-if (type === 'vip') {
-  const vipRef = collection(db, "users");
-  const vipQuery = query(
-    vipRef,
-    where("referredBy", "==", currentUser.uid),
-    where("isVIP", "==", true)
-  );
+  const usersRef = collection(db, "users");
 
-  onSnapshot(vipQuery, (snapshot) => {
-    const vipCount = snapshot.size;
+  // ===== VIP TAB =====
+  if (type === 'vip') {
+    const q = query(usersRef, where("invitedBy", "==", currentUser.email), where("isVIP", "==", true));
+    onSnapshot(q, (snapshot) => {
+      const vipCount = snapshot.size;
+      const vipList = snapshot.docs.map(doc => doc.data());
 
-    DOM.tabContent.innerHTML = `
-      <div class="stat-block" style="margin-bottom:12px;">
-        <div class="stat-value" id="vip-stat">${vipCount}</div>
-        <div class="stat-label">VIPs Signed Up</div>
-        <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
-      </div>
-    `;
-
-    document.getElementById('copyVipLink')?.addEventListener('click', () => {
-      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
-      navigator.clipboard.writeText(link)
-        .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
-        .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
-    });
-  });
-}
-
-// ===== FRIENDS TAB (Live Firestore Data) =====
-else if (type === 'friends') {
-  const friendsRef = collection(db, "users");
-  const friendsQuery = query(friendsRef, where("referredBy", "==", currentUser.uid));
-
-  onSnapshot(friendsQuery, (snapshot) => {
-    if (snapshot.empty) {
-      DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
-      return;
-    }
-
-    const friends = snapshot.docs.map(doc => doc.data());
-    const sortedFriends = friends.sort((a, b) => {
-      if (a.isVIP && !b.isVIP) return -1;
-      if (!a.isVIP && b.isVIP) return 1;
-      if (a.isHost && !b.isHost) return -1;
-      if (!a.isHost && b.isHost) return 1;
-      return 0;
-    });
-
-    const fragment = document.createDocumentFragment();
-
-    sortedFriends.forEach(f => {
-      const name = f.chatId || f.email?.split('@')[0] || 'Guest';
-      const handle = '@' + (f.chatIdLower || name.toLowerCase());
-      let emoji = '👤';
-      let color = '#ccc';
-      if (f.isVIP) { emoji = '💫'; color = 'gold'; }
-      else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
-
-      const block = document.createElement('div');
-      block.className = 'friend-card';
-      block.innerHTML = `
-        <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:1.1rem;">${emoji}</span>
-          <span style="font-weight:600;color:${color};">${name}</span>
+      DOM.tabContent.innerHTML = `
+        <div class="stat-block" style="margin-bottom:12px;">
+          <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+          <div class="stat-label">VIPs Signed Up</div>
+          <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
         </div>
-        <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
-          ${handle}
-        </div>
-        <div style="height:1px;width:100%;background:#e0e0e0;margin:8px 0;"></div>
       `;
-      fragment.appendChild(block);
-    });
 
-    DOM.tabContent.innerHTML = '';
-    DOM.tabContent.appendChild(fragment);
-  });
-}
+      const fragment = document.createDocumentFragment();
+      vipList.forEach(f => {
+        const name = f.chatId || f.email?.split('@')[0] || 'Guest';
+        const handle = '@' + (f.chatIdLower || name.toLowerCase());
+        const emoji = '💫';
+        const color = 'gold';
+        const block = document.createElement('div');
+        block.className = 'friend-card';
+        block.innerHTML = `
+          <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:1.1rem;">${emoji}</span>
+            <span style="font-weight:600;color:${color};">${name}</span>
+          </div>
+          <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
+            ${handle}
+          </div>
+          <div style="height:1px;width:100%;background:#eee;margin:8px 0;"></div>
+        `;
+        fragment.appendChild(block);
+      });
+
+      DOM.tabContent.appendChild(fragment);
+
+      document.getElementById('copyVipLink')?.addEventListener('click', () => {
+        const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
+        navigator.clipboard.writeText(link)
+          .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
+          .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
+      });
+    });
+  }
+
+  // ===== FRIENDS TAB =====
+  else if (type === 'friends') {
+    const q = query(usersRef, where("invitedBy", "==", currentUser.email));
+    onSnapshot(q, (snapshot) => {
+      const friends = snapshot.docs.map(doc => doc.data());
+      if (friends.length === 0) {
+        DOM.tabContent.innerHTML = `<div class="muted">No friends yet.</div>`;
+        return;
+      }
+
+      const sortedFriends = friends.sort((a, b) => {
+        if (a.isVIP && !b.isVIP) return -1;
+        if (!a.isVIP && b.isVIP) return 1;
+        if (a.isHost && !b.isHost) return -1;
+        if (!a.isHost && b.isHost) return 1;
+        return 0;
+      });
+
+      const fragment = document.createDocumentFragment();
+      sortedFriends.forEach(f => {
+        const name = f.chatId || f.email?.split('@')[0] || 'Guest';
+        const handle = '@' + (f.chatIdLower || name.toLowerCase());
+        let emoji = '👤';
+        let color = '#999';
+        if (f.isVIP) { emoji = '💫'; color = 'gold'; }
+        else if (f.isHost) { emoji = '🎯'; color = '#ff66cc'; }
+
+        const block = document.createElement('div');
+        block.className = 'friend-card';
+        block.innerHTML = `
+          <div class="friend-top" style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:1.1rem;">${emoji}</span>
+            <span style="font-weight:600;color:${color};">${name}</span>
+          </div>
+          <div class="friend-bottom" style="color:#888;font-size:0.85rem;margin-left:1.4rem;">
+            ${handle}
+          </div>
+          <div style="height:1px;width:100%;background:#eee;margin:8px 0;"></div>
+        `;
+        fragment.appendChild(block);
+      });
+
+      DOM.tabContent.innerHTML = '';
+      DOM.tabContent.appendChild(fragment);
+    });
+  }
+};
   // ===== BADGES TAB =====
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
