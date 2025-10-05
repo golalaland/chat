@@ -708,7 +708,7 @@ const renderTabContent = (type) => {
   } else if (type === 'friends') {
     DOM.tabContent.innerHTML = `<div class="stat-block"><div class="stat-value">${formatNumber(currentUser.hostFriends?.length||0)}</div><div class="stat-label">Friends Invited</div></div>`;
   } else if (type === 'badges') {
-    const badgeImg = currentUser.hostBadgeImg || 'https://via.placeholder.com/100';
+    const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/svg/492657/crown';
     DOM.tabContent.innerHTML = `<div class="stat-block"><img src="${badgeImg}" style="width:100px;height:100px;"><div class="stat-value">${currentUser.hostBadge || 'Gold'}</div><div class="stat-label">Badge Status</div></div>`;
   }
 };
