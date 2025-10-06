@@ -468,40 +468,36 @@ header {
 
 #rewardModal.hidden { display: none; }
 
+/* ---------- BEAUTIFUL REWARD MODAL (smaller) ---------- */
 .reward-content {
   position: relative;
   background: radial-gradient(circle at top left, #ffdd55, #ff66aa);
   color: #fff;
-  border-radius: 20px;
-  padding: 2rem 2.5rem;
+  border-radius: 16px;        /* slightly smaller radius */
+  padding: 1.2rem 1.5rem;     /* reduce padding */
   text-align: center;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), 0 10px 40px rgba(0,0,0,0.3);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 6px 25px rgba(0,0,0,0.25); /* lighter shadow */
   overflow: hidden;
-  animation: pop 0.5s ease;
+  animation: pop 0.4s ease;    /* slightly faster pop animation */
   font-family: 'Segoe UI', sans-serif;
 }
 
-.reward-content::before {
-  content: '✨';
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  font-size: 3rem;
-  animation: twinkle 1.2s infinite alternate;
-}
-
 .reward-content h3 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  margin-bottom: 0.6rem;
-  text-shadow: 0 0 10px gold, 0 0 20px #ffdd55;
+  font-size: 1.2rem;           /* smaller heading */
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 8px gold, 0 0 15px #ffdd55;
 }
 
 .reward-content p {
-  font-size: 1.05rem;
-  font-weight: 600;
-  text-shadow: 0 0 8px rgba(255,255,255,0.4);
+  font-size: 0.9rem;           /* smaller message */
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(255,255,255,0.3);
   margin: 0;
+}
+
+.reward-content::before {
+  font-size: 2.2rem;           /* smaller sparkle */
 }
 
 /* POP ANIMATION */
