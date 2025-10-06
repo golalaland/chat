@@ -246,6 +246,16 @@ submitBtn.addEventListener('click', async ()=>{
     messageEl.textContent = '❌ Signup failed. Please try again.';
   }
 });
+// ✅ Save user locally
+localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
+
+// --- Show welcome message ---
+messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
+
+// --- Redirect to shop page ---
+setTimeout(() => {
+  window.location.href = "https://golalaland.github.io/chat/nushop.html#";
+}, 800); // slight delay so user sees the message
 </script>
 </body>
 </html>
