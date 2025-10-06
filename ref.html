@@ -59,6 +59,9 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; }
 .submit-btn:hover { transform:scale(1.03); }
 .message { text-align:center; font-size:0.85rem; min-height:20px; }
+
+/* Confetti canvas overlay */
+#confetti-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
 </style>
 </head>
 <body>
@@ -88,20 +91,12 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 <button class="submit-btn" id="submitBtn">Sign Up</button>
 <div class="message" id="message"></div>
 
+<canvas id="confetti-canvas"></canvas>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  query,
-  collection,
-  where,
-  getDocs,
-  serverTimestamp,
-  arrayUnion
+  getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Config ---
@@ -115,6 +110,43 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// --- Confetti setup ---
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+let confettiParticles = [];
+
+function resizeCanvas(){
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function createConfetti(x, y){
+  const colors = ['#ff4081', '#ffd700', '#00ffff', '#00ff00', '#ff00ff'];
+  for(let i=0;i<100;i++){
+    confettiParticles.push({
+      x, y,
+      dx:(Math.random()-0.5)*6,
+      dy:(Math.random()-1.5)*6,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      size:Math.random()*6+4
+    });
+  }
+}
+
+function animateConfetti(){
+  confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+  confettiParticles.forEach(p => {
+    p.x += p.dx; p.y += p.dy;
+    p.dy += 0.05; // gravity
+    confettiCtx.fillStyle = p.color;
+    confettiCtx.fillRect(p.x, p.y, p.size, p.size);
+  });
+  confettiParticles = confettiParticles.filter(p => p.y < confettiCanvas.height+20);
+  if(confettiParticles.length>0) requestAnimationFrame(animateConfetti);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   let isVIP = false;
@@ -145,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  // --- VIP toggle ---
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
@@ -164,38 +195,6 @@ document.addEventListener('DOMContentLoaded', () => {
     femaleBtn.classList.remove('selected');
   });
 
-  // --- Update Host Stats (no duplicates) ---
-  async function updateHostStats(userData) {
-    if (!userData.invitedBy) return;
-    try {
-      const hostRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
-      const hostSnap = await getDoc(hostRef);
-      if (!hostSnap.exists()) return;
-      const hostData = hostSnap.data();
-
-      const friendId = userData.chatId.toLowerCase();
-      const existingFriends = Array.isArray(hostData.hostFriends)
-        ? hostData.hostFriends.map(f => f.chatIdLower)
-        : [];
-
-      if (!existingFriends.includes(friendId)) {
-        await updateDoc(hostRef, {
-          hostFriends: arrayUnion({
-            chatId: userData.chatId,
-            chatIdLower: friendId,
-            email: userData.email
-          }),
-          stars: (hostData.stars || 0) + 200,
-          starsGifted: (hostData.starsGifted || 0) + 200,
-          hostVIP: (hostData.hostVIP || 0) + 1
-        });
-      }
-    } catch (e) {
-      console.error("Error updating host stats:", e);
-    }
-  }
-
-  // --- Submit ---
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatId = cleanChatId(chatIdInput.value.trim());
@@ -221,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
-    const userSnap = await getDoc(userRef);
 
     const userData = {
       chatId,
@@ -243,77 +241,77 @@ document.addEventListener('DOMContentLoaded', () => {
       gender,
       createdAt: serverTimestamp(),
       subscriptionActive: false,
-      subscriptionCount: 0
+      subscriptionCount: 0,
+      inviteeGiftShown: false // NEW: track if invitee has seen gift
     };
 
     try {
-  const existingUserSnap = await getDoc(userRef);
+      const existingUserSnap = await getDoc(userRef);
 
-  if (!existingUserSnap.exists()) {
-    // --- New User Signup ---
-    await setDoc(userRef, userData);
+      if (!existingUserSnap.exists()) {
+        // --- New User Signup ---
+        await setDoc(userRef, userData);
 
-    // ✅ Reward the inviter (host)
-    if (referrer) {
-      const refDoc = doc(db, "users", sanitizeKey(referrer));
-      const refSnap = await getDoc(refDoc);
+        // --- Reward host if referred ---
+        if (referrer) {
+          const refDoc = doc(db, "users", sanitizeKey(referrer));
+          const refSnap = await getDoc(refDoc);
 
-      if (refSnap.exists()) {
-        const refData = refSnap.data();
+          if (refSnap.exists()) {
+            const refData = refSnap.data();
+            const alreadyReferred =
+              Array.isArray(refData.hostFriends) &&
+              refData.hostFriends.some(f => f.email === email);
 
-        // --- Prevent duplicate VIP counts ---
-        const alreadyReferred =
-          Array.isArray(refData.hostFriends) &&
-          refData.hostFriends.some(f => f.email === email);
-
-        if (!alreadyReferred) {
-          const newVIP = (refData.hostVIP || 0) + 1;
-          const newStarsGifted = (refData.starsGifted || 0) + 200;
-
-          await updateDoc(refDoc, {
-            hostVIP: newVIP,
-            starsGifted: newStarsGifted,
-            stars: (refData.stars || 0) + 200,
-            hostFriends: arrayUnion({
-              email,
-              chatId,
-              chatIdLower: chatId.toLowerCase()
-            })
-          });
+            if (!alreadyReferred) {
+              await updateDoc(refDoc, {
+                hostVIP: (refData.hostVIP || 0) + 1,
+                starsGifted: (refData.starsGifted || 0) + 200,
+                stars: (refData.stars || 0) + 200,
+                hostFriends: arrayUnion({
+                  email,
+                  chatId,
+                  chatIdLower: chatId.toLowerCase(),
+                  giftShown: false
+                })
+              });
+            }
+          }
         }
+
+      } else {
+        await updateDoc(userRef, userData);
       }
+
+      // --- Display host name ---
+      if (referrer) {
+        const refDoc = doc(db, "users", sanitizeKey(referrer));
+        const refSnap = await getDoc(refDoc);
+        let displayName = sanitizeEmailPrefix(referrer);
+        if (refSnap.exists()) {
+          const refData = refSnap.data();
+          if (refData.chatId) displayName = refData.chatId;
+        }
+        hostUsernameEl.textContent = displayName;
+      }
+
+      // --- Save locally & show welcome ---
+      localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
+      messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
+
+      // --- Show confetti ---
+      createConfetti(window.innerWidth/2, window.innerHeight/3);
+      animateConfetti();
+
+      // --- Redirect to shop ---
+      setTimeout(() => {
+        window.location.href = "https://golalaland.github.io/chat/nushop.html#";
+      }, 1500);
+
+    } catch (e) {
+      console.error(e);
+      messageEl.textContent = "❌ Signup failed. Please try again.";
     }
-
-  } else {
-    // --- Existing user ---
-    await updateDoc(userRef, userData);
-  }
-
-  // --- Display host name ---
-  if (referrer) {
-    const refDoc = doc(db, "users", sanitizeKey(referrer));
-    const refSnap = await getDoc(refDoc);
-    let displayName = sanitizeEmailPrefix(referrer);
-    if (refSnap.exists()) {
-      const refData = refSnap.data();
-      if (refData.chatId) displayName = refData.chatId;
-    }
-    hostUsernameEl.textContent = displayName;
-  }
-
-  // --- Save locally & show welcome ---
-  localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
-  messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
-
-  // --- Redirect to shop ---
-  setTimeout(() => {
-    window.location.href = "https://golalaland.github.io/chat/nushop.html#";
-  }, 800);
-
-} catch (e) {
-  console.error(e);
-  messageEl.textContent = "❌ Signup failed. Please try again.";
-}
   });
 });
 </script>
