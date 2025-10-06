@@ -247,38 +247,58 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      if (!userSnap.exists()) {
-        // New user — create and gift host
-        await setDoc(userRef, userData);
-        await updateHostStats(userData);
-      } else {
-        // Existing user — update info only
-        await updateDoc(userRef, userData);
+  const existingUserSnap = await getDoc(userRef);
+
+  if (!existingUserSnap.exists()) {
+    // --- New User Signup ---
+    await setDoc(userRef, userData);
+
+    // Gift 50 stars only once per *new* signup
+    if (referrer) {
+      const refDoc = doc(db, "users", sanitizeKey(referrer));
+      const refSnap = await getDoc(refDoc);
+
+      if (refSnap.exists()) {
+        const refData = refSnap.data();
+        const newVIP = (refData.hostVIP || 0) + 1;
+        const newStarsGifted = (refData.starsGifted || 0) + 50;
+
+        await updateDoc(refDoc, {
+          hostVIP: newVIP,
+          starsGifted: newStarsGifted
+        });
       }
-
-      // Update host display
-      if (referrer) {
-        const refDoc = doc(db, 'users', sanitizeKey(referrer));
-        const refSnap = await getDoc(refDoc);
-        let displayName = sanitizeEmailPrefix(referrer);
-        if (refSnap.exists()) {
-          const refData = refSnap.data();
-          if (refData.chatId) displayName = refData.chatId;
-        }
-        hostUsernameEl.textContent = displayName;
-      }
-
-      localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
-      messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
-
-      setTimeout(() => {
-        window.location.href = "https://golalaland.github.io/chat/nushop.html#";
-      }, 900);
-
-    } catch (e) {
-      console.error(e);
-      messageEl.textContent = '❌ Signup failed. Please try again.';
     }
+  } else {
+    // --- Existing user ---
+    await updateDoc(userRef, userData);
+  }
+
+  // Display host name
+  if (referrer) {
+    const refDoc = doc(db, "users", sanitizeKey(referrer));
+    const refSnap = await getDoc(refDoc);
+    let displayName = sanitizeEmailPrefix(referrer);
+    if (refSnap.exists()) {
+      const refData = refSnap.data();
+      if (refData.chatId) displayName = refData.chatId;
+    }
+    hostUsernameEl.textContent = displayName;
+  }
+
+  // Save locally + welcome
+  localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
+  messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
+
+  // Redirect to shop
+  setTimeout(() => {
+    window.location.href = "https://golalaland.github.io/chat/nushop.html#";
+  }, 800);
+
+} catch (e) {
+  console.error(e);
+  messageEl.textContent = "❌ Signup failed. Please try again.";
+}
   });
 });
 </script>
