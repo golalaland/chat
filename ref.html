@@ -116,9 +116,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Wait for DOM to be ready (extra safe)
+// Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
-  // --- UI Elements ---
   let isVIP = false;
   let gender = '';
   const vipToggle = document.getElementById('vipToggle');
@@ -134,11 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const emailInput = document.getElementById('email');
   const hostUsernameEl = document.getElementById('host-username');
 
-  // --- Capture Referral from URL ---
+  // --- Referral Capture ---
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
 
-  // --- Helper Functions ---
+  // --- Helpers ---
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
@@ -168,45 +167,38 @@ document.addEventListener('DOMContentLoaded', () => {
     femaleBtn.classList.remove('selected');
   });
 
-  // --- Update Host Stats & Gift Stars ---
- async function updateHostStats(userData) {
-  if (!userData.invitedBy) return;
+  // --- Update Host Stats ---
+  async function updateHostStats(userData) {
+    if (!userData.invitedBy) return;
+    try {
+      const hostRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
+      const hostSnap = await getDoc(hostRef);
+      if (!hostSnap.exists()) return;
+      const hostData = hostSnap.data();
 
-  try {
-    const hostRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
-    const hostSnap = await getDoc(hostRef);
-    if (!hostSnap.exists()) return;
+      const newFriend = {
+        chatId: userData.chatId,
+        email: userData.email,
+        chatIdLower: userData.chatId.toLowerCase()
+      };
 
-    const hostData = hostSnap.data();
+      const hostFriends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends : [];
+      const alreadyExists = hostFriends.some(
+        f => (f.chatIdLower || f.toLowerCase?.()) === userData.chatId.toLowerCase()
+      );
 
-    const newFriend = {
-      chatId: userData.chatId,
-      email: userData.email,
-      chatIdLower: userData.chatId.toLowerCase()
-    };
-
-    const hostFriends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends : [];
-
-    // ✅ Prevent duplicate entries and double VIP count
-    const alreadyExists = hostFriends.some(
-      f => (f.chatIdLower || f.toLowerCase?.()) === userData.chatId.toLowerCase()
-    );
-
-    if (!alreadyExists) {
-      await updateDoc(hostRef, {
-        hostFriends: arrayUnion(newFriend),
-        stars: (hostData.stars || 0) + 200,
-        starsGifted: (hostData.starsGifted || 0) + 200,
-        hostVIP: (hostData.hostVIP || 0) + 1 // increment only once per new user
-      });
-    } else {
-      console.log(`👀 Skipping duplicate invitee: ${userData.chatId}`);
+      if (!alreadyExists) {
+        await updateDoc(hostRef, {
+          hostFriends: arrayUnion(newFriend),
+          stars: (hostData.stars || 0) + 200,
+          starsGifted: (hostData.starsGifted || 0) + 200,
+          hostVIP: (hostData.hostVIP || 0) + 1
+        });
+      }
+    } catch (e) {
+      console.error("Error updating host stats:", e);
     }
-
-  } catch (e) {
-    console.error("Error updating host stats:", e);
   }
-}
 
   // --- Submit Logic ---
   submitBtn.addEventListener('click', async () => {
@@ -215,17 +207,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const phone = (phoneInput.value || '').trim();
     const email = (emailInput.value || '').trim().toLowerCase();
 
-    if(!fullName || !chatId || !phone || !email || !gender){
+    if (!fullName || !chatId || !phone || !email || !gender) {
       messageEl.textContent = 'Please fill in all fields.';
       return;
     }
 
-    if(!isVIP && gender !== 'Female'){
+    if (!isVIP && gender !== 'Female') {
       messageEl.textContent = 'Only females can sign up as hosts.';
       return;
     }
 
-    if(await isChatIdTaken(chatId)){
+    if (await isChatIdTaken(chatId)) {
       messageEl.textContent = 'That chat name is already taken. Try another one ✨';
       return;
     }
@@ -245,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
       starsGifted: 0,
       lastStarDate: new Date().toISOString().split("T")[0],
       cash: 0,
-      usernameColor: '#'+Math.floor(Math.random()*16777215).toString(16),
+      usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
       isAdmin: false,
       isVIP,
       isHost: !isVIP,
@@ -259,46 +251,41 @@ document.addEventListener('DOMContentLoaded', () => {
       subscriptionCount: 0
     };
 
-  try {
-  if (!userSnap.exists()) {
-    // New user ➜ create and gift host
-    await setDoc(userRef, userData);
-    await updateHostStats(userData); // ✅ Only call here for new user
-  } else {
-    // Existing user ➜ just update their info, no host gift
-    await updateDoc(userRef, userData);
-  }
+    try {
+      if (!userSnap.exists()) {
+        await setDoc(userRef, userData);
+        await updateHostStats(userData);
+      } else {
+        await updateDoc(userRef, userData);
+      }
 
-  // --- Update host-username display ---
-  if (referrer) {
-    const refDoc = doc(db, 'users', sanitizeKey(referrer));
-    const refSnap = await getDoc(refDoc);
-    let displayName = sanitizeEmailPrefix(referrer);
-    if (refSnap.exists()) {
-      const refData = refSnap.data();
-      if (refData.chatId) displayName = refData.chatId;
+      // --- Update host display ---
+      if (referrer) {
+        const refDoc = doc(db, 'users', sanitizeKey(referrer));
+        const refSnap = await getDoc(refDoc);
+        let displayName = sanitizeEmailPrefix(referrer);
+        if (refSnap.exists()) {
+          const refData = refSnap.data();
+          if (refData.chatId) displayName = refData.chatId;
+        }
+        hostUsernameEl.textContent = displayName;
+      }
+
+      // ✅ Save locally and welcome
+      localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
+      messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
+
+      // Redirect
+      setTimeout(() => {
+        window.location.href = "https://golalaland.github.io/chat/nushop.html#";
+      }, 800);
+
+    } catch (e) {
+      console.error(e);
+      messageEl.textContent = '❌ Signup failed. Please try again.';
     }
-    hostUsernameEl.textContent = displayName;
-  }
-
-  // ✅ Save user locally & show message
-  localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
-  messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${
-    isVIP ? 'a VIP' : 'a Host'
-  } 🎉`;
-
-  // --- Redirect to shop page ---
-  setTimeout(() => {
-    window.location.href = "https://golalaland.github.io/chat/nushop.html#";
-  }, 800);
-
-} catch (e) {
-  console.error(e);
-  messageEl.textContent = '❌ Signup failed. Please try again.';
-}
-
-}); // ✅ close submitBtn event listener properly
-}); // ✅ close DOMContentLoaded properly
+  });
+});
 </script>
 </body>
 </html>
