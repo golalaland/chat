@@ -175,28 +175,45 @@ document.addEventListener('DOMContentLoaded', () => {
     femaleBtn.classList.remove('selected');
   });
 
-  function triggerConfetti(){
-    // simple appealing confetti
-    const duration = 2 * 1000;
-    const end = Date.now() + duration;
-    (function frame() {
-      const colors = ['#ff0', '#0ff', '#f0f', '#fff', '#ff4081', '#0f0'];
-      const particle = document.createElement('div');
-      particle.style.position = 'fixed';
-      particle.style.width = '6px';
-      particle.style.height = '6px';
-      particle.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
-      particle.style.top = Math.random()*100 + '%';
-      particle.style.left = Math.random()*100 + '%';
-      particle.style.opacity = '0.8';
-      particle.style.borderRadius = '50%';
-      particle.style.pointerEvents = 'none';
-      particle.style.zIndex = '9999';
-      document.body.appendChild(particle);
-      setTimeout(()=>document.body.removeChild(particle), 2000);
-      if(Date.now()<end) requestAnimationFrame(frame);
-    })();
+  function triggerSprayConfetti() {
+  const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#FF4500', '#32CD32'];
+  const numParticles = 40;
+  const container = document.body;
+
+  for (let i = 0; i < numParticles; i++) {
+    const particle = document.createElement('div');
+    particle.style.position = 'fixed';
+    particle.style.width = '8px';
+    particle.style.height = '20px';
+    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.left = `${50 + (Math.random() - 0.5) * 100}%`;
+    particle.style.top = '-20px';
+    particle.style.opacity = '0.9';
+    particle.style.borderRadius = '2px';
+    particle.style.transform = `rotate(${Math.random() * 360}deg)`;
+    particle.style.pointerEvents = 'none';
+    particle.style.zIndex = '9999';
+    container.appendChild(particle);
+
+    const duration = 2000 + Math.random() * 1000; // 2-3s fall
+    const endX = (Math.random() - 0.5) * 200;
+    const endY = window.innerHeight + 50;
+
+    const start = performance.now();
+    function animate(time) {
+      const t = (time - start) / duration;
+      if (t < 1) {
+        particle.style.top = `${-20 + t * endY}px`;
+        particle.style.left = `${50 + (Math.random() - 0.5) * 100 + endX * t}%`;
+        particle.style.transform = `rotate(${t * 720}deg)`;
+        requestAnimationFrame(animate);
+      } else {
+        container.removeChild(particle);
+      }
+    }
+    requestAnimationFrame(animate);
   }
+}
 
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
