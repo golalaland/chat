@@ -222,14 +222,23 @@ const nameInput = document.getElementById('name');
 const chatIdInput = document.getElementById('chatId');
 const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
+const hostUsernameEl = document.getElementById('host-username');
 
 // --- Capture Referral from URL ---
 const urlParams = new URLSearchParams(window.location.search);
 const referrer = urlParams.get('ref') || null;
-document.getElementById('host-username').textContent = referrer || 'Main';
-const hostLink = referrer
-  ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(referrer)}`
-  : null;
+
+// --- Helper Functions ---
+function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
+function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
+function sanitizeEmailPrefix(email){
+  return email.split('@')[0];
+}
+async function isChatIdTaken(chatId) {
+  const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
+}
 
 // --- VIP Toggle ---
 vipToggle.addEventListener('click', () => {
@@ -251,20 +260,11 @@ maleBtn.addEventListener('click', () => {
   femaleBtn.classList.remove('selected');
 });
 
-// --- Helper Functions ---
-function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
-function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
-async function isChatIdTaken(chatId) {
-  const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
-  const snapshot = await getDocs(q);
-  return !snapshot.empty;
-}
-
 // --- Update Host Stats ---
 async function updateHostStats(userData) {
-  if(!userData.refHost) return;
+  if(!userData.invitedBy) return;
   try {
-    const hostDoc = doc(db, 'users', sanitizeKey(userData.refHost));
+    const hostDoc = doc(db, 'users', sanitizeKey(userData.invitedBy));
     const hostSnap = await getDoc(hostDoc);
     if(!hostSnap.exists()) return;
 
@@ -323,8 +323,8 @@ submitBtn.addEventListener('click', async ()=>{
     isAdmin: false,
     isVIP,
     isHost: !isVIP,
-    hostLink: !isVIP ? hostLink : null,
-    refHost: referrer || null,
+    hostLink: !isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
+    invitedBy: referrer || null,
     email,
     phone,
     gender,
@@ -337,6 +337,18 @@ submitBtn.addEventListener('click', async ()=>{
 
     // ✅ Update host stats automatically
     await updateHostStats(userData);
+
+    // --- Update host-username display ---
+    if(referrer){
+      const refDoc = doc(db, 'users', sanitizeKey(referrer));
+      const refSnap = await getDoc(refDoc);
+      let displayName = sanitizeEmailPrefix(referrer);
+      if(refSnap.exists()){
+        const refData = refSnap.data();
+        if(refData.chatId) displayName = refData.chatId;
+      }
+      hostUsernameEl.textContent = displayName;
+    }
 
     localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
     messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
