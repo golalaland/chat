@@ -169,18 +169,19 @@ header {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(255, 255, 255, 0.35); /* 👈 lowered from 0.85 to 0.35 */
-  backdrop-filter: blur(4px);           /* ✨ subtle blur for a modern look */
+  background: transparent;     /* 👈 fully transparent backdrop */
   z-index: 2000;
   visibility: hidden;
   opacity: 0;
-  transition: visibility 0.25s ease, opacity 0.25s ease, background 0.25s ease;
+  pointer-events: none;        /* don't block clicks when hidden */
+  transition: visibility 0.25s ease, opacity 0.25s ease;
 }
 
 .shop-spinner.active {
   visibility: visible;
   opacity: 1;
-  background: rgba(255, 255, 255, 0.45); /* 👈 slightly stronger during fade-in */
+  background: transparent;     /* 👈 stays transparent even when active */
+  pointer-events: all;         /* block clicks while spinner is showing */
 }
 .product-card {
   position: relative;
