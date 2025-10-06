@@ -75,8 +75,8 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 <h2>VIP / Host Signup</h2>
 <p id="host-info">You're in <span id="host-username">Main</span>'s VIP Tab</p>
 
-<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
-<div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name (5-15 chars)"></div>
+<div class="form-group"><input id="name" type="text" placeholder="Name"></div>
+<div class="form-group"><input id="chatId" type="text" placeholder="Choose a ChatID></div>
 <div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 
@@ -217,17 +217,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if(phone.length < 11 || phone.length > 15){
-      messageEl.textContent = 'Phone must be 11-15 digits.';
+      messageEl.textContent = 'Phone number not valid.';
       return;
     }
 
     if(!isValidEmail(email)){
-      messageEl.textContent = 'Email not valid. Use @gmail.com, @yahoo.com, @icloud.com, @proton.me, @protonmail.com';
+      messageEl.textContent = 'Email Address not valid.';
       return;
     }
 
     if (!isVIP && gender !== 'Female') {
-      messageEl.textContent = 'Only females can sign up as hosts.';
+      messageEl.textContent = 'Only females can sign up as hosts buddy 🙂.';
       return;
     }
 
