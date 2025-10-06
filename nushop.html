@@ -32,32 +32,6 @@ header {
   border-bottom: 2px solid #ddd;  /* subtle divider */
 }
 
-/* DAY/NIGHT MODE */
-body.night {
-  background: #121212;
-  color: #eee;
-}
-
-body.night header {
-  background: #1e1e1e;
-  color: #fff;
-  border-bottom: 2px solid #333;
-}
-
-body.night .profile-card,
-body.night .tab-content,
-body.night .product-card {
-  background: #1e1e1e;
-  color: #eee;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-}
-
-body.night .balance-label,
-body.night .stat-label,
-body.night .muted {
-  color: #aaa;
-}
-
 /* ---------- PROFILE CARD ---------- */
 #user-info {
   display: flex;
@@ -617,20 +591,6 @@ body.night .muted {
     </div>
   </div>
 </div>
-
-<!-- THEME TOGGLE -->
-<div style="display:flex; justify-content:center; margin:1rem 0; gap:12px; align-items:center;">
-  <button id="themeToggle" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">
-    <!-- Sun SVG (Day Mode) -->
-    <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="orange" viewBox="0 0 24 24">
-      <path d="M12 4.354a1 1 0 0 1 1 1v1.292a1 1 0 1 1-2 0V5.354a1 1 0 0 1 1-1zm0 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm8.364-3a1 1 0 0 1 0 2h-1.292a1 1 0 1 1 0-2h1.292zm-14.728 0a1 1 0 0 1 0 2H4.344a1 1 0 1 1 0-2h1.292zm9.192 6.192a1 1 0 0 1 1.414 1.414l-.915.915a1 1 0 1 1-1.414-1.414l.915-.915zm-8.486 0l.915.915a1 1 0 0 1-1.414 1.414l-.915-.915a1 1 0 0 1 1.414-1.414zm8.486-12.364l.915-.915a1 1 0 0 1 1.414 1.414l-.915.915a1 1 0 0 1-1.414-1.414zm-8.486 0a1 1 0 0 1 1.414-1.414l.915.915a1 1 0 0 1-1.414 1.414l-.915-.915z"/>
-    </svg>
-    <!-- Moon SVG (Night Mode) hidden by default -->
-    <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#555" viewBox="0 0 24 24" style="display:none;">
-      <path d="M21.752 15.002a9 9 0 1 1-10.754-10.754 1 1 0 0 0-.998-1.248 11 11 0 1 0 12 12 1 1 0 0 0-1.248-.998z"/>
-    </svg>
-  </button>
-</
 
 <div class="host-tabs" id="hostTabs" style="display:none;">
   <button class="tab-btn active" data-tab="vip">VIP</button>
