@@ -261,24 +261,6 @@ header {
   object-fit: cover;
 }
 
-/* ---------- PAGE LOADER ---------- */
-#page-loader {
-  background: rgba(255, 255, 255, 0); /* fully transparent */
-  /* or a very subtle dim, like: rgba(0,0,0,0.1) */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  transition: opacity 0.3s ease;
-}
-
-#page-loader.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* make copy link sit farther from the writeup above it */
 .tab-content .themed-btn {
   margin-top: 1.25rem; /* increase space below the description */
@@ -600,9 +582,7 @@ header {
   </div>
 </div>
 
-<div class="shop-grid" id="shop-items">
-
-
+<div class="shop-grid" id="shop-items"></div> 
 
 <div class="tab-content" id="orders-content" style="display:none;">
   <h3 style="margin-bottom:1rem;">My Orders</h3>
