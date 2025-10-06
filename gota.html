@@ -1104,7 +1104,9 @@ const redeemProduct = async (product) => {
   if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
 
   showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
+    // 🔥 Show spinner immediately
     showLoader();
+
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const productRef = doc(db, 'shopItems', String(product.id));
@@ -1114,6 +1116,7 @@ const redeemProduct = async (product) => {
         const [uSnap, pSnap] = await Promise.all([t.get(userRef), t.get(productRef)]);
         if (!uSnap.exists()) throw new Error('User not found');
         if (!pSnap.exists()) throw new Error('Product not found');
+
         const uData = uSnap.data(), pData = pSnap.data();
         const cost = Number(pData.cost) || 0;
         const available = Number(pData.available) || 0;
@@ -1131,7 +1134,6 @@ const redeemProduct = async (product) => {
         t.update(userRef, { stars: newStars, cash: newCash });
         t.update(productRef, { available: available - 1 });
         const purchasesCol = collection(db, 'purchases');
-        // create a new purchase doc (auto id)
         t.set(doc(purchasesCol), {
           userId: currentUser.uid,
           email: uData.email || '',
@@ -1159,11 +1161,11 @@ const redeemProduct = async (product) => {
       console.error(e);
       showThemedMessage('Redemption Failed', e.message || 'Try again');
     } finally {
+      // 🔥 Hide spinner after processing
       hideLoader();
     }
   });
 };
-
 /* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
