@@ -253,28 +253,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- New User Signup ---
     await setDoc(userRef, userData);
 
-    // Gift 50 stars only once per *new* signup
+    // ✅ Reward the inviter (host)
     if (referrer) {
       const refDoc = doc(db, "users", sanitizeKey(referrer));
       const refSnap = await getDoc(refDoc);
 
       if (refSnap.exists()) {
         const refData = refSnap.data();
-        const newVIP = (refData.hostVIP || 0) + 1;
-        const newStarsGifted = (refData.starsGifted || 0) + 50;
 
-        await updateDoc(refDoc, {
-          hostVIP: newVIP,
-          starsGifted: newStarsGifted
-        });
+        // --- Prevent duplicate VIP counts ---
+        const alreadyReferred =
+          Array.isArray(refData.hostFriends) &&
+          refData.hostFriends.some(f => f.email === email);
+
+        if (!alreadyReferred) {
+          const newVIP = (refData.hostVIP || 0) + 1;
+          const newStarsGifted = (refData.starsGifted || 0) + 200;
+
+          await updateDoc(refDoc, {
+            hostVIP: newVIP,
+            starsGifted: newStarsGifted,
+            stars: (refData.stars || 0) + 200,
+            hostFriends: arrayUnion({
+              email,
+              chatId,
+              chatIdLower: chatId.toLowerCase()
+            })
+          });
+        }
       }
     }
+
   } else {
     // --- Existing user ---
     await updateDoc(userRef, userData);
   }
 
-  // Display host name
+  // --- Display host name ---
   if (referrer) {
     const refDoc = doc(db, "users", sanitizeKey(referrer));
     const refSnap = await getDoc(refDoc);
@@ -286,11 +301,11 @@ document.addEventListener('DOMContentLoaded', () => {
     hostUsernameEl.textContent = displayName;
   }
 
-  // Save locally + welcome
+  // --- Save locally & show welcome ---
   localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
   messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
 
-  // Redirect to shop
+  // --- Redirect to shop ---
   setTimeout(() => {
     window.location.href = "https://golalaland.github.io/chat/nushop.html#";
   }, 800);
