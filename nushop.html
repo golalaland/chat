@@ -895,7 +895,7 @@ const loadCurrentUser = async () => {
         } catch (e) {
           // ignore
         }
-        showReward(`You’ve been gifted 50 ⭐️ for joining ${inviterName}’s Tab!`, '⭐ You got gifts!');
+        showReward(`You’ve been gifted +50 stars ⭐️ for joining ${inviterName}’s Tab.`, '⭐ Congratulations!⭐️');
         // mark as shown
         try { await updateDoc(userRef, { inviteeGiftShown: true }); } catch (e) { console.error('Failed to set inviteeGiftShown', e); }
       }
@@ -909,7 +909,7 @@ const loadCurrentUser = async () => {
       const pending = friendsArr.find(f => !f.giftShown && f.email);
       if (pending) {
         const friendName = pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
-        showReward(`💫 You’ve been gifted +200 ⭐️ for inviting ${friendName}!`, '🎁 Host Reward');
+        showReward(`You’ve been gifted +200 stars ⭐️, ${friendName} just joined your Tab.`, '⭐ Congratulations!⭐️');
         // update the host doc to mark giftShown for that friend
         const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
         try { await updateDoc(userRef, { hostFriends: updated }); } catch (e) { console.error('Failed to mark host friend giftShown', e); }
