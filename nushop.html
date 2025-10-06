@@ -944,22 +944,26 @@ const renderTabContent = (type) => {
     // Removed Copy VIP Link from VIP tab
   } 
   else if (type === 'friends') {
-    renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
+  renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
 
-    // Add Copy VIP Link button here
-    const btn = document.createElement('button');
-    btn.id = 'copyVipLink';
-    btn.className = 'themed-btn';
-    btn.textContent = 'Copy VIP Link';
-    DOM.tabContent.appendChild(btn);
+  // Add Invite Friends button
+  const btn = document.createElement('button');
+  btn.id = 'inviteFriendsBtn';
+  btn.className = 'themed-btn';
+  btn.textContent = 'Invite Friends';
+  DOM.tabContent.appendChild(btn);
 
-    btn.addEventListener('click', () => {
-      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
-      navigator.clipboard.writeText(link)
-        .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
-        .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
-    });
-  } 
+  btn.addEventListener('click', () => {
+    // Custom message + referral link
+    const message = `Hey! i'm hosting on xixi live, join my tab and lets win some together,  Sign up using my link: `;
+    const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
+    const fullText = message + link;
+
+    navigator.clipboard.writeText(fullText)
+      .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
+      .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
+  });
+}
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
     DOM.tabContent.innerHTML = `
