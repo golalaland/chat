@@ -939,18 +939,28 @@ const renderTabContent = (type) => {
       <div class="stat-block" style="margin-bottom:12px;">
         <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
         <div class="stat-label">VIPs Signed Up</div>
-        <button id="copyVipLink" class="themed-btn">Copy VIP Link</button>
       </div>
     `;
-    document.getElementById('copyVipLink')?.addEventListener('click', () => {
+    // Removed Copy VIP Link from VIP tab
+  } 
+  else if (type === 'friends') {
+    renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
+
+    // Add Copy VIP Link button here
+    const btn = document.createElement('button');
+    btn.id = 'copyVipLink';
+    btn.className = 'themed-btn';
+    btn.textContent = 'Copy VIP Link';
+    DOM.tabContent.appendChild(btn);
+
+    btn.addEventListener('click', () => {
       const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
       navigator.clipboard.writeText(link)
         .then(() => showThemedMessage('Copied!', 'VIP link copied.', 1500))
         .catch(() => showThemedMessage('Error', 'Failed to copy link.', 1800));
     });
-  } else if (type === 'friends') {
-    renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
-  } else if (type === 'badges') {
+  } 
+  else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
     DOM.tabContent.innerHTML = `
       <div class="stat-block">
@@ -961,7 +971,6 @@ const renderTabContent = (type) => {
     `;
   }
 };
-
 /* ------------------ Friends rendering ------------------ */
 function renderFriendsList(container, friends) {
   container.innerHTML = '';
