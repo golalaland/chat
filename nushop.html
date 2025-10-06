@@ -163,25 +163,23 @@ header {
 }
 
 /* ---------- FULLSCREEN SPINNER ---------- */
+/* ---------- FULLSCREEN SPINNER ---------- */
 .shop-spinner {
-  position: fixed;
+  position: fixed;             /* cover the whole screen */
   inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: transparent;     /* 👈 fully transparent backdrop */
-  z-index: 2000;
+  background: rgba(255, 255, 255, 0.85);  /* transparent white overlay */
+  z-index: 2000;              /* sit above everything */
   visibility: hidden;
   opacity: 0;
-  pointer-events: none;        /* don't block clicks when hidden */
   transition: visibility 0.25s ease, opacity 0.25s ease;
 }
 
 .shop-spinner.active {
   visibility: visible;
   opacity: 1;
-  background: transparent;     /* 👈 stays transparent even when active */
-  pointer-events: all;         /* block clicks while spinner is showing */
 }
 .product-card {
   position: relative;
