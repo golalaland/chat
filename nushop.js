@@ -47,7 +47,8 @@ const DOM = {
   previewImg: document.getElementById('previewImg'),
   rewardModal: document.getElementById('rewardModal'),
   rewardTitle: document.getElementById('rewardTitle'),
-  rewardMessage: document.getElementById('rewardMessage')
+  rewardMessage: document.getElementById('rewardMessage'),
+  pageSpinner: document.getElementById('page-spinner') // <-- central spinner element
 };
 
 /* ------------------ Utilities ------------------ */
@@ -66,11 +67,15 @@ const animateNumber = (el, from, to, duration = 600) => {
   requestAnimationFrame(step);
 };
 
-/* ------------------ Loader ------------------ */
-const showLoader = () => document.getElementById('page-loader').classList.remove('hidden');
-const hideLoader = () => document.getElementById('page-loader').classList.add('hidden');
+/* ------------------ Spinner ------------------ */
+const showSpinner = () => {
+  if (DOM.pageSpinner) DOM.pageSpinner.style.display = 'flex';
+};
+const hideSpinner = () => {
+  if (DOM.pageSpinner) DOM.pageSpinner.style.display = 'none';
+};
 
-/* ------------------ Confetti (lazy load) ------------------ */
+/* ------------------ Confetti ------------------ */
 const triggerConfetti = () => {
   if (window.__confettiLoaded) return confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
   const s = document.createElement('script');
@@ -114,13 +119,12 @@ const showThemedMessage = (title, message, duration = 2000) => {
   _themedTimeout = setTimeout(() => closeModal(), duration);
 };
 
-/* ------------------ Reward modal (invitee + inviter) ------------------ */
+/* ------------------ Reward modal ------------------ */
 function showReward(message, title = "🎉 Reward Unlocked!") {
   if (!DOM.rewardModal) return;
   DOM.rewardTitle.textContent = title;
   DOM.rewardMessage.textContent = message;
   DOM.rewardModal.classList.remove('hidden');
-  // Auto-hide after 4.5s
   setTimeout(() => { DOM.rewardModal.classList.add('hidden'); }, 4500);
 }
 
@@ -170,19 +174,16 @@ const updateHostStats = async (newUser) => {
 /* ------------------ Current user state ------------------ */
 let currentUser = null;
 
-/* ------------------ Load current user from localStorage and Firestore ------------------ */
+/* ------------------ Load current user ------------------ */
 const loadCurrentUser = async () => {
   const vipRaw = localStorage.getItem('vipUser');
   const vip = vipRaw ? JSON.parse(vipRaw) : null;
 
-  // reset UI
   if (DOM.username) DOM.username.textContent = '******';
   if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
   if (DOM.cash) DOM.cash.textContent = `₦0`;
 
-  showLoader();
   await renderShop();
-  hideLoader();
 
   if (!vip?.email) { currentUser = null; if (DOM.hostTabs) DOM.hostTabs.style.display = 'none'; return; }
 
@@ -205,7 +206,6 @@ const loadCurrentUser = async () => {
   if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
   updateHostPanels();
 
-  // If this user was just invited, ensure host gets stats updated
   if (currentUser) {
     await updateHostStats({
       email: currentUser.email || '',
@@ -216,22 +216,18 @@ const loadCurrentUser = async () => {
     });
   }
 
-  // Subscribe to realtime changes for reward popups + UI updates
   onSnapshot(userRef, async docSnap => {
     const data = docSnap.data();
     if (!data) return;
     currentUser = { uid, ...data };
 
-    // update basic UI
     if (DOM.username) DOM.username.textContent = currentUser.chatId || vip.displayName || vip.email || 'Guest';
     if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
     if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
-    showLoader();
-    renderShop().catch(err => console.error(err)).finally(hideLoader);
+    renderShop().catch(err => console.error(err));
 
-    // --- Invitee reward: show once to invitee if flagged false
     try {
       if (data.invitedBy && data.inviteeGiftShown !== true) {
         let inviterName = data.invitedBy;
@@ -243,14 +239,12 @@ const loadCurrentUser = async () => {
             if (invData.chatId) inviterName = invData.chatId;
             else if (invData.email) inviterName = invData.email.split('@')[0];
           }
-        } catch (e) { }
-
+        } catch (e) {}
         showReward(`You’ve been gifted +50 stars ⭐️ for joining ${inviterName}’s Tab.`, '⭐ Congratulations!⭐️');
-        try { await updateDoc(userRef, { inviteeGiftShown: true }); } catch (e) { console.error('Failed to set inviteeGiftShown', e); }
+        try { await updateDoc(userRef, { inviteeGiftShown: true }); } catch (e) { console.error(e); }
       }
     } catch (e) { console.error('Invitee reward flow error', e); }
 
-    // --- Inviter reward
     try {
       const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
       const pending = friendsArr.find(f => !f.giftShown && f.email);
@@ -258,7 +252,7 @@ const loadCurrentUser = async () => {
         const friendName = pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
         showReward(`You’ve been gifted +200 stars ⭐️, ${friendName} just joined your Tab.`, '⭐ Congratulations!⭐️');
         const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
-        try { await updateDoc(userRef, { hostFriends: updated }); } catch (e) { console.error('Failed to mark host friend giftShown', e); }
+        try { await updateDoc(userRef, { hostFriends: updated }); } catch (e) { console.error(e); }
       }
     } catch (e) { console.error('Inviter reward flow error', e); }
   });
@@ -325,7 +319,7 @@ const renderTabContent = (type) => {
 function renderFriendsList(container, friends) {
   container.innerHTML = '';
   if (!friends || friends.length === 0) {
-    container.innerHTML = `<div class="muted"><div class="spinner"></div></div>`;
+    container.innerHTML = `<div class="muted">No friends yet 😔</div>`;
     return;
   }
 
@@ -353,8 +347,8 @@ function renderFriendsList(container, friends) {
       <div style="display:flex;align-items:center;gap:8px;">
         ${iconSVG}
         <div>
-          <div style="font-weight:600;color:${color}">${name}</div>
-          <div class="muted">${handle}</div>
+          <div style="font-weight:600;color:${color};">${name}</div>
+          <div style="font-size:0.85rem;color:#888;">${handle}</div>
         </div>
       </div>
     `;
@@ -364,98 +358,66 @@ function renderFriendsList(container, friends) {
   container.appendChild(list);
 }
 
-/* ------------------ Shop ------------------ */
+/* ------------------ Host tabs click ------------------ */
+DOM.hostTabs?.addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  DOM.hostTabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const type = btn.dataset.type;
+  renderTabContent(type);
+});
+
+/* ------------------ Shop rendering ------------------ */
 async function renderShop() {
   if (!DOM.shopItems) return;
-  showLoader();
-  DOM.shopItems.innerHTML = '<div style="text-align:center;"><div class="spinner"></div></div>';
+  const shopCol = collection(db, 'shop');
   try {
-    const shopRef = collection(db, 'shop');
-    const snap = await getDocs(shopRef);
-    DOM.shopItems.innerHTML = '';
-    snap.forEach(docSnap => {
-      const item = docSnap.data();
-      const el = document.createElement('div');
-      el.className = 'shop-item';
-      el.innerHTML = `
-        <img src="${item.img || 'https://via.placeholder.com/80'}" />
-        <div>${item.name}</div>
-        <div>⭐ ${formatNumber(item.cost)}</div>
-        <button class="buy-btn">Redeem</button>
-      `;
-      el.querySelector('.buy-btn').addEventListener('click', () => redeemProduct(item));
-      DOM.shopItems.appendChild(el);
-    });
-  } catch (err) {
-    console.error(err);
-    DOM.shopItems.innerHTML = '<div style="text-align:center;color:red;">Failed to load shop items.</div>';
-  } finally {
-    hideLoader();
-  }
-}
+    const snapshot = await getDocs(shopCol);
+    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    DOM.shopItems.innerHTML = items.map(item => `
+      <div class="shop-item">
+        <img src="${item.image || ''}" alt="${item.name}" />
+        <div class="item-name">${item.name}</div>
+        <div class="item-cost">${item.cost} ⭐️</div>
+        <button class="redeem-btn" data-id="${item.id}">Redeem</button>
+      </div>
+    `).join('');
 
-/* ------------------ Orders ------------------ */
-async function renderMyOrders() {
-  if (!DOM.ordersList) return;
-  DOM.ordersList.innerHTML = '<div style="text-align:center;"><div class="spinner"></div></div>';
-  showLoader();
-  try {
-    if (!currentUser?.uid) return;
-    const ordersRef = collection(db, 'orders');
-    const snap = await getDocs(ordersRef);
-    const myOrders = snap.docs.map(d => d.data()).filter(o => o.uid === currentUser.uid);
-    if (myOrders.length === 0) {
-      DOM.ordersList.innerHTML = '<div style="text-align:center;">No orders yet.</div>';
-      return;
-    }
-    DOM.ordersList.innerHTML = '';
-    myOrders.forEach(order => {
-      const el = document.createElement('div');
-      el.className = 'order-item';
-      el.textContent = `${order.productName} - ${order.status || 'Pending'}`;
-      DOM.ordersList.appendChild(el);
-    });
-  } catch (err) {
-    console.error(err);
-    DOM.ordersList.innerHTML = '<div style="text-align:center;color:red;">Failed to load orders.</div>';
-  } finally {
-    hideLoader();
-  }
-}
+    DOM.shopItems.querySelectorAll('.redeem-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!currentUser) return showThemedMessage('Error', 'You must be logged in.');
+        const itemId = btn.dataset.id;
+        const item = items.find(i => i.id === itemId);
+        if (!item) return showThemedMessage('Error', 'Item not found.');
+        if (currentUser.stars < item.cost) return showThemedMessage('Error', 'Not enough stars.');
 
-/* ------------------ Redeem product ------------------ */
-async function redeemProduct(item) {
-  if (!currentUser) return;
-  showConfirmModal(`Redeem ${item.name}?`, `It will cost ⭐ ${formatNumber(item.cost)}`, async () => {
-    showLoader();
-    try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      await runTransaction(db, async (t) => {
-        const userSnap = await t.get(userRef);
-        if (!userSnap.exists()) throw new Error('User not found.');
-        const userData = userSnap.data();
-        const stars = userData.stars || 0;
-        if (stars < item.cost) throw new Error('Not enough stars.');
-        t.update(userRef, { stars: stars - item.cost });
-        const ordersRef = collection(db, 'orders');
-        const newOrder = {
-          uid: currentUser.uid,
-          productName: item.name,
-          timestamp: serverTimestamp(),
-          status: 'Pending'
-        };
-        await t.set(doc(ordersRef), newOrder);
+        showSpinner(); // <-- show central spinner BEFORE transaction
+        try {
+          await runTransaction(db, async (t) => {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const userSnap = await t.get(userRef);
+            if (!userSnap.exists()) throw 'User not found';
+            const newStars = (userSnap.data().stars || 0) - item.cost;
+            t.update(userRef, { stars: newStars });
+          });
+          showReward(`You successfully redeemed ${item.name}!`);
+          triggerConfetti();
+        } catch (err) {
+          console.error(err);
+          showThemedMessage('Error', 'Failed to redeem item.');
+        } finally {
+          hideSpinner(); // <-- hide spinner after transaction
+        }
       });
-      showThemedMessage('Success', `You redeemed ${item.name}!`);
-      triggerConfetti();
-    } catch (err) {
-      console.error(err);
-      showThemedMessage('Error', err.message || 'Failed to redeem.');
-    } finally {
-      hideLoader();
-    }
-  });
+    });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-/* ------------------ Initial load ------------------ */
-document.addEventListener('DOMContentLoaded', () => loadCurrentUser());
+/* ------------------ Load everything ------------------ */
+document.addEventListener('DOMContentLoaded', () => {
+  if (DOM.pageSpinner) DOM.pageSpinner.style.display = 'none';
+  loadCurrentUser().catch(err => console.error(err));
+});
