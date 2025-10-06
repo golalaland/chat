@@ -169,27 +169,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Update Host Stats & Gift Stars ---
-  async function updateHostStats(userData) {
-    if(!userData.invitedBy) return;
-    try {
-      const hostDocRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
-      const hostSnap = await getDoc(hostDocRef);
-      if(!hostSnap.exists()) return;
+ async function updateHostStats(userData) {
+  if (!userData.invitedBy) return;
 
-      const hostData = hostSnap.data();
+  try {
+    const hostDocRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
+    const hostSnap = await getDoc(hostDocRef);
+    if (!hostSnap.exists()) return;
 
-      // Use arrayUnion directly in updateDoc
-      await updateDoc(hostDocRef, {
-        hostFriends: arrayUnion(userData.chatId),
-        hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
-        stars: (hostData.stars || 0) + 200 // gift 200 stars to inviter
-      });
+    const hostData = hostSnap.data();
 
-      // The shop modal will detect this change for the inviter and render there
-    } catch(e){
-      console.error('Error updating host stats:', e);
-    }
+    // Gift inviter
+    const newStars = (hostData.stars || 0) + 200;
+    const newGiftedTotal = (hostData.starsGifted || 0) + 200;
+
+    await updateDoc(hostDocRef, {
+      stars: newStars,
+      starsGifted: newGiftedTotal,
+      hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
+      hostFriends: arrayUnion(userData.chatId)
+    });
+
+  } catch (e) {
+    console.error('Error updating host stats:', e);
   }
+}
 
   // --- Submit Logic ---
   submitBtn.addEventListener('click', async () => {
@@ -225,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fullName,
       stars: 50,
       starsToday: 0,
+      starsGifted: 0,
       lastStarDate: new Date().toISOString().split("T")[0],
       cash: 0,
       usernameColor: '#'+Math.floor(Math.random()*16777215).toString(16),
