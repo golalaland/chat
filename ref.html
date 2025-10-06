@@ -116,7 +116,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
   let isVIP = false;
   let gender = '';
@@ -133,21 +132,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const emailInput = document.getElementById('email');
   const hostUsernameEl = document.getElementById('host-username');
 
-  // --- Referral Capture ---
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
 
-  // --- Helpers ---
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
+
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
     const snapshot = await getDocs(q);
     return !snapshot.empty;
   }
 
-  // --- VIP Toggle ---
+  // --- VIP toggle ---
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
@@ -155,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     vipMessage.style.opacity = isVIP ? '1' : '0';
   });
 
-  // --- Gender Buttons ---
   femaleBtn.addEventListener('click', () => {
     gender = 'Female';
     femaleBtn.classList.add('selected');
@@ -167,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     femaleBtn.classList.remove('selected');
   });
 
-  // --- Update Host Stats ---
+  // --- Update Host Stats (no duplicates) ---
   async function updateHostStats(userData) {
     if (!userData.invitedBy) return;
     try {
@@ -176,20 +173,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!hostSnap.exists()) return;
       const hostData = hostSnap.data();
 
-      const newFriend = {
-        chatId: userData.chatId,
-        email: userData.email,
-        chatIdLower: userData.chatId.toLowerCase()
-      };
+      const friendId = userData.chatId.toLowerCase();
+      const existingFriends = Array.isArray(hostData.hostFriends)
+        ? hostData.hostFriends.map(f => f.chatIdLower)
+        : [];
 
-      const hostFriends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends : [];
-      const alreadyExists = hostFriends.some(
-        f => (f.chatIdLower || f.toLowerCase?.()) === userData.chatId.toLowerCase()
-      );
-
-      if (!alreadyExists) {
+      if (!existingFriends.includes(friendId)) {
         await updateDoc(hostRef, {
-          hostFriends: arrayUnion(newFriend),
+          hostFriends: arrayUnion({
+            chatId: userData.chatId,
+            chatIdLower: friendId,
+            email: userData.email
+          }),
           stars: (hostData.stars || 0) + 200,
           starsGifted: (hostData.starsGifted || 0) + 200,
           hostVIP: (hostData.hostVIP || 0) + 1
@@ -200,12 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- Submit Logic ---
+  // --- Submit ---
   submitBtn.addEventListener('click', async () => {
-    const fullName = (nameInput.value || '').trim();
-    const chatId = cleanChatId((chatIdInput.value || '').trim());
-    const phone = (phoneInput.value || '').trim();
-    const email = (emailInput.value || '').trim().toLowerCase();
+    const fullName = nameInput.value.trim();
+    const chatId = cleanChatId(chatIdInput.value.trim());
+    const phone = phoneInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
 
     if (!fullName || !chatId || !phone || !email || !gender) {
       messageEl.textContent = 'Please fill in all fields.';
@@ -218,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (await isChatIdTaken(chatId)) {
-      messageEl.textContent = 'That chat name is already taken. Try another one ✨';
+      messageEl.textContent = 'That chat name is already taken.';
       return;
     }
 
@@ -253,13 +248,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       if (!userSnap.exists()) {
+        // New user — create and gift host
         await setDoc(userRef, userData);
         await updateHostStats(userData);
       } else {
+        // Existing user — update info only
         await updateDoc(userRef, userData);
       }
 
-      // --- Update host display ---
+      // Update host display
       if (referrer) {
         const refDoc = doc(db, 'users', sanitizeKey(referrer));
         const refSnap = await getDoc(refDoc);
@@ -271,14 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
         hostUsernameEl.textContent = displayName;
       }
 
-      // ✅ Save locally and welcome
       localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
       messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
 
-      // Redirect
       setTimeout(() => {
         window.location.href = "https://golalaland.github.io/chat/nushop.html#";
-      }, 800);
+      }, 900);
 
     } catch (e) {
       console.error(e);
