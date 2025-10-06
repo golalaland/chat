@@ -158,25 +158,47 @@ document.addEventListener('DOMContentLoaded', () => {
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
   function triggerSprayConfetti() {
-    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const num = 40;
-    for(let i=0;i<num;i++){
-      const p=document.createElement('div');
-      p.style.position='fixed'; p.style.width='8px'; p.style.height='20px'; p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
-      p.style.left=`${50 + (Math.random()-0.5)*100}%`; p.style.top='-20px';
-      p.style.opacity='0.9'; p.style.borderRadius='2px'; p.style.transform=`rotate(${Math.random()*360}deg)`; p.style.zIndex='9999'; p.style.pointerEvents='none';
-      document.body.appendChild(p);
-      const dur=2000+Math.random()*1000;
-      const endX=(Math.random()-0.5)*200;
-      const endY=window.innerHeight+50;
-      const start=performance.now();
-      (function animate(time){
-        const t=(time-start)/dur;
-        if(t<1){ p.style.top=`${-20+t*endY}px`; p.style.left=`${50+(Math.random()-0.5)*100+endX*t}%`; p.style.transform=`rotate(${t*720}deg)`; requestAnimationFrame(animate); } else { p.remove(); }
-      })(start);
-    }
-  }
+  const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
+  const numParticles = 40;
+  const toggle = document.getElementById('vipToggle');
+  const rect = toggle.getBoundingClientRect();
+  const startX = rect.left + rect.width / 2;
+  const startY = rect.top + rect.height / 2;
 
+  for (let i = 0; i < numParticles; i++) {
+    const particle = document.createElement('div');
+    particle.style.position = 'fixed';
+    particle.style.width = '6px';
+    particle.style.height = '14px';
+    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.left = `${startX}px`;
+    particle.style.top = `${startY}px`;
+    particle.style.opacity = '0.9';
+    particle.style.borderRadius = '2px';
+    particle.style.transform = `rotate(${Math.random() * 360}deg)`;
+    particle.style.pointerEvents = 'none';
+    particle.style.zIndex = '9999';
+    document.body.appendChild(particle);
+
+    const angle = (Math.random() * Math.PI / 2) - Math.PI / 4; // spray 45deg left/right
+    const speed = 300 + Math.random() * 200; // pixels
+    const duration = 1500 + Math.random() * 500; // ms
+
+    const start = performance.now();
+    (function animate(time) {
+      const t = (time - start) / duration;
+      if (t < 1) {
+        const dx = Math.sin(angle) * speed * t;
+        const dy = -Math.cos(angle) * speed * t; // negative = upward
+        particle.style.transform = `translate(${dx}px, ${dy}px) rotate(${t * 720}deg)`;
+        particle.style.opacity = `${1 - t}`;
+        requestAnimationFrame(animate);
+      } else {
+        particle.remove();
+      }
+    })(start);
+  }
+}
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
