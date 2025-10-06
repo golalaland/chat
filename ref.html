@@ -56,7 +56,7 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .vip-toggle.on .vip-circle { left:45px; background:gold; box-shadow:0 0 12px gold; }
 .vip-message { text-align:center; font-size:0.8rem; color:gold; opacity:0; transition:0.3s; margin-bottom:1rem; }
 .vip-label.on { color:gold; text-shadow:0 0 8px gold; }
-.submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; position:relative; display:flex; justify-content:center; align-items:center; }
+.submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; display:flex; justify-content:center; align-items:center; position:relative; }
 .submit-btn:hover { transform:scale(1.03); }
 .submit-btn .spinner {
   width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3);
@@ -158,47 +158,45 @@ document.addEventListener('DOMContentLoaded', () => {
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
   function triggerSprayConfetti() {
-  const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-  const numParticles = 40;
-  const toggle = document.getElementById('vipToggle');
-  const rect = toggle.getBoundingClientRect();
-  const startX = rect.left + rect.width / 2;
-  const startY = rect.top + rect.height / 2;
+    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
+    const numParticles = 50;
+    const toggle = document.getElementById('vipToggle');
+    const rect = toggle.getBoundingClientRect();
+    const startX = rect.left + rect.width/2;
+    const startY = rect.bottom;
 
-  for (let i = 0; i < numParticles; i++) {
-    const particle = document.createElement('div');
-    particle.style.position = 'fixed';
-    particle.style.width = '6px';
-    particle.style.height = '14px';
-    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    particle.style.left = `${startX}px`;
-    particle.style.top = `${startY}px`;
-    particle.style.opacity = '0.9';
-    particle.style.borderRadius = '2px';
-    particle.style.transform = `rotate(${Math.random() * 360}deg)`;
-    particle.style.pointerEvents = 'none';
-    particle.style.zIndex = '9999';
-    document.body.appendChild(particle);
+    for (let i = 0; i < numParticles; i++) {
+      const particle = document.createElement('div');
+      particle.style.position='fixed';
+      particle.style.width='6px';
+      particle.style.height='16px';
+      particle.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+      particle.style.left=`${startX}px`;
+      particle.style.top=`${startY}px`;
+      particle.style.opacity='0.9';
+      particle.style.borderRadius='2px';
+      particle.style.pointerEvents='none';
+      particle.style.zIndex='9999';
+      document.body.appendChild(particle);
 
-    const angle = (Math.random() * Math.PI / 2) - Math.PI / 4; // spray 45deg left/right
-    const speed = 300 + Math.random() * 200; // pixels
-    const duration = 1500 + Math.random() * 500; // ms
+      const angle = (Math.random()*Math.PI/2) - Math.PI/4;
+      const speed = 300 + Math.random()*200;
+      const duration = 1500 + Math.random()*500;
 
-    const start = performance.now();
-    (function animate(time) {
-      const t = (time - start) / duration;
-      if (t < 1) {
-        const dx = Math.sin(angle) * speed * t;
-        const dy = -Math.cos(angle) * speed * t; // negative = upward
-        particle.style.transform = `translate(${dx}px, ${dy}px) rotate(${t * 720}deg)`;
-        particle.style.opacity = `${1 - t}`;
-        requestAnimationFrame(animate);
-      } else {
-        particle.remove();
-      }
-    })(start);
+      const start = performance.now();
+      (function animate(time){
+        const t = (time-start)/duration;
+        if(t<1){
+          const dx = Math.sin(angle)*speed*t;
+          const dy = -Math.cos(angle)*speed*t;
+          particle.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`;
+          particle.style.opacity=`${1-t}`;
+          requestAnimationFrame(animate);
+        } else { particle.remove(); }
+      })(start);
+    }
   }
-}
+
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
@@ -214,66 +212,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
 
-    const uidKey=sanitizeKey(email);
-    const userRef=doc(db,"users",uidKey);
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
 
-    const userData={
-      chatId,
-      chatIdLower:chatId.toLowerCase(),
-      fullName,
-      stars:50,
-      starsToday:0,
-      starsGifted:0,
-      lastStarDate:new Date().toISOString().split("T")[0],
-      cash:0,
-      usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
-      isAdmin:false,
-      isVIP,
-      isHost:!isVIP,
-      hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-      invitedBy:referrer||null,
-      email,
-      phone,
-      gender,
-      createdAt:serverTimestamp(),
-      subscriptionActive:false,
-      subscriptionCount:0
-    };
+    try {
+      const existingSnap = await getDoc(userRef);
+      const chatTaken = await isChatIdTaken(chatId);
+      if(existingSnap.exists() || chatTaken){
+        messageEl.textContent = "❌ User already signed up with this email or username.";
+        spinner.style.display='none'; btnText.style.display='inline';
+        return;
+      }
 
-    try{
-      const existingSnap=await getDoc(userRef);
-      if(!existingSnap.exists()){ await setDoc(userRef,userData);
-        if(!isVIP && referrer){
-          const refDoc=doc(db,"users",sanitizeKey(referrer));
-          const refSnap=await getDoc(refDoc);
-          if(refSnap.exists()){
-            const refData=refSnap.data();
-            const alreadyReferred=Array.isArray(refData.hostFriends)&&refData.hostFriends.some(f=>f.email===email);
-            if(!alreadyReferred){
-              await updateDoc(refDoc,{
-                hostVIP:(refData.hostVIP||0)+1,
-                starsGifted:(refData.starsGifted||0)+200,
-                stars:(refData.stars||0)+200,
-                hostFriends:arrayUnion({email,chatId,chatIdLower:chatId.toLowerCase()})
-              });
-            }
+      const userData = {
+        chatId,
+        chatIdLower:chatId.toLowerCase(),
+        fullName,
+        stars:50,
+        starsToday:0,
+        starsGifted:0,
+        lastStarDate:new Date().toISOString().split("T")[0],
+        cash:0,
+        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+        isAdmin:false,
+        isVIP,
+        isHost:!isVIP,
+        hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+        invitedBy:referrer||null,
+        email,
+        phone,
+        gender,
+        createdAt:serverTimestamp(),
+        subscriptionActive:false,
+        subscriptionCount:0
+      };
+
+      await setDoc(userRef,userData);
+
+      // Host rewards
+      if(referrer){
+        const refDoc = doc(db,"users",sanitizeKey(referrer));
+        const refSnap = await getDoc(refDoc);
+        if(refSnap.exists()){
+          const refData = refSnap.data();
+          const alreadyReferred = Array.isArray(refData.hostFriends) &&
+            refData.hostFriends.some(f=>f.email===email || f.chatIdLower===chatId.toLowerCase());
+          if(!alreadyReferred){
+            await updateDoc(refDoc,{
+              stars:(refData.stars||0)+200,
+              starsGifted:(refData.starsGifted||0)+200,
+              hostFriends: arrayUnion({email,chatId,chatIdLower:chatId.toLowerCase()})
+            });
           }
         }
-      }else{ await updateDoc(userRef,userData); }
+      }
 
       if(referrer){
-        const refDoc=doc(db,"users",sanitizeKey(referrer));
-        const refSnap=await getDoc(refDoc);
+        const refDoc = doc(db,"users",sanitizeKey(referrer));
+        const refSnap = await getDoc(refDoc);
         let displayName=sanitizeEmailPrefix(referrer);
         if(refSnap.exists()){ const refData=refSnap.data(); if(refData.chatId) displayName=refData.chatId; }
         hostUsernameEl.textContent=displayName;
       }
 
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
-      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${isVIP?'a VIP':'a Host'} 🎉`;
+      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and your host got 200 ⭐️ 🎉`;
 
       setTimeout(()=>{ window.location.href="https://golalaland.github.io/chat/nushop.html#"; },800);
-    }catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
+    } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
 });
