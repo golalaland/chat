@@ -162,23 +162,40 @@ header {
   padding: 1rem;
 }
 
-/* ---------- FULLSCREEN SPINNER ---------- */
-.shop-spinner {
-  position: fixed;             /* cover the whole screen */
+/* 🌐 FULLSCREEN SHOP SPINNER */
+#shopSpinner {
+  position: fixed;
   inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(255, 255, 255, 0.85);  /* transparent white overlay */
-  z-index: 2000;              /* sit above everything */
+  background: rgba(255, 255, 255, 0); /* fully transparent backdrop */
+  z-index: 2000;
   visibility: hidden;
   opacity: 0;
-  transition: visibility 0.25s ease, opacity 0.25s ease;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.shop-spinner.active {
+#shopSpinner.active {
   visibility: visible;
   opacity: 1;
+}
+
+/* 🌀 SPINNER DESIGN */
+#shopSpinner .spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid #eee;
+  border-top: 4px solid transparent;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ff6a00, #ee0979, #9d00ff, #ff6a00);
+  -webkit-mask: radial-gradient(farthest-side, transparent 70%, black 71%);
+          mask: radial-gradient(farthest-side, transparent 70%, black 71%);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 .product-card {
   position: relative;
