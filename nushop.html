@@ -454,6 +454,28 @@ header {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+#rewardModal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; justify-content: center; align-items: center;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+#rewardModal.hidden { display: none; }
+.reward-content {
+  background: #111;
+  color: gold;
+  border: 2px solid gold;
+  border-radius: 15px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 0 20px gold;
+  animation: pop 0.4s ease;
+}
+@keyframes pop { from{transform:scale(0.8);opacity:0;} to{transform:scale(1);opacity:1;} }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
 /* ---------- HOME BUTTON ---------- */
 #home-btn {
   background: var(--theme-gradient);
@@ -542,6 +564,14 @@ header {
       <button id="confirmYes">Yes</button>
       <button id="confirmNo">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- ✨ Reward Modal -->
+<div id="rewardModal" class="hidden">
+  <div class="reward-content">
+    <h3 id="rewardTitle">🎉 Reward Unlocked!</h3>
+    <p id="rewardMessage">You’ve just earned 200 ⭐️!</p>
   </div>
 </div>
 
