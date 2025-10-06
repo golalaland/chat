@@ -7,7 +7,7 @@
 <style>
 :root {
   --primary-color: #ff4081;
-  --background-color: #111;
+  --background-gradient: linear-gradient(135deg,#111,#000,#222);
   --text-color: #eee;
   --input-bg: #222;
   --input-border: #333;
@@ -15,7 +15,7 @@
 }
 * { box-sizing:border-box; margin:0; padding:0; }
 body {
-  background: var(--background-color);
+  background: var(--background-gradient);
   color: var(--text-color);
   font-family: 'Inter', sans-serif;
   display:flex;
@@ -56,11 +56,11 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .vip-toggle.on .vip-circle { left:45px; background:gold; box-shadow:0 0 12px gold; }
 .vip-message { text-align:center; font-size:0.8rem; color:gold; opacity:0; transition:0.3s; margin-bottom:1rem; }
 .vip-label.on { color:gold; text-shadow:0 0 8px gold; }
-.submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; position:relative; }
+.submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; position:relative; display:flex; justify-content:center; align-items:center; }
 .submit-btn:hover { transform:scale(1.03); }
 .submit-btn .spinner {
   width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3);
-  border-radius:50%; animation: spin 0.7s linear infinite; display:inline-block; position:absolute; right:15px; top:50%; transform:translateY(-50%); display:none;
+  border-radius:50%; animation: spin 0.7s linear infinite; display:none;
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
@@ -75,8 +75,8 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 <h2>VIP / Host Signup</h2>
 <p id="host-info">You're in <span id="host-username">Main</span>'s VIP Tab</p>
 
-<div class="form-group"><input id="name" type="text" placeholder="Name"></div>
-<div class="form-group"><input id="chatId" type="text" placeholder="Choose a ChatID"></div>
+<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
+<div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
 <div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 
@@ -91,18 +91,15 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 <div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
 
 <button class="submit-btn" id="submitBtn">
-  Sign Up
+  <span class="btn-text">Sign Up</span>
   <span class="spinner" id="spinner"></span>
 </button>
 <div class="message" id="message"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -124,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const maleBtn = document.getElementById('maleBtn');
   const submitBtn = document.getElementById('submitBtn');
   const spinner = document.getElementById('spinner');
+  const btnText = submitBtn.querySelector('.btn-text');
   const messageEl = document.getElementById('message');
   const nameInput = document.getElementById('name');
   const chatIdInput = document.getElementById('chatId');
@@ -133,16 +131,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
-
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
-
-  function isValidEmail(email) {
-    return validEmailSuffixes.some(suffix => email.endsWith(suffix));
-  }
+  function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
 
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
@@ -150,70 +144,38 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  // Phone number validation
-  phoneInput.addEventListener('input', () => {
-    phoneInput.value = phoneInput.value.replace(/\D/g,'');
-  });
+  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
 
-  // VIP toggle with confetti
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
     vipLabel.classList.toggle('on', isVIP);
     vipMessage.style.opacity = isVIP ? '1' : '0';
-    if(isVIP) triggerConfetti();
+    if(isVIP) triggerSprayConfetti();
   });
 
-  femaleBtn.addEventListener('click', () => {
-    gender = 'Female';
-    femaleBtn.classList.add('selected');
-    maleBtn.classList.remove('selected');
-  });
-  maleBtn.addEventListener('click', () => {
-    gender = 'Male';
-    maleBtn.classList.add('selected');
-    femaleBtn.classList.remove('selected');
-  });
+  femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
+  maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
   function triggerSprayConfetti() {
-  const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#FF4500', '#32CD32'];
-  const numParticles = 40;
-  const container = document.body;
-
-  for (let i = 0; i < numParticles; i++) {
-    const particle = document.createElement('div');
-    particle.style.position = 'fixed';
-    particle.style.width = '8px';
-    particle.style.height = '20px';
-    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    particle.style.left = `${50 + (Math.random() - 0.5) * 100}%`;
-    particle.style.top = '-20px';
-    particle.style.opacity = '0.9';
-    particle.style.borderRadius = '2px';
-    particle.style.transform = `rotate(${Math.random() * 360}deg)`;
-    particle.style.pointerEvents = 'none';
-    particle.style.zIndex = '9999';
-    container.appendChild(particle);
-
-    const duration = 2000 + Math.random() * 1000; // 2-3s fall
-    const endX = (Math.random() - 0.5) * 200;
-    const endY = window.innerHeight + 50;
-
-    const start = performance.now();
-    function animate(time) {
-      const t = (time - start) / duration;
-      if (t < 1) {
-        particle.style.top = `${-20 + t * endY}px`;
-        particle.style.left = `${50 + (Math.random() - 0.5) * 100 + endX * t}%`;
-        particle.style.transform = `rotate(${t * 720}deg)`;
-        requestAnimationFrame(animate);
-      } else {
-        container.removeChild(particle);
-      }
+    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
+    const num = 40;
+    for(let i=0;i<num;i++){
+      const p=document.createElement('div');
+      p.style.position='fixed'; p.style.width='8px'; p.style.height='20px'; p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+      p.style.left=`${50 + (Math.random()-0.5)*100}%`; p.style.top='-20px';
+      p.style.opacity='0.9'; p.style.borderRadius='2px'; p.style.transform=`rotate(${Math.random()*360}deg)`; p.style.zIndex='9999'; p.style.pointerEvents='none';
+      document.body.appendChild(p);
+      const dur=2000+Math.random()*1000;
+      const endX=(Math.random()-0.5)*200;
+      const endY=window.innerHeight+50;
+      const start=performance.now();
+      (function animate(time){
+        const t=(time-start)/dur;
+        if(t<1){ p.style.top=`${-20+t*endY}px`; p.style.left=`${50+(Math.random()-0.5)*100+endX*t}%`; p.style.transform=`rotate(${t*720}deg)`; requestAnimationFrame(animate); } else { p.remove(); }
+      })(start);
     }
-    requestAnimationFrame(animate);
   }
-}
 
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
@@ -222,113 +184,75 @@ document.addEventListener('DOMContentLoaded', () => {
     const phone = phoneInput.value.trim();
     const email = emailInput.value.trim().toLowerCase();
 
-    // Validations
-    if (!fullName || !chatId || !phone || !email || !gender) {
-      messageEl.textContent = 'Please fill in all fields.';
-      return;
-    }
+    if(!fullName||!chatId||!phone||!email||!gender){ messageEl.textContent='Please fill in all fields.'; return; }
+    if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
+    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
+    if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
+    if(!isVIP && gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts buddy 🙂.'; return; }
 
-    if (chatId.length < 5 || chatId.length > 15) {
-      messageEl.textContent = 'Username must be 5-15 characters.';
-      return;
-    }
+    spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
 
-    if(phone.length < 11 || phone.length > 15){
-      messageEl.textContent = 'Phone number not valid.';
-      return;
-    }
+    const uidKey=sanitizeKey(email);
+    const userRef=doc(db,"users",uidKey);
 
-    if(!isValidEmail(email)){
-      messageEl.textContent = 'Email Address not valid.';
-      return;
-    }
-
-    if (!isVIP && gender !== 'Female') {
-      messageEl.textContent = 'Only females can sign up as hosts buddy 🙂.';
-      return;
-    }
-
-    spinner.style.display = 'inline-block';
-    messageEl.textContent = 'Signing up...';
-
-    const uidKey = sanitizeKey(email);
-    const userRef = doc(db, "users", uidKey);
-    const userSnap = await getDoc(userRef);
-
-    const userData = {
+    const userData={
       chatId,
-      chatIdLower: chatId.toLowerCase(),
+      chatIdLower:chatId.toLowerCase(),
       fullName,
-      stars: 50,
-      starsToday: 0,
-      starsGifted: 0,
-      lastStarDate: new Date().toISOString().split("T")[0],
-      cash: 0,
-      usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
-      isAdmin: false,
+      stars:50,
+      starsToday:0,
+      starsGifted:0,
+      lastStarDate:new Date().toISOString().split("T")[0],
+      cash:0,
+      usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+      isAdmin:false,
       isVIP,
-      isHost: !isVIP,
-      hostLink: !isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
-      invitedBy: referrer || null,
+      isHost:!isVIP,
+      hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+      invitedBy:referrer||null,
       email,
       phone,
       gender,
-      createdAt: serverTimestamp(),
-      subscriptionActive: false,
-      subscriptionCount: 0
+      createdAt:serverTimestamp(),
+      subscriptionActive:false,
+      subscriptionCount:0
     };
 
-    try {
-      const existingUserSnap = await getDoc(userRef);
-      if (!existingUserSnap.exists()) {
-        await setDoc(userRef, userData);
-
-        // Reward host only if the new user is a host
-        if (!isVIP && referrer) {
-          const refDoc = doc(db, "users", sanitizeKey(referrer));
-          const refSnap = await getDoc(refDoc);
-          if (refSnap.exists()) {
-            const refData = refSnap.data();
-            const alreadyReferred = Array.isArray(refData.hostFriends) &&
-              refData.hostFriends.some(f => f.email === email);
-            if (!alreadyReferred) {
-              await updateDoc(refDoc, {
-                hostVIP: (refData.hostVIP || 0)+1,
-                starsGifted: (refData.starsGifted || 0)+200,
-                stars: (refData.stars || 0)+200,
-                hostFriends: arrayUnion({ email, chatId, chatIdLower: chatId.toLowerCase() })
+    try{
+      const existingSnap=await getDoc(userRef);
+      if(!existingSnap.exists()){ await setDoc(userRef,userData);
+        if(!isVIP && referrer){
+          const refDoc=doc(db,"users",sanitizeKey(referrer));
+          const refSnap=await getDoc(refDoc);
+          if(refSnap.exists()){
+            const refData=refSnap.data();
+            const alreadyReferred=Array.isArray(refData.hostFriends)&&refData.hostFriends.some(f=>f.email===email);
+            if(!alreadyReferred){
+              await updateDoc(refDoc,{
+                hostVIP:(refData.hostVIP||0)+1,
+                starsGifted:(refData.starsGifted||0)+200,
+                stars:(refData.stars||0)+200,
+                hostFriends:arrayUnion({email,chatId,chatIdLower:chatId.toLowerCase()})
               });
             }
           }
         }
-      } else {
-        await updateDoc(userRef, userData);
+      }else{ await updateDoc(userRef,userData); }
+
+      if(referrer){
+        const refDoc=doc(db,"users",sanitizeKey(referrer));
+        const refSnap=await getDoc(refDoc);
+        let displayName=sanitizeEmailPrefix(referrer);
+        if(refSnap.exists()){ const refData=refSnap.data(); if(refData.chatId) displayName=refData.chatId; }
+        hostUsernameEl.textContent=displayName;
       }
 
-      // Display host name
-      if (referrer) {
-        const refDoc = doc(db, "users", sanitizeKey(referrer));
-        const refSnap = await getDoc(refDoc);
-        let displayName = sanitizeEmailPrefix(referrer);
-        if (refSnap.exists()) {
-          const refData = refSnap.data();
-          if (refData.chatId) displayName = refData.chatId;
-        }
-        hostUsernameEl.textContent = displayName;
-      }
+      localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
+      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${isVIP?'a VIP':'a Host'} 🎉`;
 
-      localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
-      messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and are now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
-
-      setTimeout(() => {
-        window.location.href = "https://golalaland.github.io/chat/nushop.html#";
-      }, 800);
-    } catch (e) {
-      console.error(e);
-      messageEl.textContent = "❌ Signup failed. Please try again.";
-    } finally {
-      spinner.style.display = 'none';
-    }
+      setTimeout(()=>{ window.location.href="https://golalaland.github.io/chat/nushop.html#"; },800);
+    }catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
+    finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
 });
 </script>
