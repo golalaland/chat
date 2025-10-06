@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>VIP / Host Signup</title>
 <style>
 :root {
@@ -90,7 +90,19 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  query,
+  collection,
+  where,
+  getDocs,
+  serverTimestamp,
+  arrayUnion
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Config ---
 const firebaseConfig = {
@@ -104,154 +116,166 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- UI Elements ---
-let isVIP = false;
-let gender = '';
-const vipToggle = document.getElementById('vipToggle');
-const vipLabel = document.getElementById('vipLabel');
-const vipMessage = document.getElementById('vipMessage');
-const femaleBtn = document.getElementById('femaleBtn');
-const maleBtn = document.getElementById('maleBtn');
-const submitBtn = document.getElementById('submitBtn');
-const messageEl = document.getElementById('message');
-const nameInput = document.getElementById('name');
-const chatIdInput = document.getElementById('chatId');
-const phoneInput = document.getElementById('phone');
-const emailInput = document.getElementById('email');
-const hostUsernameEl = document.getElementById('host-username');
+// Wait for DOM to be ready (extra safe)
+document.addEventListener('DOMContentLoaded', () => {
+  // --- UI Elements ---
+  let isVIP = false;
+  let gender = '';
+  const vipToggle = document.getElementById('vipToggle');
+  const vipLabel = document.getElementById('vipLabel');
+  const vipMessage = document.getElementById('vipMessage');
+  const femaleBtn = document.getElementById('femaleBtn');
+  const maleBtn = document.getElementById('maleBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const messageEl = document.getElementById('message');
+  const nameInput = document.getElementById('name');
+  const chatIdInput = document.getElementById('chatId');
+  const phoneInput = document.getElementById('phone');
+  const emailInput = document.getElementById('email');
+  const hostUsernameEl = document.getElementById('host-username');
 
-// --- Capture Referral from URL ---
-const urlParams = new URLSearchParams(window.location.search);
-const referrer = urlParams.get('ref') || null;
+  // --- Capture Referral from URL ---
+  const urlParams = new URLSearchParams(window.location.search);
+  const referrer = urlParams.get('ref') || null;
 
-// --- Helper Functions ---
-function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
-function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
-function sanitizeEmailPrefix(email){ return email.split('@')[0]; }
-async function isChatIdTaken(chatId) {
-  const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
-  const snapshot = await getDocs(q);
-  return !snapshot.empty;
-}
-
-// --- VIP Toggle ---
-vipToggle.addEventListener('click', () => {
-  isVIP = !isVIP;
-  vipToggle.classList.toggle('on', isVIP);
-  vipLabel.classList.toggle('on', isVIP);
-  vipMessage.style.opacity = isVIP ? '1' : '0';
-});
-
-// --- Gender Buttons ---
-femaleBtn.addEventListener('click', () => { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
-maleBtn.addEventListener('click', () => { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
-
-// --- Update Host Stats & Gift Stars ---
-async function updateHostStats(userData) {
-  if(!userData.invitedBy) return;
-  try {
-    const hostDoc = doc(db, 'users', sanitizeKey(userData.invitedBy));
-    const hostSnap = await getDoc(hostDoc);
-    if(!hostSnap.exists()) return;
-
-    const hostData = hostSnap.data();
-
-    // Add new user to hostFriends array
-    const updatedHostFriends = arrayUnion(userData.chatId);
-    await updateDoc(hostDoc, {
-      hostFriends: updatedHostFriends,
-      hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
-      stars: (hostData.stars || 0) + 200 // gift 200 stars to inviter
-    });
-
-    // The shop modal will detect this change for the inviter and render there
-  } catch(e){
-    console.error('Error updating host stats:', e);
-  }
-}
-
-// --- Submit Logic ---
-submitBtn.addEventListener('click', async ()=>{
-  const fullName = nameInput.value.trim();
-  const chatId = cleanChatId(chatIdInput.value.trim());
-  const phone = phoneInput.value.trim();
-  const email = emailInput.value.trim().toLowerCase();
-
-  if(!fullName || !chatId || !phone || !email || !gender){
-    messageEl.textContent = 'Please fill in all fields.';
-    return;
+  // --- Helper Functions ---
+  function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
+  function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
+  function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
+  async function isChatIdTaken(chatId) {
+    const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
   }
 
-  if(!isVIP && gender !== 'Female'){
-    messageEl.textContent = 'Only females can sign up as hosts.';
-    return;
-  }
+  // --- VIP Toggle ---
+  vipToggle.addEventListener('click', () => {
+    isVIP = !isVIP;
+    vipToggle.classList.toggle('on', isVIP);
+    vipLabel.classList.toggle('on', isVIP);
+    vipMessage.style.opacity = isVIP ? '1' : '0';
+  });
 
-  if(await isChatIdTaken(chatId)){
-    messageEl.textContent = 'That chat name is already taken. Try another one ✨';
-    return;
-  }
+  // --- Gender Buttons ---
+  femaleBtn.addEventListener('click', () => {
+    gender = 'Female';
+    femaleBtn.classList.add('selected');
+    maleBtn.classList.remove('selected');
+  });
+  maleBtn.addEventListener('click', () => {
+    gender = 'Male';
+    maleBtn.classList.add('selected');
+    femaleBtn.classList.remove('selected');
+  });
 
-  messageEl.textContent = 'Signing up...';
+  // --- Update Host Stats & Gift Stars ---
+  async function updateHostStats(userData) {
+    if(!userData.invitedBy) return;
+    try {
+      const hostDocRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
+      const hostSnap = await getDoc(hostDocRef);
+      if(!hostSnap.exists()) return;
 
-  const uidKey = sanitizeKey(email);
-  const userRef = doc(db, "users", uidKey);
-  const userSnap = await getDoc(userRef);
+      const hostData = hostSnap.data();
 
-  const userData = {
-    chatId,
-    chatIdLower: chatId.toLowerCase(),
-    fullName,
-    stars: 50,
-    starsToday: 0,
-    lastStarDate: new Date().toISOString().split("T")[0],
-    cash: 0,
-    usernameColor: '#'+Math.floor(Math.random()*16777215).toString(16),
-    isAdmin: false,
-    isVIP,
-    isHost: !isVIP,
-    hostLink: !isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
-    invitedBy: referrer || null,
-    email,
-    phone,
-    gender,
-    createdAt: serverTimestamp(),
-    subscriptionActive: false,
-    subscriptionCount: 0
-  };
+      // Use arrayUnion directly in updateDoc
+      await updateDoc(hostDocRef, {
+        hostFriends: arrayUnion(userData.chatId),
+        hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
+        stars: (hostData.stars || 0) + 200 // gift 200 stars to inviter
+      });
 
-try {
-  if(!userSnap.exists()) await setDoc(userRef, userData);
-  else await updateDoc(userRef, userData);
-
-  // ✅ Update host stats and gift stars
-  await updateHostStats(userData);
-
-  // --- Update host-username display ---
-  if(referrer){
-    const refDoc = doc(db, 'users', sanitizeKey(referrer));
-    const refSnap = await getDoc(refDoc);
-    let displayName = sanitizeEmailPrefix(referrer);
-    if(refSnap.exists()){
-      const refData = refSnap.data();
-      if(refData.chatId) displayName = refData.chatId;
+      // The shop modal will detect this change for the inviter and render there
+    } catch(e){
+      console.error('Error updating host stats:', e);
     }
-    hostUsernameEl.textContent = displayName;
   }
 
-  // ✅ Save user locally & show message
-  localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
-  messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
+  // --- Submit Logic ---
+  submitBtn.addEventListener('click', async () => {
+    const fullName = (nameInput.value || '').trim();
+    const chatId = cleanChatId((chatIdInput.value || '').trim());
+    const phone = (phoneInput.value || '').trim();
+    const email = (emailInput.value || '').trim().toLowerCase();
 
-  // --- Redirect to shop page ---
-  setTimeout(() => {
-    window.location.href = "https://golalaland.github.io/chat/nushop.html#";
-  }, 800); // slight delay so user sees the message
+    if(!fullName || !chatId || !phone || !email || !gender){
+      messageEl.textContent = 'Please fill in all fields.';
+      return;
+    }
 
-} catch(e) {
-  console.error(e);
-  messageEl.textContent = '❌ Signup failed. Please try again.';
-};
+    if(!isVIP && gender !== 'Female'){
+      messageEl.textContent = 'Only females can sign up as hosts.';
+      return;
+    }
+
+    if(await isChatIdTaken(chatId)){
+      messageEl.textContent = 'That chat name is already taken. Try another one ✨';
+      return;
+    }
+
+    messageEl.textContent = 'Signing up...';
+
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
+    const userSnap = await getDoc(userRef);
+
+    const userData = {
+      chatId,
+      chatIdLower: chatId.toLowerCase(),
+      fullName,
+      stars: 50,
+      starsToday: 0,
+      lastStarDate: new Date().toISOString().split("T")[0],
+      cash: 0,
+      usernameColor: '#'+Math.floor(Math.random()*16777215).toString(16),
+      isAdmin: false,
+      isVIP,
+      isHost: !isVIP,
+      hostLink: !isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
+      invitedBy: referrer || null,
+      email,
+      phone,
+      gender,
+      createdAt: serverTimestamp(),
+      subscriptionActive: false,
+      subscriptionCount: 0
+    };
+
+    try {
+      if(!userSnap.exists()) await setDoc(userRef, userData);
+      else await updateDoc(userRef, userData);
+
+      // ✅ Update host stats and gift stars
+      await updateHostStats(userData);
+
+      // --- Update host-username display ---
+      if(referrer){
+        const refDoc = doc(db, 'users', sanitizeKey(referrer));
+        const refSnap = await getDoc(refDoc);
+        let displayName = sanitizeEmailPrefix(referrer);
+        if(refSnap.exists()){
+          const refData = refSnap.data();
+          if(refData.chatId) displayName = refData.chatId;
+        }
+        hostUsernameEl.textContent = displayName;
+      }
+
+      // ✅ Save user locally & show message
+      localStorage.setItem('vipUser', JSON.stringify({ email, chatId }));
+      messageEl.textContent = `✅ Welcome ${fullName}! You’re now ${isVIP ? 'a VIP' : 'a Host'} 🎉`;
+
+      // --- Redirect to shop page ---
+      setTimeout(() => {
+        window.location.href = "https://golalaland.github.io/chat/nushop.html#";
+      }, 800); // slight delay so user sees the message
+
+    } catch(e) {
+      console.error(e);
+      messageEl.textContent = '❌ Signup failed. Please try again.';
+    }
+  }); // <-- CLOSE event listener properly
+
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
