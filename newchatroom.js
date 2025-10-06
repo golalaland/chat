@@ -1,8 +1,12 @@
+
+// app.js
+
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot, query, orderBy, increment, getDocs, where
+  onSnapshot
+  , query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
@@ -31,6 +35,8 @@ const CHAT_COLLECTION = "messages_room5";
 /* ---------- State ---------- */
 let currentUser = null;
 let lastMessagesArray = [];
+
+// ⭐ ADD THIS LINE HERE
 let starInterval = null;
 
 /* ---------- Constants ---------- */
@@ -255,7 +261,7 @@ async function loginWhitelist(email, phone) {
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval);
+  if (starInterval) clearInterval(starInterval); // clear existing
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
@@ -349,50 +355,59 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ---------- Send & Buzz ---------- */
-  refs.sendBtn?.addEventListener("click", async ()=>{
-    if (!currentUser) return showStarPopup("Sign in to chat");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message first");
-    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+refs.sendBtn?.addEventListener("click", async ()=>{
+  if (!currentUser) return showStarPopup("Sign in to chat");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message first");
+  if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
+  currentUser.stars -= SEND_COST;
+  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
-      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-      timestamp: serverTimestamp(), highlight:false, buzzColor:null
-    });
-    refs.messageInputEl.value = "";
-    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
-
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+  await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
+    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+    timestamp: serverTimestamp(), highlight:false, buzzColor:null
   });
+  refs.messageInputEl.value = "";
+
+  // Render your own message
+  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+
+  // ⭐ Force scroll AFTER browser paints
+  requestAnimationFrame(() => {
+    if (refs.messagesEl) {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    }
+  });
+});
 
   refs.buzzBtn?.addEventListener("click", async ()=>{
-    if (!currentUser) return showStarPopup("Sign in to BUZZ");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+  if (!currentUser) return showStarPopup("Sign in to BUZZ");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-    const userRef = doc(db,"users",currentUser.uid);
-    const snap = await getDoc(userRef);
-    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
+  const userRef = doc(db,"users",currentUser.uid);
+  const snap = await getDoc(userRef);
+  if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
 
-    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
-      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-      timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
-    });
-    refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent!");
-    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
-
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
+    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+    timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
   });
+  refs.messageInputEl.value = "";
+  showStarPopup("BUZZ sent!");
+
+  // ⭐ Render and scroll after browser paints
+  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
+
+  requestAnimationFrame(() => {
+    if (refs.messagesEl) {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    }
+  });
+});
 
   /* ---------- Hello text rotation ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
@@ -408,7 +423,8 @@ window.addEventListener("DOMContentLoaded", () => {
     },220);
   },1500);
 
-  /* ---------- Video nav & fade ---------- */
+
+/* ---------- Video nav & fade ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
@@ -434,6 +450,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
     nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
+
     videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
 
     let hideTimeout;
