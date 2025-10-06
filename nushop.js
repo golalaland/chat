@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -181,7 +180,9 @@ const loadCurrentUser = async () => {
   if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
   if (DOM.cash) DOM.cash.textContent = `₦0`;
 
+  showLoader();
   await renderShop();
+  hideLoader();
 
   if (!vip?.email) { currentUser = null; if (DOM.hostTabs) DOM.hostTabs.style.display = 'none'; return; }
 
@@ -227,14 +228,13 @@ const loadCurrentUser = async () => {
     if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
     if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
-    renderShop().catch(err => console.error(err));
+    showLoader();
+    renderShop().catch(err => console.error(err)).finally(hideLoader);
 
     // --- Invitee reward: show once to invitee if flagged false
     try {
       if (data.invitedBy && data.inviteeGiftShown !== true) {
-        // data.invitedBy may be uid (sanitized) — display friendly name if possible
         let inviterName = data.invitedBy;
-        // try to fetch inviter display chatId if exists
         try {
           const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
           const invSnap = await getDoc(invRef);
@@ -243,31 +243,24 @@ const loadCurrentUser = async () => {
             if (invData.chatId) inviterName = invData.chatId;
             else if (invData.email) inviterName = invData.email.split('@')[0];
           }
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) { }
+
         showReward(`You’ve been gifted +50 stars ⭐️ for joining ${inviterName}’s Tab.`, '⭐ Congratulations!⭐️');
-        // mark as shown
         try { await updateDoc(userRef, { inviteeGiftShown: true }); } catch (e) { console.error('Failed to set inviteeGiftShown', e); }
       }
-    } catch (e) {
-      console.error('Invitee reward flow error', e);
-    }
+    } catch (e) { console.error('Invitee reward flow error', e); }
 
-    // --- Inviter reward: if hostFriends contains friend entries with giftShown false, show and mark
+    // --- Inviter reward
     try {
       const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
       const pending = friendsArr.find(f => !f.giftShown && f.email);
       if (pending) {
         const friendName = pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
         showReward(`You’ve been gifted +200 stars ⭐️, ${friendName} just joined your Tab.`, '⭐ Congratulations!⭐️');
-        // update the host doc to mark giftShown for that friend
         const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
         try { await updateDoc(userRef, { hostFriends: updated }); } catch (e) { console.error('Failed to mark host friend giftShown', e); }
       }
-    } catch (e) {
-      console.error('Inviter reward flow error', e);
-    }
+    } catch (e) { console.error('Inviter reward flow error', e); }
   });
 };
 
@@ -296,29 +289,26 @@ const renderTabContent = (type) => {
         <div class="stat-label">VIPs Signed Up</div>
       </div>
     `;
-    // Removed Copy VIP Link from VIP tab
   } 
   else if (type === 'friends') {
-  renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
+    renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
 
-  // Add Invite Friends button
-  const btn = document.createElement('button');
-  btn.id = 'inviteFriendsBtn';
-  btn.className = 'themed-btn';
-  btn.textContent = 'Invite Friends';
-  DOM.tabContent.appendChild(btn);
+    const btn = document.createElement('button');
+    btn.id = 'inviteFriendsBtn';
+    btn.className = 'themed-btn';
+    btn.textContent = 'Invite Friends';
+    DOM.tabContent.appendChild(btn);
 
-  btn.addEventListener('click', () => {
-    // Custom message + referral link
-    const message = `Hey! i'm hosting on xixi live, join my tab and lets win some together,  Sign up using my link: `;
-    const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
-    const fullText = message + link;
+    btn.addEventListener('click', () => {
+      const message = `Hey! i'm hosting on xixi live, join my tab and lets win some together,  Sign up using my link: `;
+      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
+      const fullText = message + link;
 
-    navigator.clipboard.writeText(fullText)
-      .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
-      .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
-  });
-}
+      navigator.clipboard.writeText(fullText)
+        .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
+        .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
+    });
+  }
   else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
     DOM.tabContent.innerHTML = `
@@ -330,11 +320,12 @@ const renderTabContent = (type) => {
     `;
   }
 };
+
 /* ------------------ Friends rendering ------------------ */
 function renderFriendsList(container, friends) {
   container.innerHTML = '';
   if (!friends || friends.length === 0) {
-    container.innerHTML = `<div class="muted">No friends yet 😔</div>`;
+    container.innerHTML = `<div class="muted"><div class="spinner"></div></div>`;
     return;
   }
 
@@ -362,8 +353,8 @@ function renderFriendsList(container, friends) {
       <div style="display:flex;align-items:center;gap:8px;">
         ${iconSVG}
         <div>
-          <div style="font-weight:600;color:${color};">${name}</div>
-          <div style="font-size:0.85rem;color:#888;">${handle}</div>
+          <div style="font-weight:600;color:${color}">${name}</div>
+          <div class="muted">${handle}</div>
         </div>
       </div>
     `;
@@ -373,186 +364,98 @@ function renderFriendsList(container, friends) {
   container.appendChild(list);
 }
 
-/* ------------------ Host tabs click ------------------ */
-DOM.hostTabs?.addEventListener('click', e => {
-  const btn = e.target.closest('.tab-btn');
-  if (!btn) return;
-  DOM.hostTabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderTabContent(btn.dataset.tab);
-});
-
-/* ------------------ User tabs (Shop/Orders) ------------------ */
-const userTabs = document.getElementById('userTabs');
-userTabs?.addEventListener('click', e => {
-  const btn = e.target.closest('.tab-btn');
-  if (!btn) return;
-  userTabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (btn.dataset.tab === 'shop') {
-    DOM.shopItems.style.display = 'grid';
-    DOM.ordersContent.style.display = 'none';
-  } else {
-    DOM.shopItems.style.display = 'none';
-    DOM.ordersContent.style.display = 'block';
-    renderMyOrders();
-  }
-});
-
-/* ------------------ Orders rendering ------------------ */
-const renderMyOrders = async () => {
-  const ordersList = DOM.ordersList;
-  if (!ordersList) return;
-  ordersList.innerHTML = '<div style="text-align:center;color:#555;">Loading orders...</div>';
-  if (!currentUser) { ordersList.innerHTML = '<div style="text-align:center;color:#555;">Not logged in.</div>'; return; }
-
+/* ------------------ Shop ------------------ */
+async function renderShop() {
+  if (!DOM.shopItems) return;
+  showLoader();
+  DOM.shopItems.innerHTML = '<div style="text-align:center;"><div class="spinner"></div></div>';
   try {
-    const purchasesRef = collection(db, 'purchases');
-    const snap = await getDocs(purchasesRef);
-    const orders = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.userId === currentUser.uid);
-    if (orders.length === 0) { ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet</div>'; return; }
-    orders.sort((a, b) => {
-      const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
-      const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
-      return tb - ta;
-    });
-    ordersList.innerHTML = '';
-    orders.forEach(order => {
-      const block = document.createElement('div'); block.className = 'stat-block';
-      const dateText = order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : '';
-      block.innerHTML = `
-        <div class="stat-value">${order.productName || 'Unnamed'}</div>
-        <div class="stat-label">${order.cost || 0} ⭐${order.cashReward ? ' - ₦' + Number(order.cashReward).toLocaleString() : ''}</div>
-        ${dateText ? `<div class="muted">${dateText}</div>` : ''}
+    const shopRef = collection(db, 'shop');
+    const snap = await getDocs(shopRef);
+    DOM.shopItems.innerHTML = '';
+    snap.forEach(docSnap => {
+      const item = docSnap.data();
+      const el = document.createElement('div');
+      el.className = 'shop-item';
+      el.innerHTML = `
+        <img src="${item.img || 'https://via.placeholder.com/80'}" />
+        <div>${item.name}</div>
+        <div>⭐ ${formatNumber(item.cost)}</div>
+        <button class="buy-btn">Redeem</button>
       `;
-      ordersList.appendChild(block);
+      el.querySelector('.buy-btn').addEventListener('click', () => redeemProduct(item));
+      DOM.shopItems.appendChild(el);
     });
-  } catch (e) {
-    console.error(e);
-    ordersList.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load orders.</div>';
+  } catch (err) {
+    console.error(err);
+    DOM.shopItems.innerHTML = '<div style="text-align:center;color:red;">Failed to load shop items.</div>';
+  } finally {
+    hideLoader();
   }
-};
+}
 
-/* ------------------ Shop rendering + card creation ------------------ */
-const createProductCard = (product) => {
-  const card = document.createElement('div'); card.className = 'product-card';
-  const img = document.createElement('img'); img.src = product.img || 'https://via.placeholder.com/300'; img.alt = product.name || 'Item';
-  img.addEventListener('click', () => previewImage(img.src));
-  const badge = document.createElement('span'); badge.className = 'availability-badge';
-  const avail = Number(product.available) || 0;
-  badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
-  if (avail <= 0) badge.style.background = '#666';
-  const title = document.createElement('h3'); title.textContent = product.name || 'Unnamed';
-  const price = document.createElement('div'); price.className = 'price'; price.textContent = `${Number(product.cost) || 0} ⭐`;
-  const btn = document.createElement('button'); btn.className = 'buy-btn';
-  btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
-  if (avail <= 0 || (product.hostOnly && currentUser && !currentUser.isHost) || (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) btn.disabled = true;
-  card.append(badge, img, title, price, btn);
-  btn.addEventListener('click', () => redeemProduct(product));
-  return card;
-};
+/* ------------------ Orders ------------------ */
+async function renderMyOrders() {
+  if (!DOM.ordersList) return;
+  DOM.ordersList.innerHTML = '<div style="text-align:center;"><div class="spinner"></div></div>';
+  showLoader();
+  try {
+    if (!currentUser?.uid) return;
+    const ordersRef = collection(db, 'orders');
+    const snap = await getDocs(ordersRef);
+    const myOrders = snap.docs.map(d => d.data()).filter(o => o.uid === currentUser.uid);
+    if (myOrders.length === 0) {
+      DOM.ordersList.innerHTML = '<div style="text-align:center;">No orders yet.</div>';
+      return;
+    }
+    DOM.ordersList.innerHTML = '';
+    myOrders.forEach(order => {
+      const el = document.createElement('div');
+      el.className = 'order-item';
+      el.textContent = `${order.productName} - ${order.status || 'Pending'}`;
+      DOM.ordersList.appendChild(el);
+    });
+  } catch (err) {
+    console.error(err);
+    DOM.ordersList.innerHTML = '<div style="text-align:center;color:red;">Failed to load orders.</div>';
+  } finally {
+    hideLoader();
+  }
+}
 
-const redeemProduct = async (product) => {
-  if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
-  if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
-  if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
-  if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
-
-  showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
+/* ------------------ Redeem product ------------------ */
+async function redeemProduct(item) {
+  if (!currentUser) return;
+  showConfirmModal(`Redeem ${item.name}?`, `It will cost ⭐ ${formatNumber(item.cost)}`, async () => {
     showLoader();
     try {
       const userRef = doc(db, 'users', currentUser.uid);
-      const productRef = doc(db, 'shopItems', String(product.id));
-      let newStars = 0, newCash = 0, redeemedCash = 0;
-
       await runTransaction(db, async (t) => {
-        const [uSnap, pSnap] = await Promise.all([t.get(userRef), t.get(productRef)]);
-        if (!uSnap.exists()) throw new Error('User not found');
-        if (!pSnap.exists()) throw new Error('Product not found');
-        const uData = uSnap.data(), pData = pSnap.data();
-        const cost = Number(pData.cost) || 0;
-        const available = Number(pData.available) || 0;
-        if (Number(uData.stars) < cost) throw new Error('Not enough stars');
-        if (available <= 0) throw new Error('Out of stock');
-
-        newStars = Number(uData.stars) - cost;
-        if (pData.name?.toLowerCase() === 'redeem cash balance') {
-          redeemedCash = Number(uData.cash) || 0;
-          newCash = 0;
-        } else {
-          newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
-        }
-
-        t.update(userRef, { stars: newStars, cash: newCash });
-        t.update(productRef, { available: available - 1 });
-        const purchasesCol = collection(db, 'purchases');
-        // create a new purchase doc (auto id)
-        t.set(doc(purchasesCol), {
-          userId: currentUser.uid,
-          email: uData.email || '',
-          phone: uData.phone || '',
-          productId: String(pData.id),
-          productName: pData.name,
-          cost,
-          cashReward: Number(pData.cashReward || 0),
-          redeemedCash,
-          timestamp: serverTimestamp()
-        });
+        const userSnap = await t.get(userRef);
+        if (!userSnap.exists()) throw new Error('User not found.');
+        const userData = userSnap.data();
+        const stars = userData.stars || 0;
+        if (stars < item.cost) throw new Error('Not enough stars.');
+        t.update(userRef, { stars: stars - item.cost });
+        const ordersRef = collection(db, 'orders');
+        const newOrder = {
+          uid: currentUser.uid,
+          productName: item.name,
+          timestamp: serverTimestamp(),
+          status: 'Pending'
+        };
+        await t.set(doc(ordersRef), newOrder);
       });
-
-      const prevStars = parseNumberFromText(DOM.stars.textContent);
-      const prevCash = parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars = newStars; currentUser.cash = newCash;
-      animateNumber(DOM.stars, prevStars, newStars);
-      animateNumber(DOM.cash, prevCash, newCash);
-      await renderShop();
+      showThemedMessage('Success', `You redeemed ${item.name}!`);
       triggerConfetti();
-      if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
-      else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
-      else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
-    } catch (e) {
-      console.error(e);
-      showThemedMessage('Redemption Failed', e.message || 'Try again');
+    } catch (err) {
+      console.error(err);
+      showThemedMessage('Error', err.message || 'Failed to redeem.');
     } finally {
       hideLoader();
     }
   });
-};
+}
 
-/* ------------------ Render shop ------------------ */
-const renderShop = async () => {
-  if (!DOM.shopItems) return;
-  showLoader();
-  DOM.shopItems.innerHTML = '';
-
-  try {
-    const shopSnap = await getDocs(collection(db, 'shopItems'));
-    if (shopSnap.empty) {
-      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items found</div>';
-      return;
-    }
-
-    let delay = 0;
-    DOM.shopItems.innerHTML = ''; // clear
-    shopSnap.forEach(docSnap => {
-      const product = docSnap.data();
-      product.id = docSnap.id;
-      const card = createProductCard(product);
-      card.style.opacity = '0';
-      card.style.animation = `fadeInUp 0.35s forwards`;
-      card.style.animationDelay = `${delay}s`;
-      delay += 0.05;
-      DOM.shopItems.appendChild(card);
-    });
-  } catch (e) {
-    console.error(e);
-    DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
-  } finally {
-    hideLoader();
-  }
-};
-
-/* ------------------ Init ------------------ */
-window.addEventListener('DOMContentLoaded', () => {
-  loadCurrentUser().catch(err => console.error(err));
-});
+/* ------------------ Initial load ------------------ */
+document.addEventListener('DOMContentLoaded', () => loadCurrentUser());
