@@ -35,11 +35,19 @@ iframe { width:100%; height:100%; object-fit:cover; border-radius:15px; border:n
 h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
 #host-info { font-size:0.85rem; color:#aaa; text-align:center; margin-bottom:1rem; }
 .form-group { width:90%; max-width:400px; margin-bottom:0.7rem; }
-.form-group input { width:100%; padding:0.65rem 1rem; border-radius:30px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.9rem; outline:none; }
+.form-group input {
+  width:100%; padding:0.65rem 1rem; border-radius:30px;
+  border:1px solid var(--input-border); background:var(--input-bg);
+  color:var(--text-color); font-size:0.9rem; outline:none;
+}
 .form-group input:focus { border-color: var(--primary-color); box-shadow:0 0 8px rgba(255,64,129,0.5); }
 .gender-label { text-align:center; font-weight:600; margin-bottom:0.3rem; }
 .gender-select { display:flex; justify-content:center; gap:15px; margin-bottom:1rem; }
-.gender-select button { width:50px; height:50px; border-radius:50%; border:none; background:#333; color:#eee; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 6px #000; transition:0.2s; }
+.gender-select button {
+  width:50px; height:50px; border-radius:50%; border:none; background:#333;
+  color:#eee; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 6px #000;
+  transition:0.2s;
+}
 .gender-select button:active { transform:translateY(3px); box-shadow:0 2px #000; }
 .gender-select button.selected { background:var(--primary-color); box-shadow:0 0 15px var(--primary-color); }
 .vip-label { text-align:center; font-weight:bold; font-size:1rem; margin-bottom:0.3rem; color:#aaa; transition:0.3s; }
@@ -82,9 +90,7 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Config ---
 const firebaseConfig = {
@@ -137,16 +143,8 @@ vipToggle.addEventListener('click', () => {
 });
 
 // --- Gender Buttons ---
-femaleBtn.addEventListener('click', () => {
-  gender = 'Female';
-  femaleBtn.classList.add('selected');
-  maleBtn.classList.remove('selected');
-});
-maleBtn.addEventListener('click', () => {
-  gender = 'Male';
-  maleBtn.classList.add('selected');
-  femaleBtn.classList.remove('selected');
-});
+femaleBtn.addEventListener('click', () => { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
+maleBtn.addEventListener('click', () => { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
 // --- Update Host Stats & Gift Stars ---
 async function updateHostStats(userData) {
@@ -158,19 +156,15 @@ async function updateHostStats(userData) {
 
     const hostData = hostSnap.data();
 
-    const newHostFriends = (hostData.hostFriends || 0) + 1;
-    const newHostVIP = userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0);
-    const newStars = (hostData.stars || 0) + 200;
-
+    // Add new user to hostFriends array
+    const updatedHostFriends = arrayUnion(userData.chatId);
     await updateDoc(hostDoc, {
-      hostFriends: newHostFriends,
-      hostVIP: newHostVIP,
-      stars: newStars
+      hostFriends: updatedHostFriends,
+      hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
+      stars: (hostData.stars || 0) + 200 // gift 200 stars to inviter
     });
 
-    // Notify inviter
-    alert(`🎉 You received 200 stars from ${userData.chatId} joining your tab!`);
-    
+    // The shop modal will detect this change for the inviter and render there
   } catch(e){
     console.error('Error updating host stats:', e);
   }
@@ -221,19 +215,19 @@ submitBtn.addEventListener('click', async ()=>{
     email,
     phone,
     gender,
-    subscription: false,       // NEW
-    subscriptionCount: 0,      // NEW
-    createdAt: serverTimestamp()
+    createdAt: serverTimestamp(),
+    subscriptionActive: false,
+    subscriptionCount: 0
   };
 
   try {
     if(!userSnap.exists()) await setDoc(userRef, userData);
     else await updateDoc(userRef, userData);
 
-    // Update host stats & gift stars
+    // ✅ Update host stats and gift stars
     await updateHostStats(userData);
 
-    // Update host-username display
+    // --- Update host-username display ---
     if(referrer){
       const refDoc = doc(db, 'users', sanitizeKey(referrer));
       const refSnap = await getDoc(refDoc);
