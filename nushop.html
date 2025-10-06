@@ -1117,7 +1117,6 @@ const redeemProduct = async product => {
 };
 
 // ---------- Render Shop ----------
-// ---------- Render Shop ----------
 const renderShop = async () => {
   // Show loader while fetching
   showLoader();
@@ -1155,7 +1154,53 @@ const renderShop = async () => {
     hideLoader(); // Hide spinner after render
   }
 };
+// ✨ Paste the reward popup code here — at the bottom of your script
 
+
+const db = getFirestore();
+
+const rewardModal = document.getElementById('rewardModal');
+const rewardTitle = document.getElementById('rewardTitle');
+const rewardMessage = document.getElementById('rewardMessage');
+
+// Show + auto-hide modal
+function showReward(message, title="🎉 Reward Unlocked!") {
+  rewardTitle.textContent = title;
+  rewardMessage.textContent = message;
+  rewardModal.classList.remove('hidden');
+  setTimeout(() => rewardModal.classList.add('hidden'), 5000);
+}
+
+// Get current user from localStorage
+const vipUser = JSON.parse(localStorage.getItem('vipUser') || '{}');
+
+if (vipUser.email) {
+  const userRef = doc(db, "users", vipUser.email.replace(/[.#$[\]]/g, ','));
+
+  onSnapshot(userRef, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+
+    // ----- Invitee Reward -----
+    if (data.inviteeGiftShown === false && data.invitedBy) {
+      showReward(`You’ve been gifted 50 ⭐️ for joining ${data.invitedBy}’s Tab!`);
+      updateDoc(userRef, { inviteeGiftShown: true });
+    }
+
+    // ----- Inviter Reward -----
+    if (Array.isArray(data.hostFriends)) {
+      const newFriends = data.hostFriends.filter(f => f.giftShown === false);
+      if (newFriends.length > 0) {
+        const friend = newFriends[0];
+        showReward(`💫 You’ve been gifted +200 ⭐️ for inviting ${friend.chatId}!`);
+        const updatedFriends = data.hostFriends.map(f =>
+          f.chatIdLower === friend.chatIdLower ? {...f, giftShown: true} : f
+        );
+        updateDoc(userRef, { hostFriends: updatedFriends });
+      }
+    }
+  });
+}
 // ---------- Init ----------
 window.addEventListener('DOMContentLoaded',()=>{ loadCurrentUser().catch(err=>console.error(err)); });
 </script> 
