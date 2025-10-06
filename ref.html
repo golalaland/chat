@@ -173,25 +173,37 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!userData.invitedBy) return;
 
   try {
-    const hostDocRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
-    const hostSnap = await getDoc(hostDocRef);
+    const hostRef = doc(db, 'users', sanitizeKey(userData.invitedBy));
+    const hostSnap = await getDoc(hostRef);
     if (!hostSnap.exists()) return;
 
     const hostData = hostSnap.data();
 
-    // Gift inviter
-    const newStars = (hostData.stars || 0) + 200;
-    const newGiftedTotal = (hostData.starsGifted || 0) + 200;
+    const newFriend = {
+      chatId: userData.chatId,
+      email: userData.email,
+      chatIdLower: userData.chatId.toLowerCase()
+    };
 
-    await updateDoc(hostDocRef, {
-      stars: newStars,
-      starsGifted: newGiftedTotal,
-      hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
-      hostFriends: arrayUnion(userData.chatId)
-    });
+    // Get existing list (default to [])
+    const hostFriends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends : [];
+
+    // ✅ Prevent duplicates
+    const alreadyExists = hostFriends.some(
+      f => (f.chatIdLower || f.toLowerCase?.()) === userData.chatId.toLowerCase()
+    );
+
+    if (!alreadyExists) {
+      await updateDoc(hostRef, {
+        stars: (hostData.stars || 0) + 200,
+        starsGifted: (hostData.starsGifted || 0) + 200,
+        hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
+        hostFriends: arrayUnion(newFriend)
+      });
+    }
 
   } catch (e) {
-    console.error('Error updating host stats:', e);
+    console.error("Error updating host stats:", e);
   }
 }
 
