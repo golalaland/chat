@@ -185,21 +185,22 @@ document.addEventListener('DOMContentLoaded', () => {
       chatIdLower: userData.chatId.toLowerCase()
     };
 
-    // Get existing list (default to [])
     const hostFriends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends : [];
 
-    // ✅ Prevent duplicates
+    // ✅ Prevent duplicate entries and double VIP count
     const alreadyExists = hostFriends.some(
       f => (f.chatIdLower || f.toLowerCase?.()) === userData.chatId.toLowerCase()
     );
 
     if (!alreadyExists) {
       await updateDoc(hostRef, {
+        hostFriends: arrayUnion(newFriend),
         stars: (hostData.stars || 0) + 200,
         starsGifted: (hostData.starsGifted || 0) + 200,
-        hostVIP: userData.isVIP ? (hostData.hostVIP || 0) + 1 : (hostData.hostVIP || 0),
-        hostFriends: arrayUnion(newFriend)
+        hostVIP: (hostData.hostVIP || 0) + 1 // increment only once per new user
       });
+    } else {
+      console.log(`👀 Skipping duplicate invitee: ${userData.chatId}`);
     }
 
   } catch (e) {
