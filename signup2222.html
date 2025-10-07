@@ -45,12 +45,15 @@ html, body {
   color:var(--accent);
   text-align:center;
 }
-#center{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
+#center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;  /* prevent double scroll */
+    position: relative;
 }
+
 
 /* Sticky video wrapper */
 #videoWrapper .nav-buttons {
@@ -77,13 +80,18 @@ html, body {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(255,20,147,0.3);
 }
+
+/* Video sticky top of chat container */
 #videoWrapper {
-  flex-shrink: 0;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #111;
+    position: sticky;
+    top: 0;  /* distance from top of #center */
+    z-index: 10;  /* above messages */
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #111;
+}
 
   /* NEW: make sticky */
   position: sticky;
@@ -185,19 +193,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* messages */
 /* 🔥 Chat messages container */
 /* 🔥 Chat messages container */
+/* Make messages scrollable under sticky video */
 #messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-radius: 8px;
-  background: #000;
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-radius: 8px;
+    background: #000;
+    box-sizing: border-box;
 
-  /* ✅ give space so last message never hides behind bar */
-  margin-bottom: 70px;
-  box-sizing: border-box;
+    /* Give enough top margin so sticky video doesn't cover first messages */
+    margin-top: 6px;
 }
 
 /* 🔥 Message bubble */
@@ -452,14 +461,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div id="greeting">Chat. Own Your Vibe.</div>
     <div id="center">
 
-      <!-- Video -->
-      <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
-        <div id="videoWrapper">
-          <video id="videoPlayer" muted playsinline></video>
-          <button class="arrow" id="prev">&#10094;</button>
-          <button class="arrow" id="next">&#10095;</button>
-        </div>
-      </div>
+   <div id="center">
+    <!-- Sticky video -->
+    <div id="videoWrapper">
+        <video id="videoPlayer" muted playsinline></video>
+        <button class="arrow" id="prev">&#10094;</button>
+        <button class="arrow" id="next">&#10095;</button>
+    </div>
+
+    <!-- Messages scroll under video -->
+    <div id="messages"></div>
+
+    <!-- Profile bar stays sticky under type bar as before -->
+    <div class="profile" id="profileBox">...</div>
+</div>
 
       <!-- Messages & info -->
       <div id="helloText" aria-live="polite">HELLO</div>
