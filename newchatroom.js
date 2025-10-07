@@ -9,7 +9,7 @@ import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* ---------- Firebase config (your original values) ---------- */
+/* ---------- Firebase config ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -58,7 +58,7 @@ function escapeHtml(s) {
   return (s+'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
-/* ---------- UI refs (will populate on DOMContentLoaded) ---------- */
+/* ---------- UI refs ---------- */
 let refs = {};
 
 /* ---------- Redeem link update ---------- */
@@ -137,12 +137,11 @@ function showNewMessageBadge(){
   badge.style.display = "block";
 }
 
-/* ---------- Render messages (keeps your original look & integrates badge) ---------- */
+/* ---------- Render messages ---------- */
 let scrollPending = false;
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
 
-  // append each message if not present
   arr.forEach(item => {
     if (document.getElementById(item.id)) return;
 
@@ -170,16 +169,13 @@ function renderMessagesFromArray(arr){
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // Auto-scroll logic with badge
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
       const nearBottom = userIsNearBottom;
-      // If any message was sent by me OR user is near bottom, scroll down.
       if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       } else {
-        // user scrolled up: show badge and optionally play a subtle sound
         showNewMessageBadge();
       }
       scrollPending = false;
@@ -187,7 +183,7 @@ function renderMessagesFromArray(arr){
   }
 }
 
-/* ---------- Messages listener (keeps your original Firestore logic) ---------- */
+/* ---------- Messages listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
   onSnapshot(q, snapshot => {
@@ -196,22 +192,18 @@ function attachMessagesListener() {
         const msgData = change.doc.data();
         lastMessagesArray.push({ id: change.doc.id, data: msgData });
         renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
-        // if my message, force scroll
         if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
           refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-        } else {
-          // if message by someone else and user scrolled up, optionally play tick
-          if (!userIsNearBottom) {
-            const buzzAudio = document.getElementById("buzz-sound");
-            if (buzzAudio) try { buzzAudio.play().catch(()=>{}); } catch(e){}
-          }
+        } else if (!userIsNearBottom) {
+          const buzzAudio = document.getElementById("buzz-sound");
+          if (buzzAudio) try { buzzAudio.play().catch(()=>{}); } catch(e){}
         }
       }
     });
   });
 }
 
-/* ---------- ChatID modal (unchanged) ---------- */
+/* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
   if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
   if(userData?.chatId && !userData.chatId.startsWith("GUEST")) return userData.chatId;
@@ -246,7 +238,7 @@ async function promptForChatID(userRef, userData){
   });
 }
 
-/* ---------- VIP login (whitelist) (unchanged logic, but hide UI after login) ---------- */
+/* ---------- VIP login ---------- */
 async function loginWhitelist(email, phone) {
   try {
     const q = query(collection(db, "whitelist"), where("email","==",email), where("phone","==",phone));
@@ -296,7 +288,7 @@ async function loginWhitelist(email, phone) {
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    // hide hello + sign-in prompt + auth wrappers
+    // hide hello + auth UI
     const helloEl = document.getElementById("helloText");
     const roomSubtitleEl = document.getElementById("roomSubtitle");
     const emailAuthWrapper = document.getElementById("emailAuthWrapper");
@@ -322,10 +314,10 @@ async function loginWhitelist(email, phone) {
   } catch(e) { console.error("Login error:", e); alert("Login failed. Try again."); return false; }
 }
 
-/* ---------- Stars auto-earning (unchanged) ---------- */
+/* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval); // clear existing
+  if (starInterval) clearInterval(starInterval);
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
@@ -370,37 +362,30 @@ function startStarEarning(uid) {
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
-/* ---------- Video navigation & memory (integrated) ---------- */
+/* ---------- Video player ---------- */
 function enableVideoPlayer() {
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
   if (!videoPlayer) return;
 
-  // playlist (use your original urls)
   const videos = [
     "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
     "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
     "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
   ];
   let currentIndex = 0;
-
   function getVideoKey(url){ return `video-pos:${url}`; }
 
-  // restore position on loadedmetadata
   videoPlayer.addEventListener('loadedmetadata', ()=>{
     try {
       const key = getVideoKey(videoPlayer.src);
       const saved = parseFloat(localStorage.getItem(key) || '0');
-      if (!isNaN(saved) && saved > 2 && saved < videoPlayer.duration) {
-        videoPlayer.currentTime = saved;
-      }
+      if (!isNaN(saved) && saved > 2 && saved < videoPlayer.duration) videoPlayer.currentTime = saved;
     } catch(e){}
-    // attempt play (muted) — browsers allow muted autoplay more reliably
     videoPlayer.play().catch(()=>{});
   });
 
-  // save progress periodically
   let saveThrottle = null;
   videoPlayer.addEventListener('timeupdate', ()=>{
     if (saveThrottle) return;
@@ -417,22 +402,16 @@ function enableVideoPlayer() {
     if(i < 0) i = videos.length - 1;
     if(i >= videos.length) i = 0;
     currentIndex = i;
-    // Save previous video's time (already saved by timeupdate), then switch
     videoPlayer.muted = true;
     videoPlayer.src = videos[currentIndex];
-    // .load() not necessary in <video> with src change, but safe:
     try { videoPlayer.load(); } catch(e){}
-    // attempt autoplay
     videoPlayer.play().catch(()=>{});
   }
 
   prevBtn?.addEventListener('click', ()=> loadIndex(currentIndex - 1));
   nextBtn?.addEventListener('click', ()=> loadIndex(currentIndex + 1));
-
-  // toggle mute on click for manual control
   videoPlayer.addEventListener('click', ()=> { videoPlayer.muted = !videoPlayer.muted; });
 
-  // hover show arrows (basic)
   const container = document.querySelector(".video-container");
   const navButtons = [prevBtn, nextBtn].filter(Boolean);
   if (container && navButtons.length) {
@@ -443,19 +422,15 @@ function enableVideoPlayer() {
       hideTimeout = setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); }, 3000);
     }
     navButtons.forEach(btn=>{ btn.style.transition="opacity 0.4s"; btn.style.opacity="0"; btn.style.pointerEvents="none"; });
-    container.addEventListener("mouseenter", showButtons);
-    container.addEventListener("mousemove", showButtons);
+    ["mouseenter","mousemove","click"].forEach(ev=>container.addEventListener(ev, showButtons));
     container.addEventListener("mouseleave", ()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); });
-    container.addEventListener("click", showButtons);
   }
 
-  // initial load
   loadIndex(0);
 }
 
-/* ---------- DOMContentLoaded: wire up UI event handlers ---------- */
+/* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
-  // populate refs
   refs = {
     authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
@@ -478,16 +453,12 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
   setupChatScrollWatcher();
-  enableAutoLogin();
 
-  // button refs used in other places
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
   const googleSignInBtn = document.getElementById("googleSignInBtn");
-  const guestMsg = document.getElementById("guestMsg");
 
-  // Wire send button (same logic as your earlier code)
   refs.sendBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to chat");
     const txt = refs.messageInputEl?.value.trim();
@@ -496,24 +467,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
     currentUser.stars -= SEND_COST;
     if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
     await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
     const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
       content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
       timestamp: serverTimestamp(), highlight:false, buzzColor:null
     });
     refs.messageInputEl.value = "";
-
-    // Render your own message immediately (optimistic)
     renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, timestamp: new Date() } }]);
-
-    // Force scroll after paint
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+    requestAnimationFrame(() => { if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
   });
 
-  // BUZZ handler
   refs.buzzBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to BUZZ");
     const txt = refs.messageInputEl?.value.trim();
@@ -524,7 +487,6 @@ window.addEventListener("DOMContentLoaded", () => {
     if ((snap.data()?.stars||0) < BUZZ_COST) return showStarPopup("Not enough stars");
 
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-    // choose a random buzz color for DB and rendering
     const bcolor = randomColor();
     const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
       content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
@@ -533,37 +495,25 @@ window.addEventListener("DOMContentLoaded", () => {
     refs.messageInputEl.value = "";
     showStarPopup("BUZZ sent!");
 
-    // play buzz sound
     const buzzAudio = document.getElementById("buzz-sound");
     if (buzzAudio) try { buzzAudio.currentTime = 0; buzzAudio.play().catch(()=>{}); } catch(e){}
 
     renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: bcolor } }]);
-
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+    requestAnimationFrame(() => { if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
   });
 
-  // VIP login button
   if (loginBtn) {
     loginBtn.addEventListener("click", async ()=>{
       const email = (emailInput.value||"").trim().toLowerCase();
       const phone = (phoneInput.value||"").trim();
       if(!email || !phone){ alert("Enter your email and phone to get access"); return; }
-
       const success = await loginWhitelist(email, phone);
       if(success) updateRedeemLink();
     });
   }
 
-  // Optional: google sign in hook (not implemented here — placeholder)
-  if (googleSignInBtn) {
-    googleSignInBtn.addEventListener("click", ()=> {
-      alert("Google sign-in placeholder: implement if you want social sign-in.");
-    });
-  }
+  if (googleSignInBtn) googleSignInBtn.addEventListener("click", ()=> alert("Google sign-in placeholder."));
 
-  // Hello rotation (unchanged)
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
   let helloIndex = 0;
   const helloEl = document.getElementById("helloText");
@@ -577,33 +527,16 @@ window.addEventListener("DOMContentLoaded", () => {
     },220);
   },1500);
 
-  // Initialize video player (navigation + memory)
   enableVideoPlayer();
 
-  // Setup chat scroll watcher for badge logic
-  setupChatScrollWatcher();
-
-  // If send area should be hidden until login, ensure visibility per currentUser
   const vipUser = JSON.parse(localStorage.getItem("vipUser") || 'null');
-  if (vipUser?.email && vipUser?.phone) {
-    // attempt auto-login via local storage credentials (your login flow)
-    (async ()=>{
-      const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if (success) updateRedeemLink();
-    })();
-  }
+  if (vipUser?.email && vipUser?.phone) (async ()=>{ const success = await loginWhitelist(vipUser.email, vipUser.phone); if (success) updateRedeemLink(); })();
 });
 
-/* ---------- Utility: auto-login helper used above ---------- */
-function enableAutoLogin(){
-  // just left as a placeholder; real auto-login triggered in DOMContentLoaded
-}
-
-/* ---------- Admin: clear messages (if present) ---------- */
+/* ---------- Admin: clear messages ---------- */
 async function adminClearMessages(){
-  // Optional: you can implement batched delete logic with Firestore writeBatch if desired.
-  // Not enabling by default for safety.
+  // optional: batched delete logic
 }
 
-/* ---------- Final console log ---------- */
+/* ---------- Final log ---------- */
 console.log("newchatroom.js loaded — chat, video memory, and twitch-scroll active.");
