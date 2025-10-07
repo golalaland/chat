@@ -1,83 +1,165 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Xixi Watchparty</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Xixi Chatroom</title>
+<link rel="icon" href="data:," />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
 <style>
-:root {
+:root{
   --bg:#000;
   --card:#111;
   --muted:#aaa;
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
-  --highlight: rgba(255,20,147,0.15);
 }
 
-/* BODY & APP WRAPPER */
-html, body {
-  margin:0; padding:0; height:100%; font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:#fff;
-}
-#appWrapper {
-  display:flex; justify-content:center; width:100%; height:100%; position:relative;
-}
-.app {
-  width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; padding:10px; box-sizing:border-box;
-}
+/* General layout */
+html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;height:100%;width:100%;max-width:480px;box-sizing:border-box;}
 
-/* BRAND / HEADER */
-.brand { font-weight:700; font-size:24px; color:var(--accent); text-align:center; }
-#greeting { font-size:13px; text-align:center; font-weight:600; margin-bottom:6px; color:var(--accent); }
-.room-subtitle { font-size:12px; font-weight:600; text-align:center; margin-top:4px; font-family:'Montserrat',sans-serif; color:var(--accent); opacity:0.85; }
-
-/* STICKY VIDEO TOP */
+/* Sticky video */
 #videoWrapper {
-  position:sticky; top:10px; width:100%; max-width:600px; margin:0 auto; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#111; z-index:50;
+  position: sticky;
+  top: 0;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background:#111;
+  border-radius:10px;
+  overflow:hidden;
+  z-index:50;
+  margin-bottom:10px;
 }
-#videoPlayer { width:100%; height:100%; object-fit:cover; display:block; }
-.arrow { position:absolute; top:50%; transform:translateY(-50%); font-size:24px; background: rgba(0,0,0,0.3); color:#fff; border:none; padding:10px; cursor:pointer; border-radius:50%; z-index:10; }
-#prev { left:5px; } #next { right:5px; }
+#videoPlayer {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:10px;
+}
+.arrow {
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:24px;
+  background:rgba(0,0,0,0.3);
+  color:#fff;
+  border:none;
+  padding:10px;
+  cursor:pointer;
+  border-radius:50%;
+  z-index:10;
+}
+#prev{left:5px;}
+#next{right:5px;}
 
-/* SCROLLABLE CHAT AREA */
+/* Chat container */
 #chatContainer {
-  flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:8px; margin-bottom:90px; /* leave space for send+profile bar */
+  flex:1;
+  overflow-y:auto;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  background:#000;
   box-sizing:border-box;
 }
 
-/* MESSAGES */
-#messages { display:flex; flex-direction:column; gap:6px; }
-.msg { padding:8px 10px; border-radius:8px; background:var(--glass); max-width:100%; display:flex; gap:8px; align-items:center; transition:all 0.2s ease; }
-.msg.me { background: var(--highlight); font-weight:700; font-size:14px; padding:10px 12px; border:2px solid var(--accent); }
-.msg .meta { font-weight:700; font-size:13px; white-space:nowrap; margin-right:4px; color:inherit; }
-.msg .content { font-size:13px; color:#fff; word-break:break-word; white-space:pre-wrap; }
+/* Messages */
+.msg {
+  padding:8px 10px;
+  border-radius:8px;
+  background:var(--glass);
+  display:flex;
+  gap:8px;
+  align-items:center;
+  max-width:100%;
+}
+.msg.me { background: rgba(255,20,147,0.06); }
+.msg.highlight {
+  background: rgba(255,20,147,0.15);
+  font-weight:700;
+}
+.msg .meta { font-weight:700; font-size:13px; margin-right:4px; color:inherit; white-space:nowrap; }
+.msg .content { font-size:13px; color:#fff; white-space:pre-wrap; word-break:break-word; display:inline-block; }
 
-/* STICKY BOTTOM BAR (TYPE + PROFILE) */
+/* Bottom wrapper: type bar + profile bar */
 #bottomWrapper {
-  position:sticky; bottom:0; width:100%; display:flex; flex-direction:column; gap:6px; z-index:100;
+  position: sticky;
+  bottom:0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  z-index:100;
+  width:100%;
+  max-width:480px;
+  margin:0 auto;
 }
 
-/* TYPE/SEND AREA */
-.send-area { display:flex; gap:8px; align-items:center; padding:10px; background:var(--card); border-radius:999px; box-sizing:border-box; }
-.send-area input { flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background:#0e0e0e; color:#fff; font-size:16px; outline:none; transition:all 0.2s; }
-.send-area input:focus { border-color:var(--accent); box-shadow:0 0 12px rgba(255,20,147,0.25); }
-.send-btn { padding:10px 16px; border-radius:999px; background:var(--accent); color:#000; cursor:pointer; font-weight:700; border:none; font-size:14px; transition:all 0.2s ease; }
+/* Send area */
+.send-area {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--card);
+  padding:10px;
+  border-radius:999px;
+  box-sizing:border-box;
+  width:100%;
+}
+.send-area input {
+  flex:1;
+  padding:12px 16px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:#0e0e0e;
+  color:#fff;
+  font-size:16px;
+  outline:none;
+  transition: all 0.2s ease;
+}
+.send-area input::placeholder { color:var(--muted); opacity:0.7; }
+.send-area input:focus { 
+  border-color:var(--accent); 
+  box-shadow:0 0 12px rgba(255,20,147,0.15);
+}
+.send-btn {
+  padding:10px 16px;
+  border-radius:999px;
+  background-color:var(--accent);
+  color:#000;
+  cursor:pointer;
+  font-weight:700;
+  border:none;
+  font-size:14px;
+  transition: all 0.2s ease;
+}
 .send-btn:hover { background-color:#ff33a1; transform:scale(1.05); }
-.buzz-btn { padding:10px 12px; border-radius:999px; background:#1d1d1d; color:var(--accent); cursor:pointer; font-weight:700; font-size:14px; border:1px solid rgba(255,20,147,0.18); }
-.buzz-btn:hover { animation:buzzPulse 1.5s infinite; }
-@keyframes buzzPulse {0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
+.buzz-btn { padding:10px 12px; border-radius:999px; background:#1d1d1d; color:var(--accent); cursor:pointer; font-weight:700; font-size:14px; border:1px solid rgba(255,20,147,0.18);}
+.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
+@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
-/* PROFILE ATTACHED BELOW TYPE BAR */
-.profile { display:flex; flex-direction:column; margin-top:0; }
-.profile-card { background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:8px; }
-.profile-top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+/* Profile bar: hidden behind type bar, revealed when scrolling type bar */
+#profileBox {
+  background: var(--glass);
+  padding:10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.04);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  width:100%;
+}
+.profile-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .profile-left { display:flex; flex-direction:column; gap:2px; }
 .profile-name { font-weight:800; }
-.profile-label { color:var(--accent); font-weight:800; font-size:10px; }
+.profile-label { color: var(--accent); font-weight:800; font-size:10px; }
 .profile-value { color:#fff; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono",Courier New,monospace; font-weight:400; font-size:11px; }
-.profile-actions { display:flex; gap:8px; justify-content:flex-end; }
-.small-btn { padding:4px 10px; border-radius:8px; background:var(--accent); border:0; color:#000; cursor:pointer; font-weight:700; font-size:12px; transition:transform .15s, box-shadow .15s; }
+.profile-actions { display:flex; gap:8px; align-items:center; justify-content:flex-end; }
+.small-btn { padding:4px 10px; border-radius:8px; background:var(--accent); border:0; color:#000; cursor:pointer; font-weight:700; font-size:12px; text-decoration:none; transition:transform .15s,box-shadow .15s; }
 .small-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,20,147,0.3); }
+
 </style>
 </head>
 <body>
@@ -85,23 +167,26 @@ html, body {
 <div id="appWrapper">
   <div class="app">
 
-    <div class="brand">乂丨乂丨</div>
-    <div id="greeting">Chat. Own Your Vibe.</div>
-    <div class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
+    <!-- Sticky Video -->
+    <div id="videoWrapper">
+      <video id="videoPlayer" muted playsinline></video>
+      <button class="arrow" id="prev">&#10094;</button>
+      <button class="arrow" id="next">&#10095;</button>
+    </div>
 
-    <!-- SCROLLABLE CHAT AREA -->
+    <!-- Chat container -->
     <div id="chatContainer">
+      <!-- Messages appear here dynamically -->
       <div id="messages"></div>
     </div>
 
-    <!-- STICKY TYPE + PROFILE -->
+    <!-- Bottom wrapper: Type bar + Profile -->
     <div id="bottomWrapper">
-      <div class="send-area">
-        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
-        <button id="buzzBtn" class="buzz-btn">🚨</button>
+      <div class="send-area" id="sendArea">
+        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+        <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
         <button id="sendBtn" class="send-btn">Send</button>
       </div>
-
       <div class="profile" id="profileBox">
         <div class="profile-card">
           <div class="profile-top">
@@ -111,33 +196,22 @@ html, body {
                 <span class="profile-label">STARS COLLECTED:</span>
                 <span class="profile-value"><span id="starCount">0</span>⭐️</span>
               </div>
-              <div>
-                <span class="profile-label">CASH EARNED:</span>
-                <span class="profile-value">₦<span id="cashCount">0</span></span>
-              </div>
             </div>
             <div class="profile-actions">
               <button id="redeemBtn" class="small-btn">Redeem</button>
               <button id="tipBtn" class="small-btn">💵</button>
             </div>
           </div>
+          <div>
+            <span class="profile-label">CASH EARNED:</span>
+            <span class="profile-value">₦<span id="cashCount">0</span></span>
+          </div>
         </div>
-      </div>
-
-    </div>
-
-    <!-- STICKY VIDEO (outside scroll) -->
-    <div class="video-container">
-      <div id="videoWrapper">
-        <video id="videoPlayer" muted playsinline></video>
-        <button class="arrow" id="prev">&#10094;</button>
-        <button class="arrow" id="next">&#10095;</button>
       </div>
     </div>
 
   </div>
 </div>
 
-<script type="module" src="newchatroom.js"></script>
 </body>
 </html>
