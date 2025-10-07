@@ -411,20 +411,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       <div id="guestMsg"></div>
       <div id="authBox">
 
-<!-- Themed VIP Modal -->
-<div id="vipModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;">
-  <div style="background:#111;padding:20px;border-radius:12px;text-align:center;color:#fff;max-width:360px;width:90%;box-shadow:0 0 20px rgba(255,20,147,0.4);border:1px solid rgba(255,20,147,0.25);">
-    <h3 id="vipModalTitle" style="margin-bottom:12px;color:#FF1493;font-weight:800;font-size:18px;"></h3>
-    <p id="vipModalMessage" style="margin-bottom:16px;font-size:14px;line-height:1.4;"></p>
-
-    <div id="vipModalInputs" style="display:none;flex-direction:column;gap:10px;margin-bottom:12px;">
-      <input type="tel" id="vipPhoneInput" placeholder="Enter your phone" style="width:100%;padding:10px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:#0e0e0e;color:#fff;font-size:14px;outline:none;">
-      <input type="email" id="vipEmailInput" placeholder="Enter your email" style="width:100%;padding:10px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:#0e0e0e;color:#fff;font-size:14px;outline:none;">
-    </div>
-
-    <button id="vipModalClose" style="padding:10px 16px;border-radius:999px;border:none;background:#FF1493;color:#000;font-weight:700;cursor:pointer;font-size:14px;transition:all 0.2s;">Close</button>
-  </div>
-</div>
+<div id="messagePopup" style="
+  position: fixed;
+  bottom: 80px; /* above chat input */
+  right: 20px;
+  background: rgba(30,30,30,0.9);
+  color: var(--accent);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+"></div>
 
 <!-- VIP Access Login Wrapper -->
 <div id="emailAuthWrapper">
@@ -514,19 +514,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
 
-<!-- Footer -->
-<footer style="margin-top:20px; text-align:center; color:var(--muted); font-size:12px; line-height:1.4;">
+<!-- Footer (startup page only) -->
+<footer id="startupFooter" style="display:none; margin-top:20px; text-align:center; color:var(--muted); font-size:12px; line-height:1.4;">
   <div>
     ©5786 
-    <span style="letter-spacing:1px; font-style:italic;">Own Your Vibe</span>
+    <span style="letter-spacing:1px;">Own Your Vibe</span>
   </div>
-  <div style="font-style:italic; letter-spacing:0.5px;">自分の雰囲気を楽しもう</div>
+  <div style="letter-spacing:0.5px;">自分の雰囲気を楽しもう</div>
   <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
   <div style="margin-top:4px;">
     <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Privacy Policy</a> |
     <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Terms of Service</a>
   </div>
 </footer>
+footer>
 <script type="module" src="newchatroom.js"></script>
 </body>
 </html>
