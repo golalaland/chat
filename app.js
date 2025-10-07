@@ -58,6 +58,7 @@ function showStarPopup(text) {
   popup.style.display = "block";
   setTimeout(() => { popup.style.display = "none"; }, 1700);
 }
+
 function sanitizeKey(key) { return key.replace(/[.#$[\]]/g, ','); }
 
 /* ---------- UI refs ---------- */
@@ -354,25 +355,31 @@ function startStarEarning(uid) {
 
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
-  // ---------- Loading bar ----------
-/* ---------- Loading bar ---------- */
-const postLoginLoader = document.getElementById("postLoginLoader");
-const loadingBar = document.getElementById("loadingBar");
 
-if(postLoginLoader && loadingBar){
-  postLoginLoader.style.display = "flex"; // show overlay
+/* ---------- Loading Bar Helper ---------- */
+function showLoadingBar(duration = 1000) {
+  const postLoginLoader = document.getElementById("postLoginLoader");
+  const loadingBar = document.getElementById("loadingBar");
+  if (!postLoginLoader || !loadingBar) return;
+
+  postLoginLoader.style.display = "flex";
   loadingBar.style.width = "0%";
 
   let progress = 0;
-  const loadingInterval = setInterval(()=>{
-    progress += Math.random() * 15; // random speed
-    if(progress >= 100) progress = 100;
+  const interval = 50;
+  const step = 100 / (duration / interval);
+
+  const loadingInterval = setInterval(() => {
+    progress += step + Math.random() * 5; // slight randomness for realism
+    if (progress >= 100) progress = 100;
     loadingBar.style.width = progress + "%";
-    if(progress >= 100){
+    if (progress >= 100) {
       clearInterval(loadingInterval);
-      setTimeout(()=>{ postLoginLoader.style.display = "none"; }, 300);
+      setTimeout(() => {
+        postLoginLoader.style.display = "none";
+      }, 300);
     }
-  },100);
+  }, interval);
 }
 
   // Cache DOM elements
@@ -397,7 +404,7 @@ if(postLoginLoader && loadingBar){
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- VIP login (whitelist) ---------- */
+ /* ---------- VIP login (whitelist) ---------- */
 const emailInput = document.getElementById("emailInput");
 const phoneInput = document.getElementById("phoneInput");
 const loginBtn = document.getElementById("whitelistLoginBtn");
@@ -406,33 +413,22 @@ if (loginBtn) {
   loginBtn.addEventListener("click", async () => {
     const email = (emailInput.value || "").trim().toLowerCase();
     const phone = (phoneInput.value || "").trim();
+
     if (!email || !phone) {
-      alert("Enter your email and phone to get access");
+      showStarPopup("Enter your email and phone to get access");
       return;
     }
 
-    // Show loader before login
-    const loader = document.getElementById("postLoginLoader");
-    if (loader) loader.style.display = "flex";
-
-    // Slight delay so user sees loader
+    showLoadingBar(1000); // show smooth loading bar during login
     await new Promise(res => setTimeout(res, 50));
 
     const success = await loginWhitelist(email, phone);
 
-    if (!success) {
-      // Hide loader if login failed
-      if (loader) loader.style.display = "none";
-      return;
-    }
+    if (!success) return; // showStarPopup handled inside loginWhitelist
 
-    // Loader stays for a short animation before showing chatroom
-    await new Promise(res => setTimeout(res, 500));
+    await new Promise(res => setTimeout(res, 500)); // slight post-login delay
 
-    if (loader) loader.style.display = "none";
-
-    // Update chatroom UI
-    updateRedeemLink();
+    updateRedeemLink(); // update chatroom UI after login
   });
 }
 
@@ -440,86 +436,83 @@ if (loginBtn) {
 const vipUser = JSON.parse(localStorage.getItem("vipUser"));
 if (vipUser?.email && vipUser?.phone) {
   (async () => {
-    const loader = document.getElementById("postLoginLoader");
-    if (loader) loader.style.display = "flex";
-
+    showLoadingBar(1000);
     await new Promise(res => setTimeout(res, 50));
 
     const success = await loginWhitelist(vipUser.email, vipUser.phone);
 
-    if (!success) {
-      if (loader) loader.style.display = "none";
-      return;
-    }
+    if (!success) return;
 
     await new Promise(res => setTimeout(res, 500));
-
-    if (loader) loader.style.display = "none";
 
     updateRedeemLink();
   })();
 }
-  /* ---------- Send & Buzz ---------- */
-  refs.sendBtn?.addEventListener("click", async () => {
-    if (!currentUser) return showStarPopup("Sign in to chat");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message first");
-    if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+/* ---------- Send & BUZZ ---------- */
+refs.sendBtn?.addEventListener("click", async () => {
+  if (!currentUser) return showStarPopup("Sign in to chat");
 
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null
-    });
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message first");
 
-    refs.messageInputEl.value = "";
-    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+  if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+  currentUser.stars -= SEND_COST;
+  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+  await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    content: txt,
+    uid: currentUser.uid,
+    chatId: currentUser.chatId,
+    timestamp: serverTimestamp(),
+    highlight: false,
+    buzzColor: null
   });
 
-  refs.buzzBtn?.addEventListener("click", async () => {
-    if (!currentUser) return showStarPopup("Sign in to BUZZ");
+  refs.messageInputEl.value = "";
+  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
 
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+  requestAnimationFrame(() => {
+    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+  });
+});
 
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    if ((snap.data()?.stars || 0) < BUZZ_COST) return showStarPopup("Not enough stars");
+refs.buzzBtn?.addEventListener("click", async () => {
+  if (!currentUser) return showStarPopup("Sign in to BUZZ");
 
-    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor: randomColor()
-    });
+  const userRef = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(userRef);
 
-    refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent!");
-    renderMessagesFromArray([{ 
-      id: docRef.id, 
-      data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor: randomColor() } 
-    }]);
+  if ((snap.data()?.stars || 0) < BUZZ_COST) return showStarPopup("Not enough stars");
 
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+
+  const buzzColor = randomColor();
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    content: txt,
+    uid: currentUser.uid,
+    chatId: currentUser.chatId,
+    timestamp: serverTimestamp(),
+    highlight: true,
+    buzzColor
   });
 
+  refs.messageInputEl.value = "";
+  showStarPopup("BUZZ sent!");
+  renderMessagesFromArray([{ 
+    id: docRef.id, 
+    data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor } 
+  }]);
+
+  requestAnimationFrame(() => {
+    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+  });
+});
   /* ---------- Hello text rotation ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
   let helloIndex = 0;
