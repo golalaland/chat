@@ -331,19 +331,25 @@ function startStarEarning(uid) {
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
   // ---------- Loading bar ----------
-  const loadingBar = document.getElementById("loadingBar");
-  if (loadingBar) {
-    let progress = 0;
-    const loadingInterval = setInterval(() => {
-      progress += Math.random() * 15; // random progress
-      if (progress >= 100) progress = 100;
-      loadingBar.style.width = progress + "%";
-      if (progress >= 100) {
-        clearInterval(loadingInterval);
-        setTimeout(() => { loadingBar.style.display = "none"; }, 300);
-      }
-    }, 100);
-  }
+/* ---------- Loading bar ---------- */
+const postLoginLoader = document.getElementById("postLoginLoader");
+const loadingBar = document.getElementById("loadingBar");
+
+if(postLoginLoader && loadingBar){
+  postLoginLoader.style.display = "flex"; // show overlay
+  loadingBar.style.width = "0%";
+
+  let progress = 0;
+  const loadingInterval = setInterval(()=>{
+    progress += Math.random() * 15; // random speed
+    if(progress >= 100) progress = 100;
+    loadingBar.style.width = progress + "%";
+    if(progress >= 100){
+      clearInterval(loadingInterval);
+      setTimeout(()=>{ postLoginLoader.style.display = "none"; }, 300);
+    }
+  },100);
+}
 
   // Cache DOM elements
   refs = {
