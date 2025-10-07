@@ -336,15 +336,38 @@ const vipModalMessage = document.getElementById('vipModalMessage');
 const vipModalInputs = document.getElementById('vipModalInputs');
 const vipModalClose = document.getElementById('vipModalClose');
 
+// Show the modal
 function showVipModal({ title = '', message = '', showInputs = false }) {
   vipModalTitle.textContent = title;
   vipModalMessage.textContent = message;
   vipModalInputs.style.display = showInputs ? 'flex' : 'none';
   vipModal.style.display = 'flex';
+  // Ensure page doesn't scroll or URL doesn't change
+  document.body.style.overflow = 'hidden';
 }
 
-vipModalClose.addEventListener('click', () => vipModal.style.display = 'none');
-vipModal.addEventListener('click', (e) => { if (e.target === vipModal) vipModal.style.display = 'none'; });
+// Hide the modal
+function hideVipModal() {
+  vipModal.style.display = 'none';
+  document.body.style.overflow = ''; // restore scroll
+  if (window.location.hash) history.replaceState(null, '', window.location.pathname);
+}
+
+// Close button
+vipModalClose.addEventListener('click', (e) => {
+  e.preventDefault(); // prevents # in URL
+  hideVipModal();
+});
+
+// Click outside modal content
+vipModal.addEventListener('click', (e) => {
+  if (e.target === vipModal) hideVipModal();
+});
+
+// Prevent any internal links with href="#" from changing the URL
+vipModal.querySelectorAll('a[href="#"]').forEach(a => {
+  a.addEventListener('click', e => e.preventDefault());
+});
 
 /* ---------- VIP login ---------- */
 const emailInput = document.getElementById("emailInput");
