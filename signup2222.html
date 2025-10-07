@@ -387,6 +387,133 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-color: var(--accent);
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
+/* Centered modal with glow backdrop */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none; /* toggle with JS */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  
+  /* Glow themed background */
+  background: radial-gradient(circle at center, rgba(255,20,147,0.2) 0%, rgba(0,0,0,0.85) 100%);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--card, #111);
+  padding: 20px 24px;
+  border-radius: 16px;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(255,20,147,0.6),
+              0 0 40px rgba(255,20,147,0.3);
+  border: 1px solid rgba(255,20,147,0.15);
+}
+
+.modal-content h3 {
+  color: var(--accent, #FF1493);
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  margin-bottom: 14px;
+  background: #111;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+}
+
+.modal-content input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255,20,147,0.3);
+}
+
+.modal-content button {
+  padding: 12px;
+  width: 100%;
+  border-radius: 12px;
+  background: var(--accent, #FF1493);
+  color: #000;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.modal-content button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255,20,147,0.5);
+}
+#messagePopup {
+  position: fixed;
+  top: 30%; /* centered vertically */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--card);
+  color: var(--accent);
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+
+  /* Glow */
+  box-shadow: 0 0 12px rgba(255,20,147,0.5),
+              0 0 24px rgba(255,20,147,0.3),
+              0 0 36px rgba(255,20,147,0.2);
+  text-align: center;
+
+  animation: popupFade 0.5s ease forwards;
+}
+
+@keyframes popupFade {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Footer styles */
+#startupFooter {
+  margin-top: 20px;
+  text-align: center;
+  color: var(--muted, #aaa);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#startupFooter a {
+  color: var(--accent, #FF1493);
+  text-decoration: none;
+  margin: 0 6px;
+}
+
+#startupFooter span {
+  letter-spacing: 1px;
+}
+
+/* Optional: make sure footer visible on small screens */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app {
+  flex: 1; /* allow footer to stay at bottom */
+}
 </style>
 </head>
 <body>
@@ -513,20 +640,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<!-- Footer (startup page only) -->
-<footer id="startupFooter" style="display:none; margin-top:20px; text-align:center; color:var(--muted); font-size:12px; line-height:1.4;">
-  <div>
-    ©5786 
-    <span style="letter-spacing:1px;">Own Your Vibe</span>
-  </div>
-  <div style="letter-spacing:0.5px;">自分の雰囲気を楽しもう</div>
+
+<!-- Footer (pre-login page) -->
+<footer id="startupFooter">
+  <div>©5786 <span>Own Your Vibe</span></div>
+  <div>自分の雰囲気を楽しもう</div>
   <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
   <div style="margin-top:4px;">
-    <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Privacy Policy</a> |
-    <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Terms of Service</a>
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Terms of Service</a>
   </div>
 </footer>
-
 <script type="module" src="newchatroom.js"></script>
 </body>
 </html>
