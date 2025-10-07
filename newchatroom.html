@@ -410,11 +410,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
       <div id="guestMsg"></div>
       <div id="authBox">
- <button id="googleSignInBtn" class="google-btn">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
-          Sign in with Google
-        </button>
-      </div>
+
 <!-- VIP Access Login Wrapper -->
 <div id="emailAuthWrapper">
   <!-- Phone Number Input -->
@@ -439,6 +435,12 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
     VIP Access
   </button>
+
+  <!-- Moved Google Sign-In Button here -->
+  <button id="googleSignInBtn" class="google-btn">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+    Sign in with Google
+  </button>
 </div>
 
 <!-- Chat ID Modal -->
@@ -459,18 +461,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 </div>
     </div>
     
-    <!-- Admin Controls -->
-<div id="adminControls">
-  <div id="adminUserSelectContainer">
-    <input type="text" id="adminUserSearch" placeholder="Search user..." />
-    <select id="adminUserSelect" size="4" style="width:100%;"></select>
-  </div>
-  <div class="buttons-container">
-    <input type="file" id="adminImageUpload">
-    <button id="adminSendImageBtn" class="small-btn">Send Image</button>
-    <button id="adminClearMessagesBtn" class="small-btn">Clear Messages</button>
-  </div>
-</div>
     
    <div class="profile" id="profileBox">
   <div class="profile-card">
