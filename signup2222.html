@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Chatroom | Xixi</title>
-<link rel="icon" href="data:," />
+<title>Xixi Chatroom</title>
+<link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -15,98 +15,63 @@
   --glass: rgba(255,255,255,0.03);
 }
 
-/* General layout */
-html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
-#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
-.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
-.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
-#helloText{font-size:21px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
-.room-desc{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
-.room-subtitle{font-size:12px;font-weight:600;text-align:center;margin-top:4px;font-family:'Montserrat',sans-serif;color:var(--accent);opacity:0.85;transition:color 0.2s ease;}
-.room-subtitle:hover{color:#fff;}
-#onlineCount{font-size:11px;color:var(--muted);}
-#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
+/* GENERAL */
+html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system-ui, Segoe UI, Roboto, "Helvetica Neue", Arial; color:#fff; background:var(--bg); }
+#appWrapper { width:100%; height:100%; display:flex; justify-content:center; }
+.app { display:flex; flex-direction:column; width:100%; max-width:480px; height:100%; padding:10px; box-sizing:border-box; gap:10px; }
+.brand { font-weight:700; font-size:24px; color:var(--accent); text-align:center; }
+#greeting { font-size:13px; text-align:center; font-weight:600; margin-bottom:6px; color:var(--accent); }
+#helloText { font-size:21px; font-weight:800; text-align:center; margin:6px 0; color:#fff; transition:color .2s ease; }
+.room-desc { font-size:11px; color:var(--muted); text-align:center; margin-bottom:6px; }
+.room-subtitle { font-size:12px; font-weight:600; text-align:center; margin-top:4px; font-family:'Montserrat',sans-serif; color:var(--accent); opacity:0.85; transition:color 0.2s ease; }
+.room-subtitle:hover { color:#fff; }
+.onlineCount { font-size:11px; color:var(--muted); text-align:center; }
+#guestMsg { font-size:16px; font-weight:700; margin:4px 0; color:var(--accent); text-align:center; }
 
-/* Chat messages */
-#messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;border-radius:8px;background:#000;margin-bottom:100px;box-sizing:border-box;}
-.msg{padding:8px 10px;border-radius:8px;background:var(--glass);max-width:100%;display:flex;gap:8px;align-items:center;}
-.msg.me{background:rgba(255,20,147,0.06);}
-.msg .meta{font-weight:700;font-size:13px;white-space:nowrap;margin-right:4px;color:inherit;}
-.msg .content{font-size:13px;color:#fff;white-space:pre-wrap;word-break:break-word;display:inline-block;}
+/* VIDEO */
+.video-container { position: relative; width:100%; max-width:600px; margin:0 auto; }
+#videoWrapper { width:100%; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#111; position:sticky; top:10px; z-index:50; margin:0 auto; }
+#videoPlayer { width:100%; height:100%; object-fit:cover; display:block; }
+.arrow { position:absolute; top:50%; transform:translateY(-50%); font-size:24px; background: rgba(0,0,0,0.3); color:#fff; border:none; padding:10px; cursor:pointer; border-radius:50%; z-index:10; }
+#prev { left:5px; } #next { right:5px; }
+.arrow:hover { box-shadow:0 0 12px rgba(255,20,147,0.5); transform:translateY(-50%) scale(1.1); }
 
-/* Send area & glass bar */
-.send-area{display:flex;align-items:center;gap:8px;background:var(--card);padding:10px;border-radius:999px;width:100%;box-sizing:border-box;position:fixed;bottom:0;z-index:100;}
-.send-area input{flex:1;padding:12px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background-color:#0e0e0e;color:#fff;font-size:16px;outline:none;transition:all 0.2s ease;}
-.send-area input::placeholder{color:var(--muted);opacity:0.7;}
-.send-btn{padding:10px 16px;border-radius:999px;background-color:var(--accent);color:#000;cursor:pointer;font-weight:700;border:none;font-size:14px;transition:all 0.2s ease;}
-.send-btn:hover{background-color:#ff33a1;transform:scale(1.05);}
-.buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
-.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
-@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
+/* MESSAGES */
+#messages { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; border-radius:8px; background:#000; margin-bottom:70px; box-sizing:border-box; }
+.msg { padding:8px 10px; border-radius:8px; background:var(--glass); max-width:100%; display:flex; gap:8px; align-items:center; }
+.msg.me { background: rgba(255,20,147,0.06); }
+.msg .meta { font-weight:700; font-size:13px; white-space:nowrap; margin-right:4px; color:inherit; }
+.msg .content { font-size:13px; color:#fff; white-space:pre-wrap; word-break:break-word; display:inline-block; }
 
-/* Glass bar under send area */
-.glass-bar{
-  width:100%;
-  max-width:480px;
-  margin:0 auto 12px auto;
-  height:60px;
-  background:var(--glass);
-  backdrop-filter:blur(12px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:0 16px;
-  border-radius:12px;
-  box-shadow:0 0 12px rgba(255,20,147,0.25),
-             0 0 24px rgba(255,20,147,0.15);
-  z-index:50;
-}
+/* SEND AREA */
+.send-area { position:fixed; bottom:0; left:0; width:100%; max-width:480px; margin:0 auto; display:flex; align-items:center; gap:8px; background:var(--card); padding:10px; border-radius:999px; box-sizing:border-box; z-index:100; }
+.send-area input { flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background-color:#0e0e0e; color:#fff; font-size:16px; outline:none; transition:all 0.2s ease; }
+.send-area input::placeholder { color:var(--muted); opacity:0.7; }
+.send-btn { padding:10px 16px; border-radius:999px; background-color:var(--accent); color:#000; cursor:pointer; font-weight:700; border:none; font-size:14px; transition:all 0.2s ease; }
+.send-btn:hover { background-color:#ff33a1; transform:scale(1.05); }
+.buzz-btn { padding:10px 12px; border-radius:999px; background:#1d1d1d; color:var(--accent); cursor:pointer; font-weight:700; font-size:14px; border:1px solid rgba(255,20,147,0.18); }
+.buzz-btn:hover { animation:buzzPulse 1.5s infinite; }
+@keyframes buzzPulse { 0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)} 70%{box-shadow:0 0 0 12px rgba(255,20,147,0)} 100%{box-shadow:0 0 0 0 rgba(255,20,147,0)} }
 
-/* Profile */
-.profile{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
-.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
-.profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.profile-left{display:flex;flex-direction:column;gap:2px;}
-.profile-name{font-weight:800;}
-.profile-label{color:var(--accent);font-weight:800;font-size:10px;}
-.profile-value{color:#fff;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono",Courier New,monospace;font-weight:400;font-size:11px;}
-.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
-.small-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border:0;color:#000;cursor:pointer;font-weight:700;font-size:12px;text-decoration:none;transition:transform .15s,box-shadow .15s;}
-.small-btn:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(255,20,147,0.3);}
+/* GLASS BAR UNDER VIDEO/CHAT */
+.glass-bar { width:100%; max-width:480px; height:60px; background:var(--glass); backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:0 16px; border-radius:12px; margin:12px auto 0 auto; box-shadow:0 0 12px rgba(255,20,147,0.25),0 0 24px rgba(255,20,147,0.15); z-index:5; pointer-events:none; }
 
-/* Sticky video frame */
-#videoPlayerWrapper {
-  position: fixed;
-  top:10px;
-  right:10px;
-  width:320px;
-  height:180px;
-  z-index:999;
-  border-radius:10px;
-  background:#111;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5);
-}
-#videoPlayer {
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  border-radius:10px;
-}
-.arrow {
-  position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:24px;
-  background: rgba(0,0,0,0.3);
-  color:#fff;
-  border:none;
-  padding:10px;
-  cursor:pointer;
-  border-radius:50%;
-  z-index:10;
-}
-#prev { left:5px; }
-#next { right:5px; }
+/* PROFILE */
+.profile { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+.profile-card { background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:8px; }
+.profile-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.profile-left { display:flex; flex-direction:column; gap:2px; }
+.profile-name { font-weight:800; }
+.profile-label { color:var(--accent); font-weight:800; font-size:10px; }
+.profile-value { color:#fff; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono",Courier New,monospace; font-weight:400; font-size:11px; }
+.profile-actions { display:flex; gap:8px; align-items:center; justify-content:flex-end; }
+.small-btn { padding:4px 10px; border-radius:8px; background:var(--accent); border:0; color:#000; cursor:pointer; font-weight:700; font-size:12px; text-decoration:none; transition:transform .15s,box-shadow .15s; }
+.small-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,20,147,0.3); }
+
+/* FOOTER */
+#startupFooter { margin-top:20px; text-align:center; color:var(--muted); font-size:12px; line-height:1.4; }
+#startupFooter a { color:var(--accent); text-decoration:none; margin:0 6px; }
+#startupFooter span { letter-spacing:1px; }
 </style>
 </head>
 <body>
@@ -115,24 +80,34 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="appWrapper">
   <div class="app">
     <div class="brand">乂丨乂丨</div>
-    <div id="helloText">HELLO</div>
-    <div class="room-desc">Chat. Own your vibe.</div>
-    <div id="roomSubtitle" class="room-subtitle">Welcome to the chatroom.</div>
-    <span id="onlineCount" class="onlineCount"></span>
-    <div id="guestMsg"></div>
+    <div id="greeting">Chat. Own Your Vibe.</div>
 
-    <!-- Chat messages -->
-    <div id="messages"></div>
+    <!-- CENTER VIDEO + CHAT -->
+    <div id="center">
+
+      <!-- Video -->
+      <div class="video-container">
+        <div id="videoWrapper">
+          <video id="videoPlayer" muted playsinline></video>
+          <button class="arrow" id="prev">&#10094;</button>
+          <button class="arrow" id="next">&#10095;</button>
+        </div>
+      </div>
+
+      <!-- Chat messages -->
+      <div id="messages"></div>
+
+      <!-- Glass bar under video / above chat input -->
+      <div class="glass-bar"></div>
+
+    </div>
 
     <!-- Send area -->
-    <div class="send-area" id="sendArea">
-      <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+    <div class="send-area">
+      <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
       <button id="buzzBtn" class="buzz-btn">🚨</button>
       <button id="sendBtn" class="send-btn">Send</button>
     </div>
-
-    <!-- Glass bar under input -->
-    <div class="glass-bar"></div>
 
     <!-- Profile -->
     <div class="profile" id="profileBox">
@@ -156,15 +131,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- Sticky video frame -->
-<div id="videoPlayerWrapper">
-  <video id="videoPlayer" muted playsinline></video>
-  <button class="arrow" id="prev">&#10094;</button>
-  <button class="arrow" id="next">&#10095;</button>
-</div>
+<!-- Footer -->
+<footer id="startupFooter">
+  <div>©5786 <span>Own Your Vibe</span></div>
+  <div>自分の雰囲気を楽しもう</div>
+  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
+  <div style="margin-top:4px;">
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Terms of Service</a>
+  </div>
+</footer>
 
 <script type="module" src="newchatroom.js"></script>
 </body>
