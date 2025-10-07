@@ -34,7 +34,15 @@ const CHAT_COLLECTION = "messages_room5";
 let currentUser = null;
 let lastMessagesArray = [];
 let starInterval = null;
-let lastMilestone = 0; // ✅ track last milestone popup
+let starUnsubscribe = null;     // will hold unsubscribe for star listener
+let lastMilestone = 0;         // track last milestone popup
+let refs = {};                 // DOM refs (set on DOMContentLoaded)
+
+/* ---------- Guard & ready promise ---------- */
+let chatroomReadyResolved = false;
+let chatroomReadyResolve;
+const chatroomReady = new Promise(res => { chatroomReadyResolve = res; });
+let chatroomReadyFallbackTimer = null;
 
 /* ---------- Constants ---------- */
 const BUZZ_COST = 50;
@@ -53,12 +61,21 @@ function showStarPopup(text) {
   if (!popup || !starText) return;
   starText.innerText = text;
   popup.style.display = "block";
+  // simple fade-out
   setTimeout(() => { popup.style.display = "none"; }, 1700);
 }
 function sanitizeKey(key) { return key.replace(/[.#$[\]]/g, ','); }
 
-/* ---------- UI refs ---------- */
-let refs = {};
+function resolveChatroomReadyOnce() {
+  if (!chatroomReadyResolved) {
+    chatroomReadyResolved = true;
+    try { chatroomReadyResolve(); } catch (e) {}
+    if (chatroomReadyFallbackTimer) {
+      clearTimeout(chatroomReadyFallbackTimer);
+      chatroomReadyFallbackTimer = null;
+    }
+  }
+}
 
 /* ---------- Redeem link update ---------- */
 function updateRedeemLink() {
@@ -82,8 +99,9 @@ if (rtdb) {
   });
 }
 
-/* ---------- Users color listener ---------- */
+/* ---------- Users color listener (will be started after DOM ready) ---------- */
 function setupUsersListener() {
+  // keep a simple live map of uid -> color
   onSnapshot(collection(db, "users"), snap => {
     refs.userColors = refs.userColors || {};
     snap.forEach(d => {
@@ -92,11 +110,6 @@ function setupUsersListener() {
     if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
   });
 }
-setupUsersListener();
-
-/* ---------- Chatroom ready Promise ---------- */
-let chatroomReadyResolve;
-const chatroomReady = new Promise(res => (chatroomReadyResolve = res));
 
 /* ---------- Render messages ---------- */
 let scrollPending = false;
@@ -106,7 +119,7 @@ function renderMessagesFromArray(arr) {
   arr.forEach(item => {
     if (document.getElementById(item.id)) return;
 
-    const m = item.data;
+    const m = item.data || {};
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
@@ -118,7 +131,7 @@ function renderMessagesFromArray(arr) {
     meta.style.marginRight = "4px";
 
     const content = document.createElement("span");
-    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    content.className = (m.highlight || m.buzzColor) ? "buzz-content content" : "content";
     content.textContent = " " + (m.content || "");
     if (m.buzzColor) content.style.background = m.buzzColor;
     if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
@@ -132,7 +145,7 @@ function renderMessagesFromArray(arr) {
     scrollPending = true;
     requestAnimationFrame(() => {
       const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
-      if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
+      if (arr.some(msg => msg.data && msg.data.uid === currentUser?.uid) || nearBottom) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       }
       scrollPending = false;
@@ -145,18 +158,31 @@ function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
   let initialLoaded = false;
 
+  // initial onSnapshot sets up real-time updates
   onSnapshot(q, snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const msgData = change.doc.data();
-        lastMessagesArray.push({ id: change.doc.id, data: msgData });
-        renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
-      }
-    });
+    try {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === "added") {
+          const msgData = change.doc.data();
+          lastMessagesArray.push({ id: change.doc.id, data: msgData });
+          renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
+        }
+      });
+    } catch (e) {
+      console.error("Error processing messages snapshot:", e);
+    }
 
+    // Resolve ready once after first paint (two RAFs to ensure DOM painted)
     if (!initialLoaded) {
       initialLoaded = true;
-      requestAnimationFrame(() => chatroomReadyResolve());
+      requestAnimationFrame(() => requestAnimationFrame(resolveChatroomReadyOnce));
+    }
+  }, (err) => {
+    console.error("Messages listener error:", err);
+    // if error, still resolve after a short delay so loader doesn't hang forever
+    if (!initialLoaded) {
+      initialLoaded = true;
+      setTimeout(resolveChatroomReadyOnce, 1000);
     }
   });
 }
@@ -198,11 +224,11 @@ async function promptForChatID(userRef, userData) {
 
 /* ---------- VIP login (whitelist) ---------- */
 async function loginWhitelist(email, phone) {
-  const loader = document.getElementById("postLoginLoader");
   try {
-    if (loader) loader.style.display = "flex";
+    // tiny debounce
     await new Promise(res => setTimeout(res, 50));
 
+    // Query whitelist
     const q = query(
       collection(db, "whitelist"),
       where("email", "==", email),
@@ -229,8 +255,8 @@ async function loginWhitelist(email, phone) {
       uid: uidKey,
       email: data.email,
       phone: data.phone,
-      chatId: data.chatId,
-      chatIdLower: data.chatIdLower,
+      chatId: data.chatId || generateGuestName(),
+      chatIdLower: data.chatIdLower || (data.chatId || "").toLowerCase(),
       stars: data.stars || 0,
       cash: data.cash || 0,
       usernameColor: data.usernameColor || randomColor(),
@@ -249,16 +275,20 @@ async function loginWhitelist(email, phone) {
       isHost: data.isHost || false
     };
 
-    lastMilestone = Math.floor((currentUser.stars || 0) / 1000) * 1000; // ✅ set initial milestone
+    // set initial milestone so popup is only for new 1000s
+    lastMilestone = Math.floor((currentUser.stars || 0) / 1000) * 1000;
 
     updateRedeemLink();
     setupPresence(currentUser);
-    attachMessagesListener();
+    attachMessagesListener();        // attach messages (will resolve chatroomReady once initial load completes)
     startStarEarning(currentUser.uid);
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    if (currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
+    // If user still has guest id, ask for a chat id (this is awaited so loginWhitelist doesn't return until prompt resolves)
+    if (currentUser.chatId && currentUser.chatId.startsWith("GUEST")) {
+      await promptForChatID(userRef, data);
+    }
 
     // Show chatroom UI
     document.getElementById("emailAuthWrapper")?.style.display = "none";
@@ -279,15 +309,23 @@ async function loginWhitelist(email, phone) {
     console.error("Login error:", e);
     showStarPopup("Login failed. Try again!");
     return false;
-  } finally {
-    if (loader) loader.style.display = "none";
   }
 }
 
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval);
+
+  // clear existing interval
+  if (starInterval) {
+    clearInterval(starInterval);
+    starInterval = null;
+  }
+  // detach previous snapshot if any
+  if (starUnsubscribe) {
+    try { starUnsubscribe(); } catch (e) {}
+    starUnsubscribe = null;
+  }
 
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
@@ -306,7 +344,8 @@ function startStarEarning(uid) {
     animationTimeout = setTimeout(() => updateStarDisplay(target), 50);
   }
 
-  onSnapshot(userRef, snap => {
+  // keep the onSnapshot unsubscribe so we can detach if needed
+  starUnsubscribe = onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.data();
     const targetStars = data.stars || 0;
@@ -315,37 +354,46 @@ function startStarEarning(uid) {
     if (animationTimeout) clearTimeout(animationTimeout);
     updateStarDisplay(targetStars);
 
-    // ✅ milestone popup only once per new 1000 stars
+    // milestone logic: only once per new 1000
     const newMilestone = Math.floor(targetStars / 1000) * 1000;
     if (newMilestone > lastMilestone && newMilestone > 0) {
       lastMilestone = newMilestone;
       showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(newMilestone)} stars!`);
     }
+  }, err => {
+    console.error("Star listener error:", err);
   });
 
-  // Auto-increment stars
+  // Auto-increment stars every minute (server writes via updateDoc)
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
+    try {
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const today = new Date().toISOString().split("T")[0];
 
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const today = new Date().toISOString().split("T")[0];
+      if (data.lastStarDate !== today) {
+        await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
+        return;
+      }
 
-    if (data.lastStarDate !== today) {
-      await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
-      return;
-    }
-
-    if ((data.starsToday || 0) < 250) {
-      await updateDoc(userRef, {
-        stars: increment(10),
-        starsToday: increment(10)
-      });
+      if ((data.starsToday || 0) < 250) {
+        await updateDoc(userRef, {
+          stars: increment(10),
+          starsToday: increment(10)
+        });
+      }
+    } catch (e) {
+      console.error("Auto-star increment failed:", e);
     }
   }, 60000);
 
-  window.addEventListener("beforeunload", () => clearInterval(starInterval));
+  // cleanup on unload
+  window.addEventListener("beforeunload", () => {
+    if (starInterval) clearInterval(starInterval);
+    if (starUnsubscribe) try { starUnsubscribe(); } catch (e) {}
+  });
 }
 
 /* ---------- Loading Bar Helper ---------- */
@@ -362,12 +410,18 @@ function showLoadingBar() {
   const step = 5;
   const loadingInterval = setInterval(() => {
     progress += step + Math.random() * 3;
-    if (progress >= 90) progress = 90;
+    if (progress >= 90) progress = 90; // sit at 90% until ready
     loadingBar.style.width = progress + "%";
   }, interval);
 
+  // fallback: if chatroom doesn't resolve in N ms, resolve ready so loader won't hang forever
+  chatroomReadyFallbackTimer = setTimeout(() => {
+    resolveChatroomReadyOnce();
+  }, 10000); // 10s fallback
+
   return () => {
     clearInterval(loadingInterval);
+    if (chatroomReadyFallbackTimer) { clearTimeout(chatroomReadyFallbackTimer); chatroomReadyFallbackTimer = null; }
     loadingBar.style.width = "100%";
     setTimeout(() => { postLoginLoader.style.display = "none"; }, 250);
   };
@@ -396,6 +450,9 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if (refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength", "12");
 
+  // start users listener now that DOM refs are available
+  setupUsersListener();
+
   /* ---------- VIP login ---------- */
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
@@ -413,9 +470,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
       const stopLoading = showLoadingBar();
       await new Promise(res => setTimeout(res, 50));
-      const success = await loginWhitelist(email, phone);
-      if (!success) return;
 
+      const success = await loginWhitelist(email, phone);
+      if (!success) {
+        // ensure loader hidden if login failed (loginWhitelist does not touch loader)
+        stopLoading();
+        return;
+      }
+
+      // wait for messages to render before hiding loader — this will also be delayed by ChatID modal
       await chatroomReady;
       stopLoading();
     });
@@ -429,7 +492,10 @@ window.addEventListener("DOMContentLoaded", () => {
       await new Promise(res => setTimeout(res, 50));
 
       const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if (!success) return;
+      if (!success) {
+        stopLoading();
+        return;
+      }
 
       await chatroomReady;
       stopLoading();
@@ -444,15 +510,30 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!txt) return showStarPopup("Type a message first");
 
     if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars");
+
+    // optimistic UI update
+    currentUser.stars -= SEND_COST;
+    if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
     refs.messageInputEl.value = "";
 
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      content: txt,
-      timestamp: serverTimestamp()
-    });
-    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+      await addDoc(collection(db, CHAT_COLLECTION), {
+        content: txt,
+        uid: currentUser.uid,
+        chatId: currentUser.chatId,
+        timestamp: serverTimestamp(),
+        highlight: false,
+        buzzColor: null
+      });
+    } catch (e) {
+      console.error("Send failed:", e);
+      showStarPopup("Failed to send. Try again.");
+      // rollback optimistic UI (best-effort)
+      currentUser.stars += SEND_COST;
+      if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    }
   });
 
   /* ---------- Buzz ---------- */
@@ -463,17 +544,89 @@ window.addEventListener("DOMContentLoaded", () => {
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
 
+    // optimistic UI update
+    currentUser.stars -= BUZZ_COST;
+    if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
     refs.messageInputEl.value = "";
 
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      content: txt,
-      buzzColor: randomColor(),
-      highlight: true,
-      timestamp: serverTimestamp()
-    });
+    const buzzColor = randomColor();
 
-    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-BUZZ_COST) });
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-BUZZ_COST) });
+      await addDoc(collection(db, CHAT_COLLECTION), {
+        content: txt,
+        uid: currentUser.uid,
+        chatId: currentUser.chatId,
+        timestamp: serverTimestamp(),
+        highlight: true,
+        buzzColor
+      });
+      showStarPopup("BUZZ sent!");
+    } catch (e) {
+      console.error("Buzz failed:", e);
+      showStarPopup("Failed to BUZZ. Try again.");
+      // rollback
+      currentUser.stars += BUZZ_COST;
+      if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    }
   });
+
+  /* ---------- Hello text rotation (non-blocking) ---------- */
+  const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
+  let helloIndex = 0;
+  const helloEl = document.getElementById("helloText");
+  setInterval(()=>{
+    if(!helloEl) return;
+    helloEl.style.opacity='0';
+    setTimeout(()=>{
+      helloEl.innerText = greetings[helloIndex++ % greetings.length];
+      helloEl.style.color = randomColor();
+      helloEl.style.opacity='1';
+    },220);
+  },1500);
+
+  /* ---------- Video nav & fade (non-blocking) ---------- */
+  const videoPlayer = document.getElementById("videoPlayer");
+  const prevBtn = document.getElementById("prev");
+  const nextBtn = document.getElementById("next");
+  const container = document.querySelector(".video-container");
+  const navButtons = [prevBtn,nextBtn].filter(Boolean);
+
+  if(videoPlayer && navButtons.length){
+    const videos = [
+      "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+      "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
+      "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
+    ];
+    let currentVideoIndex = 0;
+
+    function loadVideo(index){
+      if(index<0) index = videos.length-1;
+      if(index>=videos.length) index = 0;
+      currentVideoIndex = index;
+      videoPlayer.src = videos[currentVideoIndex];
+      videoPlayer.muted = true;
+      videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
+    }
+
+    prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
+    nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
+    videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
+
+    let hideTimeout;
+    function showButtons(){
+      navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); }, 3000);
+    }
+
+    navButtons.forEach(btn=>{ btn.style.transition="opacity 0.6s"; btn.style.opacity="0"; btn.style.pointerEvents="none"; });
+    container?.addEventListener("mouseenter", showButtons);
+    container?.addEventListener("mousemove", showButtons);
+    container?.addEventListener("mouseleave", ()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); });
+    container?.addEventListener("click", showButtons);
+
+    loadVideo(0);
+  }
 });
