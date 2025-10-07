@@ -63,20 +63,21 @@ header {
   color: #555;  /* muted dark for label */
   margin-bottom: 0.2rem;
 }
+
 .balance-value {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;  /* numbers start at same vertical line */
-  gap: 4px;
-  font-weight: bold;
   font-size: 1rem;
+  font-weight: bold;
   color: var(--theme-solid);
-  font-variant-numeric: tabular-nums; /* makes digits fixed width */
+  display: inline-flex;         /* inline so numbers line up vertically */
+  align-items: center;          /* vertical alignment of emoji */
+  font-variant-numeric: tabular-nums; /* numbers get fixed width */
 }
 
 .balance-value .symbol {
-  font-variant-numeric: normal;  /* keep symbols normal width */
+  margin-left: 2px;             /* small spacing after number */
+  font-variant-numeric: normal; /* emoji doesn’t affect number width */
 }
+
 /* ---------- HOST TABS ---------- */
 .host-tabs {
   display: flex;
@@ -584,20 +585,17 @@ header {
 <div id="user-info">
   <div class="profile-card">
     <div id="username">Guest</div>
-   <div class="balances">
+ <div class="balances">
   <div class="balance-item">
     <div class="balance-label">Stars Balance</div>
     <div class="balance-value" id="stars-count">
-      <span class="num">1</span> <span class="symbol">⭐️</span>
+      <span class="num">1</span><span class="symbol"> ⭐️</span>
     </div>
   </div>
   <div class="balance-item">
     <div class="balance-label">Cash Balance</div>
     <div class="balance-value" id="cash-count">
-      <span class="symbol">₦</span><span class="num">3,000</span>
-    </div>
-  </div>
-</div>
+      ₦<span class="num">3,000</span>
     </div>
   </div>
 </div>
