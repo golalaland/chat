@@ -21,6 +21,12 @@ html,body{height:100%;margin:0;font-family:'Montserrat',Inter,system-ui,Segoe UI
 .app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;text-align:center;}
 .brand{font-weight:700;font-size:24px;color:var(--accent);}
 #greeting{font-size:14px;color:var(--accent);margin-bottom:10px;}
+#helloText{font-size:21px;font-weight:800;color:#fff;margin:6px 0;transition:color .2s ease;}
+.room-desc{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.room-subtitle{font-size:12px;font-weight:600;color:var(--accent);opacity:0.85;margin-top:4px;transition:color 0.2s ease;}
+.room-subtitle:hover{color:#fff;}
+#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);}
+.onlineCount{font-size:11px;color:var(--muted);}
 
 /* ---------- Video Preview ---------- */
 #videoPreviewWrapper {
@@ -113,6 +119,13 @@ html,body{height:100%;margin:0;font-family:'Montserrat',Inter,system-ui,Segoe UI
         <source src="your-demo-video.mp4" type="video/mp4">
       </video>
     </div>
+
+    <!-- HELLO / GUEST / ONLINE -->
+    <div id="helloText" aria-live="polite">HELLO</div>
+    <div class="room-desc">Chat. Own your vibe.</div>
+    <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
+    <span id="onlineCount" class="onlineCount"></span>
+    <div id="guestMsg"></div>
 
     <div id="authBox">
       <div id="emailAuthWrapper">
