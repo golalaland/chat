@@ -193,35 +193,36 @@ async function promptForChatID(userRef, userData){
 
 /* ---------- VIP login ---------- */
 async function loginWhitelist(email, phone) {
-  const postLoginLoader = document.getElementById("postLoginLoader");
-  const loadingBar = document.getElementById("loadingBar");
-
-  if(postLoginLoader && loadingBar){
-    postLoginLoader.style.display = "flex"; // show overlay
-    loadingBar.style.width = "0%";
-  }
-
+  const loader = document.getElementById("postLoginLoader");
   try {
-    // Step 1: Check whitelist
-    const q = query(collection(db, "whitelist"), where("email","==",email), where("phone","==",phone));
-    const snap = await getDocs(q);
-    if (snap.empty) { 
-      alert("You’re not on the whitelist."); 
-      postLoginLoader.style.display = "none";
-      return false; 
-    }
-    animateLoadingBar(25);
+    if (loader) loader.style.display = "flex";
 
-    // Step 2: Get user document
+    // Slight delay so loader is visible
+    await new Promise(res => setTimeout(res, 50));
+
+    // Query whitelist
+    const q = query(
+      collection(db, "whitelist"),
+      where("email", "==", email),
+      where("phone", "==", phone)
+    );
+    const snap = await getDocs(q);
+
+    console.log("Whitelist query result:", snap.docs.map(d => d.data())); // <-- Debug
+
+    if (snap.empty) {
+      alert("You’re not on the whitelist. Check your email and phone format.");
+      return false;
+    }
+
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
     const docSnap = await getDoc(userRef);
+
     if (!docSnap.exists()) {
-      alert("User not found. Please sign up first.");
-      postLoginLoader.style.display = "none";
+      alert("User not found. Please sign up on the main page first.");
       return false;
     }
-    animateLoadingBar(50);
 
     const data = docSnap.data() || {};
     currentUser = {
@@ -247,48 +248,41 @@ async function loginWhitelist(email, phone) {
       inviteeGiftShown: data.inviteeGiftShown || false,
       isHost: data.isHost || false
     };
-    animateLoadingBar(65);
 
-    // Step 3: Setup presence & listeners
     updateRedeemLink();
     setupPresence(currentUser);
     attachMessagesListener();
     startStarEarning(currentUser.uid);
+
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
-    animateLoadingBar(80);
 
-    // Step 4: Optional ChatID prompt
-    if(currentUser.chatId.startsWith("GUEST")) {
-      await promptForChatID(userRef, data);
-    }
-    animateLoadingBar(90);
+    if(currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
 
-    // Step 5: Show main chatroom UI
+    // Hide login UI & show chatroom
     const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-    if(emailAuthWrapper) emailAuthWrapper.style.display = "none";
-    if(refs.authBox) refs.authBox.style.display = "none";
-    if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-    if(refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if(refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
-    if(refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if(refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if(refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
-
-    animateLoadingBar(100);
-
-    // Hide overlay after a tiny delay
-    setTimeout(()=>{ postLoginLoader.style.display = "none"; }, 300);
+    if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
+    if (refs.authBox) refs.authBox.style.display = "none";
+    if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+    if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
+    if (refs.profileNameEl) { 
+      refs.profileNameEl.innerText = currentUser.chatId; 
+      refs.profileNameEl.style.color = currentUser.usernameColor; 
+    }
+    if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
 
     return true;
 
   } catch(e) {
     console.error("Login error:", e);
-    alert("Login failed. Try again.");
-    if(postLoginLoader) postLoginLoader.style.display = "none";
+    alert("Login failed: " + (e.message || e));
     return false;
+  } finally {
+    // Always hide loader at the end
+    if (loader) loader.style.display = "none";
   }
 }
-
 
 /* ---------- Stars auto-earning (cleaned) ---------- */
 function startStarEarning(uid) {
