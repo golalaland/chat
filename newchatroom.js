@@ -1,11 +1,10 @@
-// app.js
+// newchatroom.js
 
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot
-  , query, orderBy, increment, getDocs, where
+  onSnapshot, query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
@@ -34,8 +33,6 @@ const CHAT_COLLECTION = "messages_room5";
 /* ---------- State ---------- */
 let currentUser = null;
 let lastMessagesArray = [];
-
-// ⭐ ADD THIS LINE HERE
 let starInterval = null;
 
 /* ---------- Constants ---------- */
@@ -77,6 +74,7 @@ function setupPresence(user){
   rtdbSet(pRef, { online:true, chatId:user.chatId, email:user.email }).catch(()=>{});
   onDisconnect(pRef).remove().catch(()=>{});
 }
+
 if (rtdb){
   onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
     const val = snap.val() || {};
@@ -190,7 +188,6 @@ async function promptForChatID(userRef, userData){
   });
 }
 
-
 /* ---------- VIP login ---------- */
 async function loginWhitelist(email, phone) {
   try {
@@ -261,7 +258,7 @@ async function loginWhitelist(email, phone) {
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval); // clear existing
+  if (starInterval) clearInterval(starInterval);
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
@@ -306,6 +303,7 @@ function startStarEarning(uid) {
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
+/* ---------- Loading bar ---------- */
 function startLoadingBar(redirectUrl = "signup2222.html") {
   const overlay = document.getElementById('loadingOverlay');
   const bar = document.getElementById('loadingBar');
@@ -321,9 +319,7 @@ function startLoadingBar(redirectUrl = "signup2222.html") {
 
     if (width >= 100) {
       clearInterval(interval);
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 200);
+      setTimeout(() => { window.location.href = redirectUrl; }, 200);
     }
   }, 100);
 }
@@ -351,112 +347,80 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-/* ---------- Auto-login session ---------- */
-const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-if(vipUser?.email && vipUser?.phone){
-  (async ()=>{
-    const success = await loginWhitelist(vipUser.email, vipUser.phone);
-    if(success) {
-      updateRedeemLink();
-      startLoadingBar("signup2222.html"); // auto-redirect on session
-    }
-  })();
-}
-
-/* ---------- VIP login & message popup ---------- */
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
-const googleBtn = document.getElementById("googleSignInBtn");
-
-// Message popup helper
-function showMessagePopup(msg, duration = 2500) {
-  const popup = document.getElementById("messagePopup");
-  if (!popup) return;
-  popup.textContent = msg;
-  popup.style.display = "block";
-  setTimeout(() => { popup.style.display = "none"; }, duration);
-}
-
-// VIP login
-loginBtn?.addEventListener("click", async e => {
-  e.preventDefault();
-  const email = (emailInput.value||"").trim().toLowerCase();
-  const phone = (phoneInput.value||"").trim();
-
-  if (!email || !phone) {
-    showMessagePopup("Enter your Email & Phone to get access");
-    return;
+  /* ---------- Auto-login session ---------- */
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if(vipUser?.email && vipUser?.phone){
+    (async ()=>{
+      const success = await loginWhitelist(vipUser.email, vipUser.phone);
+      if(success) {
+        updateRedeemLink();
+        startLoadingBar("signup2222.html");
+      }
+    })();
   }
 
-  const success = await loginWhitelist(email, phone);
-  if (!success) {
-    showMessagePopup("You’re not on the whitelist.");
-  } else {
-    updateRedeemLink();
-  }
-});
+  /* ---------- VIP login ---------- */
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
+  const googleBtn = document.getElementById("googleSignInBtn");
 
-// Google Sign-In button
-googleBtn?.addEventListener("click", e => {
-  e.preventDefault();
-  showMessagePopup("Google Sign-In is disabled for this room.");
-});
+  function showMessagePopup(msg, duration = 2500) {
+    const popup = document.getElementById("messagePopup");
+    if (!popup) return;
+    popup.textContent = msg;
+    popup.style.display = "block";
+    setTimeout(() => { popup.style.display = "none"; }, duration);
+  }
+
+  loginBtn?.addEventListener("click", async e => {
+    e.preventDefault();
+    const email = (emailInput.value||"").trim().toLowerCase();
+    const phone = (phoneInput.value||"").trim();
+
+    if (!email || !phone) { showMessagePopup("Enter your Email & Phone to get access"); return; }
+    const success = await loginWhitelist(email, phone);
+    if (!success) showMessagePopup("You’re not on the whitelist.");
+    else updateRedeemLink();
+  });
+
+  googleBtn?.addEventListener("click", e => { e.preventDefault(); showMessagePopup("Google Sign-In is disabled for this room."); });
 
   /* ---------- Send & Buzz ---------- */
-refs.sendBtn?.addEventListener("click", async ()=>{
-  if (!currentUser) return showStarPopup("Sign in to chat");
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message first");
-  if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+  refs.sendBtn?.addEventListener("click", async ()=>{
+    if (!currentUser) return showStarPopup("Sign in to chat");
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first");
+    if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
-  currentUser.stars -= SEND_COST;
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-  await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
-    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-    timestamp: serverTimestamp(), highlight:false, buzzColor:null
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
+    const docRef = await addDoc(collection(db,CHAT_COLLECTION), { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, timestamp: serverTimestamp(), highlight:false, buzzColor:null });
+    refs.messageInputEl.value = "";
+    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+    requestAnimationFrame(() => { if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
   });
-  refs.messageInputEl.value = "";
-
-  // Render your own message
-  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
-
-  // ⭐ Force scroll AFTER browser paints
-  requestAnimationFrame(() => {
-    if (refs.messagesEl) {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    }
-  });
-});
 
   refs.buzzBtn?.addEventListener("click", async ()=>{
-  if (!currentUser) return showStarPopup("Sign in to BUZZ");
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+    if (!currentUser) return showStarPopup("Sign in to BUZZ");
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-  const userRef = doc(db,"users",currentUser.uid);
-  const snap = await getDoc(userRef);
-  if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
+    const userRef = doc(db,"users",currentUser.uid);
+    const snap = await getDoc(userRef);
+    if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
 
-  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
-    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-    timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
+    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+    const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
+      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+      timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
+    });
+    refs.messageInputEl.value = "";
+    showStarPopup("BUZZ sent!");
+    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
+    requestAnimationFrame(() => { if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
   });
-  refs.messageInputEl.value = "";
-  showStarPopup("BUZZ sent!");
-
-  // ⭐ Render and scroll after browser paints
-  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
-
-  requestAnimationFrame(() => {
-    if (refs.messagesEl) {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    }
-  });
-});
 
   /* ---------- Hello text rotation ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
@@ -472,8 +436,7 @@ refs.sendBtn?.addEventListener("click", async ()=>{
     },220);
   },1500);
 
-
-/* ---------- Video nav & fade ---------- */
+  /* ---------- Video nav & loop ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
@@ -494,6 +457,7 @@ refs.sendBtn?.addEventListener("click", async ()=>{
       currentVideoIndex=index;
       videoPlayer.src=videos[currentVideoIndex];
       videoPlayer.muted=true;
+      videoPlayer.loop=true;
       videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
     }
 
