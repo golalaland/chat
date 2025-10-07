@@ -193,19 +193,35 @@ async function promptForChatID(userRef, userData){
 
 /* ---------- VIP login ---------- */
 async function loginWhitelist(email, phone) {
+  const postLoginLoader = document.getElementById("postLoginLoader");
+  const loadingBar = document.getElementById("loadingBar");
+
+  if(postLoginLoader && loadingBar){
+    postLoginLoader.style.display = "flex"; // show overlay
+    loadingBar.style.width = "0%";
+  }
+
   try {
+    // Step 1: Check whitelist
     const q = query(collection(db, "whitelist"), where("email","==",email), where("phone","==",phone));
     const snap = await getDocs(q);
-    if (snap.empty) { alert("You’re not on the whitelist."); return false; }
+    if (snap.empty) { 
+      alert("You’re not on the whitelist."); 
+      postLoginLoader.style.display = "none";
+      return false; 
+    }
+    animateLoadingBar(25);
 
+    // Step 2: Get user document
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
     const docSnap = await getDoc(userRef);
-
     if (!docSnap.exists()) {
-      alert("User not found. Please sign up on the main page first.");
+      alert("User not found. Please sign up first.");
+      postLoginLoader.style.display = "none";
       return false;
     }
+    animateLoadingBar(50);
 
     const data = docSnap.data() || {};
     currentUser = {
@@ -231,34 +247,48 @@ async function loginWhitelist(email, phone) {
       inviteeGiftShown: data.inviteeGiftShown || false,
       isHost: data.isHost || false
     };
+    animateLoadingBar(65);
 
+    // Step 3: Setup presence & listeners
     updateRedeemLink();
     setupPresence(currentUser);
     attachMessagesListener();
     startStarEarning(currentUser.uid);
-
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
+    animateLoadingBar(80);
 
-    if(currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
+    // Step 4: Optional ChatID prompt
+    if(currentUser.chatId.startsWith("GUEST")) {
+      await promptForChatID(userRef, data);
+    }
+    animateLoadingBar(90);
 
+    // Step 5: Show main chatroom UI
     const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-    if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
-    if (refs.authBox) refs.authBox.style.display = "none";
-    if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-    if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if (refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
-    if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
+    if(emailAuthWrapper) emailAuthWrapper.style.display = "none";
+    if(refs.authBox) refs.authBox.style.display = "none";
+    if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+    if(refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
+    if(refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
+    if(refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if(refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    if(refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
+
+    animateLoadingBar(100);
+
+    // Hide overlay after a tiny delay
+    setTimeout(()=>{ postLoginLoader.style.display = "none"; }, 300);
 
     return true;
 
   } catch(e) {
     console.error("Login error:", e);
     alert("Login failed. Try again.");
+    if(postLoginLoader) postLoginLoader.style.display = "none";
     return false;
   }
 }
+
 
 /* ---------- Stars auto-earning (cleaned) ---------- */
 function startStarEarning(uid) {
@@ -374,32 +404,67 @@ if(postLoginLoader && loadingBar){
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
   /* ---------- VIP login (whitelist) ---------- */
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
 
-  if(loginBtn){
-    loginBtn.addEventListener("click", async () => {
-      const email = (emailInput.value || "").trim().toLowerCase();
-      const phone = (phoneInput.value || "").trim();
-      if(!email || !phone){ 
-        alert("Enter your email and phone to get access"); 
-        return; 
-      }
-      const success = await loginWhitelist(email, phone);
-      if(success) updateRedeemLink();
-    });
-  }
+if (loginBtn) {
+  loginBtn.addEventListener("click", async () => {
+    const email = (emailInput.value || "").trim().toLowerCase();
+    const phone = (phoneInput.value || "").trim();
+    if (!email || !phone) {
+      alert("Enter your email and phone to get access");
+      return;
+    }
 
-  /* ---------- Auto-login session ---------- */
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if(vipUser?.email && vipUser?.phone){
-    (async () => {
-      const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if(success) updateRedeemLink();
-    })();
-  }
+    // Show loader before login
+    const loader = document.getElementById("postLoginLoader");
+    if (loader) loader.style.display = "flex";
 
+    // Slight delay so user sees loader
+    await new Promise(res => setTimeout(res, 50));
+
+    const success = await loginWhitelist(email, phone);
+
+    if (!success) {
+      // Hide loader if login failed
+      if (loader) loader.style.display = "none";
+      return;
+    }
+
+    // Loader stays for a short animation before showing chatroom
+    await new Promise(res => setTimeout(res, 500));
+
+    if (loader) loader.style.display = "none";
+
+    // Update chatroom UI
+    updateRedeemLink();
+  });
+}
+
+/* ---------- Auto-login session ---------- */
+const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+if (vipUser?.email && vipUser?.phone) {
+  (async () => {
+    const loader = document.getElementById("postLoginLoader");
+    if (loader) loader.style.display = "flex";
+
+    await new Promise(res => setTimeout(res, 50));
+
+    const success = await loginWhitelist(vipUser.email, vipUser.phone);
+
+    if (!success) {
+      if (loader) loader.style.display = "none";
+      return;
+    }
+
+    await new Promise(res => setTimeout(res, 500));
+
+    if (loader) loader.style.display = "none";
+
+    updateRedeemLink();
+  })();
+}
   /* ---------- Send & Buzz ---------- */
   refs.sendBtn?.addEventListener("click", async () => {
     if (!currentUser) return showStarPopup("Sign in to chat");
