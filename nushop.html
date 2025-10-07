@@ -63,21 +63,15 @@ header {
   color: #555;  /* muted dark for label */
   margin-bottom: 0.2rem;
 }
-
 .balance-value {
   font-size: 1rem;
   font-weight: bold;
   color: var(--theme-solid);
-  display: inline-flex;         /* inline so numbers line up vertically */
-  align-items: center;          /* vertical alignment of emoji */
-  font-variant-numeric: tabular-nums; /* numbers get fixed width */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px; /* space between number and emoji */
+  font-variant-numeric: tabular-nums; /* THIS makes numbers line up */
 }
-
-.balance-value .symbol {
-  margin-left: 2px;             /* small spacing after number */
-  font-variant-numeric: normal; /* emoji doesn’t affect number width */
-}
-
 /* ---------- HOST TABS ---------- */
 .host-tabs {
   display: flex;
@@ -160,12 +154,12 @@ header {
 }
 
 /* ---------- SHOP GRID ---------- */
-..shop-grid {
+.shop-grid {
+  position: relative; /* needed so spinner overlays correctly */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* auto-fit better for responsiveness */
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 1rem;
   padding: 1rem;
-  width: 100%;   /* ensure it uses full parent width */
 }
 
 /* 🌐 FULLSCREEN SHOP SPINNER */
@@ -236,18 +230,6 @@ header {
   font-weight: bold;
   color: var(--theme-solid);
 }
-
-@media (min-width: 500px) {
-  .shop-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 900px) {
-  .shop-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 .buy-btn {
   background: var(--theme-gradient);
   color: #fff;
@@ -395,48 +377,29 @@ header {
   border-radius: 6px;
 }
 
-/* Friends container integrated inside the panel */
 .friends-list {
   display: flex;
-  flex-wrap: nowrap;             /* single horizontal row */
-  gap: 10px;                     /* space between friend cards */
-  overflow-x: auto;              /* horizontal scroll if too many */
-  padding: 10px 0;               /* vertical spacing inside panel */
-  border-top: 1px solid #eee;    /* subtle divider line */
-  margin-top: 10px;              /* space from other content in panel */
-  scroll-behavior: smooth;       /* smooth scrolling on swipe/scroll */
+  flex-wrap: wrap; /* or flex-wrap: nowrap for horizontal scrolling */
+  gap: 12px;
+  overflow-x: auto; /* horizontal scroll if nowrap */
+  padding-bottom: 10px;
 }
 
-/* Friend card design */
 .friend-card {
   display: flex;
   flex-direction: column;
-  align-items: center;           /* center content */
-  background: #fff;              /* match panel */
-  color: #111;
-  border-radius: 10px;
-  padding: 8px 12px;
-  min-width: 130px;              /* card width */
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  align-items: flex-start;
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 10px;
+  min-width: 160px;
+  cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
-  flex-shrink: 0;                /* prevent shrinking in scroll */
 }
 
 .friend-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-}
-
-/* Optional: hide scrollbar for cleaner look */
-.friends-list::-webkit-scrollbar {
-  height: 6px;
-}
-.friends-list::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.2);
-  border-radius: 3px;
-}
-.friends-list::-webkit-scrollbar-track {
-  background: transparent;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }
 
 /* ---------- MODAL ---------- */
@@ -597,17 +560,15 @@ header {
 <div id="user-info">
   <div class="profile-card">
     <div id="username">Guest</div>
- <div class="balances">
-  <div class="balance-item">
-    <div class="balance-label">Stars Balance</div>
-    <div class="balance-value" id="stars-count">
-      <span class="num">1</span><span class="symbol"> ⭐️</span>
-    </div>
-  </div>
-  <div class="balance-item">
-    <div class="balance-label">Cash Balance</div>
-    <div class="balance-value" id="cash-count">
-      ₦<span class="num">3,000</span>
+    <div class="balances">
+     <div class="balance-item">
+  <div class="balance-label">Stars Balance</div>
+  <div class="balance-value" id="stars-count"><span class="num">1</span> ⭐️</div>
+</div>
+<div class="balance-item">
+  <div class="balance-label">Cash Balance</div>
+  <div class="balance-value" id="cash-count">₦<span class="num">3,000</span></div>
+</div>
     </div>
   </div>
 </div>
