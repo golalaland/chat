@@ -192,13 +192,11 @@ async function promptForChatID(userRef, userData){
   });
 }
 
-/* ---------- VIP login ---------- */
+/* ---------- VIP login (whitelist) ---------- */
 async function loginWhitelist(email, phone) {
   const loader = document.getElementById("postLoginLoader");
   try {
     if (loader) loader.style.display = "flex";
-
-    // Slight delay so loader is visible
     await new Promise(res => setTimeout(res, 50));
 
     // Query whitelist
@@ -208,11 +206,10 @@ async function loginWhitelist(email, phone) {
       where("phone", "==", phone)
     );
     const snap = await getDocs(q);
-
-    console.log("Whitelist query result:", snap.docs.map(d => d.data())); // <-- Debug
+    console.log("Whitelist query result:", snap.docs.map(d => d.data())); // debug
 
     if (snap.empty) {
-      alert("You’re not on the whitelist. Check your email and phone format.");
+      showStarPopup("You’re not on the whitelist. Check your email and phone format.");
       return false;
     }
 
@@ -221,7 +218,7 @@ async function loginWhitelist(email, phone) {
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
-      alert("User not found. Please sign up on the main page first.");
+      showStarPopup("User not found. Please sign up on the main page first.");
       return false;
     }
 
@@ -277,10 +274,9 @@ async function loginWhitelist(email, phone) {
 
   } catch(e) {
     console.error("Login error:", e);
-    alert("Login failed: " + (e.message || e));
+    showStarPopup("Login failed. Try again!");
     return false;
   } finally {
-    // Always hide loader at the end
     if (loader) loader.style.display = "none";
   }
 }
