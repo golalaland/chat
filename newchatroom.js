@@ -83,13 +83,22 @@ if (rtdb){
   });
 }
 
-/* ---------- Users color listener ---------- */
+/* ---------- Users color + badge listener ---------- */
 function setupUsersListener(){
   onSnapshot(collection(db, "users"), snap=>{
     refs.userColors = refs.userColors || {};
+    refs.userBadges = refs.userBadges || {};
+
     snap.forEach(d => {
-      refs.userColors[d.id] = d.data()?.usernameColor || "#ffffff";
+      const data = d.data();
+      refs.userColors[d.id] = data?.usernameColor || "#ffffff";
+      refs.userBadges[d.id] = {
+        star: data?.starBadge || false,
+        verified: data?.verifiedBadge || false,
+        crown: data?.crownBadge || false
+      };
     });
+
     if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
   });
 }
@@ -153,43 +162,48 @@ function renderMessagesFromArray(arr){
     if (m.uid && currentUser && m.uid === currentUser.uid) wrapper.classList.add("me");
 
     // USERNAME + BADGES
-    const meta = document.createElement("span");
-    meta.className = "meta";
-    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
-    meta.style.marginRight = "6px";
+  const meta = document.createElement("span");
+meta.className = "meta";
+meta.style.marginRight = "6px";
 
-    // Username text
-    meta.textContent = (m.chatId || "Guest") + ": ";
+// Set username text
+meta.textContent = (m.chatId || "Guest");
 
-    // BADGES (check refs.userBadges for this UID)
-    if (m.uid && refs.userBadges && refs.userBadges[m.uid]) {
-      const badges = refs.userBadges[m.uid]; // { star: true, verified: false, crown: true }
+// Set username color
+meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
 
-      if (badges.star) {
-        const starImg = document.createElement("img");
-        starImg.src = "https://cdn-icons-png.flaticon.com/512/1200/1200781.png"; // star
-        starImg.style.width = "16px";
-        starImg.style.height = "16px";
-        starImg.style.marginLeft = "3px";
-        meta.appendChild(starImg);
-      }
-      if (badges.verified) {
-        const verifiedImg = document.createElement("img");
-        verifiedImg.src = "https://cdn-icons-png.flaticon.com/512/5253/5253968.png"; // verified
-        verifiedImg.style.width = "16px";
-        verifiedImg.style.height = "16px";
-        verifiedImg.style.marginLeft = "3px";
-        meta.appendChild(verifiedImg);
-      }
-      if (badges.crown) {
-        const crownImg = document.createElement("img");
-        crownImg.src = "https://cdn-icons-png.flaticon.com/512/2545/2545603.png"; // crown
-        crownImg.style.width = "16px";
-        crownImg.style.height = "16px";
-        crownImg.style.marginLeft = "3px";
-        meta.appendChild(crownImg);
-      }
-    }
+// Append badges if any
+if(m.uid && refs.userBadges && refs.userBadges[m.uid]){
+  const badges = refs.userBadges[m.uid];
+  
+  if(badges.star){
+    const starImg = document.createElement("img");
+    starImg.src = "https://cdn-icons-png.flaticon.com/512/1200/1200781.png"; // star SVG
+    starImg.style.width = "14px";
+    starImg.style.height = "14px";
+    starImg.style.marginLeft = "4px";
+    meta.appendChild(starImg);
+  }
+  
+  if(badges.verified){
+    const verifiedImg = document.createElement("img");
+    verifiedImg.src = "https://cdn-icons-png.flaticon.com/512/5253/5253968.png"; // verified SVG
+    verifiedImg.style.width = "14px";
+    verifiedImg.style.height = "14px";
+    verifiedImg.style.marginLeft = "2px";
+    meta.appendChild(verifiedImg);
+  }
+  
+  if(badges.crown){
+    const crownImg = document.createElement("img");
+    crownImg.src = "https://cdn-icons-png.flaticon.com/512/2545/2545603.png"; // crown SVG
+    crownImg.style.width = "14px";
+    crownImg.style.height = "14px";
+    crownImg.style.marginLeft = "2px";
+    meta.appendChild(crownImg);
+  }
+}
+meta.textContent += ":"; // keep the colon after username + badges
 
     // MESSAGE CONTENT
     const content = document.createElement("span");
@@ -483,40 +497,27 @@ function enableVideoPlayer() {
   loadIndex(0);
 }
 
-/* ---------- DOMContentLoaded: wire up UI event handlers ---------- */
-window.addEventListener("DOMContentLoaded", () => {
-  // populate refs
-  refs = {
-    authBox: document.getElementById("authBox"),
-    messagesEl: document.getElementById("messages"),
-    sendAreaEl: document.getElementById("sendArea"),
-    messageInputEl: document.getElementById("messageInput"),
-    sendBtn: document.getElementById("sendBtn"),
-    buzzBtn: document.getElementById("buzzBtn"),
-    profileBoxEl: document.getElementById("profileBox"),
-    profileNameEl: document.getElementById("profileName"),
-    starCountEl: document.getElementById("starCount"),
-    cashCountEl: document.getElementById("cashCount"),
-    redeemBtn: document.getElementById("redeemBtn"),
-    onlineCountEl: document.getElementById("onlineCount"),
-    adminControlsEl: document.getElementById("adminControls"),
-    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
-    chatIDModal: document.getElementById("chatIDModal"),
-    chatIDInput: document.getElementById("chatIDInput"),
-    chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn"),
-    userColors: {}
-  };
-
-  setupChatScrollWatcher();
-  enableAutoLogin();
-
-  // button refs used in other places
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
-  const googleSignInBtn = document.getElementById("googleSignInBtn");
-  const guestMsg = document.getElementById("guestMsg");
-
+refs = {
+  authBox: document.getElementById("authBox"),
+  messagesEl: document.getElementById("messages"),
+  sendAreaEl: document.getElementById("sendArea"),
+  messageInputEl: document.getElementById("messageInput"),
+  sendBtn: document.getElementById("sendBtn"),
+  buzzBtn: document.getElementById("buzzBtn"),
+  profileBoxEl: document.getElementById("profileBox"),
+  profileNameEl: document.getElementById("profileName"),
+  starCountEl: document.getElementById("starCount"),
+  cashCountEl: document.getElementById("cashCount"),
+  redeemBtn: document.getElementById("redeemBtn"),
+  onlineCountEl: document.getElementById("onlineCount"),
+  adminControlsEl: document.getElementById("adminControls"),
+  adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
+  chatIDModal: document.getElementById("chatIDModal"),
+  chatIDInput: document.getElementById("chatIDInput"),
+  chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn"),
+  userColors: {},
+  userBadges: {} 
+};
   // Wire send button (same logic as your earlier code)
   refs.sendBtn?.addEventListener("click", async ()=>{
     if (!currentUser) return showStarPopup("Sign in to chat");
