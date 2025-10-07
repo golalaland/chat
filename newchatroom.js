@@ -304,23 +304,20 @@ function startStarEarning(uid) {
 }
 
 /* ---------- Loading bar ---------- */
-function startLoadingBar(redirectUrl = "signup2222.html") {
+export function startLoadingBar(redirectUrl=null) {
   const overlay = document.getElementById('loadingOverlay');
   const bar = document.getElementById('loadingBar');
-  if (!overlay || !bar) return;
-
   overlay.style.display = 'flex';
   let width = 0;
-
   const interval = setInterval(() => {
     width += Math.random() * 8;
-    if (width >= 100) width = 100;
-    bar.style.width = width + "%";
-
-    if (width >= 100) {
+    if(width >= 100) {
+      width = 100;
       clearInterval(interval);
-      setTimeout(() => { window.location.href = redirectUrl; }, 200);
+      overlay.style.display = 'none'; // hide overlay
+      if(redirectUrl) window.location.href = redirectUrl; // optional redirect
     }
+    bar.style.width = width+'%';
   }, 100);
 }
 
