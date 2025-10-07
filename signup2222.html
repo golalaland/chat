@@ -81,8 +81,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   width:100%; height:100%;
   background:rgba(0,0,0,0.85);
   backdrop-filter:blur(4px);
-  z-index:1000;
-  display:flex;
+  z-index:9999;
   align-items:center;
   justify-content:center;
   flex-direction:column;
@@ -123,19 +122,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <span id="onlineCount" class="onlineCount"></span>
     <div id="guestMsg"></div>
 
-<!-- Loading Overlay -->
-<div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;align-items:center;justify-content:center;flex-direction:column;display:flex;">
-  <div style="margin-bottom:16px;color:#fff;font-family:Montserrat,sans-serif;font-size:1.2rem;">
-    Loading Chatroom...
-  </div>
-  <div id="loadingBarWrapper" style="width:80%;height:8px;background:rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;">
-    <div id="loadingBar" style="width:0%;height:100%;background:linear-gradient(90deg,#FF1493,#FF69B4);transition:width 0.3s ease;"></div>
-  </div>
-</div>
-
     <!-- Chat Messages -->
     <div id="messages"></div>
-
 
     <!-- Send area -->
     <div class="send-area" id="sendArea">
@@ -172,7 +160,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   </div>
 </div>
 
+<!-- SINGLE Loading Overlay -->
+<div id="loadingOverlay">
+  <div id="loadingText">Loading Chatroom...</div>
+  <div id="loadingBarWrapper">
+    <div id="loadingBar"></div>
+  </div>
+</div>
+
 <script type="module" src="newchatroom.js"></script>
-<script>
+<script type="module">
+export function startLoadingBar() {
+  const overlay = document.getElementById('loadingOverlay');
+  const bar = document.getElementById('loadingBar');
+  overlay.style.display = 'flex';
+  let width = 0;
+  const interval = setInterval(() => {
+    width += Math.random() * 8;
+    if(width >= 100){
+      width = 100;
+      clearInterval(interval);
+      setTimeout(()=> overlay.style.display='none', 200);
+    }
+    bar.style.width = width+'%';
+  },100);
+}
+</script>
 </body>
 </html>
