@@ -174,18 +174,5 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 <script type="module" src="newchatroom.js"></script>
 <script>
-/* Example: animate loading bar on redirect */
-export function startLoadingBar() {
-  const overlay = document.getElementById('loadingOverlay');
-  const bar = document.getElementById('loadingBar');
-  overlay.style.display = 'flex';
-  let width = 0;
-  const interval = setInterval(() => {
-    width += Math.random()*10;
-    if(width >= 100){ width=100; clearInterval(interval); setTimeout(()=>overlay.style.display='none',200); }
-    bar.style.width = width+'%';
-  },100);
-}
-</script>
 </body>
 </html>
