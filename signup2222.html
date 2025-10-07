@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Xixi Chatroom</title>
+<title>Xixi Watchparty</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -13,6 +13,7 @@
   --muted:#aaa;
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
+  --highlight: rgba(255,20,147,0.1);
 }
 
 /* GENERAL */
@@ -37,24 +38,25 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 .arrow:hover { box-shadow:0 0 12px rgba(255,20,147,0.5); transform:translateY(-50%) scale(1.1); }
 
 /* MESSAGES */
-#messages { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; border-radius:8px; background:#000; margin-bottom:10px; box-sizing:border-box; }
-.msg { padding:8px 10px; border-radius:8px; background:var(--glass); max-width:100%; display:flex; gap:8px; align-items:center; }
-.msg.me { background: rgba(255,20,147,0.06); }
+#messages { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; border-radius:8px; background:#000; margin-bottom:80px; box-sizing:border-box; }
+.msg { padding:8px 10px; border-radius:8px; background:var(--glass); max-width:100%; display:flex; gap:8px; align-items:center; transition:all 0.2s ease; }
+.msg.me { background: var(--highlight); font-weight:600; font-size:14px; }
 .msg .meta { font-weight:700; font-size:13px; white-space:nowrap; margin-right:4px; color:inherit; }
 .msg .content { font-size:13px; color:#fff; white-space:pre-wrap; word-break:break-word; display:inline-block; }
 
 /* SEND AREA */
-.send-area { position:fixed; bottom:0; left:0; width:100%; max-width:480px; margin:0 auto; display:flex; align-items:center; gap:8px; background:var(--card); padding:10px; border-radius:999px; box-sizing:border-box; z-index:100; }
-.send-area input { flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background-color:#0e0e0e; color:#fff; font-size:16px; outline:none; transition:all 0.2s ease; }
+.send-area { position:fixed; bottom:50px; left:0; width:100%; max-width:480px; margin:0 auto; display:flex; align-items:center; gap:8px; background:var(--card); padding:10px; border-radius:999px; box-sizing:border-box; z-index:100; }
+.send-area input { flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background-color:#0e0e0e; color:#fff; font-size:16px; outline:none; transition: all 0.2s ease; }
 .send-area input::placeholder { color:var(--muted); opacity:0.7; }
+.send-area input:focus { border-color:var(--accent); box-shadow:0 0 12px rgba(255,20,147,0.25); }
 .send-btn { padding:10px 16px; border-radius:999px; background-color:var(--accent); color:#000; cursor:pointer; font-weight:700; border:none; font-size:14px; transition:all 0.2s ease; }
 .send-btn:hover { background-color:#ff33a1; transform:scale(1.05); }
 .buzz-btn { padding:10px 12px; border-radius:999px; background:#1d1d1d; color:var(--accent); cursor:pointer; font-weight:700; font-size:14px; border:1px solid rgba(255,20,147,0.18); }
 .buzz-btn:hover { animation:buzzPulse 1.5s infinite; }
 @keyframes buzzPulse { 0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)} 70%{box-shadow:0 0 0 12px rgba(255,20,147,0)} 100%{box-shadow:0 0 0 0 rgba(255,20,147,0)} }
 
-/* PROFILE UNDER CHAT */
-.profile { display:flex; flex-direction:column; gap:8px; margin-top:0; }
+/* PROFILE - ALWAYS UNDER CHAT */
+.profile { position:fixed; bottom:0; left:0; width:100%; max-width:480px; margin:0 auto; z-index:100; display:flex; flex-direction:column; }
 .profile-card { background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:8px; }
 .profile-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .profile-left { display:flex; flex-direction:column; gap:2px; }
@@ -62,64 +64,61 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 .profile-label { color:var(--accent); font-weight:800; font-size:10px; }
 .profile-value { color:#fff; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono",Courier New,monospace; font-weight:400; font-size:11px; }
 .profile-actions { display:flex; gap:8px; align-items:center; justify-content:flex-end; }
-.small-btn { padding:4px 10px; border-radius:8px; background:var(--accent); border:0; color:#000; cursor:pointer; font-weight:700; font-size:12px; text-decoration:none; transition:transform .15s,box-shadow .15s; }
+.small-btn { padding:4px 10px; border-radius:8px; background:var(--accent); border:0; color:#000; cursor:pointer; font-weight:700; font-size:12px; transition:transform .15s,box-shadow .15s; }
 .small-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,20,147,0.3); }
 
 </style>
 </head>
 <body>
+
 <audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
 
 <div id="appWrapper">
   <div class="app">
+
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">Chat. Own Your Vibe.</div>
 
-    <!-- CENTER VIDEO + CHAT -->
-    <div id="center">
-
-      <!-- Video -->
-      <div class="video-container">
-        <div id="videoWrapper">
-          <video id="videoPlayer" muted playsinline></video>
-          <button class="arrow" id="prev">&#10094;</button>
-          <button class="arrow" id="next">&#10095;</button>
-        </div>
+    <!-- Video -->
+    <div class="video-container">
+      <div id="videoWrapper">
+        <video id="videoPlayer" muted playsinline></video>
+        <button class="arrow" id="prev">&#10094;</button>
+        <button class="arrow" id="next">&#10095;</button>
       </div>
-
-      <!-- Chat messages -->
-      <div id="messages"></div>
-
-      <!-- Profile permanently under chat -->
-      <div class="profile" id="profileBox">
-        <div class="profile-card">
-          <div class="profile-top">
-            <div class="profile-left">
-              <div id="profileName" class="profile-name">GUEST 0000</div>
-              <div>
-                <span class="profile-label">STARS COLLECTED:</span>
-                <span class="profile-value"><span id="starCount">0</span>⭐️</span>
-              </div>
-              <div>
-                <span class="profile-label">CASH EARNED:</span>
-                <span class="profile-value">₦<span id="cashCount">0</span></span>
-              </div>
-            </div>
-            <div class="profile-actions">
-              <button id="redeemBtn" class="small-btn">Redeem</button>
-              <button id="tipBtn" class="small-btn">💵</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
+
+    <!-- Chat messages -->
+    <div id="messages"></div>
 
     <!-- Send area -->
     <div class="send-area">
       <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
       <button id="buzzBtn" class="buzz-btn">🚨</button>
       <button id="sendBtn" class="send-btn">Send</button>
+    </div>
+
+    <!-- Profile permanently under send area -->
+    <div class="profile" id="profileBox">
+      <div class="profile-card">
+        <div class="profile-top">
+          <div class="profile-left">
+            <div id="profileName" class="profile-name">GUEST 0000</div>
+            <div>
+              <span class="profile-label">STARS COLLECTED:</span>
+              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+            </div>
+            <div>
+              <span class="profile-label">CASH EARNED:</span>
+              <span class="profile-value">₦<span id="cashCount">0</span></span>
+            </div>
+          </div>
+          <div class="profile-actions">
+            <button id="redeemBtn" class="small-btn">Redeem</button>
+            <button id="tipBtn" class="small-btn">💵</button>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
