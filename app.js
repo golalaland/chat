@@ -326,10 +326,9 @@ function startStarEarning(uid) {
   // Clean up on page unload
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
-
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
-  // Cache DOM references
+  // Cache DOM elements
   refs = {
     authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
@@ -364,15 +363,12 @@ window.addEventListener("DOMContentLoaded", () => {
         alert("Enter your email and phone to get access"); 
         return; 
       }
-
       const success = await loginWhitelist(email, phone);
-      if(success) {
-        updateRedeemLink();
-      }
+      if(success) updateRedeemLink();
     });
   }
 
-  /* ---------- Auto-login session if already stored ---------- */
+  /* ---------- Auto-login session ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
   if(vipUser?.email && vipUser?.phone){
     (async () => {
@@ -380,79 +376,68 @@ window.addEventListener("DOMContentLoaded", () => {
       if(success) updateRedeemLink();
     })();
   }
-});
 
- /* ---------- Send & Buzz ---------- */
-refs.sendBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to chat");
+  /* ---------- Send & Buzz ---------- */
+  refs.sendBtn?.addEventListener("click", async () => {
+    if (!currentUser) return showStarPopup("Sign in to chat");
 
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message first");
-  if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first");
+    if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
-  // Deduct stars locally and in Firestore
-  currentUser.stars -= SEND_COST;
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-  await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
 
-  // Add message to Firestore
-  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-    content: txt,
-    uid: currentUser.uid,
-    chatId: currentUser.chatId,
-    timestamp: serverTimestamp(),
-    highlight: false,
-    buzzColor: null
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null
+    });
+
+    refs.messageInputEl.value = "";
+    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+
+    requestAnimationFrame(() => {
+      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    });
   });
 
-  refs.messageInputEl.value = "";
+  refs.buzzBtn?.addEventListener("click", async () => {
+    if (!currentUser) return showStarPopup("Sign in to BUZZ");
 
-  // Render your own message
-  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-  // Force scroll AFTER browser paints
-  requestAnimationFrame(() => {
-    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    if ((snap.data()?.stars || 0) < BUZZ_COST) return showStarPopup("Not enough stars");
+
+    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor: randomColor()
+    });
+
+    refs.messageInputEl.value = "";
+    showStarPopup("BUZZ sent!");
+    renderMessagesFromArray([{ 
+      id: docRef.id, 
+      data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor: randomColor() } 
+    }]);
+
+    requestAnimationFrame(() => {
+      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    });
   });
-});
-
-refs.buzzBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to BUZZ");
-
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
-
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-
-  if ((snap.data()?.stars || 0) < BUZZ_COST) return showStarPopup("Not enough stars");
-
-  // Deduct buzz cost
-  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-
-  // Add buzz message to Firestore
-  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-    content: txt,
-    uid: currentUser.uid,
-    chatId: currentUser.chatId,
-    timestamp: serverTimestamp(),
-    highlight: true,
-    buzzColor: randomColor()
-  });
-
-  refs.messageInputEl.value = "";
-  showStarPopup("BUZZ sent!");
-
-  // Render and scroll after browser paints
-  renderMessagesFromArray([{ 
-    id: docRef.id, 
-    data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor: randomColor() } 
-  }]);
-
-  requestAnimationFrame(() => {
-    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-  });
-});
 
   /* ---------- Hello text rotation ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
@@ -468,8 +453,7 @@ refs.buzzBtn?.addEventListener("click", async () => {
     },220);
   },1500);
 
-
-/* ---------- Video nav & fade ---------- */
+  /* ---------- Video nav & fade ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
@@ -487,23 +471,23 @@ refs.buzzBtn?.addEventListener("click", async () => {
     function loadVideo(index){
       if(index<0) index = videos.length-1;
       if(index>=videos.length) index = 0;
-      currentVideoIndex=index;
-      videoPlayer.src=videos[currentVideoIndex];
-      videoPlayer.muted=true;
+      currentVideoIndex = index;
+      videoPlayer.src = videos[currentVideoIndex];
+      videoPlayer.muted = true;
       videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
     }
 
     prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
     nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
-
     videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
 
     let hideTimeout;
     function showButtons(){
       navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
       clearTimeout(hideTimeout);
-      hideTimeout=setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); },3000);
+      hideTimeout = setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); }, 3000);
     }
+
     navButtons.forEach(btn=>{ btn.style.transition="opacity 0.6s"; btn.style.opacity="0"; btn.style.pointerEvents="none"; });
     container?.addEventListener("mouseenter", showButtons);
     container?.addEventListener("mousemove", showButtons);
@@ -512,5 +496,4 @@ refs.buzzBtn?.addEventListener("click", async () => {
 
     loadVideo(0);
   }
-
 });
