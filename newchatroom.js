@@ -329,91 +329,7 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-/* ---------- VIP Modal ---------- */
-const vipModal = document.getElementById('vipModal');
-const vipModalTitle = document.getElementById('vipModalTitle');
-const vipModalMessage = document.getElementById('vipModalMessage');
-const vipModalInputs = document.getElementById('vipModalInputs');
-const vipModalClose = document.getElementById('vipModalClose');
 
-function showVipModal({ title = '', message = '', showInputs = false }) {
-  if (!vipModal) return;
-  vipModalTitle.textContent = title;
-  vipModalMessage.textContent = message;
-  vipModalInputs.style.display = showInputs ? 'flex' : 'none';
-  vipModal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-
-  // remove any # hash in URL to prevent scroll jump
-  if (window.location.hash) {
-    history.replaceState(null, '', window.location.href.split('#')[0]);
-  }
-}
-
-function hideVipModal() {
-  if (!vipModal) return;
-  vipModal.style.display = 'none';
-  document.body.style.overflow = '';
-  // remove hash safely
-  if (window.location.hash) history.replaceState(null, '', window.location.href.split('#')[0]);
-}
-
-// Close button
-vipModalClose?.addEventListener('click', e => {
-  e.preventDefault();
-  hideVipModal();
-});
-
-// Click outside modal content
-vipModal?.addEventListener('click', e => {
-  if (e.target === vipModal) hideVipModal();
-});
-
-// Prevent internal links from jumping
-vipModal?.querySelectorAll('a[href="#"]').forEach(a => a.addEventListener('click', e => e.preventDefault()));
-
-/* ---------- VIP login ---------- */
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
-
-loginBtn?.addEventListener("click", async e => {
-  e.preventDefault();
-  const email = (emailInput.value||"").trim().toLowerCase();
-  const phone = (phoneInput.value||"").trim();
-
-  if (!email || !phone) {
-    showVipModal({
-      title: "VIP Access",
-      message: "Enter your Email & Phone to get access",
-      showInputs: true
-    });
-    return;
-  }
-
-  const success = await loginWhitelist(email, phone);
-  if (!success) {
-    showVipModal({
-      title: "VIP Access",
-      message: "You’re not on the whitelist.",
-      showInputs: true
-    });
-  } else {
-    hideVipModal(); // ✅ ensure modal closes on success
-    updateRedeemLink();
-  }
-});
-
-/* ---------- Google Sign-In ---------- */
-const googleBtn = document.getElementById("googleSignInBtn");
-googleBtn?.addEventListener("click", e => {
-  e.preventDefault();
-  showVipModal({
-    title: "Sign in with Google",
-    message: "Currently Google Sign-In is disabled for this room.",
-    showInputs: false
-  });
-});
 
   /* ---------- Auto-login session ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
@@ -423,6 +339,45 @@ googleBtn?.addEventListener("click", e => {
       if(success) updateRedeemLink();
     })();
   }
+/* ---------- VIP login & message popup ---------- */
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
+const googleBtn = document.getElementById("googleSignInBtn");
+
+// Message popup helper
+function showMessagePopup(msg, duration = 2500) {
+  const popup = document.getElementById("messagePopup");
+  if (!popup) return;
+  popup.textContent = msg;
+  popup.style.display = "block";
+  setTimeout(() => { popup.style.display = "none"; }, duration);
+}
+
+// VIP login
+loginBtn?.addEventListener("click", async e => {
+  e.preventDefault();
+  const email = (emailInput.value||"").trim().toLowerCase();
+  const phone = (phoneInput.value||"").trim();
+
+  if (!email || !phone) {
+    showMessagePopup("Enter your Email & Phone to get access");
+    return;
+  }
+
+  const success = await loginWhitelist(email, phone);
+  if (!success) {
+    showMessagePopup("You’re not on the whitelist.");
+  } else {
+    updateRedeemLink();
+  }
+});
+
+// Google Sign-In button
+googleBtn?.addEventListener("click", e => {
+  e.preventDefault();
+  showMessagePopup("Google Sign-In is disabled for this room.");
+});
 
   /* ---------- Send & Buzz ---------- */
 refs.sendBtn?.addEventListener("click", async ()=>{
