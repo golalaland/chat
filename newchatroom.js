@@ -336,51 +336,44 @@ const vipModalMessage = document.getElementById('vipModalMessage');
 const vipModalInputs = document.getElementById('vipModalInputs');
 const vipModalClose = document.getElementById('vipModalClose');
 
-// Show the modal
 function showVipModal({ title = '', message = '', showInputs = false }) {
   vipModalTitle.textContent = title;
   vipModalMessage.textContent = message;
   vipModalInputs.style.display = showInputs ? 'flex' : 'none';
   vipModal.style.display = 'flex';
-  // Ensure page doesn't scroll or URL doesn't change
   document.body.style.overflow = 'hidden';
 }
 
-// Hide the modal
 function hideVipModal() {
   vipModal.style.display = 'none';
-  document.body.style.overflow = ''; // restore scroll
+  document.body.style.overflow = '';
   if (window.location.hash) history.replaceState(null, '', window.location.pathname);
 }
 
-// Close button
 vipModalClose.addEventListener('click', (e) => {
-  e.preventDefault(); // prevents # in URL
+  e.preventDefault();
   hideVipModal();
 });
 
-// Click outside modal content
 vipModal.addEventListener('click', (e) => {
   if (e.target === vipModal) hideVipModal();
 });
 
-// Prevent any internal links with href="#" from changing the URL
-vipModal.querySelectorAll('a[href="#"]').forEach(a => {
-  a.addEventListener('click', e => e.preventDefault());
-});
+// Prevent internal links from breaking
+vipModal.querySelectorAll('a[href="#"]').forEach(a => a.addEventListener('click', e => e.preventDefault()));
 
-/* ---------- VIP login ---------- */
+// ---------- VIP login ----------
 const emailInput = document.getElementById("emailInput");
 const phoneInput = document.getElementById("phoneInput");
 const loginBtn = document.getElementById("whitelistLoginBtn");
 
 if(loginBtn){
-  loginBtn.addEventListener("click", async ()=>{
+  loginBtn.addEventListener("click", async (e)=>{
+    e.preventDefault();
     const email = (emailInput.value||"").trim().toLowerCase();
     const phone = (phoneInput.value||"").trim();
 
-    if(!email || !phone){ 
-      // show modal instead of alert
+    if(!email || !phone){
       showVipModal({ 
         title: "VIP Access", 
         message: "Enter your Email & Phone to get access", 
@@ -397,10 +390,24 @@ if(loginBtn){
         showInputs: true 
       });
     } else {
+      hideVipModal(); // Close modal if successful
       updateRedeemLink();
     }
   });
-}}
+}
+
+// ---------- Google Sign-In ----------
+const googleBtn = document.getElementById("googleSignInBtn");
+if(googleBtn){
+  googleBtn.addEventListener("click", (e)=>{
+    e.preventDefault();
+    showVipModal({
+      title: "Sign in with Google",
+      message: "Currently Google Sign-In is disabled for this room.",
+      showInputs: false
+    });
+  });
+}
 
   /* ---------- Auto-login session ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
