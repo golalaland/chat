@@ -1,5 +1,3 @@
-// app.js
-
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -34,18 +32,22 @@ const CHAT_COLLECTION = "messages_room5";
 let currentUser = null;
 let lastMessagesArray = [];
 let starInterval = null;
-const milestonesShown = new Set();
+let lastMilestone = 0;
 
 /* ---------- Constants ---------- */
 const BUZZ_COST = 50;
 const SEND_COST = 1;
 
 /* ---------- Helpers ---------- */
-function generateGuestName() { return "GUEST " + Math.floor(1000 + Math.random()*9000); }
-function formatNumberWithCommas(n) { return new Intl.NumberFormat('en-NG').format(n || 0); }
-function randomColor() { 
+function generateGuestName() {
+  return "GUEST " + Math.floor(1000 + Math.random() * 9000);
+}
+function formatNumberWithCommas(n) {
+  return new Intl.NumberFormat('en-NG').format(n || 0);
+}
+function randomColor() {
   const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
-  return colors[Math.floor(Math.random()*colors.length)];
+  return colors[Math.floor(Math.random() * colors.length)];
 }
 function showStarPopup(text) {
   const popup = document.getElementById("starPopup");
@@ -55,12 +57,14 @@ function showStarPopup(text) {
   popup.style.display = "block";
   setTimeout(() => { popup.style.display = "none"; }, 1700);
 }
-function sanitizeKey(key) { return key.replace(/[.#$[\]]/g, ','); }
+function sanitizeKey(key) {
+  return key.replace(/[.#$[\]]/g, ',');
+}
 
 /* ---------- UI refs ---------- */
 let refs = {};
 
-/* ---------- Redeem link update ---------- */
+/* ---------- Redeem link ---------- */
 function updateRedeemLink() {
   if (refs.redeemBtn && currentUser) {
     refs.redeemBtn.href = `https://golalaland.github.io/chat/nushop.html?uid=${encodeURIComponent(currentUser.uid)}`;
@@ -69,14 +73,14 @@ function updateRedeemLink() {
 }
 
 /* ---------- Presence ---------- */
-function setupPresence(user){
+function setupPresence(user) {
   if (!rtdb) return;
   const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
   rtdbSet(pRef, { online:true, chatId:user.chatId, email:user.email }).catch(()=>{});
   onDisconnect(pRef).remove().catch(()=>{});
 }
-if (rtdb){
-  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
+if (rtdb) {
+  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap => {
     const val = snap.val() || {};
     if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
   });
@@ -101,7 +105,6 @@ function renderMessagesFromArray(arr){
 
   arr.forEach(item => {
     if (document.getElementById(item.id)) return;
-
     const m = item.data;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
@@ -110,7 +113,7 @@ function renderMessagesFromArray(arr){
     const meta = document.createElement("span");
     meta.className = "meta";
     meta.textContent = (m.chatId || "Guest") + ":";
-    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
+    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#fff';
     meta.style.marginRight = "4px";
 
     const content = document.createElement("span");
@@ -145,15 +148,12 @@ function attachMessagesListener() {
         const msgData = change.doc.data();
         lastMessagesArray.push({ id: change.doc.id, data: msgData });
         renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
-        if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
-          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-        }
       }
     });
   });
 }
 
-/* ---------- ChatID modal ---------- */
+/* ---------- Chat ID modal ---------- */
 async function promptForChatID(userRef, userData){
   if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
   if(userData?.chatId && !userData.chatId.startsWith("GUEST")) return userData.chatId;
@@ -166,8 +166,8 @@ async function promptForChatID(userRef, userData){
     refs.chatIDConfirmBtn.onclick = async ()=>{
       const chosenID = refs.chatIDInput.value.trim();
       if(chosenID.length < 3 || chosenID.length > 12){ 
-        showStarPopup("Chat ID must be 3-12 characters"); 
-        return; 
+        showStarPopup("Chat ID must be 3–12 characters");
+        return;
       }
       const normalized = chosenID.toLowerCase();
       try{
@@ -175,10 +175,7 @@ async function promptForChatID(userRef, userData){
         const snap = await getDocs(q);
         let conflict = false;
         snap.forEach(docSnap => { if(docSnap.id !== userRef.id) conflict = true; });
-        if(conflict){ 
-          showStarPopup("This Chat ID is taken"); 
-          return; 
-        }
+        if(conflict){ showStarPopup("This Chat ID is taken"); return; }
         await updateDoc(userRef, { chatId: chosenID, chatIdLower: normalized });
         currentUser.chatId = chosenID;
         currentUser.chatIdLower = normalized;
@@ -192,71 +189,47 @@ async function promptForChatID(userRef, userData){
   });
 }
 
-/* ---------- VIP login (whitelist) ---------- */
+/* ---------- VIP Login ---------- */
 async function loginWhitelist(email, phone) {
   const loader = document.getElementById("postLoginLoader");
   try {
     if (loader) loader.style.display = "flex";
     await new Promise(res => setTimeout(res, 50));
 
-    const q = query(collection(db, "whitelist"),
-      where("email","==",email),
-      where("phone","==",phone)
-    );
+    const q = query(collection(db, "whitelist"), where("email", "==", email), where("phone", "==", phone));
     const snap = await getDocs(q);
-
     if (snap.empty) {
-      showStarPopup("You’re not on the whitelist. Check your email and phone format.");
+      showStarPopup("You’re not on the whitelist.");
       return false;
     }
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
     const docSnap = await getDoc(userRef);
-
     if (!docSnap.exists()) {
-      showStarPopup("User not found. Please sign up on the main page first.");
+      showStarPopup("User not found. Sign up first.");
       return false;
     }
 
-    const data = docSnap.data() || {};
-    currentUser = {
-      uid: uidKey,
-      email: data.email,
-      phone: data.phone,
-      chatId: data.chatId,
-      chatIdLower: data.chatIdLower,
-      stars: data.stars || 0,
-      cash: data.cash || 0,
-      usernameColor: data.usernameColor || randomColor(),
-      isAdmin: data.isAdmin || false,
-      isVIP: data.isVIP || false,
-      fullName: data.fullName,
-      gender: data.gender,
-      subscriptionActive: data.subscriptionActive || false,
-      subscriptionCount: data.subscriptionCount || 0,
-      lastStarDate: data.lastStarDate || new Date().toISOString().split("T")[0],
-      starsGifted: data.starsGifted || 0,
-      starsToday: data.starsToday || 0,
-      hostLink: data.hostLink || null,
-      invitedBy: data.invitedBy || null,
-      inviteeGiftShown: data.inviteeGiftShown || false,
-      isHost: data.isHost || false
-    };
+    const data = docSnap.data();
+    currentUser = { ...data, uid: uidKey };
+    lastMilestone = Math.floor((currentUser.stars || 0) / 1000) * 1000;
 
     updateRedeemLink();
     setupPresence(currentUser);
     attachMessagesListener();
-    startStarEarning(currentUser.uid);
+    startStarEarning(uidKey);
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    if(currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
+    if(currentUser.chatId?.startsWith("GUEST")) await promptForChatID(userRef, data);
 
-    // Show chatroom-specific elements after login
-    const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-    if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
+    // Hide pre-login UI
+    const helloEl = document.getElementById("helloText");
+    if (helloEl) helloEl.style.display = "none";
     if (refs.authBox) refs.authBox.style.display = "none";
+
+    // Show chat UI
     if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
     if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
     if (refs.profileNameEl) { 
@@ -265,19 +238,11 @@ async function loginWhitelist(email, phone) {
     }
     if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
     if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
-
-    // Show hello text & video container only after login
-    const helloEl = document.getElementById("helloText");
-    if(helloEl) helloEl.style.display = "block";
-    const container = document.querySelector(".video-container");
-    if(container) container.style.display = "block";
 
     return true;
-
-  } catch(e) {
-    console.error("Login error:", e);
-    showStarPopup("Login failed. Try again!");
+  } catch(e){
+    console.error(e);
+    showStarPopup("Login failed.");
     return false;
   } finally {
     if (loader) loader.style.display = "none";
@@ -311,24 +276,18 @@ function startStarEarning(uid) {
     const data = snap.data();
     const targetStars = data.stars || 0;
     currentUser.stars = targetStars;
-
     if (animationTimeout) clearTimeout(animationTimeout);
     updateStarDisplay(targetStars);
 
-    // Show 1,000-star milestone only once per milestone
-    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
-      const milestone = Math.floor(currentUser.stars / 1000) * 1000;
-      if (!milestonesShown.has(milestone)) {
-        milestonesShown.add(milestone);
-        showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
-      }
+    const milestone = Math.floor(targetStars / 1000) * 1000;
+    if (milestone > lastMilestone && milestone > 0) {
+      lastMilestone = milestone;
+      showStarPopup(`🔥 Congrats! ${formatNumberWithCommas(milestone)} stars!`);
     }
   });
 
-  // Auto-increment stars every minute (max 250 per day)
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
-
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
     const data = snap.data();
@@ -338,45 +297,14 @@ function startStarEarning(uid) {
       await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
       return;
     }
-
     if ((data.starsToday || 0) < 250) {
-      await updateDoc(userRef, { 
-        stars: increment(10), 
-        starsToday: increment(10) 
-      });
+      await updateDoc(userRef, { stars: increment(10), starsToday: increment(10) });
     }
   }, 60000);
-
-  window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
-  /* ---------- Loading Bar Helper ---------- */
-  function showLoadingBar(duration = 1000) {
-    const postLoginLoader = document.getElementById("postLoginLoader");
-    const loadingBar = document.getElementById("loadingBar");
-    if (!postLoginLoader || !loadingBar) return;
-
-    postLoginLoader.style.display = "flex";
-    loadingBar.style.width = "0%";
-
-    let progress = 0;
-    const interval = 50;
-    const step = 100 / (duration / interval);
-
-    const loadingInterval = setInterval(() => {
-      progress += step + Math.random() * 5;
-      if (progress >= 100) progress = 100;
-      loadingBar.style.width = progress + "%";
-      if (progress >= 100) {
-        clearInterval(loadingInterval);
-        setTimeout(() => { postLoginLoader.style.display = "none"; }, 300);
-      }
-    }, interval);
-  }
-
-  // Cache DOM elements
   refs = {
     authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
@@ -391,14 +319,14 @@ window.addEventListener("DOMContentLoaded", () => {
     redeemBtn: document.getElementById("redeemBtn"),
     onlineCountEl: document.getElementById("onlineCount"),
     adminControlsEl: document.getElementById("adminControls"),
-    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
     chatIDModal: document.getElementById("chatIDModal"),
     chatIDInput: document.getElementById("chatIDInput"),
     chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
   };
+
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- VIP login (whitelist) ---------- */
+  /* ---------- VIP login ---------- */
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
@@ -407,97 +335,60 @@ window.addEventListener("DOMContentLoaded", () => {
     loginBtn.addEventListener("click", async () => {
       const email = (emailInput.value || "").trim().toLowerCase();
       const phone = (phoneInput.value || "").trim();
-
-      if (!email || !phone) {
-        showStarPopup("Enter your email and phone to get access");
-        return;
-      }
-
-      showLoadingBar(1000);
-      await new Promise(res => setTimeout(res, 50));
+      if (!email || !phone) return showStarPopup("Enter your email & phone");
       const success = await loginWhitelist(email, phone);
-      if (!success) return;
-      await new Promise(res => setTimeout(res, 500));
-      updateRedeemLink();
+      if (success) updateRedeemLink();
     });
   }
 
-  /* ---------- Auto-login session ---------- */
+  /* ---------- Auto-login ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
   if (vipUser?.email && vipUser?.phone) {
     (async () => {
-      showLoadingBar(1000);
-      await new Promise(res => setTimeout(res, 50));
       const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if (!success) return;
-      await new Promise(res => setTimeout(res, 500));
-      updateRedeemLink();
+      if (success) updateRedeemLink();
     })();
   }
 
-  /* ---------- Send & BUZZ ---------- */
+  /* ---------- Send ---------- */
   refs.sendBtn?.addEventListener("click", async () => {
     if (!currentUser) return showStarPopup("Sign in to chat");
-
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
-
-    if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+    if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars");
 
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
 
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null
+      content: txt, uid: currentUser.uid, chatId: currentUser.chatId, timestamp: serverTimestamp()
     });
 
     refs.messageInputEl.value = "";
-    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
-
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }]);
   });
 
+  /* ---------- BUZZ ---------- */
   refs.buzzBtn?.addEventListener("click", async () => {
     if (!currentUser) return showStarPopup("Sign in to BUZZ");
-
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
     const userRef = doc(db, "users", currentUser.uid);
     const snap = await getDoc(userRef);
-
     if ((snap.data()?.stars || 0) < BUZZ_COST) return showStarPopup("Not enough stars");
 
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-
     const buzzColor = randomColor();
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor
+      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+      timestamp: serverTimestamp(), highlight: true, buzzColor
     });
 
     refs.messageInputEl.value = "";
     showStarPopup("BUZZ sent!");
-    renderMessagesFromArray([{ 
-      id: docRef.id, 
-      data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor } 
-    }]);
-
-    requestAnimationFrame(() => {
-      if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    });
+    renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor } }]);
   });
 
   /* ---------- Hello text rotation ---------- */
@@ -505,7 +396,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let helloIndex = 0;
   const helloEl = document.getElementById("helloText");
   setInterval(()=>{
-    if(!helloEl || !currentUser) return; // only rotate after login
+    if(!helloEl || currentUser) return;
     helloEl.style.opacity='0';
     setTimeout(()=>{
       helloEl.innerText = greetings[helloIndex++ % greetings.length];
@@ -513,6 +404,7 @@ window.addEventListener("DOMContentLoaded", () => {
       helloEl.style.opacity='1';
     },220);
   },1500);
+});
 
   /* ---------- Video nav & fade ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
