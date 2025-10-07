@@ -335,15 +335,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   .send-area input{padding:10px;font-size:13px;}
   .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
 }
-  #adminUserSelectContainer { margin-top: 10px; }
-  #adminControls { display: none; flex-direction: column; gap: 6px; margin-top: 8px; }
-  .profile-label { font-weight: bold; }
-  .buttons-container { display: flex; flex-wrap: wrap; gap: 6px; }
-  .small-btn { padding: 6px 12px; font-size: 14px; cursor: pointer; }
-  #adminUserSearch, #adminUserSelect { margin-top: 6px; width: 100%; padding: 6px; box-sizing: border-box; }
-/* Make sure to include Montserrat in your HTML head:
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
-*/
 .room-subtitle {
   font-size: 12px;              /* same as #helloText */
   font-weight: 600;             /* slightly lighter than HELLO */
@@ -480,33 +471,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           <span class="profile-label">CASH EARNED:</span>
           <span class="profile-value">₦<span id="cashCount">0</span></span>
         </div>
-  <div id="adminUserSelectContainer">
-  <select id="adminUserSelect">
-    <option value="">Select user...</option>
-  </select>
-</div>
-
-<div id="adminControls">
-  <span class="profile-label">ADMIN CONTROLS:</span>
-  <div class="buttons-container">
-    <button class="small-btn" id="adminGiveStarsBtn">Give Stars</button>
-    <button class="small-btn" id="adminResetStarsBtn">Reset Stars</button>
-    <button class="small-btn" id="adminGiveCashBtn">Give Cash</button>
-    <button class="small-btn" id="adminResetCashBtn">Reset Cash</button>
-    <button class="small-btn" id="adminClearMessagesBtn">Clear Messages</button>
-    <button class="small-btn" id="adminDeleteMsgBtn">Delete Msg</button>
-    <button class="small-btn" id="adminKickUserBtn">Kick User</button>
-    <button class="small-btn" id="adminBlockSendBtn">Block Send/Buzz</button>
-    <button class="small-btn" id="adminSetTimeoutBtn">Set Chat Timeout</button>
-  </div>
-  <input type="text" id="adminUserSearch" placeholder="Search by chatID...">
-  <select id="adminUserSelect">
-    <option value="">Select user...</option>
-  </select>
-</div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
