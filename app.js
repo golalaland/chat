@@ -66,7 +66,7 @@ let refs = {};
 /* ---------- Redeem link update ---------- */
 function updateRedeemLink() {
   if (refs.redeemBtn && currentUser) {
-    refs.redeemBtn.href = `https://golalaland.github.io/chat/shop.html?uid=${encodeURIComponent(currentUser.uid)}`;
+    refs.redeemBtn.href = `https://golalaland.github.io/chat/nushop.html?uid=${encodeURIComponent(currentUser.uid)}`;
     refs.redeemBtn.style.display = "inline-block";
   }
 }
