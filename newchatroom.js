@@ -151,6 +151,7 @@ let scrollPending = false;
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
 
+  // append each message if not present
   arr.forEach(item => {
     if (document.getElementById(item.id)) return;
 
@@ -161,50 +162,79 @@ function renderMessagesFromArray(arr){
 
     if (m.uid && currentUser && m.uid === currentUser.uid) wrapper.classList.add("me");
 
-    // USERNAME + BADGES
-  const meta = document.createElement("span");
-meta.className = "meta";
-meta.style.marginRight = "6px";
+    // Username + badges
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.style.marginRight = "6px";
 
-// Set username text
-meta.textContent = (m.chatId || "Guest");
+    // Username text
+    meta.textContent = (m.chatId || "Guest");
 
-// Set username color
-meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
+    // Username color
+    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
 
-// Append badges if any
-if(m.uid && refs.userBadges && refs.userBadges[m.uid]){
-  const badges = refs.userBadges[m.uid];
-  
-  if(badges.star){
-    const starImg = document.createElement("img");
-    starImg.src = "https://cdn-icons-png.flaticon.com/512/1200/1200781.png"; // star SVG
-    starImg.style.width = "14px";
-    starImg.style.height = "14px";
-    starImg.style.marginLeft = "4px";
-    meta.appendChild(starImg);
-  }
-  
-  if(badges.verified){
-    const verifiedImg = document.createElement("img");
-    verifiedImg.src = "https://cdn-icons-png.flaticon.com/512/5253/5253968.png"; // verified SVG
-    verifiedImg.style.width = "14px";
-    verifiedImg.style.height = "14px";
-    verifiedImg.style.marginLeft = "2px";
-    meta.appendChild(verifiedImg);
-  }
-  
-  if(badges.crown){
-    const crownImg = document.createElement("img");
-    crownImg.src = "https://cdn-icons-png.flaticon.com/512/2545/2545603.png"; // crown SVG
-    crownImg.style.width = "14px";
-    crownImg.style.height = "14px";
-    crownImg.style.marginLeft = "2px";
-    meta.appendChild(crownImg);
+    // Append badges if any
+    if(m.uid && refs.userBadges && refs.userBadges[m.uid]){
+      const badges = refs.userBadges[m.uid];
+
+      if(badges.star){
+        const starImg = document.createElement("img");
+        starImg.src = "https://cdn-icons-png.flaticon.com/512/1200/1200781.png";
+        starImg.style.width = "14px";
+        starImg.style.height = "14px";
+        starImg.style.marginLeft = "4px";
+        meta.appendChild(starImg);
+      }
+
+      if(badges.verified){
+        const verifiedImg = document.createElement("img");
+        verifiedImg.src = "https://cdn-icons-png.flaticon.com/512/5253/5253968.png";
+        verifiedImg.style.width = "14px";
+        verifiedImg.style.height = "14px";
+        verifiedImg.style.marginLeft = "2px";
+        meta.appendChild(verifiedImg);
+      }
+
+      if(badges.crown){
+        const crownImg = document.createElement("img");
+        crownImg.src = "https://cdn-icons-png.flaticon.com/512/2545/2545603.png";
+        crownImg.style.width = "14px";
+        crownImg.style.height = "14px";
+        crownImg.style.marginLeft = "2px";
+        meta.appendChild(crownImg);
+      }
+    }
+
+    meta.textContent += ":"; // keep colon after username + badges
+
+    // Message content
+    const content = document.createElement("span");
+    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    content.textContent = " " + (m.content || "");
+    if (m.buzzColor) content.style.background = m.buzzColor;
+    if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
+
+    wrapper.appendChild(meta);
+    wrapper.appendChild(content);
+    refs.messagesEl.appendChild(wrapper);
+  });
+
+  // Auto-scroll logic with badge
+  if (!scrollPending) {
+    scrollPending = true;
+    requestAnimationFrame(() => {
+      const nearBottom = userIsNearBottom;
+      // If any message was sent by me OR user is near bottom, scroll down.
+      if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
+        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      } else {
+        // user scrolled up: show badge
+        showNewMessageBadge();
+      }
+      scrollPending = false;
+    });
   }
 }
-meta.textContent += ":"; // keep the colon after username + badges
-
     // MESSAGE CONTENT
     const content = document.createElement("span");
     content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
