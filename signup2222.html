@@ -45,11 +45,12 @@ html, body {
   color:var(--accent);
   text-align:center;
 }
-#center{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
+#center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* remove overflow:hidden */
 }
 
 /* Sticky video wrapper */
@@ -84,12 +85,11 @@ html, body {
   border-radius: 10px;
   overflow: hidden;
   background: #111;
-
-  /* NEW: make sticky */
   position: sticky;
   top: 0;
-  z-index: 50; /* make sure it’s above messages but below popups like stars */
+  z-index: 50;
 }
+
 
 /* Video container inside wrapper */
 #videoContainer {
@@ -185,6 +185,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* messages */
 /* 🔥 Chat messages container */
 /* 🔥 Chat messages container */
+
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -194,8 +195,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   gap: 6px;
   border-radius: 8px;
   background: #000;
-
-  /* ✅ give space so last message never hides behind bar */
   margin-bottom: 70px;
   box-sizing: border-box;
 }
