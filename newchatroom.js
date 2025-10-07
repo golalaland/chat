@@ -190,6 +190,7 @@ async function promptForChatID(userRef, userData){
   });
 }
 
+
 /* ---------- VIP login ---------- */
 async function loginWhitelist(email, phone) {
   try {
@@ -328,21 +329,55 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- VIP login ---------- */
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
+// ---------- VIP Modal ----------
+const vipModal = document.getElementById('vipModal');
+const vipModalTitle = document.getElementById('vipModalTitle');
+const vipModalMessage = document.getElementById('vipModalMessage');
+const vipModalInputs = document.getElementById('vipModalInputs');
+const vipModalClose = document.getElementById('vipModalClose');
 
-  if(loginBtn){
-    loginBtn.addEventListener("click", async ()=>{
-      const email = (emailInput.value||"").trim().toLowerCase();
-      const phone = (phoneInput.value||"").trim();
-      if(!email || !phone){ alert("Enter your email and phone to get access"); return; }
+function showVipModal({ title = '', message = '', showInputs = false }) {
+  vipModalTitle.textContent = title;
+  vipModalMessage.textContent = message;
+  vipModalInputs.style.display = showInputs ? 'flex' : 'none';
+  vipModal.style.display = 'flex';
+}
 
-      const success = await loginWhitelist(email, phone);
-      if(success) updateRedeemLink();
-    });
-  }
+vipModalClose.addEventListener('click', () => vipModal.style.display = 'none');
+vipModal.addEventListener('click', (e) => { if (e.target === vipModal) vipModal.style.display = 'none'; });
+
+/* ---------- VIP login ---------- */
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
+
+if(loginBtn){
+  loginBtn.addEventListener("click", async ()=>{
+    const email = (emailInput.value||"").trim().toLowerCase();
+    const phone = (phoneInput.value||"").trim();
+
+    if(!email || !phone){ 
+      // show modal instead of alert
+      showVipModal({ 
+        title: "VIP Access", 
+        message: "Enter your Email & Phone to get access", 
+        showInputs: true 
+      });
+      return; 
+    }
+
+    const success = await loginWhitelist(email, phone);
+    if(!success){
+      showVipModal({ 
+        title: "VIP Access", 
+        message: "You’re not on the whitelist.", 
+        showInputs: true 
+      });
+    } else {
+      updateRedeemLink();
+    }
+  });
+}}
 
   /* ---------- Auto-login session ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
