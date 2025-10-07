@@ -142,7 +142,6 @@ let scrollPending = false;
 function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
 
-  // append each message if not present
   arr.forEach(item => {
     if (document.getElementById(item.id)) return;
 
@@ -153,12 +152,46 @@ function renderMessagesFromArray(arr){
 
     if (m.uid && currentUser && m.uid === currentUser.uid) wrapper.classList.add("me");
 
+    // ----- Username + badges -----
     const meta = document.createElement("span");
     meta.className = "meta";
     meta.textContent = (m.chatId || "Guest") + ":";
     meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
     meta.style.marginRight = "6px";
 
+    const badges = document.createElement("span");
+    badges.style.marginLeft = "4px";
+    badges.style.display = "inline-flex";
+    badges.style.gap = "2px";
+
+    if (m.isStar) {
+      const star = document.createElement("img");
+      star.src = "https://cdn-icons-png.flaticon.com/512/1200/1200781.png";
+      star.style.width = "14px";
+      star.style.height = "14px";
+      star.style.verticalAlign = "middle";
+      badges.appendChild(star);
+    }
+    if (m.isVerified) {
+      const check = document.createElement("img");
+      check.src = "https://cdn-icons-png.flaticon.com/512/5253/5253968.png";
+      check.style.width = "14px";
+      check.style.height = "14px";
+      check.style.verticalAlign = "middle";
+      badges.appendChild(check);
+    }
+    if (m.isAdmin) {
+      const crown = document.createElement("img");
+      crown.src = "https://cdn-icons-png.flaticon.com/512/2545/2545603.png";
+      crown.style.width = "14px";
+      crown.style.height = "14px";
+      crown.style.verticalAlign = "middle";
+      badges.appendChild(crown);
+    }
+
+    meta.appendChild(badges);
+
+    // ----- Message content -----
     const content = document.createElement("span");
     content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
     content.textContent = " " + (m.content || "");
@@ -175,18 +208,15 @@ function renderMessagesFromArray(arr){
     scrollPending = true;
     requestAnimationFrame(() => {
       const nearBottom = userIsNearBottom;
-      // If any message was sent by me OR user is near bottom, scroll down.
       if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       } else {
-        // user scrolled up: show badge and optionally play a subtle sound
         showNewMessageBadge();
       }
       scrollPending = false;
     });
   }
 }
-
 /* ---------- Messages listener (keeps your original Firestore logic) ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
