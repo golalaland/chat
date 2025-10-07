@@ -74,7 +74,6 @@ function setupPresence(user){
   rtdbSet(pRef, { online:true, chatId:user.chatId, email:user.email }).catch(()=>{});
   onDisconnect(pRef).remove().catch(()=>{});
 }
-
 if (rtdb){
   onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
     const val = snap.val() || {};
@@ -240,15 +239,13 @@ async function loginWhitelist(email, phone) {
 
     if(currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
 
-    const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-    if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
-    if (refs.authBox) refs.authBox.style.display = "none";
-    if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-    if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if (refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
-    if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
+    if(refs.authBox) refs.authBox.style.display = "none";
+    if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+    if(refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
+    if(refs.profileNameEl) { refs.profileNameEl.innerText = currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
+    if(refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
+    if(refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
+    if(refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
 
     return true;
 
@@ -258,7 +255,7 @@ async function loginWhitelist(email, phone) {
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval);
+  if (starInterval) clearInterval(starInterval); // clear existing
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
@@ -303,24 +300,6 @@ function startStarEarning(uid) {
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
-/* ---------- Loading bar ---------- */
-export function startLoadingBar(redirectUrl=null) {
-  const overlay = document.getElementById('loadingOverlay');
-  const bar = document.getElementById('loadingBar');
-  overlay.style.display = 'flex';
-  let width = 0;
-  const interval = setInterval(() => {
-    width += Math.random() * 8;
-    if(width >= 100) {
-      width = 100;
-      clearInterval(interval);
-      overlay.style.display = 'none'; // hide overlay
-      if(redirectUrl) window.location.href = redirectUrl; // optional redirect
-    }
-    bar.style.width = width+'%';
-  }, 100);
-}
-
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
   refs = {
@@ -344,19 +323,56 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- Auto-login session ---------- */
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if(vipUser?.email && vipUser?.phone){
-    (async ()=>{
+  const loadingOverlay = document.getElementById("loadingOverlay");
+  const loadingBar = document.getElementById("loadingBar");
+
+  /* ---------- Loading Overlay / Initialization ---------- */
+  async function initializeChatroomWithLoader() {
+    let progress = 0;
+    function updateBar(val){
+      progress = val;
+      loadingBar.style.width = `${Math.min(progress,100)}%`;
+    }
+
+    loadingOverlay.style.display = "flex";
+
+    const progressInterval = setInterval(()=>{
+      progress += Math.random()*4 + 2;
+      if(progress > 95) progress = 95;
+      updateBar(progress);
+    },50);
+
+    // Auto-login VIP user if present
+    const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+    if(vipUser?.email && vipUser?.phone){
       const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if(success) {
-        updateRedeemLink();
-        startLoadingBar("signup2222.html");
-      }
-    })();
+      if(success) updateRedeemLink();
+    }
+
+    attachMessagesListener();
+
+    // Wait for ChatID if required
+    if(currentUser && currentUser.chatId.startsWith("GUEST") && refs.chatIDModal && refs.chatIDModal.style.display==="flex"){
+      await new Promise(resolve=>{
+        const origClick = refs.chatIDConfirmBtn.onclick;
+        refs.chatIDConfirmBtn.onclick = async ()=>{
+          await origClick();
+          resolve();
+        };
+      });
+    }
+
+    clearInterval(progressInterval);
+    updateBar(100);
+    setTimeout(()=>{ loadingOverlay.style.display="none"; },300);
+
+    if(refs.sendAreaEl) refs.sendAreaEl.style.display="flex";
+    if(refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
   }
 
-  /* ---------- VIP login ---------- */
+  initializeChatroomWithLoader();
+
+  /* ---------- VIP login UI ---------- */
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
@@ -374,14 +390,16 @@ window.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const email = (emailInput.value||"").trim().toLowerCase();
     const phone = (phoneInput.value||"").trim();
-
     if (!email || !phone) { showMessagePopup("Enter your Email & Phone to get access"); return; }
     const success = await loginWhitelist(email, phone);
     if (!success) showMessagePopup("You’re not on the whitelist.");
     else updateRedeemLink();
   });
 
-  googleBtn?.addEventListener("click", e => { e.preventDefault(); showMessagePopup("Google Sign-In is disabled for this room."); });
+  googleBtn?.addEventListener("click", e => {
+    e.preventDefault();
+    showMessagePopup("Google Sign-In is disabled for this room.");
+  });
 
   /* ---------- Send & Buzz ---------- */
   refs.sendBtn?.addEventListener("click", async ()=>{
@@ -393,10 +411,14 @@ window.addEventListener("DOMContentLoaded", () => {
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION), { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, timestamp: serverTimestamp(), highlight:false, buzzColor:null });
+
+    const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
+      content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
+      timestamp: serverTimestamp(), highlight:false, buzzColor:null
+    });
     refs.messageInputEl.value = "";
     renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
-    requestAnimationFrame(() => { if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
+    requestAnimationFrame(()=>{ refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
   });
 
   refs.buzzBtn?.addEventListener("click", async ()=>{
@@ -416,7 +438,7 @@ window.addEventListener("DOMContentLoaded", () => {
     refs.messageInputEl.value = "";
     showStarPopup("BUZZ sent!");
     renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
-    requestAnimationFrame(() => { if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
+    requestAnimationFrame(()=>{ refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight; });
   });
 
   /* ---------- Hello text rotation ---------- */
@@ -433,7 +455,7 @@ window.addEventListener("DOMContentLoaded", () => {
     },220);
   },1500);
 
-  /* ---------- Video nav & loop ---------- */
+  /* ---------- Video nav & fade ---------- */
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
@@ -454,7 +476,6 @@ window.addEventListener("DOMContentLoaded", () => {
       currentVideoIndex=index;
       videoPlayer.src=videos[currentVideoIndex];
       videoPlayer.muted=true;
-      videoPlayer.loop=true;
       videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
     }
 
