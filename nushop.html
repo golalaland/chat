@@ -160,12 +160,12 @@ header {
 }
 
 /* ---------- SHOP GRID ---------- */
-.shop-grid {
-  position: relative; /* needed so spinner overlays correctly */
+..shop-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* auto-fit better for responsiveness */
   gap: 1rem;
   padding: 1rem;
+  width: 100%;   /* ensure it uses full parent width */
 }
 
 /* 🌐 FULLSCREEN SHOP SPINNER */
@@ -236,6 +236,18 @@ header {
   font-weight: bold;
   color: var(--theme-solid);
 }
+
+@media (min-width: 500px) {
+  .shop-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 900px) {
+  .shop-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 .buy-btn {
   background: var(--theme-gradient);
   color: #fff;
