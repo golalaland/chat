@@ -387,6 +387,75 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-color: var(--accent);
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  display: none; /* JS will toggle display */
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal-content {
+  background: var(--card, #111);
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal-content h3 {
+  margin-bottom: 12px;
+  color: var(--accent, #FF1493);
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  margin-bottom: 12px;
+  font-size: 16px;
+  color: #fff;
+  background: #111;
+  outline: none;
+}
+
+/* Footer styles */
+#startupFooter {
+  margin-top: 20px;
+  text-align: center;
+  color: var(--muted, #aaa);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#startupFooter a {
+  color: var(--accent, #FF1493);
+  text-decoration: none;
+  margin: 0 6px;
+}
+
+#startupFooter span {
+  letter-spacing: 1px;
+}
+
+/* Optional: make sure footer visible on small screens */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app {
+  flex: 1; /* allow footer to stay at bottom */
+}
 </style>
 </head>
 <body>
@@ -513,20 +582,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<!-- Footer (startup page only) -->
-<footer id="startupFooter" style="display:none; margin-top:20px; text-align:center; color:var(--muted); font-size:12px; line-height:1.4;">
-  <div>
-    ©5786 
-    <span style="letter-spacing:1px;">Own Your Vibe</span>
-  </div>
-  <div style="letter-spacing:0.5px;">自分の雰囲気を楽しもう</div>
+
+<!-- Footer (pre-login page) -->
+<footer id="startupFooter">
+  <div>©5786 <span>Own Your Vibe</span></div>
+  <div>自分の雰囲気を楽しもう</div>
   <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
   <div style="margin-top:4px;">
-    <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Privacy Policy</a> |
-    <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Terms of Service</a>
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Terms of Service</a>
   </div>
 </footer>
-
 <script type="module" src="newchatroom.js"></script>
 </body>
 </html>
