@@ -200,44 +200,42 @@ async function loginWhitelist(email, phone) {
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
-    let docSnap = await getDoc(userRef);
+    const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
-      const guestName = generateGuestName();
-      await setDoc(userRef, {
-        chatId: guestName,
-        chatIdLower: guestName.toLowerCase(),
-        stars: 50,
-        starsToday: 0,
-        lastStarDate: new Date().toISOString().split("T")[0],
-        cash: 0,
-        usernameColor: randomColor(),
-        isAdmin: false,
-        email,
-        phone,
-        createdAt: new Date()
-      });
-      showStarPopup("🎉 Your account created with 50 stars!");
-      docSnap = await getDoc(userRef);
+      alert("User not found. Please sign up on the main page first.");
+      return false;
     }
 
     const data = docSnap.data() || {};
     currentUser = {
       uid: uidKey,
-      email,
-      phone,
-      chatId: data.chatId || email,
-      chatIdLower: data.chatIdLower || (data.chatId || "").toLowerCase(),
+      email: data.email,
+      phone: data.phone,
+      chatId: data.chatId,
+      chatIdLower: data.chatIdLower,
       stars: data.stars || 0,
       cash: data.cash || 0,
       usernameColor: data.usernameColor || randomColor(),
-      isAdmin: data.isAdmin || false
+      isAdmin: data.isAdmin || false,
+      isVIP: data.isVIP || false,
+      fullName: data.fullName,
+      gender: data.gender,
+      subscriptionActive: data.subscriptionActive || false,
+      subscriptionCount: data.subscriptionCount || 0,
+      lastStarDate: data.lastStarDate || new Date().toISOString().split("T")[0],
+      starsGifted: data.starsGifted || 0,
+      starsToday: data.starsToday || 0,
+      hostLink: data.hostLink || null,
+      invitedBy: data.invitedBy || null,
+      inviteeGiftShown: data.inviteeGiftShown || false,
+      isHost: data.isHost || false
     };
 
     updateRedeemLink();
     setupPresence(currentUser);
     attachMessagesListener();
-    try { startStarEarning(currentUser.uid); } catch(e){ console.warn("star earning init failed", e); }
+    startStarEarning(currentUser.uid);
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
@@ -255,26 +253,37 @@ async function loginWhitelist(email, phone) {
 
     return true;
 
-  } catch(e) { console.error("Login error:", e); alert("Login failed. Try again."); return false; }
+  } catch(e) {
+    console.error("Login error:", e);
+    alert("Login failed. Try again.");
+    return false;
+  }
 }
 
-/* ---------- Stars auto-earning ---------- */
+/* ---------- Stars auto-earning (cleaned) ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval); // clear existing
+  if (starInterval) clearInterval(starInterval); // clear previous interval
+
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
 
+  // Smoothly animate star count in the UI
   function updateStarDisplay(target) {
     if (!refs.starCountEl) return;
     const diff = target - displayedStars;
-    if (Math.abs(diff) < 1) { displayedStars = target; refs.starCountEl.textContent = formatNumberWithCommas(displayedStars); return; }
+    if (Math.abs(diff) < 1) {
+      displayedStars = target;
+      refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
+      return;
+    }
     displayedStars += diff * 0.3;
     refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
     animationTimeout = setTimeout(() => updateStarDisplay(target), 50);
   }
 
+  // Listen for real-time Firestore updates
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.data();
@@ -284,30 +293,43 @@ function startStarEarning(uid) {
     if (animationTimeout) clearTimeout(animationTimeout);
     updateStarDisplay(targetStars);
 
+    // Optional milestone popup every 1000 stars
     if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
       showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
     }
   });
 
+  // Auto-increment stars every minute (max 250 stars per day)
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
+
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
     const data = snap.data();
     const today = new Date().toISOString().split("T")[0];
 
+    // Reset daily earned stars if new day
     if (data.lastStarDate !== today) {
       await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
       return;
     }
-    if ((data.starsToday || 0) < 250) await updateDoc(userRef, { stars: increment(10), starsToday: increment(10) });
+
+    // Only increment if under daily cap
+    if ((data.starsToday || 0) < 250) {
+      await updateDoc(userRef, { 
+        stars: increment(10), 
+        starsToday: increment(10) 
+      });
+    }
   }, 60000);
 
+  // Clean up on page unload
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
+  // Cache DOM references
   refs = {
     authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
@@ -329,83 +351,106 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
-  /* ---------- VIP login ---------- */
+  /* ---------- VIP login (whitelist) ---------- */
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
 
   if(loginBtn){
-    loginBtn.addEventListener("click", async ()=>{
-      const email = (emailInput.value||"").trim().toLowerCase();
-      const phone = (phoneInput.value||"").trim();
-      if(!email || !phone){ alert("Enter your email and phone to get access"); return; }
+    loginBtn.addEventListener("click", async () => {
+      const email = (emailInput.value || "").trim().toLowerCase();
+      const phone = (phoneInput.value || "").trim();
+      if(!email || !phone){ 
+        alert("Enter your email and phone to get access"); 
+        return; 
+      }
 
       const success = await loginWhitelist(email, phone);
-      if(success) updateRedeemLink();
+      if(success) {
+        updateRedeemLink();
+      }
     });
   }
 
-  /* ---------- Auto-login session ---------- */
+  /* ---------- Auto-login session if already stored ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
   if(vipUser?.email && vipUser?.phone){
-    (async ()=>{
+    (async () => {
       const success = await loginWhitelist(vipUser.email, vipUser.phone);
       if(success) updateRedeemLink();
     })();
   }
+});
 
-  /* ---------- Send & Buzz ---------- */
-refs.sendBtn?.addEventListener("click", async ()=>{
+ /* ---------- Send & Buzz ---------- */
+refs.sendBtn?.addEventListener("click", async () => {
   if (!currentUser) return showStarPopup("Sign in to chat");
+
   const txt = refs.messageInputEl?.value.trim();
   if (!txt) return showStarPopup("Type a message first");
-  if ((currentUser.stars||0)<SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+  if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
 
+  // Deduct stars locally and in Firestore
   currentUser.stars -= SEND_COST;
   refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+  await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
 
-  await updateDoc(doc(db,"users",currentUser.uid), { stars: increment(-SEND_COST) });
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
-    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-    timestamp: serverTimestamp(), highlight:false, buzzColor:null
+  // Add message to Firestore
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    content: txt,
+    uid: currentUser.uid,
+    chatId: currentUser.chatId,
+    timestamp: serverTimestamp(),
+    highlight: false,
+    buzzColor: null
   });
+
   refs.messageInputEl.value = "";
 
   // Render your own message
   renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
 
-  // ⭐ Force scroll AFTER browser paints
+  // Force scroll AFTER browser paints
   requestAnimationFrame(() => {
-    if (refs.messagesEl) {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    }
+    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
   });
 });
 
-  refs.buzzBtn?.addEventListener("click", async ()=>{
+refs.buzzBtn?.addEventListener("click", async () => {
   if (!currentUser) return showStarPopup("Sign in to BUZZ");
+
   const txt = refs.messageInputEl?.value.trim();
   if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-  const userRef = doc(db,"users",currentUser.uid);
+  const userRef = doc(db, "users", currentUser.uid);
   const snap = await getDoc(userRef);
-  if ((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
 
+  if ((snap.data()?.stars || 0) < BUZZ_COST) return showStarPopup("Not enough stars");
+
+  // Deduct buzz cost
   await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION), {
-    content: txt, uid: currentUser.uid, chatId: currentUser.chatId,
-    timestamp: serverTimestamp(), highlight:true, buzzColor: randomColor()
+
+  // Add buzz message to Firestore
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    content: txt,
+    uid: currentUser.uid,
+    chatId: currentUser.chatId,
+    timestamp: serverTimestamp(),
+    highlight: true,
+    buzzColor: randomColor()
   });
+
   refs.messageInputEl.value = "";
   showStarPopup("BUZZ sent!");
 
-  // ⭐ Render and scroll after browser paints
-  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight:true, buzzColor: randomColor() } }]);
+  // Render and scroll after browser paints
+  renderMessagesFromArray([{ 
+    id: docRef.id, 
+    data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor: randomColor() } 
+  }]);
 
   requestAnimationFrame(() => {
-    if (refs.messagesEl) {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-    }
+    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
   });
 });
 
