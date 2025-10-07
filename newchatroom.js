@@ -329,16 +329,44 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
+  // ✅ Add the loading bar function here
+  function startLoadingBar(redirectUrl = "sigup2222.html") {
+    const overlay = document.getElementById('loadingOverlay');
+    const bar = document.getElementById('loadingBar');
+    if (!overlay || !bar) return;
+
+    overlay.style.display = 'flex';
+    let width = 0;
+
+    const interval = setInterval(() => {
+      width += Math.random() * 8;
+      if (width >= 100) width = 100;
+      bar.style.width = width + "%";
+
+      if (width >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 200);
+      }
+    }, 100);
+  }
+
+  // ...rest of your DOMContentLoaded logic like auto-login and VIP login listeners
+});
 
 
   /* ---------- Auto-login session ---------- */
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if(vipUser?.email && vipUser?.phone){
-    (async ()=>{
-      const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if(success) updateRedeemLink();
-    })();
-  }
+const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+if(vipUser?.email && vipUser?.phone){
+  (async ()=>{
+    const success = await loginWhitelist(vipUser.email, vipUser.phone);
+    if(success) {
+      updateRedeemLink();
+      startLoadingBar("signup2222.html"); // auto-redirect on session
+    }
+  })();
+}
 /* ---------- VIP login & message popup ---------- */
 const emailInput = document.getElementById("emailInput");
 const phoneInput = document.getElementById("phoneInput");
