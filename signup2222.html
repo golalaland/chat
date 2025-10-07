@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport"
   content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Xixi Chatroom</title>
+<title>Xixi</title>
 <link rel="icon" href="data:," />
 <style>
 :root{
@@ -14,46 +14,6 @@
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
 }
-
-/* Overall layout */
-html, body {
-  height:100%;
-  margin:0;
-  font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
-  color:#fff;
-  background:var(--bg);
-}
-#appWrapper{
-  width:100%;
-  height:100%;
-  display:flex;
-  justify-content:center;
-}
-.app{
-  display:flex;
-  flex-direction:column;
-  height:100%;
-  gap:10px;
-  padding:10px;
-  box-sizing:border-box;
-  width:100%;
-  max-width:480px;
-}
-.brand{
-  font-weight:700;
-  font-size:24px;
-  color:var(--accent);
-  text-align:center;
-}
-#center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  /* remove overflow:hidden */
-}
-
-/* Sticky video wrapper */
 #videoWrapper .nav-buttons {
   display: flex;
   justify-content: center;
@@ -85,11 +45,12 @@ html, body {
   border-radius: 10px;
   overflow: hidden;
   background: #111;
+
+  /* NEW: make sticky */
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 50; /* make sure it’s above messages but below popups like stars */
 }
-
 
 /* Video container inside wrapper */
 #videoContainer {
@@ -159,7 +120,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
 .room-desc{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
 #greeting{font-size:13px;text-align:center;font-weight:600;margin-bottom:6px;color:var(--accent);}
-#helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
+#helloText{font-size:21px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
 #center{flex:1;display:flex;flex-direction:column;gap:6px;}
 
 /* Sticky video wrapper */
@@ -185,7 +146,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* messages */
 /* 🔥 Chat messages container */
 /* 🔥 Chat messages container */
-
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -195,6 +155,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   gap: 6px;
   border-radius: 8px;
   background: #000;
+
+  /* ✅ give space so last message never hides behind bar */
   margin-bottom: 70px;
   box-sizing: border-box;
 }
@@ -280,6 +242,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-color: var(--accent, #FF1493);
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
+
+
 
 .send-btn {
   padding: 10px 16px;
@@ -397,110 +361,171 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-/* Loading overlay */
-#loadingOverlay{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#000;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
+#emailAuthWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* centers horizontally */
+  gap: 10px;           /* spacing between input and button */
+  margin-top: 12px;    /* space from above text */
+  width: 100%;
 }
-#loadingOverlay div{
-  font-family:Montserrat,sans-serif;
-  font-size:1.2rem;
-  color:#fff;
-  margin-bottom:16px;
+
+#emailAuthWrapper input.auth-input {
+  width: 90%;          /* smaller than full width, responsive */
+  max-width: 320px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #0e0e0e;
+  color: #fff;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
 }
-#loadingBarWrapper{
-  width:80%;
-  max-width:400px;
-  height:8px;
-  background:rgba(255,255,255,0.1);
-  border-radius:8px;
-  overflow:hidden;
-}
-#loadingBar{
-  width:0%;
-  height:100%;
-  background:linear-gradient(90deg,#FF1493,#FF69B4);
-  transition:width 0.3s ease;
+
+#emailAuthWrapper input.auth-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 </style>
 </head>
 <body>
-
 <audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
-
-<!-- Loading overlay -->
-<div id="loadingOverlay">
-  <div>Loading Chatroom...</div>
-  <div id="loadingBarWrapper">
-    <div id="loadingBar"></div>
-  </div>
-</div>
-
 <div id="appWrapper">
   <div class="app">
     <div class="brand">乂丨乂丨</div>
-    <div id="greeting">Chat. Own Your Vibe.</div>
+    <div id="greeting">Chat. Own Your Vibe. </div>
     <div id="center">
-
-      <!-- Video -->
-      <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
-        <div id="videoWrapper">
-          <video id="videoPlayer" muted playsinline></video>
-          <button class="arrow" id="prev">&#10094;</button>
-          <button class="arrow" id="next">&#10095;</button>
-        </div>
-      </div>
-
-      <!-- Messages & info -->
+    <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+<div id="videoWrapper">
+  <video id="videoPlayer" muted playsinline></video>
+  <button class="arrow" id="prev">&#10094;</button>
+  <button class="arrow" id="next">&#10095;</button>
+</div>
       <div id="helloText" aria-live="polite">HELLO</div>
-      <div class="room-desc">
-        <span id="onlineCount" class="onlineCount"></span>
-        <div id="guestMsg"></div>
+      <div class="room-desc">Chat. Own your vibe.
+        
+<div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
+<span id="onlineCount" class="onlineCount"></span>
 
-        <div id="messages"></div>
-      </div>
+      <div id="guestMsg"></div>
+      <div id="authBox">
 
-      <!-- Chat input -->
-      <div class="send-area" id="sendArea" style="display:none;">
-        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
-        <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
-        <button id="sendBtn" class="send-btn">Send</button>
-      </div>
+<div id="messagePopup" style="
+  position: fixed;
+  bottom: 80px; /* above chat input */
+  right: 20px;
+  background: rgba(30,30,30,0.9);
+  color: var(--accent);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+"></div>
 
-      <!-- Profile bar -->
-      <div class="profile" id="profileBox">
-        <div class="profile-card">
-          <div class="profile-top">
-            <div class="profile-left">
-              <div id="profileName" class="profile-name">GUEST 0000</div>
-              <div>
-                <span class="profile-label">STARS COLLECTED:</span>
-                <span class="profile-value"><span id="starCount">0</span>⭐️</span>
-              </div>
-            </div>
-            <div class="profile-actions">
-              <button id="tipBtn" class="small-btn">💵</button>
-            </div>
-          </div>
-          <div>
-            <span class="profile-label">CASH EARNED:</span>
-            <span class="profile-value">₦<span id="cashCount">0</span></span>
-          </div>
+<!-- VIP Access Login Wrapper -->
+<div id="emailAuthWrapper">
+  <!-- Phone Number Input -->
+  <input 
+    type="tel" 
+    id="phoneInput" 
+    placeholder="Enter your phone number" 
+    class="auth-input" 
+    pattern="\+\d{1,4}\d{6,15}"
+  >
+
+  <!-- Email Input -->
+  <input 
+    type="email" 
+    id="emailInput" 
+    placeholder="Enter your email" 
+    class="auth-input"
+  >
+
+<!-- VIP Access Button -->
+  <button id="whitelistLoginBtn" class="google-btn">
+    <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
+    VIP Access
+  </button>
+
+  <!-- Moved Google Sign-In Button here -->
+  <button id="googleSignInBtn" class="google-btn">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+    Sign in with Google
+  </button>
+</div>
+
+
+
+
+
+<!-- Chat ID Modal -->
+<div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
+  <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
+    <h3 style="margin-bottom:12px;color:var(--accent);">Choose your Chat ID</h3>
+    <input id="chatIDInput" type="text" placeholder="Your chat ID" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);margin-bottom:12px;font-size:16px;color:#fff;background:#111;outline:none;" />
+    <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
+  </div>
+</div>
+  <div id="messages"></div>
+</div>
+
+<div class="send-area" id="sendArea" style="display:none;">
+  <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+  <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+  <button id="sendBtn" class="send-btn">Send</button>
+</div>
+    </div>
+    
+    
+   <div class="profile" id="profileBox">
+  <div class="profile-card">
+    <div class="profile-top">
+      <div class="profile-left">
+        <div id="profileName" class="profile-name">GUEST 0000</div>
+        
+        <!-- BADGE CONTAINER -->
+        <div id="badgeContainer" style="display:flex;gap:4px;margin-top:4px;"></div>
+        
+        <div>
+          <span class="profile-label">STARS COLLECTED:</span>
+          <span class="profile-value"><span id="starCount">0</span>⭐️</span>
         </div>
       </div>
-
+      <div class="profile-actions">
+        <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
+        <button id="tipBtn" class="small-btn">💵</button>
+      </div>
+    </div>
+    <div>
+      <span class="profile-label">CASH EARNED:</span>
+      <span class="profile-value">₦<span id="cashCount">0</span></span>
     </div>
   </div>
 </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="star-popup" id="starPopup">
+  <div id="starText">You've just earned +1 star! ⭐</div>
+</div>
+<!-- Footer (startup page only) -->
+<footer id="startupFooter" style="display:none; margin-top:20px; text-align:center; color:var(--muted); font-size:12px; line-height:1.4;">
+  <div>
+    ©5786 
+    <span style="letter-spacing:1px;">Own Your Vibe</span>
+  </div>
+  <div style="letter-spacing:0.5px;">自分の雰囲気を楽しもう</div>
+  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
+  <div style="margin-top:4px;">
+    <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Privacy Policy</a> |
+    <a href="#" style="color:var(--accent); text-decoration:none; margin:0 6px;">Terms of Service</a>
+  </div>
+</footer>
 
 <script type="module" src="newchatroom.js"></script>
 </body>
