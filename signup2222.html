@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Xixi Watchparty</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
 <style>
-:root{
+:root {
   --bg:#000;
   --card:#111;
   --muted:#aaa;
@@ -15,36 +15,51 @@
   --highlight: rgba(255,20,147,0.15);
 }
 
-html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system-ui, Segoe UI, Roboto, Arial; color:#fff; background:var(--bg); }
+/* BODY & APP WRAPPER */
+html, body {
+  margin:0; padding:0; height:100%; font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:#fff;
+}
+#appWrapper {
+  display:flex; justify-content:center; width:100%; height:100%; position:relative;
+}
+.app {
+  width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; padding:10px; box-sizing:border-box;
+}
 
-/* Wrapper */
-#appWrapper { display:flex; justify-content:center; width:100%; height:100%; position:relative; }
-.app { width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; padding:10px; box-sizing:border-box; gap:10px; }
-
-/* Header/Brand */
+/* BRAND / HEADER */
 .brand { font-weight:700; font-size:24px; color:var(--accent); text-align:center; }
 #greeting { font-size:13px; text-align:center; font-weight:600; margin-bottom:6px; color:var(--accent); }
 .room-subtitle { font-size:12px; font-weight:600; text-align:center; margin-top:4px; font-family:'Montserrat',sans-serif; color:var(--accent); opacity:0.85; }
 
-/* STICKY VIDEO */
-#videoWrapper { position:sticky; top:10px; width:100%; max-width:600px; margin:0 auto 10px; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#111; z-index:50; }
+/* STICKY VIDEO TOP */
+#videoWrapper {
+  position:sticky; top:10px; width:100%; max-width:600px; margin:0 auto; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#111; z-index:50;
+}
 #videoPlayer { width:100%; height:100%; object-fit:cover; display:block; }
 .arrow { position:absolute; top:50%; transform:translateY(-50%); font-size:24px; background: rgba(0,0,0,0.3); color:#fff; border:none; padding:10px; cursor:pointer; border-radius:50%; z-index:10; }
 #prev { left:5px; } #next { right:5px; }
 
-/* SCROLLABLE AREA - messages + profile */
-#scrollArea { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-bottom:20px; }
+/* SCROLLABLE CHAT AREA */
+#chatContainer {
+  flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:8px; margin-bottom:90px; /* leave space for send+profile bar */
+  box-sizing:border-box;
+}
 
 /* MESSAGES */
-#messages { display:flex; flex-direction:column; gap:6px; padding:8px; box-sizing:border-box; }
+#messages { display:flex; flex-direction:column; gap:6px; }
 .msg { padding:8px 10px; border-radius:8px; background:var(--glass); max-width:100%; display:flex; gap:8px; align-items:center; transition:all 0.2s ease; }
 .msg.me { background: var(--highlight); font-weight:700; font-size:14px; padding:10px 12px; border:2px solid var(--accent); }
 .msg .meta { font-weight:700; font-size:13px; white-space:nowrap; margin-right:4px; color:inherit; }
 .msg .content { font-size:13px; color:#fff; word-break:break-word; white-space:pre-wrap; }
 
-/* STICKY SEND AREA */
-.send-area { position:sticky; bottom:0; left:0; width:100%; display:flex; gap:8px; align-items:center; padding:10px; background:var(--card); border-radius:999px; z-index:100; box-sizing:border-box; }
-.send-area input { flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background:#0e0e0e; color:#fff; font-size:16px; outline:none; }
+/* STICKY BOTTOM BAR (TYPE + PROFILE) */
+#bottomWrapper {
+  position:sticky; bottom:0; width:100%; display:flex; flex-direction:column; gap:6px; z-index:100;
+}
+
+/* TYPE/SEND AREA */
+.send-area { display:flex; gap:8px; align-items:center; padding:10px; background:var(--card); border-radius:999px; box-sizing:border-box; }
+.send-area input { flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background:#0e0e0e; color:#fff; font-size:16px; outline:none; transition:all 0.2s; }
 .send-area input:focus { border-color:var(--accent); box-shadow:0 0 12px rgba(255,20,147,0.25); }
 .send-btn { padding:10px 16px; border-radius:999px; background:var(--accent); color:#000; cursor:pointer; font-weight:700; border:none; font-size:14px; transition:all 0.2s ease; }
 .send-btn:hover { background-color:#ff33a1; transform:scale(1.05); }
@@ -52,7 +67,7 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 .buzz-btn:hover { animation:buzzPulse 1.5s infinite; }
 @keyframes buzzPulse {0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
-/* PROFILE - under messages, visually attached to send bar when scrolled */
+/* PROFILE ATTACHED BELOW TYPE BAR */
 .profile { display:flex; flex-direction:column; margin-top:0; }
 .profile-card { background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:8px; }
 .profile-top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
@@ -63,7 +78,6 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 .profile-actions { display:flex; gap:8px; justify-content:flex-end; }
 .small-btn { padding:4px 10px; border-radius:8px; background:var(--accent); border:0; color:#000; cursor:pointer; font-weight:700; font-size:12px; transition:transform .15s, box-shadow .15s; }
 .small-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,20,147,0.3); }
-
 </style>
 </head>
 <body>
@@ -73,23 +87,21 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">Chat. Own Your Vibe.</div>
+    <div class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
 
-    <!-- SCROLLABLE CONTENT -->
-    <div id="scrollArea">
+    <!-- SCROLLABLE CHAT AREA -->
+    <div id="chatContainer">
+      <div id="messages"></div>
+    </div>
 
-      <!-- Video -->
-      <div class="video-container">
-        <div id="videoWrapper">
-          <video id="videoPlayer" muted playsinline></video>
-          <button class="arrow" id="prev">&#10094;</button>
-          <button class="arrow" id="next">&#10095;</button>
-        </div>
+    <!-- STICKY TYPE + PROFILE -->
+    <div id="bottomWrapper">
+      <div class="send-area">
+        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+        <button id="buzzBtn" class="buzz-btn">🚨</button>
+        <button id="sendBtn" class="send-btn">Send</button>
       </div>
 
-      <!-- Chat messages -->
-      <div id="messages"></div>
-
-      <!-- Profile at the bottom of scroll area -->
       <div class="profile" id="profileBox">
         <div class="profile-card">
           <div class="profile-top">
@@ -114,11 +126,13 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 
     </div>
 
-    <!-- STICKY SEND BAR -->
-    <div class="send-area">
-      <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
-      <button id="buzzBtn" class="buzz-btn">🚨</button>
-      <button id="sendBtn" class="send-btn">Send</button>
+    <!-- STICKY VIDEO (outside scroll) -->
+    <div class="video-container">
+      <div id="videoWrapper">
+        <video id="videoPlayer" muted playsinline></video>
+        <button class="arrow" id="prev">&#10094;</button>
+        <button class="arrow" id="next">&#10095;</button>
+      </div>
     </div>
 
   </div>
