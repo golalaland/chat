@@ -37,7 +37,7 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 .arrow:hover { box-shadow:0 0 12px rgba(255,20,147,0.5); transform:translateY(-50%) scale(1.1); }
 
 /* MESSAGES */
-#messages { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; border-radius:8px; background:#000; margin-bottom:70px; box-sizing:border-box; }
+#messages { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; border-radius:8px; background:#000; margin-bottom:10px; box-sizing:border-box; }
 .msg { padding:8px 10px; border-radius:8px; background:var(--glass); max-width:100%; display:flex; gap:8px; align-items:center; }
 .msg.me { background: rgba(255,20,147,0.06); }
 .msg .meta { font-weight:700; font-size:13px; white-space:nowrap; margin-right:4px; color:inherit; }
@@ -53,11 +53,8 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 .buzz-btn:hover { animation:buzzPulse 1.5s infinite; }
 @keyframes buzzPulse { 0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)} 70%{box-shadow:0 0 0 12px rgba(255,20,147,0)} 100%{box-shadow:0 0 0 0 rgba(255,20,147,0)} }
 
-/* GLASS BAR UNDER VIDEO/CHAT */
-.glass-bar { width:100%; max-width:480px; height:60px; background:var(--glass); backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:0 16px; border-radius:12px; margin:12px auto 0 auto; box-shadow:0 0 12px rgba(255,20,147,0.25),0 0 24px rgba(255,20,147,0.15); z-index:5; pointer-events:none; }
-
-/* PROFILE */
-.profile { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+/* PROFILE UNDER CHAT */
+.profile { display:flex; flex-direction:column; gap:8px; margin-top:0; }
 .profile-card { background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:8px; }
 .profile-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .profile-left { display:flex; flex-direction:column; gap:2px; }
@@ -68,10 +65,6 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
 .small-btn { padding:4px 10px; border-radius:8px; background:var(--accent); border:0; color:#000; cursor:pointer; font-weight:700; font-size:12px; text-decoration:none; transition:transform .15s,box-shadow .15s; }
 .small-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,20,147,0.3); }
 
-/* FOOTER */
-#startupFooter { margin-top:20px; text-align:center; color:var(--muted); font-size:12px; line-height:1.4; }
-#startupFooter a { color:var(--accent); text-decoration:none; margin:0 6px; }
-#startupFooter span { letter-spacing:1px; }
 </style>
 </head>
 <body>
@@ -97,8 +90,28 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
       <!-- Chat messages -->
       <div id="messages"></div>
 
-      <!-- Glass bar under video / above chat input -->
-      <div class="glass-bar"></div>
+      <!-- Profile permanently under chat -->
+      <div class="profile" id="profileBox">
+        <div class="profile-card">
+          <div class="profile-top">
+            <div class="profile-left">
+              <div id="profileName" class="profile-name">GUEST 0000</div>
+              <div>
+                <span class="profile-label">STARS COLLECTED:</span>
+                <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+              </div>
+              <div>
+                <span class="profile-label">CASH EARNED:</span>
+                <span class="profile-value">₦<span id="cashCount">0</span></span>
+              </div>
+            </div>
+            <div class="profile-actions">
+              <button id="redeemBtn" class="small-btn">Redeem</button>
+              <button id="tipBtn" class="small-btn">💵</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
     </div>
 
@@ -109,42 +122,8 @@ html, body { margin:0; padding:0; height:100%; font-family:'XiXi', Inter, system
       <button id="sendBtn" class="send-btn">Send</button>
     </div>
 
-    <!-- Profile -->
-    <div class="profile" id="profileBox">
-      <div class="profile-card">
-        <div class="profile-top">
-          <div class="profile-left">
-            <div id="profileName" class="profile-name">GUEST 0000</div>
-            <div>
-              <span class="profile-label">STARS COLLECTED:</span>
-              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
-            </div>
-            <div>
-              <span class="profile-label">CASH EARNED:</span>
-              <span class="profile-value">₦<span id="cashCount">0</span></span>
-            </div>
-          </div>
-          <div class="profile-actions">
-            <button id="redeemBtn" class="small-btn">Redeem</button>
-            <button id="tipBtn" class="small-btn">💵</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </div>
-
-<!-- Footer -->
-<footer id="startupFooter">
-  <div>©5786 <span>Own Your Vibe</span></div>
-  <div>自分の雰囲気を楽しもう</div>
-  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
-  <div style="margin-top:4px;">
-    <a href="#">Privacy Policy</a> |
-    <a href="#">Terms of Service</a>
-  </div>
-</footer>
 
 <script type="module" src="newchatroom.js"></script>
 </body>
