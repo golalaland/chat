@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport"
   content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Xixi</title>
+<title>Xixi Chatroom</title>
 <link rel="icon" href="data:," />
 <style>
 :root{
@@ -15,7 +15,6 @@
   --glass: rgba(255,255,255,0.03);
 }
 
-/* Existing styles kept intact ... */
 html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
 .app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
@@ -40,10 +39,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #videoPlayer{width:100%;height:100%;object-fit:cover;}
 .arrow{position:absolute;top:50%;transform:translateY(-50%);font-size:24px;background:rgba(0,0,0,0.3);color:#fff;border:none;padding:10px;cursor:pointer;border-radius:50%;z-index:10;}
 #prev { left:5px; } #next { right:5px; }
-
-/* ChatID modal styles remain intact ... */
-#chatIDModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;}
-#chatIDModal .modal-content{background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;}
 
 /* Hello message */
 #helloText{font-size:21px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
@@ -78,6 +73,29 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   background:linear-gradient(90deg,#FF1493,#FF69B4);
   transition:width 0.3s ease;
 }
+
+/* Profile box */
+.profile{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
+.profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.profile-left{display:flex;flex-direction:column;gap:2px;}
+.profile-name{font-weight:800;}
+.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
+.profile-value{color: #fff;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight: 400;font-size: 11px;}
+.profile-value span,.profile-value .icon{margin-left:2px;}
+.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
+.small-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border: 0;color: #000;cursor: pointer;font-weight:700;font-size:12px;text-decoration: none;transition: transform .15s, box-shadow .15s;}
+.small-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 10px rgba(255,20,147,0.3);}
+
+/* Star popup */
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
+
+/* Footer */
+#startupFooter{margin-top:20px;text-align:center;color:var(--muted, #aaa);font-size:12px;line-height:1.4;}
+#startupFooter a{color:var(--accent,#FF1493);text-decoration:none;margin:0 6px;}
+#startupFooter span{letter-spacing:1px;}
+body{display:flex;flex-direction:column;min-height:100vh;}
+.app{flex:1;}
 </style>
 </head>
 <body>
@@ -104,9 +122,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           <button class="arrow" id="next">&#10095;</button>
         </div>
       </div>
+
       <div id="helloText" aria-live="polite">HELLO</div>
-      <div class="room-desc">Chat. Own your vibe.
-        <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
+      <div class="room-desc">
+        Chat. Own your vibe.
+        <div id="roomSubtitle" class="room-subtitle">Welcome to the chatroom!</div>
         <span id="onlineCount" class="onlineCount"></span>
         <div id="guestMsg"></div>
 
@@ -121,18 +141,36 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         <button id="sendBtn" class="send-btn">Send</button>
       </div>
 
-      <!-- Chat ID Modal -->
-      <div id="chatIDModal">
-        <div class="modal-content">
-          <h3>Choose your Chat ID</h3>
-          <input id="chatIDInput" type="text" placeholder="Your chat ID" />
-          <button id="chatIDConfirmBtn" class="small-btn">Confirm</button>
+      <!-- Profile box -->
+      <div class="profile" id="profileBox">
+        <div class="profile-card">
+          <div class="profile-top">
+            <div class="profile-left">
+              <div id="profileName" class="profile-name">GUEST 0000</div>
+              <div>
+                <span class="profile-label">STARS COLLECTED:</span>
+                <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+              </div>
+            </div>
+            <div class="profile-actions">
+              <button id="tipBtn" class="small-btn">💵</button>
+            </div>
+          </div>
+          <div>
+            <span class="profile-label">CASH EARNED:</span>
+            <span class="profile-value">₦<span id="cashCount">0</span></span>
+          </div>
         </div>
       </div>
 
     </div>
   </div>
 </div>
+
+<div class="star-popup" id="starPopup">
+  <div id="starText">You've just earned +1 star! ⭐</div>
+</div>
+
 <script type="module" src="newchatroom.js"></script>
 </body>
 </html>
