@@ -326,8 +326,25 @@ function startStarEarning(uid) {
   // Clean up on page unload
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
+
+
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
+  // ---------- Loading bar ----------
+  const loadingBar = document.getElementById("loadingBar");
+  if (loadingBar) {
+    let progress = 0;
+    const loadingInterval = setInterval(() => {
+      progress += Math.random() * 15; // random progress
+      if (progress >= 100) progress = 100;
+      loadingBar.style.width = progress + "%";
+      if (progress >= 100) {
+        clearInterval(loadingInterval);
+        setTimeout(() => { loadingBar.style.display = "none"; }, 300);
+      }
+    }, 100);
+  }
+
   // Cache DOM elements
   refs = {
     authBox: document.getElementById("authBox"),
@@ -380,7 +397,6 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ---------- Send & Buzz ---------- */
   refs.sendBtn?.addEventListener("click", async () => {
     if (!currentUser) return showStarPopup("Sign in to chat");
-
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
     if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
