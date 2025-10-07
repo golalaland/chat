@@ -152,46 +152,46 @@ function renderMessagesFromArray(arr){
 
     if (m.uid && currentUser && m.uid === currentUser.uid) wrapper.classList.add("me");
 
-    // ----- Username + badges -----
+    // USERNAME + BADGES
     const meta = document.createElement("span");
     meta.className = "meta";
-    meta.textContent = (m.chatId || "Guest") + ":";
     meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
     meta.style.marginRight = "6px";
 
-    const badges = document.createElement("span");
-    badges.style.marginLeft = "4px";
-    badges.style.display = "inline-flex";
-    badges.style.gap = "2px";
+    // Username text
+    meta.textContent = (m.chatId || "Guest") + ": ";
 
-    if (m.isStar) {
-      const star = document.createElement("img");
-      star.src = "https://cdn-icons-png.flaticon.com/512/1200/1200781.png";
-      star.style.width = "14px";
-      star.style.height = "14px";
-      star.style.verticalAlign = "middle";
-      badges.appendChild(star);
-    }
-    if (m.isVerified) {
-      const check = document.createElement("img");
-      check.src = "https://cdn-icons-png.flaticon.com/512/5253/5253968.png";
-      check.style.width = "14px";
-      check.style.height = "14px";
-      check.style.verticalAlign = "middle";
-      badges.appendChild(check);
-    }
-    if (m.isAdmin) {
-      const crown = document.createElement("img");
-      crown.src = "https://cdn-icons-png.flaticon.com/512/2545/2545603.png";
-      crown.style.width = "14px";
-      crown.style.height = "14px";
-      crown.style.verticalAlign = "middle";
-      badges.appendChild(crown);
+    // BADGES (check refs.userBadges for this UID)
+    if (m.uid && refs.userBadges && refs.userBadges[m.uid]) {
+      const badges = refs.userBadges[m.uid]; // { star: true, verified: false, crown: true }
+
+      if (badges.star) {
+        const starImg = document.createElement("img");
+        starImg.src = "https://cdn-icons-png.flaticon.com/512/1200/1200781.png"; // star
+        starImg.style.width = "16px";
+        starImg.style.height = "16px";
+        starImg.style.marginLeft = "3px";
+        meta.appendChild(starImg);
+      }
+      if (badges.verified) {
+        const verifiedImg = document.createElement("img");
+        verifiedImg.src = "https://cdn-icons-png.flaticon.com/512/5253/5253968.png"; // verified
+        verifiedImg.style.width = "16px";
+        verifiedImg.style.height = "16px";
+        verifiedImg.style.marginLeft = "3px";
+        meta.appendChild(verifiedImg);
+      }
+      if (badges.crown) {
+        const crownImg = document.createElement("img");
+        crownImg.src = "https://cdn-icons-png.flaticon.com/512/2545/2545603.png"; // crown
+        crownImg.style.width = "16px";
+        crownImg.style.height = "16px";
+        crownImg.style.marginLeft = "3px";
+        meta.appendChild(crownImg);
+      }
     }
 
-    meta.appendChild(badges);
-
-    // ----- Message content -----
+    // MESSAGE CONTENT
     const content = document.createElement("span");
     content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
     content.textContent = " " + (m.content || "");
