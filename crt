@@ -359,32 +359,34 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-#emailAuthWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* centers horizontally */
-  gap: 10px;           /* spacing between input and button */
-  margin-top: 12px;    /* space from above text */
-  width: 100%;
-}
-
-#emailAuthWrapper input.auth-input {
-  width: 90%;          /* smaller than full width, responsive */
-  max-width: 320px;
-  padding: 12px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background-color: #0e0e0e;
-  color: #fff;
-  font-size: 16px;
-  outline: none;
+/* ---------- Auth Inputs ---------- */
+#authBox{display:flex;justify-content:center;margin-top:12px;}
+#emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
+#emailAuthWrapper input.auth-input{
+  width:90%; max-width:320px;
+  padding:12px 16px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.08);
+  background-color:#0e0e0e;
+  color:#fff;
+  font-size:16px;
+  outline:none;
   transition: all 0.2s ease-in-out;
 }
-
-#emailAuthWrapper input.auth-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
+#emailAuthWrapper input.auth-input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 12px rgba(255,20,147,0.15);
 }
+
+/* ---------- Buttons ---------- */
+.google-btn{
+  display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;width:90%;max-width:320px;justify-content:center;
+}
+.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
+
+
+
 </style>
 </head>
 <body>
