@@ -36,12 +36,17 @@ let lastMessagesArray = [];        // keeps recent messages
 let starInterval = null;
 let starUnsubscribe = null;       // onSnapshot unsubscribe for user stars
 let messagesUnsubscribe = null;   // onSnapshot unsubscribe for messages
+let usersUnsubscribe = null;      // onSnapshot unsubscribe for users
 let lastMilestone = 0;
 let refs = {};                    // DOM refs
 let chatroomReadyResolved = false;
 let chatroomReadyResolve;
 const chatroomReady = new Promise(res => { chatroomReadyResolve = res; });
 let chatroomReadyFallbackTimer = null;
+
+/* ---------- Guards (prevent double listeners) ---------- */
+let messagesListenerAttached = false;
+let starListenerAttached = false;
 
 /* ---------- Config: tune these ---------- */
 const INITIAL_MESSAGE_LIMIT = 150;   // load at most 150 messages to render initially
@@ -131,16 +136,14 @@ if (rtdb) {
 }
 
 /* ---------- Users color listener ---------- */
-let usersUnsubscribe = null;
 function setupUsersListener() {
-  if (usersUnsubscribe) try { usersUnsubscribe(); } catch (e){}
+  if (usersUnsubscribe) try { usersUnsubscribe(); } catch (e) {}
   usersUnsubscribe = onSnapshot(collection(db, "users"), snap => {
     refs.userColors = refs.userColors || {};
     snap.forEach(d => {
       refs.userColors[d.id] = d.data()?.usernameColor || "#ffffff";
     });
-    // lightweight: only re-color messages already rendered if needed (no heavy re-render)
-    // We'll skip a full re-render here to avoid expensive ops.
+    // no heavy re-render here
   }, err => {
     console.error("Users listener error:", err);
   });
@@ -152,12 +155,10 @@ function renderMessagesFromArray(arr) {
   if (!refs.messagesEl) return;
   if (!arr || !arr.length) return;
 
-  // If many messages (initial batch) use DocumentFragment to minimize reflows
   const fragment = document.createDocumentFragment();
-  const batch = arr.length > 1;
   arr.forEach(item => {
     if (!item || !item.id) return;
-    if (document.getElementById(item.id)) return; // already rendered guard
+    if (document.getElementById(item.id)) return;
 
     const m = item.data || {};
     const wrapper = document.createElement("div");
@@ -178,14 +179,11 @@ function renderMessagesFromArray(arr) {
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
-
     fragment.appendChild(wrapper);
   });
 
-  // append once
   refs.messagesEl.appendChild(fragment);
 
-  // throttle scroll calculation to avoid heavy layout thrash when many messages arrive
   if (renderTimeout) clearTimeout(renderTimeout);
   renderTimeout = setTimeout(() => {
     const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
@@ -196,52 +194,41 @@ function renderMessagesFromArray(arr) {
   }, RENDER_DEBOUNCE_MS);
 }
 
-/* ---------- Attach messages listener (efficient) ---------- */
+/* ---------- Attach messages listener (efficient & single) ---------- */
 function attachMessagesListener() {
-  // detach previous listener if any
+  if (messagesListenerAttached) return;
+  messagesListenerAttached = true;
+
   if (messagesUnsubscribe) try { messagesUnsubscribe(); } catch (e) {}
 
-  // Query: only load last N messages initially
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"), limitToLast(INITIAL_MESSAGE_LIMIT));
-
   let initialLoaded = false;
 
   messagesUnsubscribe = onSnapshot(q, snapshot => {
     try {
-      // Build an array of docs for the snapshot
       const docs = [];
       snapshot.forEach(docSnap => {
         docs.push({ id: docSnap.id, data: docSnap.data() });
       });
 
-      // If initial load: replace displayed content with a single fragment append
       if (!initialLoaded) {
         initialLoaded = true;
-
-        // Keep lastMessagesArray as ordered ascending
         lastMessagesArray = docs.slice();
-
-        // clear old DOM (if any) and append fragment
-        if (refs.messagesEl) refs.messagesEl.innerHTML = ""; // single DOM clear
+        if (refs.messagesEl) refs.messagesEl.innerHTML = "";
         renderMessagesFromArray(lastMessagesArray);
 
-        // cap memory
         if (lastMessagesArray.length > MESSAGE_MEMORY_CAP) {
           lastMessagesArray = lastMessagesArray.slice(-MESSAGE_MEMORY_CAP);
         }
 
         // ensure painted before resolving ready
         requestAnimationFrame(() => requestAnimationFrame(resolveChatroomReadyOnce));
-
         return;
       }
 
-      // After initial load, Firestore will provide incremental changes.
-      // We must process docChanges for efficiency: but onSnapshot with limitToLast will return current window.
-      // We'll find new IDs and append them (avoid re-rendering entire window)
+      // incremental: append docs not already in DOM
       const newDocs = docs.filter(d => !document.getElementById(d.id));
       if (newDocs.length) {
-        // append and push to lastMessagesArray
         renderMessagesFromArray(newDocs);
         lastMessagesArray = lastMessagesArray.concat(newDocs);
         if (lastMessagesArray.length > MESSAGE_MEMORY_CAP) {
@@ -252,7 +239,6 @@ function attachMessagesListener() {
       console.error("Messages snapshot processing error:", e);
       if (!initialLoaded) {
         initialLoaded = true;
-        // if something goes wrong, still resolve eventually so UX doesn't hang
         setTimeout(resolveChatroomReadyOnce, 800);
       }
     }
@@ -303,6 +289,11 @@ async function promptForChatID(userRef, userData) {
 /* ---------- VIP login (whitelist) ---------- */
 async function loginWhitelist(email, phone) {
   try {
+    // Reset guards so listener state is fresh each login attempt
+    messagesListenerAttached = false;
+    starListenerAttached = false;
+    chatroomReadyResolved = false;
+
     await new Promise(res => setTimeout(res, 50)); // tiny debounce
 
     const q = query(
@@ -351,16 +342,17 @@ async function loginWhitelist(email, phone) {
       isHost: data.isHost || false
     };
 
+    // set initial milestone so popup is only for new 1000s
     lastMilestone = Math.floor((currentUser.stars || 0) / 1000) * 1000;
 
     updateRedeemLink();
     setupPresence(currentUser);
-    attachMessagesListener();     // will populate initial batch and resolve ready after paint
+    attachMessagesListener();        // attach messages (will resolve chatroomReady once initial load completes)
     startStarEarning(currentUser.uid);
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    // wait for chatID if guest - important: keep loader until modal resolved
+    // If user still has guest id, ask for a chat id (this is awaited so loginWhitelist doesn't return until prompt resolves)
     if (currentUser.chatId && currentUser.chatId.startsWith("GUEST")) {
       await promptForChatID(userRef, data);
     }
@@ -389,6 +381,8 @@ async function loginWhitelist(email, phone) {
 /* ---------- Stars auto-earning ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
+  if (starListenerAttached) return;
+  starListenerAttached = true;
 
   // cleanup previous
   if (starInterval) { clearInterval(starInterval); starInterval = null; }
@@ -477,7 +471,6 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if (refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength", "12");
 
-  // start users listener after refs exist
   setupUsersListener();
 
   /* ---------- VIP login ---------- */
@@ -502,7 +495,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ---------- Auto-login session ---------- */
+  /* ---------- Auto-login session (VIP) ---------- */
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
   if (vipUser?.email && vipUser?.phone) {
     (async () => {
@@ -522,10 +515,8 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!txt) return showStarPopup("Type a message first");
     if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars");
 
-    // optimistic UI update
     currentUser.stars -= SEND_COST;
     if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
     refs.messageInputEl.value = "";
 
     try {
@@ -578,7 +569,6 @@ window.addEventListener("DOMContentLoaded", () => {
       if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     }
   });
-});
 
   /* ---------- Hello text rotation (non-blocking) ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
