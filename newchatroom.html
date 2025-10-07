@@ -472,27 +472,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   </div>
 </div>
     
-    <div class="profile" id="profileBox">
-      <div class="profile-card">
-        <div class="profile-top">
-          <div class="profile-left">
-            <div id="profileName" class="profile-name">GUEST 0000</div>
-            <div>
-              <span class="profile-label">STARS COLLECTED:</span>
-              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
-            </div>
-          </div>
-          <div class="profile-actions">
-           <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
-            <button id="tipBtn" class="small-btn">💵</button>
-          </div>
-        </div>
+   <div class="profile" id="profileBox">
+  <div class="profile-card">
+    <div class="profile-top">
+      <div class="profile-left">
+        <div id="profileName" class="profile-name">GUEST 0000</div>
+        
+        <!-- BADGE CONTAINER -->
+        <div id="badgeContainer" style="display:flex;gap:4px;margin-top:4px;"></div>
+        
         <div>
-          <span class="profile-label">CASH EARNED:</span>
-          <span class="profile-value">₦<span id="cashCount">0</span></span>
+          <span class="profile-label">STARS COLLECTED:</span>
+          <span class="profile-value"><span id="starCount">0</span>⭐️</span>
         </div>
-          </div>
-        </div>
+      </div>
+      <div class="profile-actions">
+        <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
+        <button id="tipBtn" class="small-btn">💵</button>
+      </div>
+    </div>
+    <div>
+      <span class="profile-label">CASH EARNED:</span>
+      <span class="profile-value">₦<span id="cashCount">0</span></span>
+    </div>
+  </div>
+</div>
       </div>
     </div>
   </div>
