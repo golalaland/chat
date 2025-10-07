@@ -4,7 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot, query, orderBy, increment, getDocs, where
+  onSnapshot, query, orderBy, increment, getDocs, where, limitToLast
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
@@ -32,17 +32,21 @@ const CHAT_COLLECTION = "messages_room5";
 
 /* ---------- State ---------- */
 let currentUser = null;
-let lastMessagesArray = [];
+let lastMessagesArray = [];        // keeps recent messages
 let starInterval = null;
-let starUnsubscribe = null;     // will hold unsubscribe for star listener
-let lastMilestone = 0;         // track last milestone popup
-let refs = {};                 // DOM refs (set on DOMContentLoaded)
-
-/* ---------- Guard & ready promise ---------- */
+let starUnsubscribe = null;       // onSnapshot unsubscribe for user stars
+let messagesUnsubscribe = null;   // onSnapshot unsubscribe for messages
+let lastMilestone = 0;
+let refs = {};                    // DOM refs
 let chatroomReadyResolved = false;
 let chatroomReadyResolve;
 const chatroomReady = new Promise(res => { chatroomReadyResolve = res; });
 let chatroomReadyFallbackTimer = null;
+
+/* ---------- Config: tune these ---------- */
+const INITIAL_MESSAGE_LIMIT = 150;   // load at most 150 messages to render initially
+const MESSAGE_MEMORY_CAP = 1000;     // cap lastMessagesArray to this many items
+const RENDER_DEBOUNCE_MS = 50;       // debounce rapid render calls
 
 /* ---------- Constants ---------- */
 const BUZZ_COST = 50;
@@ -61,20 +65,47 @@ function showStarPopup(text) {
   if (!popup || !starText) return;
   starText.innerText = text;
   popup.style.display = "block";
-  // simple fade-out
   setTimeout(() => { popup.style.display = "none"; }, 1700);
 }
 function sanitizeKey(key) { return key.replace(/[.#$[\]]/g, ','); }
 
+/* ---------- Loading bar control ---------- */
 function resolveChatroomReadyOnce() {
   if (!chatroomReadyResolved) {
     chatroomReadyResolved = true;
-    try { chatroomReadyResolve(); } catch (e) {}
-    if (chatroomReadyFallbackTimer) {
-      clearTimeout(chatroomReadyFallbackTimer);
-      chatroomReadyFallbackTimer = null;
-    }
+    try { chatroomReadyResolve(); } catch (e) { /* ignore */ }
+    if (chatroomReadyFallbackTimer) { clearTimeout(chatroomReadyFallbackTimer); chatroomReadyFallbackTimer = null; }
   }
+}
+
+function showLoadingBar() {
+  const postLoginLoader = document.getElementById("postLoginLoader");
+  const loadingBar = document.getElementById("loadingBar");
+  if (!postLoginLoader || !loadingBar) return () => {};
+
+  postLoginLoader.style.display = "flex";
+  loadingBar.style.width = "0%";
+
+  let progress = 0;
+  const interval = 50;
+  const step = 5;
+  const loadingInterval = setInterval(() => {
+    progress += step + Math.random() * 3;
+    if (progress >= 90) progress = 90;
+    loadingBar.style.width = progress + "%";
+  }, interval);
+
+  // fallback: if something goes wrong, resolve after 10s to prevent indefinite hang
+  chatroomReadyFallbackTimer = setTimeout(() => {
+    resolveChatroomReadyOnce();
+  }, 10000);
+
+  return () => {
+    clearInterval(loadingInterval);
+    if (chatroomReadyFallbackTimer) { clearTimeout(chatroomReadyFallbackTimer); chatroomReadyFallbackTimer = null; }
+    loadingBar.style.width = "100%";
+    setTimeout(() => { postLoginLoader.style.display = "none"; }, 250);
+  };
 }
 
 /* ---------- Redeem link update ---------- */
@@ -99,25 +130,34 @@ if (rtdb) {
   });
 }
 
-/* ---------- Users color listener (will be started after DOM ready) ---------- */
+/* ---------- Users color listener ---------- */
+let usersUnsubscribe = null;
 function setupUsersListener() {
-  // keep a simple live map of uid -> color
-  onSnapshot(collection(db, "users"), snap => {
+  if (usersUnsubscribe) try { usersUnsubscribe(); } catch (e){}
+  usersUnsubscribe = onSnapshot(collection(db, "users"), snap => {
     refs.userColors = refs.userColors || {};
     snap.forEach(d => {
       refs.userColors[d.id] = d.data()?.usernameColor || "#ffffff";
     });
-    if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
+    // lightweight: only re-color messages already rendered if needed (no heavy re-render)
+    // We'll skip a full re-render here to avoid expensive ops.
+  }, err => {
+    console.error("Users listener error:", err);
   });
 }
 
-/* ---------- Render messages ---------- */
-let scrollPending = false;
+/* ---------- Render messages (optimized) ---------- */
+let renderTimeout = null;
 function renderMessagesFromArray(arr) {
   if (!refs.messagesEl) return;
+  if (!arr || !arr.length) return;
 
+  // If many messages (initial batch) use DocumentFragment to minimize reflows
+  const fragment = document.createDocumentFragment();
+  const batch = arr.length > 1;
   arr.forEach(item => {
-    if (document.getElementById(item.id)) return;
+    if (!item || !item.id) return;
+    if (document.getElementById(item.id)) return; // already rendered guard
 
     const m = item.data || {};
     const wrapper = document.createElement("div");
@@ -138,51 +178,89 @@ function renderMessagesFromArray(arr) {
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
-    refs.messagesEl.appendChild(wrapper);
+
+    fragment.appendChild(wrapper);
   });
 
-  if (!scrollPending) {
-    scrollPending = true;
-    requestAnimationFrame(() => {
-      const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
-      if (arr.some(msg => msg.data && msg.data.uid === currentUser?.uid) || nearBottom) {
-        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-      }
-      scrollPending = false;
-    });
-  }
+  // append once
+  refs.messagesEl.appendChild(fragment);
+
+  // throttle scroll calculation to avoid heavy layout thrash when many messages arrive
+  if (renderTimeout) clearTimeout(renderTimeout);
+  renderTimeout = setTimeout(() => {
+    const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
+    const containsOwn = arr.some(msg => msg.data && msg.data.uid === currentUser?.uid);
+    if (containsOwn || nearBottom) {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    }
+  }, RENDER_DEBOUNCE_MS);
 }
 
-/* ---------- Messages listener ---------- */
+/* ---------- Attach messages listener (efficient) ---------- */
 function attachMessagesListener() {
-  const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
+  // detach previous listener if any
+  if (messagesUnsubscribe) try { messagesUnsubscribe(); } catch (e) {}
+
+  // Query: only load last N messages initially
+  const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"), limitToLast(INITIAL_MESSAGE_LIMIT));
+
   let initialLoaded = false;
 
-  // initial onSnapshot sets up real-time updates
-  onSnapshot(q, snapshot => {
+  messagesUnsubscribe = onSnapshot(q, snapshot => {
     try {
-      snapshot.docChanges().forEach(change => {
-        if (change.type === "added") {
-          const msgData = change.doc.data();
-          lastMessagesArray.push({ id: change.doc.id, data: msgData });
-          renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
-        }
+      // Build an array of docs for the snapshot
+      const docs = [];
+      snapshot.forEach(docSnap => {
+        docs.push({ id: docSnap.id, data: docSnap.data() });
       });
-    } catch (e) {
-      console.error("Error processing messages snapshot:", e);
-    }
 
-    // Resolve ready once after first paint (two RAFs to ensure DOM painted)
-    if (!initialLoaded) {
-      initialLoaded = true;
-      requestAnimationFrame(() => requestAnimationFrame(resolveChatroomReadyOnce));
+      // If initial load: replace displayed content with a single fragment append
+      if (!initialLoaded) {
+        initialLoaded = true;
+
+        // Keep lastMessagesArray as ordered ascending
+        lastMessagesArray = docs.slice();
+
+        // clear old DOM (if any) and append fragment
+        if (refs.messagesEl) refs.messagesEl.innerHTML = ""; // single DOM clear
+        renderMessagesFromArray(lastMessagesArray);
+
+        // cap memory
+        if (lastMessagesArray.length > MESSAGE_MEMORY_CAP) {
+          lastMessagesArray = lastMessagesArray.slice(-MESSAGE_MEMORY_CAP);
+        }
+
+        // ensure painted before resolving ready
+        requestAnimationFrame(() => requestAnimationFrame(resolveChatroomReadyOnce));
+
+        return;
+      }
+
+      // After initial load, Firestore will provide incremental changes.
+      // We must process docChanges for efficiency: but onSnapshot with limitToLast will return current window.
+      // We'll find new IDs and append them (avoid re-rendering entire window)
+      const newDocs = docs.filter(d => !document.getElementById(d.id));
+      if (newDocs.length) {
+        // append and push to lastMessagesArray
+        renderMessagesFromArray(newDocs);
+        lastMessagesArray = lastMessagesArray.concat(newDocs);
+        if (lastMessagesArray.length > MESSAGE_MEMORY_CAP) {
+          lastMessagesArray = lastMessagesArray.slice(-MESSAGE_MEMORY_CAP);
+        }
+      }
+    } catch (e) {
+      console.error("Messages snapshot processing error:", e);
+      if (!initialLoaded) {
+        initialLoaded = true;
+        // if something goes wrong, still resolve eventually so UX doesn't hang
+        setTimeout(resolveChatroomReadyOnce, 800);
+      }
     }
-  }, (err) => {
+  }, err => {
     console.error("Messages listener error:", err);
-    // if error, still resolve after a short delay so loader doesn't hang forever
     if (!initialLoaded) {
       initialLoaded = true;
-      setTimeout(resolveChatroomReadyOnce, 1000);
+      setTimeout(resolveChatroomReadyOnce, 800);
     }
   });
 }
@@ -225,10 +303,8 @@ async function promptForChatID(userRef, userData) {
 /* ---------- VIP login (whitelist) ---------- */
 async function loginWhitelist(email, phone) {
   try {
-    // tiny debounce
-    await new Promise(res => setTimeout(res, 50));
+    await new Promise(res => setTimeout(res, 50)); // tiny debounce
 
-    // Query whitelist
     const q = query(
       collection(db, "whitelist"),
       where("email", "==", email),
@@ -275,17 +351,16 @@ async function loginWhitelist(email, phone) {
       isHost: data.isHost || false
     };
 
-    // set initial milestone so popup is only for new 1000s
     lastMilestone = Math.floor((currentUser.stars || 0) / 1000) * 1000;
 
     updateRedeemLink();
     setupPresence(currentUser);
-    attachMessagesListener();        // attach messages (will resolve chatroomReady once initial load completes)
+    attachMessagesListener();     // will populate initial batch and resolve ready after paint
     startStarEarning(currentUser.uid);
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    // If user still has guest id, ask for a chat id (this is awaited so loginWhitelist doesn't return until prompt resolves)
+    // wait for chatID if guest - important: keep loader until modal resolved
     if (currentUser.chatId && currentUser.chatId.startsWith("GUEST")) {
       await promptForChatID(userRef, data);
     }
@@ -304,7 +379,6 @@ async function loginWhitelist(email, phone) {
     if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
 
     return true;
-
   } catch (e) {
     console.error("Login error:", e);
     showStarPopup("Login failed. Try again!");
@@ -316,16 +390,9 @@ async function loginWhitelist(email, phone) {
 function startStarEarning(uid) {
   if (!uid) return;
 
-  // clear existing interval
-  if (starInterval) {
-    clearInterval(starInterval);
-    starInterval = null;
-  }
-  // detach previous snapshot if any
-  if (starUnsubscribe) {
-    try { starUnsubscribe(); } catch (e) {}
-    starUnsubscribe = null;
-  }
+  // cleanup previous
+  if (starInterval) { clearInterval(starInterval); starInterval = null; }
+  if (starUnsubscribe) { try { starUnsubscribe(); } catch (e) {} starUnsubscribe = null; }
 
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
@@ -344,7 +411,6 @@ function startStarEarning(uid) {
     animationTimeout = setTimeout(() => updateStarDisplay(target), 50);
   }
 
-  // keep the onSnapshot unsubscribe so we can detach if needed
   starUnsubscribe = onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.data();
@@ -354,7 +420,6 @@ function startStarEarning(uid) {
     if (animationTimeout) clearTimeout(animationTimeout);
     updateStarDisplay(targetStars);
 
-    // milestone logic: only once per new 1000
     const newMilestone = Math.floor(targetStars / 1000) * 1000;
     if (newMilestone > lastMilestone && newMilestone > 0) {
       lastMilestone = newMilestone;
@@ -364,7 +429,6 @@ function startStarEarning(uid) {
     console.error("Star listener error:", err);
   });
 
-  // Auto-increment stars every minute (server writes via updateDoc)
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
     try {
@@ -372,59 +436,22 @@ function startStarEarning(uid) {
       if (!snap.exists()) return;
       const data = snap.data();
       const today = new Date().toISOString().split("T")[0];
-
       if (data.lastStarDate !== today) {
         await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
         return;
       }
-
       if ((data.starsToday || 0) < 250) {
-        await updateDoc(userRef, {
-          stars: increment(10),
-          starsToday: increment(10)
-        });
+        await updateDoc(userRef, { stars: increment(10), starsToday: increment(10) });
       }
     } catch (e) {
       console.error("Auto-star increment failed:", e);
     }
   }, 60000);
 
-  // cleanup on unload
   window.addEventListener("beforeunload", () => {
     if (starInterval) clearInterval(starInterval);
     if (starUnsubscribe) try { starUnsubscribe(); } catch (e) {}
   });
-}
-
-/* ---------- Loading Bar Helper ---------- */
-function showLoadingBar() {
-  const postLoginLoader = document.getElementById("postLoginLoader");
-  const loadingBar = document.getElementById("loadingBar");
-  if (!postLoginLoader || !loadingBar) return () => { };
-
-  postLoginLoader.style.display = "flex";
-  loadingBar.style.width = "0%";
-
-  let progress = 0;
-  const interval = 50;
-  const step = 5;
-  const loadingInterval = setInterval(() => {
-    progress += step + Math.random() * 3;
-    if (progress >= 90) progress = 90; // sit at 90% until ready
-    loadingBar.style.width = progress + "%";
-  }, interval);
-
-  // fallback: if chatroom doesn't resolve in N ms, resolve ready so loader won't hang forever
-  chatroomReadyFallbackTimer = setTimeout(() => {
-    resolveChatroomReadyOnce();
-  }, 10000); // 10s fallback
-
-  return () => {
-    clearInterval(loadingInterval);
-    if (chatroomReadyFallbackTimer) { clearTimeout(chatroomReadyFallbackTimer); chatroomReadyFallbackTimer = null; }
-    loadingBar.style.width = "100%";
-    setTimeout(() => { postLoginLoader.style.display = "none"; }, 250);
-  };
 }
 
 /* ---------- DOMContentLoaded ---------- */
@@ -450,7 +477,7 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   if (refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength", "12");
 
-  // start users listener now that DOM refs are available
+  // start users listener after refs exist
   setupUsersListener();
 
   /* ---------- VIP login ---------- */
@@ -462,23 +489,14 @@ window.addEventListener("DOMContentLoaded", () => {
     loginBtn.addEventListener("click", async () => {
       const email = (emailInput.value || "").trim().toLowerCase();
       const phone = (phoneInput.value || "").trim();
-
-      if (!email || !phone) {
-        showStarPopup("Enter your email and phone to get access");
-        return;
-      }
+      if (!email || !phone) { showStarPopup("Enter your email and phone to get access"); return; }
 
       const stopLoading = showLoadingBar();
       await new Promise(res => setTimeout(res, 50));
-
       const success = await loginWhitelist(email, phone);
-      if (!success) {
-        // ensure loader hidden if login failed (loginWhitelist does not touch loader)
-        stopLoading();
-        return;
-      }
+      if (!success) { stopLoading(); return; }
 
-      // wait for messages to render before hiding loader — this will also be delayed by ChatID modal
+      // wait for initial messages & any ChatID prompt before hiding loader
       await chatroomReady;
       stopLoading();
     });
@@ -490,13 +508,8 @@ window.addEventListener("DOMContentLoaded", () => {
     (async () => {
       const stopLoading = showLoadingBar();
       await new Promise(res => setTimeout(res, 50));
-
       const success = await loginWhitelist(vipUser.email, vipUser.phone);
-      if (!success) {
-        stopLoading();
-        return;
-      }
-
+      if (!success) { stopLoading(); return; }
       await chatroomReady;
       stopLoading();
     })();
@@ -505,10 +518,8 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ---------- Send ---------- */
   refs.sendBtn?.addEventListener("click", async () => {
     if (!currentUser) return showStarPopup("Sign in to chat");
-
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
-
     if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars");
 
     // optimistic UI update
@@ -530,7 +541,6 @@ window.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
       console.error("Send failed:", e);
       showStarPopup("Failed to send. Try again.");
-      // rollback optimistic UI (best-effort)
       currentUser.stars += SEND_COST;
       if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     }
@@ -544,10 +554,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first");
 
-    // optimistic UI update
     currentUser.stars -= BUZZ_COST;
     if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
     refs.messageInputEl.value = "";
 
     const buzzColor = randomColor();
@@ -566,11 +574,11 @@ window.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
       console.error("Buzz failed:", e);
       showStarPopup("Failed to BUZZ. Try again.");
-      // rollback
       currentUser.stars += BUZZ_COST;
       if (refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     }
   });
+});
 
   /* ---------- Hello text rotation (non-blocking) ---------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
