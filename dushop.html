@@ -789,6 +789,38 @@ button:focus, .tab-btn:focus, .themed-btn:focus {
     }
   }
 }
+
+/* 🌞 Light mode (forced or default) — original button styles */
+body.light-mode-forced #confirmModal #confirmYes,
+body:not(.dark) #confirmModal #confirmYes {
+  background: var(--theme-gradient);
+  color: #fff;
+}
+
+body.light-mode-forced #confirmModal #confirmNo,
+body:not(.dark) #confirmModal #confirmNo {
+  background: #ccc;
+  color: #555;
+}
+body.light-mode-forced #confirmModal #confirmNo:hover,
+body:not(.dark) #confirmModal #confirmNo:hover {
+  background: #bbb;
+}
+
+/* 🌙 Dark mode — adjusted buttons for contrast */
+body.dark #confirmModal #confirmYes {
+  background: var(--theme-gradient);
+  color: #fff;
+}
+
+body.dark #confirmModal #confirmNo {
+  background: transparent;
+  color: #e6eef8;
+  border: 1px solid rgba(230,238,248,0.3);
+}
+body.dark #confirmModal #confirmNo:hover {
+  background: rgba(230,238,248,0.1);
+}
   </style>
 </head>
 <body>
