@@ -545,7 +545,7 @@ const redeemProduct = async (product) => {
 
 /* ------------------ Render shop ------------------ */
 // ============================================================
-// 🛍️ LOAD PRODUCTS FROM FIRESTORE (nushop.js)
+// 🛍️ LOAD PRODUCTS FROM FIRESTORE (FIXED FOR shop-items ID)
 // ============================================================
 async function renderShop() {
   try {
@@ -554,10 +554,16 @@ async function renderShop() {
     const q = query(collection(db, "shopItems"), orderBy("id"));
     const querySnapshot = await getDocs(q);
 
-    const shopContainer = document.getElementById("shopItems");
+    const shopContainer = document.getElementById("shop-items"); // ✅ Correct container ID
     shopContainer.innerHTML = "";
 
-    const productDescriptions = {}; // 🔹 Store descriptions here
+    const productDescriptions = {}; // 🔹 Store descriptions for modal
+
+    if (querySnapshot.empty) {
+      shopContainer.innerHTML = `<p class="empty-text">No products found 😢</p>`;
+      hideSpinner();
+      return;
+    }
 
     querySnapshot.forEach((doc) => {
       const item = doc.data();
@@ -576,9 +582,40 @@ async function renderShop() {
           Redeem
         </button>
       `;
-
       shopContainer.appendChild(card);
     });
+
+    // ============================================================
+    // 🧾 DESCRIPTION MODAL LOGIC (MATCHES YOUR HTML EXACTLY)
+    // ============================================================
+    const modal = document.getElementById("productModal");
+    const modalTitle = document.getElementById("productModalTitle");
+    const modalDesc = document.getElementById("productModalDesc");
+    const modalClose = document.getElementById("closeProductModal");
+
+    document.body.addEventListener("click", (e) => {
+      // 🔹 Open when product title is clicked
+      if (e.target.classList.contains("product-title")) {
+        const title = e.target.textContent.trim();
+        modalTitle.textContent = title;
+        modalDesc.textContent = productDescriptions[title] || "No description yet 🌸";
+        modal.classList.remove("hidden");
+      }
+
+      // 🔹 Close modal
+      if (e.target === modal || e.target === modalClose) {
+        modal.classList.add("hidden");
+      }
+    });
+
+  } catch (err) {
+    console.error("Error loading shop:", err);
+    const shopContainer = document.getElementById("shop-items");
+    if (shopContainer) shopContainer.innerHTML = `<p class="error-text">Error loading shop ⚠️</p>`;
+  } finally {
+    hideSpinner();
+  }
+}
 
     // ============================================================
     // 🧾 DESCRIPTION MODAL LOGIC (MATCHES YOUR HTML EXACTLY)
