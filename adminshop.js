@@ -1,17 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  runTransaction,
-  setDoc,
-  updateDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ------------------ Firebase ------------------ */
+/* ---------------- FIREBASE ---------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -25,174 +15,180 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------------- Spinner Helpers ---------------- */
+/* ---------------- HELPERS ---------------- */
+function sanitizeEmail(email) { return email.replace(/[.#$[\]]/g, ','); }
 const showSpinner = () => document.querySelector('.shop-spinner')?.classList.add('active');
 const hideSpinner = () => document.querySelector('.shop-spinner')?.classList.remove('active');
 
-/* ---------------- Admin login ---------------- */
-const ADMIN_CREDENTIALS = { email:'admin@example.com', password:'SuperSecure123' };
-
-const loginBtn = document.getElementById('adminLoginBtn');
-const loginMsg = document.getElementById('loginMsg');
-const loginDiv = document.getElementById('adminLogin');
+/* ---------------- LOGIN ---------------- */
+const loginDiv = document.getElementById('adminLoginDiv');
 const dashboardDiv = document.getElementById('adminDashboard');
-
-loginBtn.addEventListener('click', () => {
+document.getElementById('adminLoginBtn').addEventListener('click', async () => {
   const email = document.getElementById('adminEmail').value.trim();
-  const password = document.getElementById('adminPassword').value.trim();
+  if (!email) return alert('Enter email');
+  showSpinner();
+  try {
+    const adminCol = collection(db, 'admins');
+    const adminDocs = await getDocs(adminCol);
+    const allowed = adminDocs.docs.some(d => d.id === sanitizeEmail(email));
+    if (!allowed) return alert('Access Denied');
 
-  if(email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password){
+    // show dashboard
     loginDiv.style.display = 'none';
     dashboardDiv.style.display = 'block';
     renderAdminTab('orders');
-  } else {
-    loginMsg.textContent = 'Invalid credentials!';
-  }
+  } catch(e) { console.error(e); alert('Error verifying admin'); }
+  finally { hideSpinner(); }
 });
 
-/* ---------------- Tabs ---------------- */
-const adminTabs = document.getElementById('adminTabs');
-const adminContent = document.getElementById('adminContent');
+/* ---------------- TABS ---------------- */
+const tabs = document.querySelectorAll('.tab-btn');
+tabs.forEach(tab => tab.addEventListener('click', () => {
+  tabs.forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
 
-adminTabs.addEventListener('click', e => {
-  const btn = e.target.closest('.tab-btn');
-  if (!btn) return;
-  adminTabs.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderAdminTab(btn.dataset.tab);
-});
+  const name = tab.dataset.tab;
+  document.querySelectorAll('.tabContent').forEach(c => c.classList.remove('active'));
+  document.getElementById(name+'Tab').classList.add('active');
 
-/* ---------------- Confirm Modal ---------------- */
-const DOM = {
-  confirmModal: document.getElementById('confirmModal'),
-  confirmTitle: document.getElementById('confirmTitle'),
-  confirmText: document.getElementById('confirmText'),
-  confirmYes: document.getElementById('confirmYes'),
-  confirmNo: document.getElementById('confirmNo')
-};
-let _themedTimeout = null;
-const closeModal = () => {
-  if(DOM.confirmModal) DOM.confirmModal.style.display='none';
-  if(DOM.confirmYes) DOM.confirmYes.onclick = null;
-  if(DOM.confirmNo) DOM.confirmNo.onclick = null;
-};
+  renderAdminTab(name);
+}));
 
-const showConfirmModal = (title, text, onYes) => {
-  DOM.confirmTitle.textContent = title;
-  DOM.confirmText.textContent = text;
-  DOM.confirmModal.style.display = 'flex';
-  DOM.confirmYes.onclick = async ()=>{ closeModal(); if(onYes) await onYes(); };
-  DOM.confirmNo.onclick = closeModal;
-};
-
-/* ---------------- Admin render ---------------- */
+/* ---------------- RENDER ADMIN TABS ---------------- */
 async function renderAdminTab(tab){
-  if(!adminContent) return;
-  adminContent.innerHTML = '<div style="text-align:center;">Loading...</div>';
-  showSpinner();
-
-  if(tab==='orders'){
-    const snap = await getDocs(collection(db,'purchases'));
-    const orders = snap.docs.map(d=>({id:d.id,...d.data()}))
-                           .sort((a,b)=>b.timestamp?.toDate()-a.timestamp?.toDate());
-    adminContent.innerHTML='';
-    orders.forEach(order=>{
-      const div=document.createElement('div'); div.className='order-card';
-      div.innerHTML=`
-        <strong>${order.productName}</strong> - ${order.cost} ⭐
-        ${order.cashReward?`- ₦${order.cashReward}`:''}<br>
-        <small>${order.timestamp?.toDate()?.toLocaleString()||''}</small>
-        <button class="refundBtn" data-id="${order.id}">Refund</button>
-      `;
-      adminContent.appendChild(div);
-    });
-    adminContent.querySelectorAll('.refundBtn').forEach(btn=>{
-      btn.addEventListener('click', async ()=>{
-        const id=btn.dataset.id;
-        const orderRef=doc(db,'purchases',id);
-        const orderSnap=await getDoc(orderRef);
-        if(!orderSnap.exists()) return alert('Order not found');
-
-        showConfirmModal('Refund Order','Refund this order?', async ()=>{
-          await runTransaction(db, async t=>{
-            const orderData = orderSnap.data();
-            const userRef = doc(db,'users',orderData.userId);
-            const productRef = doc(db,'shopItems',orderData.productId);
-
-            const [userSnap, productSnap] = await Promise.all([t.get(userRef), t.get(productRef)]);
-            if(!userSnap.exists() || !productSnap.exists()) throw new Error('Missing user/product');
-
-            const userData=userSnap.data();
-            const productData=productSnap.data();
-            const newStars = (Number(userData.stars)||0) + Number(orderData.cost||0);
-            const newCash = (Number(userData.cash)||0) + Number(orderData.redeemedCash||0);
-
-            t.update(userRef,{stars:newStars, cash:newCash});
-            t.update(productRef,{available:(Number(productData.available)||0)+1});
-            t.delete(orderRef);
-          });
-          renderAdminTab('orders');
-        });
-      });
-    });
-
-  } else if(tab==='products'){
-    const snap = await getDocs(collection(db,'shopItems'));
-    adminContent.innerHTML='';
-    snap.forEach(docSnap=>{
-      const p = docSnap.data(); p.id=docSnap.id;
-      const div=document.createElement('div'); div.className='product-admin-card';
-      div.innerHTML=`
-        <input value="${p.name}" placeholder="Name"/>
-        <input type="number" value="${p.cost}" placeholder="Stars"/>
-        <input type="number" value="${p.cashReward||0}" placeholder="Cash"/>
-        <input type="number" value="${p.available||0}" placeholder="Stock"/>
-        <button class="updateBtn">Update</button>
-      `;
-      adminContent.appendChild(div);
-      div.querySelector('.updateBtn').addEventListener('click', async ()=>{
-        const [name,cost,cash,avail]=Array.from(div.querySelectorAll('input')).map(i=>i.value);
-        await updateDoc(doc(db,'shopItems',p.id),{
-          name, cost:Number(cost), cashReward:Number(cash), available:Number(avail)
-        });
-        alert('Updated!');
-      });
-    });
-
-    const addBtn=document.createElement('button'); addBtn.textContent='Add New Product'; addBtn.style.marginTop='12px';
-    adminContent.appendChild(addBtn);
-    addBtn.addEventListener('click', async ()=>{
-      const newRef=doc(collection(db,'shopItems'));
-      await setDoc(newRef,{name:'New Item', cost:0, cashReward:0, available:0, img:''});
-      renderAdminTab('products');
-    });
-
-  } else if(tab==='users'){
-    const snap=await getDocs(collection(db,'users'));
-    adminContent.innerHTML='';
-    snap.forEach(docSnap=>{
-      const u=docSnap.data();
-      const div=document.createElement('div'); div.className='user-card';
-      div.innerHTML=`<strong>${u.chatId||u.email}</strong> - ⭐${u.stars} - ₦${u.cash||0}`;
-      adminContent.appendChild(div);
-    });
-
-  } else if(tab==='analytics'){
-    const snap=await getDocs(collection(db,'purchases'));
-    const totalStars = snap.docs.reduce((a,d)=>a+(Number(d.data().cost)||0),0);
-    const totalCash = snap.docs.reduce((a,d)=>a+(Number(d.data().cashReward)||0),0);
-    adminContent.innerHTML=`
-      <div>Total Stars Redeemed: ${totalStars} ⭐</div>
-      <div>Total Cash Redeemed: ₦${totalCash.toLocaleString()}</div>
-      <div>Total Orders: ${snap.size}</div>
-    `;
-  }
-  hideSpinner();
+  if(tab==='orders') await renderOrders();
+  else if(tab==='products') await renderProducts();
+  else if(tab==='users') await renderUsers();
 }
 
-/* ---------------- Theme Toggle ---------------- */
-const themeBtn = document.getElementById('themeToggle');
-themeBtn?.addEventListener('click', ()=>{
-  const isDark = document.body.classList.toggle('dark');
-  themeBtn.textContent = isDark?'🌙':'☀️';
+/* ---------------- RENDER ORDERS ---------------- */
+async function renderOrders(){
+  showSpinner();
+  try {
+    const ordersTable = document.querySelector('#ordersTable tbody');
+    ordersTable.innerHTML = '';
+    const snap = await getDocs(collection(db,'purchases'));
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${docSnap.id}</td>
+        <td>${data.email||''}</td>
+        <td>${data.productName||''}</td>
+        <td>${data.cost||0}</td>
+        <td>${data.cashReward||0}</td>
+        <td>${data.timestamp?.toDate?.().toLocaleString()||''}</td>
+        <td><button class="action-btn refund">Refund</button></td>
+      `;
+      tr.querySelector('.refund').addEventListener('click', async()=>{
+        if(!confirm('Confirm refund?')) return;
+        await refundOrder(docSnap.id, data);
+      });
+      ordersTable.appendChild(tr);
+    });
+  } catch(e){ console.error(e); }
+  finally{ hideSpinner(); }
+}
+
+async function refundOrder(id, data){
+  showSpinner();
+  try{
+    await runTransaction(db, async t=>{
+      const userRef = doc(db,'users',sanitizeEmail(data.email||''));
+      const userSnap = await t.get(userRef);
+      if(!userSnap.exists()) return;
+      const uData = userSnap.data();
+      t.update(userRef, { 
+        stars: (uData.stars||0) + (data.cost||0), 
+        cash: (uData.cash||0) + (data.cashReward||0) 
+      });
+      const purchaseRef = doc(db,'purchases',id);
+      t.update(purchaseRef, { refunded:true });
+      const productRef = doc(db,'shopItems',data.productId);
+      const pSnap = await t.get(productRef);
+      if(pSnap.exists()){
+        t.update(productRef,{ available: (pSnap.data().available||0)+1 });
+      }
+    });
+    alert('Refund successful!');
+    renderOrders();
+    renderProducts();
+  }catch(e){ console.error(e); alert('Refund failed'); }
+  finally{ hideSpinner(); }
+}
+
+/* ---------------- RENDER PRODUCTS ---------------- */
+async function renderProducts(){
+  showSpinner();
+  try {
+    const productsTable = document.querySelector('#productsTable tbody');
+    productsTable.innerHTML='';
+    const snap = await getDocs(collection(db,'shopItems'));
+    snap.forEach(docSnap=>{
+      const data = docSnap.data();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${docSnap.id}</td>
+        <td>${data.name||''}</td>
+        <td>${data.cost||0}</td>
+        <td>${data.cashReward||0}</td>
+        <td>${data.available||0}</td>
+        <td><button class="action-btn update">Update</button></td>
+      `;
+      tr.querySelector('.update').addEventListener('click', ()=>{
+        document.getElementById('productName').value = data.name;
+        document.getElementById('productCost').value = data.cost||0;
+        document.getElementById('productCash').value = data.cashReward||0;
+        document.getElementById('productAvailable').value = data.available||0;
+        document.getElementById('productImage').value = data.img||'';
+      });
+      productsTable.appendChild(tr);
+    });
+  }catch(e){ console.error(e); }
+  finally{ hideSpinner(); }
+}
+
+/* ---------------- ADD / UPDATE PRODUCT ---------------- */
+document.getElementById('productForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const name = document.getElementById('productName').value.trim();
+  const cost = Number(document.getElementById('productCost').value) || 0;
+  const cashReward = Number(document.getElementById('productCash').value) || 0;
+  const available = Number(document.getElementById('productAvailable').value) || 0;
+  const img = document.getElementById('productImage').value.trim() || '';
+
+  showSpinner();
+  try {
+    const shopCol = collection(db,'shopItems');
+    // Use product name as ID for simplicity
+    const prodRef = doc(db, 'shopItems', name.replace(/\s+/g,'_'));
+    await setDoc(prodRef, { name, cost, cashReward, available, img }, { merge:true });
+    alert('Product added/updated!');
+    renderProducts();
+  } catch(e){ console.error(e); alert('Failed to add/update product'); }
+  finally{ hideSpinner(); }
 });
+
+/* ---------------- RENDER USERS ---------------- */
+async function renderUsers(){
+  showSpinner();
+  try{
+    const usersTable = document.querySelector('#usersTable tbody');
+    usersTable.innerHTML='';
+    const snap = await getDocs(collection(db,'users'));
+    snap.forEach(docSnap=>{
+      const data = docSnap.data();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${docSnap.id}</td>
+        <td>${data.email||''}</td>
+        <td>${data.stars||0}</td>
+        <td>${data.cash||0}</td>
+        <td>${data.isVIP? 'Yes':'No'}</td>
+        <td>${data.isHost? 'Yes':'No'}</td>
+      `;
+      usersTable.appendChild(tr);
+    });
+  }catch(e){ console.error(e); }
+  finally{ hideSpinner(); }
+}
