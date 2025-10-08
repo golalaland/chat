@@ -1,237 +1,108 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Admin Dashboard — NNAMDI</title>
-<link rel="stylesheet" href="css/style.css"> <!-- optional: keep inline CSS if you prefer -->
-<style>
-:root{
-  --bg:#f5f6f8; --panel:#fff; --accent:#ff33cc; --accent-2:#e60084; --muted:#6b7280; --text:#0f1720;
-  --danger:#ff4d4f; --success:#16a34a; --warn:#f59e0b; --info:#3b82f6;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
-.sidebar{width:220px;background:#0b1220;color:#fff;display:flex;flex-direction:column;padding:14px;gap:8px}
-.sidebar h2{margin:0 0 6px 0;font-size:16px;text-align:center}
-.sidebar button{background:none;border:none;color:#cbd5e1;padding:10px;border-radius:8px;text-align:left;cursor:pointer}
-.sidebar button.active, .sidebar button:hover{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:64px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #e6e9ee}
-.brand{font-weight:700}
-.admin-info{display:flex;gap:12px;align-items:center;font-size:14px}
-.content{display:flex;flex:1;overflow:auto;padding:18px;gap:18px}
-.col{flex:1;min-width:420px;max-width:1200px;overflow:auto}
-.card{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(8,12,20,0.06);margin-bottom:12px}
-h3{margin:0 0 8px 0}
-input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e3e7ee;margin:6px 0;font-size:14px}
-.table{width:100%;border-collapse:collapse}
-.table th,.table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px;vertical-align:middle}
-.btn{background:var(--accent);color:#fff;border:none;padding:7px 10px;border-radius:8px;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--muted);border:1px solid #eef2f6}
-.btn.red{background:var(--danger)}
-.btn.green{background:var(--success)}
-.btn.orange{background:var(--warn)}
-.btn.blue{background:var(--info)}
-.small{font-size:13px;color:var(--muted)}
-.actions-wrap{display:flex;gap:6px;flex-wrap:wrap}
-.footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
-
-/* modal holder (modal.js will use) */
-#globalModalRoot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999}
-</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Xixi Admin — Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding:20px; background:#f7f7fb; color:#111 }
+    .card { background:#fff; padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:14px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap }
+    input, button, select, textarea { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e9; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #f0f0f4; }
+    .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 10px; }
+    .btn-danger { background:#ff6b6b; color:#fff }
+    .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff }
+    .muted { color:#888; font-size:0.9rem }
+    .search { width:260px }
+    .small { font-size:0.9rem; padding:6px 8px; }
+    .pill { padding:6px 10px; border-radius:999px; background:#efefef; }
+    .flex-between { display:flex; justify-content:space-between; align-items:center }
+    .hidden { display:none }
+    .scroll-box { max-height:360px; overflow:auto; padding-right:8px }
+    .actions { display:flex; gap:6px }
+  </style>
 </head>
 <body>
+  <h2>Xixi Admin — Chatroom</h2>
 
-<!-- Sidebar -->
-<div class="sidebar">
-  <h2>ADMIN</h2>
-  <button data-view="rooms" class="active" onclick="navigate(event)">Rooms</button>
-  <button data-view="users" onclick="navigate(event)">Users</button>
-  <button data-view="shop" onclick="navigate(event)">Shop</button>
-  <button data-view="purchases" onclick="navigate(event)">Purchases</button>
-  <button data-view="claims" onclick="navigate(event)">Claims</button>
-  <button data-view="logs" onclick="navigate(event)">Logs</button>
-  <div style="flex:1"></div>
-  <button data-view="meta" onclick="navigate(event)">Admin Profile</button>
-</div>
-
-<div class="main">
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:14px">
-      <div class="brand">🎛️ Admin Dashboard</div>
-      <div class="small">PC layout — realtime</div>
+  <!-- Admin Gate -->
+  <div id="adminGate" class="card">
+    <div class="row">
+      <input id="adminEmail" placeholder="Admin email (use registered email)" />
+      <button id="adminCheckBtn" class="btn btn-primary">Enter Admin</button>
+      <span id="adminGateMsg" class="muted"></span>
     </div>
-
-    <div class="admin-info">
-      <div id="adminDisplay" class="small">Not signed (admin)</div>
-      <div id="adminBalances" class="small" style="background:#eef2f6;padding:4px 8px;border-radius:8px">⭐ 0 — ₦0</div>
-      <button class="btn" onclick="refreshAll()">Refresh</button>
-    </div>
+    <p class="muted" style="margin-top:8px">This page uses a simple admin-check (isAdmin flag). Protect this folder on your server or replace with Firebase Auth later.</p>
   </div>
 
-  <div class="content">
-    <!-- Rooms (keeps layout) -->
-    <div id="view-rooms" class="col">
-      <div class="card">
-        <h3>Rooms</h3>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="roomSelect"></select>
-          <button id="btnToggleMute" class="btn orange">Toggle Mute</button>
-          <button id="btnToggleSlow" class="btn orange">Toggle SlowChat</button>
-          <button id="btnResetRoom" class="btn ghost">Reset</button>
-        </div>
+  <!-- Admin Panel -->
+  <div id="adminPanel" class="hidden">
+
+    <!-- Top bar -->
+    <div class="card flex-between">
+      <div>
+        <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
       </div>
-      <div class="card">
-        <h3>Room Stats</h3>
-        <div class="small">Selected: <span id="roomName">—</span></div>
-        <div style="display:flex;gap:12px;margin-top:8px">
-          <div class="small">Users: <span id="roomUserCount">0</span></div>
-          <div class="small">Hosts: <span id="roomHostCount">0</span></div>
-          <div class="small">VIPs: <span id="roomVIPCount">0</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Broadcast</h3>
-        <textarea id="broadcastText" rows="3" placeholder="Message to all users in selected room"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="sendBroadcastBtn" class="btn blue">Send</button>
-          <button class="btn ghost" id="previewBroadcastBtn">Preview</button>
-        </div>
+      <div class="row">
+        <input id="userSearch" class="search small" placeholder="Search users by email or chatId"/>
+        <button id="exportCsv" class="btn">Export CSV</button>
+        <button id="logoutBtn" class="btn">Logout</button>
       </div>
     </div>
 
-    <!-- Users -->
-    <div id="view-users" class="col" style="display:none">
-      <div class="card">
-        <h3>Users</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="userSearch" placeholder="Search email / name / id">
-          <select id="userFilter">
-            <option value="all">All</option>
-            <option value="hosts">Hosts</option>
-            <option value="vip">VIP</option>
-            <option value="banned">Banned</option>
-            <option value="timedout">Timed out</option>
-          </select>
-          <button class="btn" id="userSearchBtn">Search</button>
-        </div>
-
-        <table class="table">
+    <!-- Users Management -->
+    <div class="card">
+      <h3 style="margin:0 0 8px 0">Users</h3>
+      <div class="muted" style="margin-bottom:8px">Edit stars, toggle isAdmin/isVIP, add cash, or delete users.</div>
+      <div class="scroll-box">
+        <table id="usersTable">
           <thead>
-            <tr>
-              <th>User</th><th>Email</th><th>Phone</th><th>Invited By</th><th>Stars</th><th>Cash</th><th>Status</th><th>Actions</th>
-            </tr>
+            <tr><th>Email</th><th>ChatId</th><th>Stars</th><th>VIP</th><th>Admin</th><th>Actions</th></tr>
           </thead>
-          <tbody id="userList"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3>Quick Gift / Timeout</h3>
-        <div style="display:flex;gap:8px">
-          <input id="selectedUserId" placeholder="User id (click a user to auto-fill)">
-          <input id="giftStars" type="number" placeholder="Stars">
-          <input id="giftCash" type="number" placeholder="Cash">
-          <button class="btn green" id="quickGiftBtn">Give</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <input id="timeoutSec" type="number" placeholder="Timeout seconds">
-          <button class="btn orange" id="quickTimeoutBtn">Timeout</button>
-          <button class="btn ghost" id="quickClearTimeoutBtn">Clear Timeout</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Shop -->
-    <div id="view-shop" class="col" style="display:none">
-      <div class="card">
-        <h3>Shop Items</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-          <input id="shopSearch" placeholder="Search items">
-          <select id="shopViewMode"><option value="admin">Admin</option><option value="host">Host</option><option value="user">User</option></select>
-          <button class="btn" id="shopRefreshBtn">Refresh</button>
-        </div>
-        <table class="table">
-          <thead><tr><th>Item</th><th>Cost</th><th>Cash</th><th>Stock</th><th>HostOnly</th><th>Actions</th></tr></thead>
-          <tbody id="shopList"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3>Add / Edit Product</h3>
-        <input id="productName" placeholder="Name">
-        <input id="productImg" placeholder="Image URL (optional)">
-        <input id="productCost" type="number" placeholder="Cost (stars)">
-        <input id="productCash" type="number" placeholder="Cash reward (₦)">
-        <input id="productStock" type="number" placeholder="Stock">
-        <label><input id="productHostOnly" type="checkbox"> Host only</label>
-        <div style="margin-top:8px"><button class="btn" id="saveProductBtn">Save</button><button class="btn ghost" id="clearProductBtn">Clear</button></div>
-      </div>
-    </div>
-
-    <!-- Purchases -->
-    <div id="view-purchases" class="col" style="display:none">
-      <div class="card">
-        <h3>Purchases (Spreadsheet)</h3>
-        <table class="table">
-          <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Item</th><th>Stars Spent</th><th>Fulfilled</th><th>Date</th></tr></thead>
-          <tbody id="purchasesList"></tbody>
+          <tbody></tbody>
         </table>
       </div>
     </div>
 
-    <!-- Claims -->
-    <div id="view-claims" class="col" style="display:none">
-      <div class="card">
-        <h3>Claims / Refunds</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="claimSearch" placeholder="Search by user / product / id">
-          <button class="btn" id="claimsRefreshBtn">Refresh</button>
-        </div>
-        <ul class="claims-list" id="claimsList"></ul>
+    <!-- Messages Moderation -->
+    <div class="card">
+      <h3 style="margin:0 0 8px 0">Live Messages</h3>
+      <div class="muted" style="margin-bottom:8px">Live feed from <code>messages_room5</code>. Delete messages as needed.</div>
+      <div class="scroll-box">
+        <table id="messagesTable">
+          <thead>
+            <tr><th>ChatId</th><th>Content</th><th>Highlight</th><th>Time</th><th>Action</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px" class="row">
+        <button id="clearChatBtn" class="btn btn-danger">Clear Chat (delete all)</button>
       </div>
     </div>
 
-    <!-- Logs -->
-    <div id="view-logs" class="col" style="display:none">
-      <div class="card">
-        <h3>Action Logs</h3>
-        <button class="btn" id="logsRefreshBtn">Refresh</button>
-        <ul class="log-list" id="logList"></ul>
+    <!-- Whitelist Manager -->
+    <div class="card">
+      <h3 style="margin:0 0 8px 0">Whitelist (VIP login)</h3>
+      <div class="row" style="margin-bottom:8px">
+        <input id="wlEmail" placeholder="email" />
+        <input id="wlPhone" placeholder="phone" />
+        <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
       </div>
-    </div>
-
-    <!-- Meta -->
-    <div id="view-meta" class="col" style="display:none">
-      <div class="card">
-        <h3>Admin Profile</h3>
-        <input id="adminName" placeholder="Admin display name (chatId)">
-        <input id="adminEmail" placeholder="Admin email">
-        <input id="adminStars" type="number" placeholder="Stars">
-        <input id="adminCash" type="number" placeholder="Cash">
-        <div style="margin-top:8px"><button class="btn" id="saveAdminBtn">Save</button><button class="btn ghost" id="loadAdminBtn">Load</button></div>
+      <div class="scroll-box">
+        <table id="whitelistTable">
+          <thead>
+            <tr><th>Email</th><th>Phone</th><th>Action</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
 
   </div>
 
-  <div class="footer">Built for NNAMDI — secure Firestore rules before production.</div>
-</div>
-
-<!-- modal holder -->
-<div id="globalModalRoot"></div>
-
-<!-- load modules (must be last) -->
-<script type="module" src="js/firebase-config.js"></script>
-<script type="module" src="js/modal.js"></script>
-<script type="module" src="js/main.js"></script>
-<script type="module" src="js/users.js"></script>
-<script type="module" src="js/rooms.js"></script>
-<script type="module" src="js/shop.js"></script>
-<script type="module" src="js/purchases.js"></script>
-<script type="module" src="js/claims.js"></script>
-<script type="module" src="js/logs.js"></script>
-<script type="module" src="js/admin.js"></script>
+  <script type="module" src="admin-chat.js"></script>
 </body>
 </html>
