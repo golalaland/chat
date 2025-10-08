@@ -24,6 +24,8 @@
     .toggle { cursor:pointer; padding:6px 8px; border-radius:8px }
     .actions { display:flex; gap:6px }
     .scroll-box { max-height:360px; overflow:auto; padding-right:8px }
+
+    /* Loader / modal */
     #loaderOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.3); display:flex; justify-content:center; align-items:center; z-index:1000; display:none; }
     #loaderOverlay .card { padding:20px; text-align:center; }
   </style>
@@ -57,7 +59,7 @@
     <!-- Users table -->
     <div class="card">
       <h3 style="margin:0 0 8px 0">Users</h3>
-      <div class="muted" style="margin-bottom:8px">Edit stars, cash, toggles, or subscription info.</div>
+      <div class="muted" style="margin-bottom:8px">Edit stars, cash, toggles, or subscription info. Click 'Enter' to apply.</div>
       <div class="scroll-box">
         <table id="usersTable">
           <thead>
@@ -70,7 +72,7 @@
               <th>VIP</th>
               <th>Admin</th>
               <th>Host</th>
-              <th>Subscription</th>
+              <th>SubscriptionActive</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -94,7 +96,12 @@
       <div class="scroll-box">
         <table id="whitelistTable">
           <thead>
-            <tr><th>Email</th><th>Phone</th><th>Subscription</th><th>Action</th></tr>
+            <tr>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>SubscriptionActive</th>
+              <th>Action</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -103,7 +110,7 @@
 
   </div>
 
-  <!-- Loader / modal -->
+  <!-- Loader overlay -->
   <div id="loaderOverlay">
     <div class="card">
       <div id="loaderText">Processing...</div>
