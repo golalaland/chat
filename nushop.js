@@ -464,7 +464,7 @@ const renderMyOrders = async () => {
     const purchasesRef = collection(db, 'purchases');
     const snap = await getDocs(purchasesRef);
     const orders = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.userId === currentUser.uid);
-    if (orders.length === 0) { ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet</div>'; return; }
+    if (orders.length === 0) { ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet..hmmmmm! 🤔</div>'; return; }
     orders.sort((a, b) => {
       const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
       const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
