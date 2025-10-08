@@ -1,100 +1,64 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Xixi Admin — Chat</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding:20px; background:#f7f7fb; color:#111 }
-    .card { background:#fff; padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:14px; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap }
-    input, button, select, textarea { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e9; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #f0f0f4; }
-    .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 10px; }
-    .btn-danger { background:#ff6b6b; color:#fff }
-    .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff }
-    .muted { color:#888; font-size:0.9rem }
-    .search { width:260px }
-    .small { font-size:0.9rem; padding:6px 8px; }
-    .pill { padding:6px 10px; border-radius:999px; background:#efefef; }
-    .flex-between { display:flex; justify-content:space-between; align-items:center }
-    .hidden { display:none }
-    .danger-outline { border:1px solid #ffb3b3 }
-    .toggle { cursor:pointer; padding:6px 8px; border-radius:8px }
-    .actions { display:flex; gap:6px }
-    .scroll-box { max-height:360px; overflow:auto; padding-right:8px }
-  </style>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+<style>
+body { font-family: Arial, sans-serif; background:#111; color:#fff; padding:20px; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { border:1px solid #444; padding:8px; text-align:left; }
+th { background:#222; }
+input, select, button { padding:5px; margin:2px; }
+section { margin-bottom:30px; }
+</style>
 </head>
 <body>
-  <h2>Xixi Admin — Chatroom</h2>
 
-  <!-- Simple admin gate (email) -->
-  <div id="adminGate" class="card">
-    <div class="row">
-      <input id="adminEmail" placeholder="Admin email (use registered email)" />
-      <button id="adminCheckBtn" class="btn btn-primary">Enter Admin</button>
-      <span id="adminGateMsg" class="muted"></span>
-    </div>
-    <p class="muted" style="margin-top:8px">This page uses a simple admin-check (isAdmin flag). Protect this folder on your server or replace with Firebase Auth later.</p>
-  </div>
+<h1>Admin Dashboard</h1>
 
-  <!-- Admin panel -->
-  <div id="adminPanel" class="hidden">
+<section>
+  <label>Chat Room:</label>
+  <select id="roomSelect">
+    <option value="room1">Room 1</option>
+    <option value="room2">Room 2</option>
+    <option value="room3">Room 3</option>
+  </select>
+  <label>Send Cost:</label>
+  <input id="sendCost" type="number" value="1" min="1">
+  <label>Buzz Cost:</label>
+  <input id="buzzCost" type="number" value="50" min="1">
+</section>
 
-    <div class="card flex-between">
-      <div>
-        <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
-      </div>
-      <div class="row">
-        <input id="userSearch" class="search small" placeholder="Search users by email or chatId"/>
-        <button id="exportCsv" class="btn">Export CSV</button>
-        <button id="logoutBtn" class="btn">Logout</button>
-      </div>
-    </div>
+<section>
+  <h2>Whitelist / Users</h2>
+  <form id="whitelistForm">
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="text" name="phone" placeholder="Phone" required>
+    <button type="submit">Add User</button>
+  </form>
+  <input type="file" id="bulkCSV" accept=".csv">
+  <table>
+    <thead>
+      <tr>
+        <th>ChatID</th><th>Email</th><th>Phone</th><th>Stars</th><th>Cash</th><th>Host?</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userTable"></tbody>
+  </table>
+  <button id="addStarsBtn">Add Stars</button>
+  <button id="addCashBtn">Add Cash</button>
+</section>
 
-    <!-- Users management -->
-    <div class="card">
-      <h3 style="margin:0 0 8px 0">Users</h3>
-      <div class="muted" style="margin-bottom:8px">Edit stars, toggle isAdmin/isVIP, or delete users.</div>
-      <div class="scroll-box">
-        <table id="usersTable">
-          <thead><tr><th>Email</th><th>ChatId</th><th>Stars</th><th>VIP</th><th>Admin</th><th>Actions</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+<section>
+  <h2>Messages</h2>
+  <table>
+    <thead>
+      <tr><th>ChatID</th><th>Message</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="messageTable"></tbody>
+  </table>
+</section>
 
-    <!-- Messages moderation -->
-    <div class="card">
-      <h3 style="margin:0 0 8px 0">Live Messages</h3>
-      <div class="muted" style="margin-bottom:8px">Live feed from <code>messages_room5</code>. Delete messages as needed.</div>
-      <div class="scroll-box">
-        <table id="messagesTable">
-          <thead><tr><th>ChatId</th><th>Content</th><th>Highlight</th><th>Time</th><th>Action</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div style="margin-top:10px" class="row">
-        <button id="clearChatBtn" class="btn btn-danger">Clear Chat (delete all)</button>
-      </div>
-    </div>
-
-    <!-- Whitelist manager -->
-    <div class="card">
-      <h3 style="margin:0 0 8px 0">Whitelist (VIP login)</h3>
-      <div class="row" style="margin-bottom:8px">
-        <input id="wlEmail" placeholder="email" />
-        <input id="wlPhone" placeholder="phone" />
-        <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
-      </div>
-      <div class="scroll-box">
-        <table id="whitelistTable"><thead><tr><th>Email</th><th>Phone</th><th>Action</th></tr></thead><tbody></tbody></table>
-      </div>
-    </div>
-
-  </div>
-
-  <script type="module" src="admin-chat.js"></script>
+<script type="module" src="admin.js"></script>
 </body>
 </html>
