@@ -1,3 +1,4 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
   doc,
@@ -8,8 +9,8 @@ import {
   runTransaction,
   serverTimestamp,
   updateDoc,
-  query,        // ✅ added for Firestore queries
-  orderBy       // ✅ added for sorting (e.g., by id)
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 /* ------------------ Firebase ------------------ */
 const firebaseConfig = {
