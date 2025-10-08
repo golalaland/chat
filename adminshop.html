@@ -3,82 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard</title>
+<title>Admin Shop Dashboard</title>
 <style>
-  /* ---------------- Body ---------------- */
-  body { font-family: sans-serif; margin:0; padding:0; background:#f5f5f5; color:#222; }
-  .centered { display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; gap:10px; }
-  .hidden { display:none; }
-  input { padding:8px; margin:5px 0; width:200px; border:1px solid #ccc; border-radius:4px; }
-  button { padding:8px 16px; cursor:pointer; border:none; border-radius:4px; background:#007bff; color:white; }
-  button:hover { background:#0056b3; }
-  .msg { color:red; margin-top:5px; }
+  /* ---------- General ---------- */
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  body { background: #f4f6f9; color: #333; }
+  hidden { display: none; }
 
-  #dashboard { padding:20px; }
-  section { margin-bottom:30px; }
-  #usersList, #productsList, #ordersList { background:#fff; padding:10px; border-radius:5px; max-height:300px; overflow:auto; }
+  /* ---------- Login Page ---------- */
+  #loginPage {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+  }
+  #loginPage input {
+    padding: 10px; margin: 10px 0; width: 250px; border-radius: 6px; border: none;
+  }
+  #adminLoginBtn {
+    padding: 10px 20px; background: #ff7e5f; border: none; border-radius: 6px; color: #fff; cursor: pointer;
+  }
+  #loginMsg { margin-top: 10px; color: #ffcccc; }
 
-  .product-card, .user-card, .order-card { border:1px solid #ccc; padding:10px; margin:5px 0; border-radius:5px; display:flex; justify-content:space-between; align-items:center; }
+  /* ---------- Dashboard ---------- */
+  #dashboard {
+    display: none; padding: 20px;
+  }
+  #dashboard h1 { margin-bottom: 20px; color: #222; }
+  .section { margin-bottom: 40px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+  th { background: #667eea; color: #fff; }
+  tr:hover { background: #f1f1f1; }
+  button { padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; background: #667eea; color: #fff; }
+  button:hover { background: #556cd6; }
 
-  /* ---------------- Modal ---------------- */
-  .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; }
-  .modal-content { background:#fff; padding:20px; border-radius:8px; min-width:300px; display:flex; flex-direction:column; gap:8px; }
-  .close { align-self:flex-end; cursor:pointer; font-size:20px; font-weight:bold; }
-  .close:hover { color:red; }
+  /* ---------- Top Controls ---------- */
+  #logoutBtn { float: right; margin-top: -50px; background: #ff4d4d; }
+  #addProductBtn { margin-bottom: 15px; background: #28a745; }
 
-  input[type=number] { width:100%; }
-  input[type=url] { width:100%; }
+  /* ---------- Product Modal ---------- */
+  #productModal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 999;
+  }
+  #productModal .modal {
+    background: #fff; padding: 20px; border-radius: 10px; width: 400px; max-width: 90%;
+    display: flex; flex-direction: column;
+  }
+  #productModal input, #productModal textarea {
+    margin-bottom: 10px; padding: 8px; border-radius: 5px; border: 1px solid #ccc;
+  }
+  #productModal button { margin-top: 10px; }
+
+  /* ---------- Alerts & Spinner ---------- */
+  #alertMsg {
+    position: fixed; top: 20px; right: 20px; background: #ffce00; padding: 10px 15px;
+    border-radius: 6px; display: none; z-index: 1000;
+  }
+  #spinner {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: none; border: 6px solid #f3f3f3; border-top: 6px solid #667eea;
+    border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; z-index: 1000;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 600px) {
+    #productModal .modal { width: 95%; }
+    table, th, td { font-size: 14px; }
+  }
 </style>
 </head>
 <body>
 
 <!-- ---------- Login Page ---------- -->
-<div id="loginPage" class="centered">
-  <h2>Admin Login</h2>
-  <input type="email" id="adminEmail" placeholder="Admin Email">
+<div id="loginPage">
+  <h1>Admin Login</h1>
+  <input type="email" id="adminEmail" placeholder="Enter admin email">
   <button id="adminLoginBtn">Login</button>
-  <div id="loginMsg" class="msg"></div>
+  <div id="loginMsg"></div>
 </div>
 
 <!-- ---------- Dashboard ---------- -->
-<div id="dashboard" class="hidden">
-  <h1>Admin Dashboard</h1>
+<div id="dashboard">
+  <h1>Admin Shop Dashboard</h1>
   <button id="logoutBtn">Logout</button>
 
-  <section>
+  <!-- Users Section -->
+  <div class="section" id="usersSection">
     <h2>Users</h2>
-    <input type="text" id="userSearch" placeholder="Search by email">
-    <div id="usersList"></div>
-  </section>
+    <div id="usersList">Loading users...</div>
+  </div>
 
-  <section>
+  <!-- Products Section -->
+  <div class="section" id="productsSection">
     <h2>Products</h2>
-    <button id="addProductBtn">Add Product</button>
-    <div id="productsList"></div>
-  </section>
+    <button id="addProductBtn">Add New Product</button>
+    <div id="productsList">Loading products...</div>
+  </div>
 
-  <section>
+  <!-- Orders Section -->
+  <div class="section" id="ordersSection">
     <h2>Orders</h2>
-    <div id="ordersList"></div>
-  </section>
-</div>
-
-<!-- ---------- Product Modal ---------- -->
-<div id="productModal" class="modal hidden">
-  <div class="modal-content">
-    <span id="closeProductModal" class="close">&times;</span>
-    <h3 id="modalTitle">Add Product</h3>
-    <input type="text" id="prodName" placeholder="Product Name">
-    <input type="url" id="prodImg" placeholder="Image URL">
-    <input type="number" id="prodStars" placeholder="Cost in ⭐">
-    <input type="number" id="prodCash" placeholder="Cash Reward (optional)">
-    <input type="number" id="prodQty" placeholder="Available Quantity">
-    <button id="saveProductBtn">Save Product</button>
+    <div id="ordersList">Loading orders...</div>
   </div>
 </div>
 
-<!-- ---------- JS ---------- -->
-<script type="module" src="adminshop.js"></script>
+<!-- ---------- Product Modal ---------- -->
+<div id="productModal">
+  <div class="modal">
+    <h3>Add / Edit Product</h3>
+    <input type="text" id="prodName" placeholder="Product Name">
+    <input type="text" id="prodImg" placeholder="Product Image URL">
+    <input type="number" id="prodStars" placeholder="Cost (Stars)">
+    <input type="number" id="prodCash" placeholder="Cash Reward">
+    <input type="number" id="prodQty" placeholder="Quantity">
+    <button id="saveProductBtn">Save Product</button>
+    <button id="closeProductModal">Close</button>
+  </div>
+</div>
 
+<!-- ---------- Alerts & Spinner ---------- -->
+<div id="alertMsg"></div>
+<div id="spinner"></div>
+
+<script type="module" src="adminshop.js"></script>
 </body>
 </html>
