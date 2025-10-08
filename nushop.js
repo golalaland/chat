@@ -1,6 +1,3 @@
-// ============================
-// 🔥 FIREBASE IMPORTS
-// ============================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -11,19 +8,10 @@ import {
   getDocs,
   runTransaction,
   serverTimestamp,
-  updateDoc,
-  query,
-  orderBy
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// ============================
-// ⚙️ FIREBASE CONFIG
-// ============================
+/* ------------------ Firebase ------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -34,15 +22,15 @@ const firebaseConfig = {
   measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
-
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
 
-// ============================
-// 🌸 SPINNER HELPERS
-// ============================
+/* ---------------- Spinner Helpers (Code 1 style) ----------------
+   Uses the .shop-spinner element already present in your HTML.
+   Toggling the 'active' class will smoothly fade spinner in/out
+   because your CSS (.shop-spinner/.shop-spinner.active) controls
+   visibility & opacity transitions.
+------------------------------------------------------------------*/
 function showSpinner() {
   const spinner = document.querySelector('.shop-spinner') || document.getElementById('shopSpinner');
   if (spinner) spinner.classList.add('active');
@@ -53,9 +41,7 @@ function hideSpinner() {
   if (spinner) spinner.classList.remove('active');
 }
 
-// ============================
-// 🎯 DOM REFERENCES
-// ============================
+/* ------------------ DOM references ------------------ */
 const DOM = {
   username: document.getElementById('username'),
   stars: document.getElementById('stars-count'),
@@ -77,12 +63,7 @@ const DOM = {
   previewImg: document.getElementById('previewImg'),
   rewardModal: document.getElementById('rewardModal'),
   rewardTitle: document.getElementById('rewardTitle'),
-  rewardMessage: document.getElementById('rewardMessage'),
-  modal: document.getElementById('productModal'), // ✅ product description modal
-  modalTitle: document.getElementById('productModalTitle'),
-  modalDesc: document.getElementById('productModalDesc'),
-  closeModal: document.getElementById('closeProductModal'),
-  darkToggle: document.getElementById('darkToggle') // ✅ dark mode toggle
+  rewardMessage: document.getElementById('rewardMessage')
 };
 
 /* ------------------ Utilities ------------------ */
@@ -563,78 +544,37 @@ const redeemProduct = async (product) => {
 };
 
 /* ------------------ Render shop ------------------ */
-// ============================================================
-// 🛍️ LOAD PRODUCTS FROM FIRESTORE (FIXED FOR shop-items ID)
-// ============================================================
-async function renderShop() {
+const renderShop = async () => {
+  if (!DOM.shopItems) return;
+  showSpinner();
+  DOM.shopItems.innerHTML = '';
+
   try {
-    showSpinner();
-
-    const q = query(collection(db, "shopItems"), orderBy("id"));
-    const querySnapshot = await getDocs(q);
-
-    const shopContainer = document.getElementById("shop-items"); // ✅ Correct container ID
-    shopContainer.innerHTML = "";
-
-    const productDescriptions = {}; // 🔹 Store descriptions for modal
-
-    if (querySnapshot.empty) {
-      shopContainer.innerHTML = `<p class="empty-text">No products found 😢</p>`;
-      hideSpinner();
+    const shopSnap = await getDocs(collection(db, 'shopItems'));
+    if (shopSnap.empty) {
+      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items found</div>';
       return;
     }
 
-    querySnapshot.forEach((doc) => {
-      const item = doc.data();
-
-      // 🔹 Save Firestore description
-      productDescriptions[item.name] = item.description || "No description yet 🌸";
-
-      // 🔹 Build product card
-      const card = document.createElement("div");
-      card.className = "product-card";
-      card.innerHTML = `
-        <img src="${item.img}" alt="${item.name}" />
-        <h3 class="product-title">${item.name}</h3>
-        <p class="price">${item.cost} ⭐</p>
-        <button class="redeem-btn" data-id="${doc.id}" data-cost="${item.cost}">
-          Redeem
-        </button>
-      `;
-      shopContainer.appendChild(card);
+    let delay = 0;
+    DOM.shopItems.innerHTML = ''; // clear
+    shopSnap.forEach(docSnap => {
+      const product = docSnap.data();
+      product.id = docSnap.id;
+      const card = createProductCard(product);
+      card.style.opacity = '0';
+      card.style.animation = `fadeInUp 0.35s forwards`;
+      card.style.animationDelay = `${delay}s`;
+      delay += 0.05;
+      DOM.shopItems.appendChild(card);
     });
-
-    // ============================================================
-    // 🧾 DESCRIPTION MODAL LOGIC (MATCHES YOUR HTML EXACTLY)
-    // ============================================================
-    const modal = document.getElementById("productModal");
-    const modalTitle = document.getElementById("productModalTitle");
-    const modalDesc = document.getElementById("productModalDesc");
-    const modalClose = document.getElementById("closeProductModal");
-
-    document.body.addEventListener("click", (e) => {
-      // 🔹 Open when product title is clicked
-      if (e.target.classList.contains("product-title")) {
-        const title = e.target.textContent.trim();
-        modalTitle.textContent = title;
-        modalDesc.textContent = productDescriptions[title] || "No description yet 🌸";
-        modal.classList.remove("hidden");
-      }
-
-      // 🔹 Close modal
-      if (e.target === modal || e.target === modalClose) {
-        modal.classList.add("hidden");
-      }
-    });
-
-  } catch (err) {
-    console.error("Error loading shop:", err);
-    const shopContainer = document.getElementById("shop-items");
-    if (shopContainer) shopContainer.innerHTML = `<p class="error-text">Error loading shop ⚠️</p>`;
+  } catch (e) {
+    console.error(e);
+    DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
   } finally {
     hideSpinner();
   }
-}
+};
 /* -------------------------------
    🌗 Theme Toggle Script
 --------------------------------- */
