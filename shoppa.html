@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>乂丨乂丨Redeem</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-/* ---------- THEME VARIABLES ---------- */
+<meta charset="UTF-8">
+<title>乂丨乂丨Redeem</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
 :root {
   --theme-gradient: linear-gradient(135deg, #ff6a00, #ee0979, #9d00ff);
-  --theme-solid: #ee0979; 
+  --theme-solid: #ee0979;
 }
-
-/* ---------- GLOBAL ---------- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: Arial, sans-serif;
@@ -19,8 +16,6 @@ body {
   color: #111;
   -webkit-font-smoothing: antialiased;
 }
-
-/* ---------- HEADER ---------- */
 header {
   background: #fff;
   padding: 1rem;
@@ -30,8 +25,6 @@ header {
   color: #111;
   border-bottom: 2px solid #ddd;
 }
-
-/* ---------- PROFILE CARD ---------- */
 #user-info {
   display: flex;
   justify-content: center;
@@ -50,178 +43,27 @@ header {
   font-size: 1.2rem;
   margin-bottom: 0.8rem;
 }
-.balances {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
+.balances { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
 .balance-item { text-align: center; }
-.balance-label {
-  font-size: 0.85rem;
-  color: #555;
-  margin-bottom: 0.2rem;
-}
-.balance-value {
-  font-size: 1rem;
-  font-weight: bold;
-  color: var(--theme-solid);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ---------- HOST TABS ---------- */
-.host-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 1rem auto 0;
-  background: #fff;
-  padding: 8px;
-  border-radius: 12px;
-  width: fit-content;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-.tab-btn {
-  background: transparent;
-  border: none;
-  color: #888;
-  font-weight: bold;
-  font-size: 0.9rem;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.tab-btn:hover { color: var(--theme-solid); }
-.tab-btn.active {
-  background: var(--theme-gradient);
-  color: #fff;
-}
-
-/* ---------- DYNAMIC PANEL ---------- */
-.tab-content {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1rem;
-  margin: 1rem auto;
-  width: 260px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  text-align: center;
-}
-.stat-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--theme-solid);
-}
-.stat-label {
-  font-size: 0.85rem;
-  color: #555;
-}
-.copy-btn:hover {
-  filter: brightness(1.1);
-}
-
-/* ---------- SHOP GRID ---------- */
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-  margin-top: 0.5rem;
-}
-
-/* ---------- PRICE DISPLAY TOGGLE ---------- */
-.price-toggle {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  background: #fff;
-  padding: 0.6rem 1rem;
-  margin: 1rem auto;
-  border-radius: 12px;
-  width: fit-content;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-.price-toggle label {
-  font-size: 0.85rem;
-  font-weight: bold;
-  color: #555;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.price-toggle input[type="radio"] {
-  accent-color: #ee0979;
-  cursor: pointer;
-}
-
-/* ---------- PRODUCT CARD ---------- */
-.product-card {
-  position: relative;
-  background: #fff;
-  border-radius: 12px;
-  text-align: center;
-  padding: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
-  min-height: 230px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
+.balance-label { font-size: 0.85rem; color: #555; margin-bottom: 0.2rem; }
+.balance-value { font-size: 1rem; font-weight: bold; color: var(--theme-solid); display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; padding: 1rem; margin-top: 0.5rem; }
+.product-card { background: #fff; border-radius: 12px; text-align: center; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s; min-height: 230px; display: flex; flex-direction: column; justify-content: space-between; }
 .product-card:hover { transform: translateY(-5px); }
-.product-card img {
-  width: 100%;
-  max-height: 120px;
-  object-fit: cover;
-  border-radius: 10px;
-  cursor: pointer;
-  display:block;
-}
-.product-card h3 {
-  margin: 0.7rem 0 0.3rem;
-  font-size: 1rem;
-  color: #111;
-}
-.product-card .price {
-  font-size: 0.95rem;
-  margin-bottom: 0.6rem;
-  font-weight: bold;
-  color: var(--theme-solid);
-}
-.product-card .price .muted {
-  color: #666;
-  font-size: 0.8rem;
-  font-weight: normal;
-}
-.buy-btn {
-  background: var(--theme-gradient);
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: filter 0.2s;
-  width: 100%;
-}
+.product-card img { width: 100%; max-height: 120px; object-fit: cover; border-radius: 10px; cursor: pointer; display:block; }
+.product-card h3 { margin: 0.7rem 0 0.3rem; font-size: 1rem; color: #111; }
+.product-card .price { font-size: 0.95rem; margin-bottom: 0.6rem; font-weight: bold; color: var(--theme-solid); }
+.product-card .price .muted { color: #666; font-size: 0.8rem; font-weight: normal; }
+.buy-btn { background: var(--theme-gradient); color: #fff; border: none; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; cursor: pointer; transition: filter 0.2s; width: 100%; }
 .buy-btn:hover { filter: brightness(1.1); }
-.buy-btn[disabled] {
-  background: #ccc;
-  color: #888;
-  cursor: not-allowed;
-}
-  </style>
+#home-btn { background: var(--theme-gradient); color: #fff; border: none; padding: 0.7rem 2rem; font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; display: block; margin: 2rem auto 1rem; transition: filter 0.2s; }
+#home-btn:hover { filter: brightness(1.1); }
+
+/* SIMPLE TOGGLE */
+#priceToggleContainer { text-align: center; margin-bottom: 1rem; }
+#priceToggleContainer button { background: var(--theme-gradient); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: filter 0.2s; }
+#priceToggleContainer button:hover { filter: brightness(1.1); }
+</style>
 </head>
 <body>
 
@@ -243,38 +85,21 @@ header {
   </div>
 </div>
 
-<!-- PRICE TOGGLE -->
-<div class="price-toggle">
-  <label>
-    <input type="radio" name="priceDisplay" value="stars" checked>
-    ⭐ Stars
-  </label>
-  <label>
-    <input type="radio" name="priceDisplay" value="both">
-    ⭐ + ₦ + $
-  </label>
-  <label>
-    <input type="radio" name="priceDisplay" value="cash">
-    💵 Cash Only
-  </label>
-</div>
-
 <!-- SHOP GRID -->
 <div class="shop-grid" id="shop-items"></div>
 
+<!-- SIMPLE TOGGLE -->
+<div id="priceToggleContainer">
+  <button id="priceToggleBtn">Show $</button>
+</div>
+
+<!-- HOME BUTTON -->
+<button id="home-btn" onclick="location.href='index.html'">Take Me Home</button>
+
 <script>
+// Conversion rates
 const NAIRA_PER_STAR = 5;
 const NAIRA_PER_DOLLAR = 1200;
-
-function formatPrice(stars) {
-  const naira = stars * NAIRA_PER_STAR;
-  const dollars = naira / NAIRA_PER_DOLLAR;
-  return {
-    stars: `⭐ ${stars.toLocaleString()}`,
-    naira: `₦${naira.toLocaleString()}`,
-    dollars: `$${dollars.toFixed(2)}`
-  };
-}
 
 // Sample products
 const products = [
@@ -283,38 +108,38 @@ const products = [
   { id: '3', title: 'AirPods Pro', stars: 80000, image: 'https://via.placeholder.com/160' }
 ];
 
-let priceDisplayMode = 'stars';
+let showCash = false;
 const shopContainer = document.getElementById('shop-items');
+const toggleBtn = document.getElementById('priceToggleBtn');
+
+function formatPrice(stars) {
+  const naira = stars * NAIRA_PER_STAR;
+  const dollars = naira / NAIRA_PER_DOLLAR;
+  return { stars, naira, dollars };
+}
 
 function renderProducts() {
-  shopContainer.innerHTML = products.map(product => {
-    const p = formatPrice(product.stars);
-    let priceHTML = '';
-    if (priceDisplayMode === 'stars') {
-      priceHTML = `<div class="price">${p.stars}</div>`;
-    } else if (priceDisplayMode === 'both') {
-      priceHTML = `<div class="price">${p.stars} <span class="muted">| ${p.naira} | ${p.dollars}</span></div>`;
-    } else if (priceDisplayMode === 'cash') {
-      priceHTML = `<div class="price">${p.naira} <span class="muted">(${p.dollars})</span></div>`;
-    }
-
+  shopContainer.innerHTML = products.map(p => {
+    const prices = formatPrice(p.stars);
+    const priceHTML = showCash 
+      ? `₦${prices.naira.toLocaleString()} (${'$' + prices.dollars.toFixed(2)})` 
+      : `⭐ ${prices.stars.toLocaleString()}`;
     return `
       <div class="product-card">
-        <img src="${product.image}" alt="${product.title}">
-        <h3>${product.title}</h3>
-        ${priceHTML}
-        <button class="buy-btn" data-id="${product.id}">Redeem</button>
+        <img src="${p.image}" alt="${p.title}">
+        <h3>${p.title}</h3>
+        <div class="price">${priceHTML}</div>
+        <button class="buy-btn" data-id="${p.id}">Redeem</button>
       </div>
     `;
   }).join('');
 }
 
-// Toggle listener
-document.querySelectorAll('input[name="priceDisplay"]').forEach(input => {
-  input.addEventListener('change', e => {
-    priceDisplayMode = e.target.value;
-    renderProducts();
-  });
+// Toggle button
+toggleBtn.addEventListener('click', () => {
+  showCash = !showCash;
+  toggleBtn.textContent = showCash ? 'Show ⭐️' : 'Show $';
+  renderProducts();
 });
 
 // Initial render
