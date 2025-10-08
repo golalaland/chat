@@ -148,44 +148,68 @@ function renderUsers(users){
     actionsTd.appendChild(actionsDiv);
 
     // ---------- Enter ----------
-    enterBtn.addEventListener("click", async ()=>{
-      const confirmed=await showConfirmModal("Update user", `Apply changes for ${u.email||"(no email)"}?`);
-      if(!confirmed) return;
-      showLoader("Updating user...");
-      try{
-        const stars=Number(tr.children[3].querySelector("input").value||0);
-        const cash=Number(tr.children[4].querySelector("input").value||0);
-        const updates={ stars, cash, isVIP: !!isVIP.checked, isAdmin: !!isAdminToggle.checked, isHost: !!isHost.checked, subscriptionActive: !!subscriptionActive.checked };
-        if(updates.subscriptionActive){ updates.subscriptionStartTime=Date.now(); updates.subscriptionCount=(u.subscriptionCount||0)+1; }
-        await updateDoc(doc(db,"users",u.email.toLowerCase()), updates);
-        const wlRef=doc(db,"whitelist",u.email.toLowerCase());
-        if(updates.subscriptionActive){
-          await setDoc(wlRef,{ email:u.email.toLowerCase(), phone:u.phone||"", chatId:u.chatId||"", subscriptionActive:true, subscriptionStartTime:updates.subscriptionStartTime },{merge:true});
-        }else{ await updateDoc(wlRef,{subscriptionActive:false}).catch(()=>{}); }
-        hideLoader();
-        await loadUsers(); await loadWhitelist();
-        alert("User updated successfully.");
-      }catch(err){ hideLoader(); console.error("Enter update error:",err); alert("Failed to update user. See console."); }
-    });
+   // ---------- Enter button (update user) ----------
+enterBtn.addEventListener("click", async () => {
+  const confirmed = await showConfirmModal("Update user", `Apply changes for ${u.email || "(no email)"}?`);
+  if (!confirmed) return;
 
-    // ---------- Remove ----------
-    removeBtn.addEventListener("click", async ()=>{
-      const confirmed=await showConfirmModal("Remove user", `Delete ${u.email||"(no email)"} from database?`);
-      if(!confirmed) return;
-      showLoader("Removing user...");
-      try{
-        await deleteDoc(doc(db,"users",u.email.toLowerCase())).catch(()=>{});
-        if(u.email){ await deleteDoc(doc(db,"whitelist",u.email.toLowerCase())).catch(()=>{}); }
-        hideLoader();
-        await loadUsers(); await loadWhitelist();
-        alert(`${u.email||"(no email)"} removed successfully.`);
-      }catch(err){ hideLoader(); console.error("Remove user error:",err); alert("Failed to remove user. See console."); }
-    });
+  showLoader("Updating user...");
+  try {
+    const stars = Number(tr.children[3].querySelector("input").value || 0);
+    const cash = Number(tr.children[4].querySelector("input").value || 0);
 
-    usersTableBody.appendChild(tr);
-  });
-}
+    // Always use email as doc ID to avoid duplicates
+    const userRef = doc(db, "users", u.email.toLowerCase());
 
+    // Fetch latest user data
+    const snap = await getDocs(query(collection(db, "users"), where("email", "==", u.email.toLowerCase())));
+    const existing = snap.empty ? null : snap.docs[0];
+
+    const updates = {
+      stars,
+      cash,
+      isVIP: !!isVIP.checked,
+      isAdmin: !!isAdminToggle.checked,
+      isHost: !!isHost.checked,
+      subscriptionActive: !!subscriptionActive.checked
+    };
+
+    if (updates.subscriptionActive) {
+      updates.subscriptionStartTime = Date.now();
+      updates.subscriptionCount = (existing?.data()?.subscriptionCount || 0) + 1;
+    }
+
+    if (existing) {
+      await updateDoc(existing.ref, updates);
+    } else {
+      // fallback if somehow missing, still safe
+      await setDoc(userRef, { email: u.email, phone: u.phone || "", chatId: u.chatId || "", ...updates });
+    }
+
+    // Sync whitelist
+    const wlRef = doc(db, "whitelist", u.email.toLowerCase());
+    if (updates.subscriptionActive) {
+      await setDoc(wlRef, {
+        email: u.email.toLowerCase(),
+        phone: u.phone || "",
+        chatId: u.chatId || "",
+        subscriptionActive: true,
+        subscriptionStartTime: updates.subscriptionStartTime
+      }, { merge: true });
+    } else {
+      await updateDoc(wlRef, { subscriptionActive: false }).catch(() => { });
+    }
+
+    hideLoader();
+    await loadUsers();
+    await loadWhitelist();
+    alert("User updated successfully.");
+  } catch (err) {
+    hideLoader();
+    console.error("Enter update error:", err);
+    alert("Failed to update user. See console.");
+  }
+});
 // ---------- Search ----------
 userSearch.addEventListener("input", ()=>{
   const q=(userSearch.value||"").toLowerCase();
