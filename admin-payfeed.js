@@ -1,8 +1,8 @@
 // admin-payfeed.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc,
-  onSnapshot, query, where, getDocs, deleteDoc
+  getFirestore, collection, doc, getDoc, getDocs, setDoc,
+  updateDoc, deleteDoc, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- Firebase config ---------- */
@@ -18,247 +18,440 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------- State ---------- */
-let currentAdmin = null;
-let cleanupActive = false;
-let usersList = [];
-let whitelistList = [];
-
-/* ---------- DOM ---------- */
+/* ---------- DOM refs ---------- */
 const adminGate = document.getElementById("adminGate");
-const adminCheckBtn = document.getElementById("adminCheckBtn");
-const adminEmailInput = document.getElementById("adminEmail");
-const adminGateMsg = document.getElementById("adminGateMsg");
 const adminPanel = document.getElementById("adminPanel");
+const adminEmailInput = document.getElementById("adminEmail");
+const adminCheckBtn = document.getElementById("adminCheckBtn");
+const adminGateMsg = document.getElementById("adminGateMsg");
 const currentAdminEmail = document.getElementById("currentAdminEmail");
-const usersTableBody = document.querySelector("#usersTable tbody");
-const whitelistTableBody = document.querySelector("#whitelistTable tbody");
-const addWhitelistBtn = document.getElementById("addWhitelistBtn");
-const wlEmailInput = document.getElementById("wlEmail");
-const wlPhoneInput = document.getElementById("wlPhone");
-const csvFileInput = document.getElementById("csvFile");
-const massInjectBtn = document.getElementById("massInjectBtn");
-const cleanupToggleBtn = document.getElementById("cleanupToggle");
-const exportCsvBtn = document.getElementById("exportCsv");
 const logoutBtn = document.getElementById("logoutBtn");
 
-/* ---------- Modal ---------- */
+const usersTableBody = document.querySelector("#usersTable tbody");
+const whitelistTableBody = document.querySelector("#whitelistTable tbody");
+
+const userSearchInput = document.getElementById("userSearch");
+const exportCsvBtn = document.getElementById("exportCsv");
+
+const wlInput = document.getElementById("wlInput");
+const injectWhitelistBtn = document.getElementById("injectWhitelistBtn");
+const wlCsvFile = document.getElementById("wlCsvFile");
+const cleanupLadyCheckbox = document.getElementById("cleanupLady");
+
+/* Modal & loader elements (modal exists in HTML) */
 const modalBg = document.getElementById("modalBg");
 const modalTitle = document.getElementById("modalTitle");
 const modalInput = document.getElementById("modalInput");
 const modalConfirm = document.getElementById("modalConfirm");
 const modalCancel = document.getElementById("modalCancel");
 
-function showModal(title, defaultValue) {
-  modalTitle.innerText = title;
-  modalInput.value = defaultValue || "";
-  modalBg.classList.remove("hidden");
+/* ---------- State ---------- */
+let currentAdmin = null;
+let usersCache = [];     // array of { id, ...data }
+let whitelistCache = []; // array of { id, ...data }
+
+/* ---------- Utilities ---------- */
+function sanitizeKey(key = "") { return key.replace(/[.#$[\]]/g, ','); }
+function showModal(title = "", defaultValue = "") {
   return new Promise(resolve => {
-    modalConfirm.onclick = () => { modalBg.classList.add("hidden"); resolve(modalInput.value); };
-    modalCancel.onclick = () => { modalBg.classList.add("hidden"); resolve(null); };
+    modalTitle.innerText = title;
+    modalInput.value = defaultValue ?? "";
+    modalBg.classList.remove("hidden");
+    function cleanup() {
+      modalBg.classList.add("hidden");
+      modalConfirm.onclick = null;
+      modalCancel.onclick = null;
+    }
+    modalCancel.onclick = () => { cleanup(); resolve(null); };
+    modalConfirm.onclick = () => { cleanup(); resolve(modalInput.value); };
   });
+}
+function showLoaderText(el, text = "Processing...") {
+  // small ephemeral loader in button used where needed
+  const prev = el.dataset.prevText;
+  if (!prev) el.dataset.prevText = el.innerText;
+  el.disabled = true;
+  el.innerText = text;
+}
+function hideLoaderText(el) {
+  if (el.dataset.prevText) el.innerText = el.dataset.prevText;
+  el.disabled = false;
+  delete el.dataset.prevText;
+}
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 /* ---------- Admin login ---------- */
 adminCheckBtn.addEventListener("click", async () => {
-  const email = adminEmailInput.value.trim().toLowerCase();
-  if (!email) return adminGateMsg.innerText = "Enter an email";
+  const email = (adminEmailInput.value || "").trim().toLowerCase();
+  if (!email) { adminGateMsg.innerText = "Enter admin email"; return; }
 
-  const q = query(collection(db, "users"), where("email", "==", email));
-  const snap = await getDocs(q);
-  if (snap.empty || !snap.docs[0].data().isAdmin) {
-    adminGateMsg.innerText = "Not an admin";
-    return;
+  try {
+    const q = query(collection(db, "users"), where("email", "==", email), where("isAdmin", "==", true));
+    const snap = await getDocs(q);
+    if (snap.empty) { adminGateMsg.innerText = "Admin not found or not isAdmin"; return; }
+    currentAdmin = { email };
+    adminGate.style.display = "none";
+    adminPanel.classList.remove("hidden");
+    currentAdminEmail.innerText = email;
+    adminGateMsg.innerText = "";
+    await loadAllUsers();
+    await loadWhitelist();
+  } catch (err) {
+    console.error(err);
+    adminGateMsg.innerText = "Error checking admin";
   }
-
-  currentAdmin = snap.docs[0].data();
-  adminPanel.classList.remove("hidden");
-  adminGate.classList.add("hidden");
-  currentAdminEmail.innerText = currentAdmin.email;
-  loadUsers();
-  loadWhitelist();
 });
 
 /* ---------- Logout ---------- */
-logoutBtn.addEventListener("click", () => {
-  adminPanel.classList.add("hidden");
-  adminGate.classList.remove("hidden");
+logoutBtn?.addEventListener("click", () => {
   currentAdmin = null;
+  adminPanel.classList.add("hidden");
+  adminGate.style.display = "block";
+  adminEmailInput.value = "";
 });
 
-/* ---------- Load Users ---------- */
-async function loadUsers() {
-  const usersSnap = await getDocs(collection(db, "users"));
-  usersList = [];
+/* ---------- Load & Render Users ---------- */
+async function loadAllUsers() {
   usersTableBody.innerHTML = "";
-  usersSnap.forEach(docSnap => {
-    const u = docSnap.data();
-    u.id = docSnap.id;
-    usersList.push(u);
-    renderUserRow(u);
+  usersCache = [];
+  const snap = await getDocs(collection(db, "users"));
+  snap.forEach(d => {
+    const data = d.data();
+    data.id = d.id;
+    usersCache.push(data);
   });
+  // sort by email
+  usersCache.sort((a,b) => (a.email||"").localeCompare(b.email||""));
+  renderUsers(usersCache);
 }
 
-function renderUserRow(u) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${u.email}</td>
-    <td>${u.chatId || ""}</td>
-    <td>${u.stars || 0}</td>
-    <td>${u.cash || 0}</td>
-    <td><input type="checkbox" ${u.isVIP?"checked":""} class="vipToggle"/></td>
-    <td><input type="checkbox" ${u.isHost?"checked":""} class="hostToggle"/></td>
-    <td><input type="checkbox" ${u.subscriptionActive?"checked":""} class="subToggle"/></td>
-    <td>${u.subscriptionCount||0}</td>
-    <td class="actions">
-      <button class="btn btn-primary addStarsBtn">Stars</button>
-      <button class="btn btn-primary addCashBtn">Cash</button>
-      <button class="btn btn-danger deleteUserBtn">Remove</button>
-    </td>
-  `;
-  usersTableBody.appendChild(tr);
+function renderUsers(list) {
+  usersTableBody.innerHTML = "";
+  list.forEach(u => {
+    const tr = document.createElement("tr");
+    tr.dataset.userid = u.id;
+    tr.dataset.email = u.email || "";
+    tr.dataset.chatid = u.chatId || "";
 
-  const vipToggle = tr.querySelector(".vipToggle");
-  vipToggle.addEventListener("change", async () => updateDoc(doc(db,"users",u.id), {isVIP:vipToggle.checked}));
+    // create editable cells
+    const emailTd = document.createElement("td"); emailTd.innerText = u.email || ""; tr.appendChild(emailTd);
+    const chatTd = document.createElement("td"); chatTd.innerText = u.chatId || ""; tr.appendChild(chatTd);
 
-  const hostToggle = tr.querySelector(".hostToggle");
-  hostToggle.addEventListener("change", async () => updateDoc(doc(db,"users",u.id), {isHost:hostToggle.checked}));
+    // stars input
+    const starsInput = document.createElement("input"); starsInput.type = "number"; starsInput.value = u.stars ?? 0; starsInput.min = 0; starsInput.style.width = "80px";
+    const starsTd = document.createElement("td"); starsTd.appendChild(starsInput); tr.appendChild(starsTd);
 
-  const subToggle = tr.querySelector(".subToggle");
-  subToggle.addEventListener("change", async () => updateDoc(doc(db,"users",u.id), {subscriptionActive:subToggle.checked}));
+    // cash input
+    const cashInput = document.createElement("input"); cashInput.type = "number"; cashInput.value = u.cash ?? 0; cashInput.min = 0; cashInput.style.width = "80px";
+    const cashTd = document.createElement("td"); cashTd.appendChild(cashInput); tr.appendChild(cashTd);
 
-  tr.querySelector(".addStarsBtn").addEventListener("click", async () => {
-    const val = await showModal(`Add Stars to ${u.email}`, u.stars||0);
-    if (val!=null) await updateDoc(doc(db,"users",u.id), {stars:Number(val)});
-    loadUsers();
-  });
-  tr.querySelector(".addCashBtn").addEventListener("click", async () => {
-    const val = await showModal(`Add Cash to ${u.email}`, u.cash||0);
-    if (val!=null) await updateDoc(doc(db,"users",u.id), {cash:Number(val)});
-    loadUsers();
-  });
-  tr.querySelector(".deleteUserBtn").addEventListener("click", async () => {
-    if (confirm(`Remove user ${u.email}?`)) await deleteDoc(doc(db,"users",u.id));
-    loadUsers();
-  });
-}
+    // subscriptionActive toggle
+    const subToggle = document.createElement("input"); subToggle.type = "checkbox"; subToggle.checked = !!u.subscriptionActive;
+    const subTd = document.createElement("td"); subTd.appendChild(subToggle); tr.appendChild(subTd);
 
-/* ---------- Whitelist ---------- */
-async function loadWhitelist() {
-  const snap = await getDocs(collection(db,"whitelist"));
-  whitelistList = [];
-  whitelistTableBody.innerHTML = "";
-  snap.forEach(docSnap=>{
-    const w = docSnap.data(); w.id = docSnap.id;
-    whitelistList.push(w);
-    renderWhitelistRow(w);
-  });
-}
+    // isVIP toggle
+    const vipToggle = document.createElement("input"); vipToggle.type = "checkbox"; vipToggle.checked = !!u.isVIP;
+    const vipTd = document.createElement("td"); vipTd.appendChild(vipToggle); tr.appendChild(vipTd);
 
-function renderWhitelistRow(w){
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${w.email}</td>
-    <td>${w.phone}</td>
-    <td>${w.subscriptionActive?"Yes":"No"}</td>
-    <td><button class="btn btn-danger removeWlBtn">Remove</button></td>
-  `;
-  whitelistTableBody.appendChild(tr);
-  tr.querySelector(".removeWlBtn").addEventListener("click", async ()=>{
-    await deleteDoc(doc(db,"whitelist",w.id));
-    // toggle subscriptionActive off for user
-    const usersSnap = await getDocs(query(collection(db,"users"), where("email","==",w.email)));
-    usersSnap.forEach(async udoc=>{await updateDoc(doc(db,"users",udoc.id),{subscriptionActive:false});});
-    loadWhitelist();
-    loadUsers();
-  });
-}
+    // isAdmin toggle
+    const adminToggle = document.createElement("input"); adminToggle.type = "checkbox"; adminToggle.checked = !!u.isAdmin;
+    const adminTd = document.createElement("td"); adminTd.appendChild(adminToggle); tr.appendChild(adminTd);
 
-/* ---------- Manual Add Whitelist ---------- */
-addWhitelistBtn.addEventListener("click", async ()=>{
-  const email = wlEmailInput.value.trim().toLowerCase();
-  const phone = wlPhoneInput.value.trim();
-  if (!email || !phone) return alert("Provide email and phone");
+    // isHost toggle
+    const hostToggle = document.createElement("input"); hostToggle.type = "checkbox"; hostToggle.checked = !!u.isHost;
+    const hostTd = document.createElement("td"); hostTd.appendChild(hostToggle); tr.appendChild(hostTd);
 
-  // Add to whitelist collection
-  const wlDocRef = doc(db,"whitelist",email);
-  await setDoc(wlDocRef, {email,phone,subscriptionActive:true});
+    // Apply button
+    const actionTd = document.createElement("td");
+    const applyBtn = document.createElement("button"); applyBtn.className = "btn btn-primary small"; applyBtn.innerText = "Apply";
+    actionTd.appendChild(applyBtn);
+    tr.appendChild(actionTd);
 
-  // Add/update user
-  const q = query(collection(db,"users"), where("email","==",email));
-  const snap = await getDocs(q);
-  if (snap.empty){
-    await setDoc(doc(db,"users",email), {email,phone,stars:0,cash:0,isVIP:false,isHost:false,subscriptionActive:true,subscriptionCount:1});
-  } else {
-    snap.forEach(async u=>{await updateDoc(doc(db,"users",u.id), {subscriptionActive:true, subscriptionCount:(u.data().subscriptionCount||0)+1});});
-  }
+    usersTableBody.appendChild(tr);
 
-  loadWhitelist();
-  loadUsers();
-});
+    // Apply handler: collect current inputs -> confirm -> write to Firestore with loader
+    applyBtn.addEventListener("click", async () => {
+      const updated = {
+        stars: Number(starsInput.value) || 0,
+        cash: Number(cashInput.value) || 0,
+        subscriptionActive: !!subToggle.checked,
+        isVIP: !!vipToggle.checked,
+        isAdmin: !!adminToggle.checked,
+        isHost: !!hostToggle.checked
+      };
 
-/* ---------- Mass CSV Injection ---------- */
-massInjectBtn.addEventListener("click", async ()=>{
-  const file = csvFileInput.files[0];
-  if (!file) return alert("Select CSV");
-  const text = await file.text();
-  const rows = text.split(/\r?\n/).map(r=>r.split(",")).filter(r=>r[0]);
-  const emailsPhones = rows.map(r=>({email:r[0].trim().toLowerCase(), phone:r[1]?.trim()||""}));
+      const summary = `Apply changes to ${u.email}?\n\n` +
+        `Stars: ${updated.stars}\nCash: ${updated.cash}\n` +
+        `Subscription: ${updated.subscriptionActive}\nisVIP: ${updated.isVIP}\nisAdmin: ${updated.isAdmin}\nisHost: ${updated.isHost}`;
 
-  for(const entry of emailsPhones){
-    const wlDocRef = doc(db,"whitelist",entry.email);
-    await setDoc(wlDocRef, {email:entry.email,phone:entry.phone,subscriptionActive:true});
+      const confirmVal = await showModal(`Confirm update for ${u.email}`, summary);
+      if (confirmVal === null) return; // cancelled
 
-    const q = query(collection(db,"users"), where("email","==",entry.email));
-    const snap = await getDocs(q);
-    if(snap.empty){
-      await setDoc(doc(db,"users",entry.email), {email:entry.email,phone:entry.phone,stars:0,cash:0,isVIP:false,isHost:false,subscriptionActive:true,subscriptionCount:1});
-    } else {
-      snap.forEach(async u=>{await updateDoc(doc(db,"users",u.id), {subscriptionActive:true, subscriptionCount:(u.data().subscriptionCount||0)+1});});
-    }
-  }
+      // show loader on button
+      showLoaderText(applyBtn, "Applying...");
+      try {
+        // update users doc
+        await updateDoc(doc(db, "users", u.id), updated);
 
-  // Cleanup Lady
-  if(cleanupActive){
-    const whitelistEmails = emailsPhones.map(e=>e.email);
-    const snap = await getDocs(collection(db,"whitelist"));
-    snap.forEach(async wdoc=>{
-      if(!whitelistEmails.includes(wdoc.id)){
-        await deleteDoc(doc(db,"whitelist",wdoc.id));
-        const uSnap = await getDocs(query(collection(db,"users"), where("email","==",wdoc.id)));
-        uSnap.forEach(async u=>{await updateDoc(doc(db,"users",u.id), {subscriptionActive:false});});
+        // Sync whitelist based on subscriptionActive
+        const wlId = sanitizeKey(u.email || "");
+        if (updated.subscriptionActive) {
+          // upsert whitelist doc
+          await setDoc(doc(db, "whitelist", wlId), { email: u.email, phone: u.phone || "", subscriptionActive: true }, { merge: true });
+        } else {
+          // mark whitelist entry as inactive (don't fully delete users)
+          const wlRef = doc(db, "whitelist", wlId);
+          const wlSnap = await getDoc(wlRef);
+          if (wlSnap.exists()) {
+            await updateDoc(wlRef, { subscriptionActive: false });
+          }
+        }
+
+        // reload to reflect subscriptionCount etc.
+        await loadAllUsers();
+        await loadWhitelist();
+        alert("Update applied ✅");
+      } catch (err) {
+        console.error(err);
+        alert("Update failed — check console");
+      } finally {
+        hideLoaderText(applyBtn);
       }
     });
+  });
+}
+
+/* ---------- Search / Filter ---------- */
+userSearchInput.addEventListener("input", (e) => {
+  const q = (e.target.value || "").trim().toLowerCase();
+  document.querySelectorAll("#usersTable tbody tr").forEach(row => {
+    const email = (row.dataset.email || "").toLowerCase();
+    const chatId = (row.dataset.chatid || "").toLowerCase();
+    row.style.display = (email.includes(q) || chatId.includes(q)) ? "" : "none";
+  });
+});
+
+/* ---------- Load & Render Whitelist ---------- */
+async function loadWhitelist() {
+  whitelistTableBody.innerHTML = "";
+  whitelistCache = [];
+  const snap = await getDocs(collection(db, "whitelist"));
+  snap.forEach(d => {
+    const data = d.data(); data.id = d.id;
+    whitelistCache.push(data);
+
+    const tr = document.createElement("tr");
+    const emailTd = document.createElement("td"); emailTd.innerText = data.email || ""; tr.appendChild(emailTd);
+    const phoneTd = document.createElement("td"); phoneTd.innerText = data.phone || ""; tr.appendChild(phoneTd);
+    const subTd = document.createElement("td"); subTd.innerText = data.subscriptionActive ? "YES" : "NO"; tr.appendChild(subTd);
+
+    const actionTd = document.createElement("td");
+    const removeBtn = document.createElement("button"); removeBtn.className = "btn btn-danger small"; removeBtn.innerText = "Remove";
+    actionTd.appendChild(removeBtn);
+    tr.appendChild(actionTd);
+
+    whitelistTableBody.appendChild(tr);
+
+    removeBtn.addEventListener("click", async () => {
+      if (!confirm(`Remove ${data.email} from whitelist?`)) return;
+      try {
+        // set subscriptionActive false in whitelist and toggle user subscriptionActive false
+        await updateDoc(doc(db, "whitelist", data.id), { subscriptionActive: false });
+        const uSnap = await getDocs(query(collection(db, "users"), where("email", "==", data.email)));
+        uSnap.forEach(async ud => {
+          await updateDoc(doc(db, "users", ud.id), { subscriptionActive: false });
+        });
+        await loadWhitelist();
+        await loadAllUsers();
+      } catch (err) {
+        console.error(err);
+        alert("Failed to remove from whitelist");
+      }
+    });
+  });
+}
+
+/* ---------- Whitelist injection (manual multi-line or CSV file) ---------- */
+function parseCSVtext(text) {
+  // Accept lines in the forms:
+  // email,phone
+  // email;phone
+  // email
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const out = [];
+  for (const line of lines) {
+    // try CSV split by comma first, then semicolon
+    let parts = line.split(",");
+    if (parts.length === 1) parts = line.split(";");
+    const email = (parts[0] || "").trim().toLowerCase();
+    const phone = (parts[1] || "").trim();
+    if (email) out.push({ email, phone });
+  }
+  return out;
+}
+
+injectWhitelistBtn.addEventListener("click", async () => {
+  const raw = (wlInput.value || "").trim();
+  const file = wlCsvFile?.files?.[0];
+  const cleanupActive = !!cleanupLadyCheckbox.checked;
+
+  if (!raw && !file) return alert("Paste emails or choose CSV file.");
+
+  let batchList = [];
+
+  // if file present, parse file first (CSV file takes precedence)
+  if (file) {
+    const text = await file.text();
+    batchList = parseCSVtext(text);
+  } else {
+    batchList = parseCSVtext(raw);
   }
 
-  loadWhitelist();
-  loadUsers();
+  if (!batchList.length) return alert("No valid entries found.");
+
+  // show loader on inject button
+  showLoaderText(injectWhitelistBtn, "Injecting...");
+
+  try {
+    const seen = new Set();
+    for (const entry of batchList) {
+      const email = entry.email.toLowerCase();
+      if (!email || seen.has(email)) continue;
+      seen.add(email);
+      const phone = entry.phone || "";
+
+      // upsert whitelist doc (use sanitized email as id)
+      const wlId = sanitizeKey(email);
+      await setDoc(doc(db, "whitelist", wlId), { email, phone, subscriptionActive: true }, { merge: true });
+
+      // user handling
+      const uQ = query(collection(db, "users"), where("email", "==", email));
+      const uSnap = await getDocs(uQ);
+      if (uSnap.empty) {
+        // create user doc with id = sanitized email (consistent with other parts)
+        await setDoc(doc(db, "users", wlId), {
+          email,
+          phone,
+          chatId: `GUEST${Math.floor(1000 + Math.random()*9000)}`,
+          stars: 0,
+          cash: 0,
+          subscriptionActive: true,
+          subscriptionCount: 1,
+          isVIP: false,
+          isAdmin: false,
+          isHost: false
+        });
+      } else {
+        // existing users: toggle subscriptionActive = true
+        for (const ud of uSnap.docs) {
+          const existing = ud.data() || {};
+          const updates = { subscriptionActive: true };
+          if (cleanupActive) {
+            // if cleanup is active and the user appears in batch, increment subscriptionCount
+            updates.subscriptionCount = (existing.subscriptionCount || 0) + 1;
+          }
+          await updateDoc(doc(db, "users", ud.id), updates);
+        }
+      }
+    }
+
+    // Cleanup Lady behavior: remove whitelist entries not present in batch when cleanupActive = true
+    if (cleanupActive) {
+      const batchEmails = new Set(batchList.map(b => sanitizeKey(b.email)));
+      const wlSnap = await getDocs(collection(db, "whitelist"));
+      for (const wdoc of wlSnap.docs) {
+        const id = wdoc.id;
+        if (!batchEmails.has(id)) {
+          // mark whitelist entry inactive (don't delete users)
+          await updateDoc(doc(db, "whitelist", id), { subscriptionActive: false });
+          // find users with that email and toggle their subscriptionActive false
+          const uSnap = await getDocs(query(collection(db, "users"), where("email", "==", wdoc.id)));
+          for (const ud of uSnap.docs) {
+            await updateDoc(doc(db, "users", ud.id), { subscriptionActive: false });
+          }
+        }
+      }
+    }
+
+    alert("Whitelist injection complete ✅");
+  } catch (err) {
+    console.error(err);
+    alert("Injection failed — check console.");
+  } finally {
+    hideLoaderText(injectWhitelistBtn);
+    // refresh lists
+    await loadWhitelist();
+    await loadAllUsers();
+  }
 });
 
-/* ---------- Clean Up Lady Toggle ---------- */
-cleanupToggleBtn.addEventListener("click", ()=>{
-  cleanupActive = !cleanupActive;
-  cleanupToggleBtn.innerText = `Clean Up Lady 🧼 ${cleanupActive?"ON":"OFF"}`;
+/* ---------- CSV file input quick preview (optional) ---------- */
+wlCsvFile?.addEventListener("change", async (e) => {
+  // if you want, we could auto preview file contents in wlInput for quick edits
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const txt = await f.text();
+    // show a short preview (first few lines) in the wlInput for transparency
+    const preview = txt.split(/\r?\n/).slice(0, 10).join("\n");
+    wlInput.value = preview;
+  } catch (err) {
+    console.error(err);
+  }
 });
 
-/* ---------- Export CSV ---------- */
-exportCsvBtn.addEventListener("click", async ()=>{
-  const snap = await getDocs(collection(db,"users"));
-  const all = [];
-  snap.forEach(docSnap=>all.push(docSnap.data()));
-  if(all.length===0) return alert("No users");
-
-  const headers = Object.keys(all[0]);
-  const csvRows = [headers.join(",")];
-  all.forEach(u=>{
-    csvRows.push(headers.map(h=>u[h]).join(","));
-  });
-
-  const blob = new Blob([csvRows.join("\n")], {type:"text/csv"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "users.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+/* ---------- Export all users (comprehensive fields) ---------- */
+exportCsvBtn.addEventListener("click", async () => {
+  try {
+    const snap = await getDocs(collection(db, "users"));
+    const rows = [];
+    const keysSet = new Set();
+    const docs = [];
+    snap.forEach(d => {
+      const data = d.data();
+      docs.push({ id: d.id, ...data });
+      Object.keys(data).forEach(k => keysSet.add(k));
+    });
+    // ensure some useful order
+    const keys = ["email", "chatId", "phone", "stars", "cash", "subscriptionActive", "subscriptionCount", "isVIP", "isAdmin", "isHost", "hostLink", "invitedBy", "usernameColor"];
+    // add remaining keys
+    const extra = Array.from(keysSet).filter(k => !keys.includes(k));
+    const header = keys.concat(extra).filter(Boolean);
+    rows.push(header);
+    for (const d of docs) {
+      rows.push(header.map(h => d[h] ?? ""));
+    }
+    downloadCSV("users_full_export.csv", rows);
+  } catch (err) {
+    console.error(err);
+    alert("Export failed");
+  }
 });
+
+/* ---------- Init (hide modal initially) ---------- */
+modalBg.classList.add("hidden");
+
+// expose quick loaders for buttons (utility used above)
+function showLoaderText(el, text = "Processing...") {
+  if (!el) return;
+  if (!el.dataset.orig) el.dataset.orig = el.innerText;
+  el.disabled = true;
+  el.innerText = text;
+}
+function hideLoaderText(el) {
+  if (!el) return;
+  if (el.dataset.orig) el.innerText = el.dataset.orig;
+  el.disabled = false;
+  delete el.dataset.orig;
+}
