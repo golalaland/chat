@@ -568,10 +568,14 @@ header {
   align-items: center;
   background: rgba(0,0,0,0.5);
   z-index: 3000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 }
 
-#productModal.hidden {
-  display: none;
+#productModal.show {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .product-modal-content {
@@ -690,7 +694,6 @@ header {
 <!-- 🌸 Product Description Modal -->
 <div id="productModal" class="hidden">
   <div class="product-modal-content">
-    <button id="closeProductModal" class="close-btn">&times;</button>
     <h3 id="productModalTitle"></h3>
     <p id="productModalDesc"></p>
   </div>
