@@ -576,6 +576,35 @@ const renderShop = async () => {
   }
 };
 
+// Dark mode toggle + persistence
+(function () {
+  const btn = document.getElementById('themeToggle');
+  if (!btn) return;
+
+  // initialize from localStorage
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+  } else if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.remove('dark');
+  } else {
+    // if no stored preference, follow system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark');
+    }
+  }
+
+  btn.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    // Optional: update button icon
+    btn.textContent = isDark ? '🌙' : '☀️';
+  });
+
+  // set initial icon
+  btn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
+})();
+
 /* ------------------ Init ------------------ */
 window.addEventListener('DOMContentLoaded', () => {
   loadCurrentUser().catch(err => console.error(err));
