@@ -3,108 +3,105 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shop Admin Dashboard</title>
+<title>Admin Shop Dashboard</title>
 <style>
-  /* ---------- GENERAL ---------- */
-  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; color:#333; }
-  h1,h2,h3 { margin:0; }
-  button { cursor:pointer; }
+/* ---------- GENERAL ---------- */
+body{ margin:0; font-family:Arial,sans-serif; background:#f3f4f6; color:#111; }
+.hidden{ display:none; }
+button{ cursor:pointer; padding:6px 12px; border:none; border-radius:4px; }
+input{ padding:6px; border-radius:4px; border:1px solid #ccc; }
+h2{ margin:10px 0; }
 
-  /* ---------- LOADER ---------- */
-  #loaderOverlay {
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.4);
-    z-index:2000;
-    justify-content:center;
-    align-items:center;
-  }
-  #loaderOverlay span { background:#fff; padding:12px 20px; border-radius:8px; font-weight:bold; }
+/* ---------- LOADER ---------- */
+#loaderOverlay{
+  display:none;
+  position:fixed; inset:0;
+  background: rgba(0,0,0,0.3);
+  justify-content:center; align-items:center; z-index:9999;
+}
+#loaderOverlay span{
+  background:#fff; padding:12px 24px; border-radius:8px; font-weight:bold;
+}
 
-  /* ---------- LOGIN GATE ---------- */
-  #adminGate { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
-  #adminGate input { padding:10px; width:250px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; }
-  #adminGate button { padding:10px 20px; border:none; background:#007bff; color:#fff; border-radius:6px; }
+/* ---------- ADMIN LOGIN ---------- */
+#adminGate{
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  height:100vh; gap:10px;
+}
+#adminGate input{ width:250px; }
+#adminGate button{ background:#007bff; color:#fff; }
 
-  /* ---------- DASHBOARD ---------- */
-  #adminPanel { display:none; padding:20px; }
-  .section { background:#fff; border-radius:8px; padding:15px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
-
-  table { width:100%; border-collapse:collapse; }
-  th, td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
-  th { background:#f7f7f7; }
-
-  .btn { padding:5px 10px; border:none; border-radius:5px; }
-  .btn-primary { background:#007bff; color:#fff; }
-  .btn-danger { background:#dc3545; color:#fff; }
-  .btn-small { padding:3px 6px; font-size:12px; }
-
-  .hidden { display:none; }
-
-  /* ---------- MODAL ---------- */
-  .modalOverlay {
-    position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; z-index:3000;
-  }
-  .modalContent {
-    background:#fff; padding:20px; border-radius:8px; min-width:300px; max-width:90%;
-  }
+/* ---------- DASHBOARD ---------- */
+#adminPanel{
+  padding:20px;
+}
+section{ margin-bottom:30px; background:#fff; padding:15px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+table{ width:100%; border-collapse:collapse; }
+th, td{ padding:8px; border-bottom:1px solid #eee; text-align:left; }
+th{ background:#f9fafb; }
+.actions button{ margin-right:6px; }
+#productModal{
+  position:fixed; inset:0; background:rgba(0,0,0,0.35);
+  display:none; justify-content:center; align-items:center; z-index:2000;
+}
+#productModal .modalContent{
+  background:#fff; padding:20px; border-radius:10px; max-width:500px; width:90%;
+}
+#productModal .closeBtn{ float:right; cursor:pointer; font-weight:bold; }
 </style>
 </head>
 <body>
 
 <!-- LOADER -->
-<div id="loaderOverlay"><span id="loaderText">Processing...</span></div>
+<div id="loaderOverlay"><span id="loaderText">Loading...</span></div>
 
-<!-- ADMIN LOGIN GATE -->
+<!-- ADMIN LOGIN -->
 <div id="adminGate">
   <h2>Admin Login</h2>
   <input type="email" id="adminEmail" placeholder="Enter admin email">
-  <button id="adminCheckBtn">Enter Dashboard</button>
-  <p id="adminGateMsg" style="color:red;margin-top:5px;"></p>
+  <button id="adminCheckBtn">Login</button>
+  <div id="adminGateMsg" style="color:red;"></div>
 </div>
 
 <!-- DASHBOARD -->
-<div id="adminPanel">
+<div id="adminPanel" class="hidden">
   <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h1>Shop Admin Dashboard</h1>
-    <div>
-      <span id="currentAdminEmail"></span>
-      <button id="logoutBtn" class="btn btn-danger">Logout</button>
-    </div>
+    <h2>Welcome, <span id="currentAdminEmail"></span></h2>
+    <button id="logoutBtn" style="background:#dc3545; color:#fff;">Logout</button>
   </div>
 
   <!-- USERS SECTION -->
-  <div class="section">
-    <h2>Users</h2>
-    <input type="text" id="userSearch" placeholder="Search by email or ID" style="margin-bottom:10px;padding:6px;width:200px;">
+  <section>
+    <h3>Users</h3>
+    <input type="text" id="userSearch" placeholder="Search users by email or ID" style="margin-bottom:10px;">
     <table id="usersTable">
       <thead>
         <tr>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Stars</th>
-          <th>Cash</th>
-          <th>VIP</th>
-          <th>Admin</th>
-          <th>Subscription</th>
-          <th>Actions</th>
+          <th>Email</th><th>Phone</th><th>Stars</th><th>Cash</th><th>VIP</th><th>Admin</th><th>Actions</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
-    <button id="exportCsv" class="btn btn-primary" style="margin-top:10px;">Export CSV</button>
-  </div>
+  </section>
 
   <!-- PRODUCTS SECTION -->
-  <div class="section">
-    <h2>Products</h2>
+  <section>
+    <h3>Products</h3>
     <table id="productsTable">
       <thead>
         <tr><th>Name</th><th>Price</th><th>Stars</th></tr>
       </thead>
       <tbody></tbody>
     </table>
+  </section>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div id="productModal">
+  <div class="modalContent">
+    <span class="closeBtn" id="productModalClose">&times;</span>
+    <h3 id="modalProductName"></h3>
+    <p id="modalProductDesc"></p>
   </div>
 </div>
 
