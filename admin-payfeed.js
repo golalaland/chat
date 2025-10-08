@@ -1,4 +1,4 @@
-// admin-payfeed.js (fixed duplicate issue)
+// admin-payfeed.js (fixed & optimized)
 
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -17,6 +17,7 @@ const firebaseConfig = {
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
   measurementId: "G-S77BMC266C"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -48,7 +49,9 @@ function showLoader(text = "Processing...") {
   if (loaderText) loaderText.textContent = text;
   if (loaderOverlay) loaderOverlay.style.display = "flex";
 }
-function hideLoader() { loaderOverlay.style.display = "none"; }
+function hideLoader() {
+  if (loaderOverlay) loaderOverlay.style.display = "none";
+}
 function downloadCSV(filename, rows) {
   const csvContent = rows.map(r => r.map(v => `"${String(v ?? "")}"`).join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -158,10 +161,20 @@ function renderUsers(users) {
     tr.children[8].appendChild(subscriptionActive);
 
     const actionsTd = tr.children[9];
-    const actionsDiv = document.createElement("div"); actionsDiv.className = "actions";
-    const enterBtn = document.createElement("button"); enterBtn.className = "btn btn-primary"; enterBtn.textContent = "Enter";
-    const removeBtn = document.createElement("button"); removeBtn.className = "btn btn-danger"; removeBtn.textContent = "Remove";
-    actionsDiv.appendChild(enterBtn); actionsDiv.appendChild(removeBtn); actionsTd.appendChild(actionsDiv);
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "actions";
+
+    const enterBtn = document.createElement("button");
+    enterBtn.className = "btn btn-primary";
+    enterBtn.textContent = "Enter";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "btn btn-danger";
+    removeBtn.textContent = "Remove";
+
+    actionsDiv.appendChild(enterBtn);
+    actionsDiv.appendChild(removeBtn);
+    actionsTd.appendChild(actionsDiv);
 
     // ---------- Enter button ----------
     enterBtn.addEventListener("click", async () => {
@@ -172,6 +185,7 @@ function renderUsers(users) {
       try {
         const stars = Number(tr.children[3].querySelector("input").value || 0);
         const cash = Number(tr.children[4].querySelector("input").value || 0);
+
         const updates = {
           stars,
           cash,
@@ -180,33 +194,32 @@ function renderUsers(users) {
           isHost: !!isHost.checked,
           subscriptionActive: !!subscriptionActive.checked
         };
+
         if (updates.subscriptionActive) {
           updates.subscriptionStartTime = Date.now();
           updates.subscriptionCount = (u.subscriptionCount || 0) + 1;
         }
 
-        const userDoc = await getUserDocByEmail(u.email);
-        if(!userDoc) throw new Error("User not found.");
+        // Always update correct doc reference
+        await updateDoc(doc(db,"users",u.id), updates);
 
-        await updateDoc(userDoc.ref, updates);
-
-        const wlRef = doc(db, "whitelist", (u.email || "").toLowerCase());
+        const wlRef = doc(db,"whitelist",(u.email||"").toLowerCase());
         if (updates.subscriptionActive) {
           await setDoc(wlRef, {
-            email: (u.email || "").toLowerCase(),
-            phone: u.phone || "",
-            chatId: u.chatId || "",
+            email: (u.email||"").toLowerCase(),
+            phone: u.phone||"",
+            chatId: u.chatId||"",
             subscriptionActive: true,
             subscriptionStartTime: updates.subscriptionStartTime
           }, { merge: true });
         } else {
-          await updateDoc(wlRef, { subscriptionActive: false }).catch(()=>{});
+          await updateDoc(wlRef,{subscriptionActive:false}).catch(()=>{});
         }
 
         hideLoader();
         await loadUsers(); await loadWhitelist();
         alert("User updated successfully.");
-      } catch(err){ hideLoader(); console.error(err); alert("Failed to update user. See console."); }
+      } catch(err){ hideLoader(); console.error("Enter update error:",err); alert("Failed to update user. See console."); }
     });
 
     // ---------- Remove button ----------
@@ -215,14 +228,13 @@ function renderUsers(users) {
       if (!confirmed) return;
 
       showLoader("Removing user...");
-      try {
-        const userDoc = await getUserDocByEmail(u.email);
-        if(userDoc) await deleteDoc(userDoc.ref);
-        if(u.email) await deleteDoc(doc(db,"whitelist",u.email.toLowerCase())).catch(()=>{});
+      try{
+        await deleteDoc(doc(db,"users",u.id));
+        if(u.email) await deleteDoc(doc(db,"whitelist",(u.email||"").toLowerCase())).catch(()=>{});
         hideLoader();
         await loadUsers(); await loadWhitelist();
-        alert(`${u.email || "(no email)"} removed successfully.`);
-      } catch(err){ hideLoader(); console.error(err); alert("Failed to remove user. See console."); }
+        alert(`${u.email||"(no email)"} removed successfully.`);
+      }catch(err){ hideLoader(); console.error("Remove user error:",err); alert("Failed to remove user. See console."); }
     });
 
     usersTableBody.appendChild(tr);
@@ -237,11 +249,17 @@ userSearch.addEventListener("input",()=>{
 
 // ---------- CSV helpers ----------
 function stripQuotes(str){ return str.replace(/^"(.*)"$/,"$1").trim(); }
-async function getUserDocByEmail(emailRaw) {
-  const email = (emailRaw||"").trim().toLowerCase();
-  if(!email) return null;
-  const snap = await getDocs(query(collection(db,"users"),where("email","==",email)));
-  return snap.empty ? null : snap.docs[0];
+async function findUserByTriple(email,phone,chatId){
+  const e=(email||"").toLowerCase(); const p=phone||""; const c=chatId||"";
+  if(!e) return null;
+  try{
+    let snap=query(collection(db,"users"),where("email","==",e),where("phone","==",p),where("chatId","==",c));
+    let docsSnap=await getDocs(snap);
+    if(!docsSnap.empty) return docsSnap.docs[0];
+    const snap2=await getDocs(query(collection(db,"users"),where("email","==",e)));
+    for(const ds of snap2.docs){ const data=ds.data()||{}; if(String(data.phone||"")===p && String(data.chatId||"")===c) return ds; }
+    return null;
+  }catch(e){ console.error(e); return null; }
 }
 
 // ---------- Manual whitelist add ----------
@@ -254,20 +272,12 @@ addWhitelistBtn.addEventListener("click", async ()=>{
   if(!confirmed) return;
   showLoader("Adding to whitelist...");
   try{
-    const userDoc = await getUserDocByEmail(email);
-    if(userDoc){
-      const data=userDoc.data()||{};
-      await updateDoc(userDoc.ref,{
-        phone,
-        subscriptionActive:true,
-        subscriptionStartTime:Date.now(),
-        subscriptionCount:(data.subscriptionCount||0)+1
-      });
-    } else {
-      await setDoc(doc(db,"users",email),{
-        email, phone, chatId:"", subscriptionActive:true,
-        subscriptionStartTime:Date.now(), subscriptionCount:1
-      });
+    const snap = await getDocs(query(collection(db,"users"),where("email","==",email)));
+    if(snap.empty){
+      await setDoc(doc(db,"users",email),{email,phone,chatId:"",subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:1});
+    }else{
+      const ds=snap.docs[0]; const data=ds.data()||{};
+      await updateDoc(ds.ref,{phone,subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:(data.subscriptionCount||0)+1});
     }
     await setDoc(doc(db,"whitelist",email),{email,phone,subscriptionActive:true,subscriptionStartTime:Date.now()},{merge:true});
     hideLoader();
@@ -292,22 +302,13 @@ wlCsvUpload.addEventListener("change", async e=>{
       if(!emailRaw||!phone||!chatId) continue;
       const email=emailRaw.toLowerCase(); batchEmails.push(email);
 
-      const userDoc = await getUserDocByEmail(email);
-      if(userDoc){
-        const data = userDoc.data()||{};
-        await updateDoc(userDoc.ref,{
-          phone, chatId, subscriptionActive:true,
-          subscriptionStartTime:Date.now(),
-          subscriptionCount:(data.subscriptionCount||0)+1
-        });
-      } else {
-        await setDoc(doc(db,"users",email),{
-          email, phone, chatId, subscriptionActive:true,
-          subscriptionStartTime:Date.now(),
-          subscriptionCount:1
-        });
+      const userDoc=await findUserByTriple(email,phone,chatId);
+      if(!userDoc){
+        await setDoc(doc(collection(db,"users")), {email,phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:1});
+      }else{
+        const data=userDoc.data()||{};
+        await updateDoc(userDoc.ref,{phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:(data.subscriptionCount||0)+1});
       }
-
       await setDoc(doc(db,"whitelist",email),{email,phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now()},{merge:true});
     }
 
@@ -316,8 +317,8 @@ wlCsvUpload.addEventListener("change", async e=>{
       for(const wlDoc of wlSnap.docs){
         const key=(wlDoc.id||"").toLowerCase();
         if(!batchEmails.includes(key)){
-          const userDoc = await getUserDocByEmail(key);
-          if(userDoc) await updateDoc(userDoc.ref,{subscriptionActive:false}).catch(()=>{});
+          const uSnap=await getDocs(query(collection(db,"users"),where("email","==",key)));
+          for(const ds of uSnap.docs) await updateDoc(ds.ref,{subscriptionActive:false}).catch(()=>{});
           await deleteDoc(doc(db,"whitelist",key)).catch(()=>{});
         }
       }
@@ -336,3 +337,29 @@ exportCsvBtn.addEventListener("click", ()=>{
   usersCache.forEach(u=>rows.push([u.email||"",u.phone||"",u.chatId||"",u.stars||0,u.cash||0,!!u.isVIP,!!u.isAdmin,!!u.isHost,!!u.subscriptionActive,u.subscriptionStartTime||"",u.subscriptionCount||0]));
   downloadCSV("users_export.csv",rows);
 });
+
+// ---------- Load whitelist ----------
+async function loadWhitelist(){
+  try{
+    whitelistTableBody.innerHTML="";
+    const snap=await getDocs(collection(db,"whitelist"));
+    snap.docs.forEach(d=>{
+      const data=d.data()||{};
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${data.email||""}</td>
+        <td>${data.phone||""}</td>
+        <td>${data.subscriptionActive?"Active":"Inactive"}</td>
+        <td><button class="btn btn-danger">Remove</button></td>
+      `;
+      const removeBtn=tr.querySelector("button");
+      removeBtn.addEventListener("click",async()=>{
+        const confirmed=await showConfirmModal("Remove whitelist",`Remove ${data.email||""} from whitelist?`);
+        if(!confirmed) return;
+        showLoader("Removing...");
+        try{ await deleteDoc(doc(db,"whitelist",d.id)); hideLoader(); await loadWhitelist(); }catch(e){hideLoader(); console.error(e);}
+      });
+      whitelistTableBody.appendChild(tr);
+    });
+  }catch(e){console.error(e);}
+}
