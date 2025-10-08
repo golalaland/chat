@@ -1,108 +1,124 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Xixi Admin — Chat</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding:20px; background:#f7f7fb; color:#111 }
-    .card { background:#fff; padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:14px; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap }
-    input, button, select, textarea { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e9; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #f0f0f4; }
-    .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 10px; }
-    .btn-danger { background:#ff6b6b; color:#fff }
-    .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff }
-    .muted { color:#888; font-size:0.9rem }
-    .search { width:260px }
-    .small { font-size:0.9rem; padding:6px 8px; }
-    .pill { padding:6px 10px; border-radius:999px; background:#efefef; }
-    .flex-between { display:flex; justify-content:space-between; align-items:center }
-    .hidden { display:none }
-    .scroll-box { max-height:360px; overflow:auto; padding-right:8px }
-    .actions { display:flex; gap:6px }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Shop Dashboard</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin:0; padding:0; background:#f4f4f4; color:#333;
+}
+.hidden { display:none; }
+
+header {
+  background:#222; color:#fff; padding:15px 20px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+header h1 { margin:0; font-size:1.5rem; }
+header button { padding:6px 12px; background:#ff6a00; border:none; color:#fff; cursor:pointer; border-radius:4px; }
+
+.container { padding:20px; }
+
+section { margin-bottom:30px; }
+h2 { margin-bottom:10px; }
+
+input, button, select {
+  padding:6px; margin:4px 0; border-radius:4px; border:1px solid #ccc;
+}
+button { cursor:pointer; }
+
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+table th, table td { border:1px solid #ccc; padding:8px; text-align:left; }
+table th { background:#eee; }
+
+.modal-bg {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center;
+  z-index:999; display:none;
+}
+.modal {
+  background:#fff; padding:20px; border-radius:6px; width:400px; max-width:90%;
+  box-shadow:0 4px 15px rgba(0,0,0,0.3);
+}
+.modal h3 { margin-top:0; }
+.modal input { width:100%; margin-bottom:10px; }
+.modal button { width:48%; margin-right:4%; }
+.modal button:last-child { margin-right:0; }
+
+.spinner {
+  display:none; position:fixed; top:50%; left:50%;
+  transform:translate(-50%, -50%);
+  width:60px; height:60px;
+  border:6px solid #ccc;
+  border-top-color:#ff6a00;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  z-index:1000;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.alert-msg {
+  padding:10px; background:#fffae6; border-left:4px solid #ff6a00; margin-bottom:10px;
+  display:none;
+}
+
+</style>
 </head>
 <body>
-  <h2>Xixi Admin — Chatroom</h2>
 
-  <!-- Admin Gate -->
-  <div id="adminGate" class="card">
-    <div class="row">
-      <input id="adminEmail" placeholder="Admin email (use registered email)" />
-      <button id="adminCheckBtn" class="btn btn-primary">Enter Admin</button>
-      <span id="adminGateMsg" class="muted"></span>
+<!-- Login Page -->
+<div id="loginPage" class="container">
+  <h2>Admin Login</h2>
+  <input type="email" id="adminEmail" placeholder="Enter admin email">
+  <button id="adminLoginBtn">Login</button>
+  <div id="loginMsg" style="color:red; margin-top:8px;"></div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="hidden container">
+  <header>
+    <h1>Admin Dashboard</h1>
+    <button id="logoutBtn">Logout</button>
+  </header>
+
+  <section>
+    <h2>Users</h2>
+    <input type="text" id="userSearch" placeholder="Search users...">
+    <div id="usersList">Loading...</div>
+  </section>
+
+  <section>
+    <h2>Products</h2>
+    <button id="addProductBtn">Add Product</button>
+    <div id="productsList">Loading...</div>
+  </section>
+
+  <section>
+    <h2>Orders</h2>
+    <div id="ordersList">Loading...</div>
+  </section>
+</div>
+
+<!-- Product Modal -->
+<div id="productModal" class="modal-bg">
+  <div class="modal">
+    <h3>Product</h3>
+    <input type="text" id="prodName" placeholder="Name">
+    <input type="text" id="prodImg" placeholder="Image URL">
+    <input type="number" id="prodStars" placeholder="Stars Cost">
+    <input type="number" id="prodCash" placeholder="Cash Reward">
+    <input type="number" id="prodQty" placeholder="Available Quantity">
+    <div>
+      <button id="saveProductBtn">Save</button>
+      <button id="closeProductModal">Cancel</button>
     </div>
-    <p class="muted" style="margin-top:8px">This page uses a simple admin-check (isAdmin flag). Protect this folder on your server or replace with Firebase Auth later.</p>
   </div>
+</div>
 
-  <!-- Admin Panel -->
-  <div id="adminPanel" class="hidden">
+<div class="spinner" id="spinner"></div>
+<div class="alert-msg" id="alertMsg"></div>
 
-    <!-- Top bar -->
-    <div class="card flex-between">
-      <div>
-        <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
-      </div>
-      <div class="row">
-        <input id="userSearch" class="search small" placeholder="Search users by email or chatId"/>
-        <button id="exportCsv" class="btn">Export CSV</button>
-        <button id="logoutBtn" class="btn">Logout</button>
-      </div>
-    </div>
-
-    <!-- Users Management -->
-    <div class="card">
-      <h3 style="margin:0 0 8px 0">Users</h3>
-      <div class="muted" style="margin-bottom:8px">Edit stars, toggle isAdmin/isVIP, add cash, or delete users.</div>
-      <div class="scroll-box">
-        <table id="usersTable">
-          <thead>
-            <tr><th>Email</th><th>ChatId</th><th>Stars</th><th>VIP</th><th>Admin</th><th>Actions</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Messages Moderation -->
-    <div class="card">
-      <h3 style="margin:0 0 8px 0">Live Messages</h3>
-      <div class="muted" style="margin-bottom:8px">Live feed from <code>messages_room5</code>. Delete messages as needed.</div>
-      <div class="scroll-box">
-        <table id="messagesTable">
-          <thead>
-            <tr><th>ChatId</th><th>Content</th><th>Highlight</th><th>Time</th><th>Action</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div style="margin-top:10px" class="row">
-        <button id="clearChatBtn" class="btn btn-danger">Clear Chat (delete all)</button>
-      </div>
-    </div>
-
-    <!-- Whitelist Manager -->
-    <div class="card">
-      <h3 style="margin:0 0 8px 0">Whitelist (VIP login)</h3>
-      <div class="row" style="margin-bottom:8px">
-        <input id="wlEmail" placeholder="email" />
-        <input id="wlPhone" placeholder="phone" />
-        <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
-      </div>
-      <div class="scroll-box">
-        <table id="whitelistTable">
-          <thead>
-            <tr><th>Email</th><th>Phone</th><th>Action</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-
-  <script type="module" src="admin-chat.js"></script>
+<script type="module" src="adminshop.js"></script>
 </body>
 </html>
