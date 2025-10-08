@@ -313,9 +313,23 @@ function startStarEarning(uid) {
     if (animationTimeout) clearTimeout(animationTimeout);
     updateStarDisplay(targetStars);
 
-    // Optional milestone popup every 1000 stars
-    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
+      // Track last milestone so popup only shows once per 1000 increment
+  let lastMilestone = Math.floor((currentUser.stars || 0) / 1000) * 1000;
+
+  onSnapshot(userRef, snap => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const targetStars = data.stars || 0;
+    currentUser.stars = targetStars;
+
+    if (animationTimeout) clearTimeout(animationTimeout);
+    updateStarDisplay(targetStars);
+
+    // Show popup only when crossing a new 1000 threshold
+    const currentMilestone = Math.floor(targetStars / 1000) * 1000;
+    if (currentMilestone > lastMilestone && currentMilestone > 0) {
+      lastMilestone = currentMilestone;
+      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentMilestone)} stars!`);
     }
   });
 
