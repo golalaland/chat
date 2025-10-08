@@ -1,3 +1,6 @@
+// ============================
+// 🔥 FIREBASE IMPORTS
+// ============================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -12,7 +15,15 @@ import {
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-/* ------------------ Firebase ------------------ */
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// ============================
+// ⚙️ FIREBASE CONFIG
+// ============================
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -23,15 +34,15 @@ const firebaseConfig = {
   measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
+
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-/* ---------------- Spinner Helpers (Code 1 style) ----------------
-   Uses the .shop-spinner element already present in your HTML.
-   Toggling the 'active' class will smoothly fade spinner in/out
-   because your CSS (.shop-spinner/.shop-spinner.active) controls
-   visibility & opacity transitions.
-------------------------------------------------------------------*/
+// ============================
+// 🌸 SPINNER HELPERS
+// ============================
 function showSpinner() {
   const spinner = document.querySelector('.shop-spinner') || document.getElementById('shopSpinner');
   if (spinner) spinner.classList.add('active');
@@ -42,7 +53,9 @@ function hideSpinner() {
   if (spinner) spinner.classList.remove('active');
 }
 
-/* ------------------ DOM references ------------------ */
+// ============================
+// 🎯 DOM REFERENCES
+// ============================
 const DOM = {
   username: document.getElementById('username'),
   stars: document.getElementById('stars-count'),
@@ -64,7 +77,12 @@ const DOM = {
   previewImg: document.getElementById('previewImg'),
   rewardModal: document.getElementById('rewardModal'),
   rewardTitle: document.getElementById('rewardTitle'),
-  rewardMessage: document.getElementById('rewardMessage')
+  rewardMessage: document.getElementById('rewardMessage'),
+  modal: document.getElementById('productModal'), // ✅ product description modal
+  modalTitle: document.getElementById('productModalTitle'),
+  modalDesc: document.getElementById('productModalDesc'),
+  closeModal: document.getElementById('closeProductModal'),
+  darkToggle: document.getElementById('darkToggle') // ✅ dark mode toggle
 };
 
 /* ------------------ Utilities ------------------ */
