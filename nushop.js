@@ -604,6 +604,34 @@ const renderShop = async () => {
   });
 })();
 
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("productModal");
+  const modalTitle = document.getElementById("productModalTitle");
+  const modalDesc = document.getElementById("productModalDesc");
+  const closeModal = document.getElementById("closeProductModal");
+
+  // 💬 Cute themed descriptions
+  const productDescriptions = {
+    "Star Mug": "☕✨ Sip your morning magic in this cosmic mug! Perfect for star collectors.",
+    "Galaxy Hoodie": "🪐 Cozy up like a space queen 👑. Soft, warm & out of this world.",
+    "Xixi Cap": "🧢 Stylish, sleek & gives off that exclusive club energy ✨.",
+    "Reward Badge": "🏅 Show off your stardust status with this premium badge!",
+  };
+
+  document.body.addEventListener("click", (e) => {
+    if (e.target.matches(".product-card h3")) {
+      const title = e.target.textContent.trim();
+      modalTitle.textContent = title;
+      modalDesc.textContent = productDescriptions[title] || "No description yet 🌸";
+      modal.classList.remove("hidden");
+    }
+  });
+
+  closeModal.addEventListener("click", () => modal.classList.add("hidden"));
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.add("hidden");
+  });
+});
 /* ------------------ Init ------------------ */
 window.addEventListener('DOMContentLoaded', () => {
   loadCurrentUser().catch(err => console.error(err));
