@@ -1,7 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  onSnapshot,
+  updateDoc,
+  serverTimestamp,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ---------------- FIREBASE ---------------- */
+/* ---------------- Firebase ---------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -9,186 +19,141 @@ const firebaseConfig = {
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
   appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------------- HELPERS ---------------- */
-function sanitizeEmail(email) { return email.replace(/[.#$[\]]/g, ','); }
-const showSpinner = () => document.querySelector('.shop-spinner')?.classList.add('active');
-const hideSpinner = () => document.querySelector('.shop-spinner')?.classList.remove('active');
+/* ---------------- DOM ---------------- */
+const loginPage = document.getElementById('loginPage');
+const dashboard = document.getElementById('dashboard');
+const adminLoginBtn = document.getElementById('adminLoginBtn');
+const adminEmailInput = document.getElementById('adminEmail');
+const loginMsg = document.getElementById('loginMsg');
+const logoutBtn = document.getElementById('logoutBtn');
 
-/* ---------------- LOGIN ---------------- */
-const loginDiv = document.getElementById('adminLoginDiv');
-const dashboardDiv = document.getElementById('adminDashboard');
-document.getElementById('adminLoginBtn').addEventListener('click', async () => {
-  const email = document.getElementById('adminEmail').value.trim();
-  if (!email) return alert('Enter email');
-  showSpinner();
+const usersList = document.getElementById('usersList');
+const productsList = document.getElementById('productsList');
+const ordersList = document.getElementById('ordersList');
+
+const userSearch = document.getElementById('userSearch');
+
+const productModal = document.getElementById('productModal');
+const closeProductModal = document.getElementById('closeProductModal');
+const addProductBtn = document.getElementById('addProductBtn');
+
+const prodName = document.getElementById('prodName');
+const prodImg = document.getElementById('prodImg');
+const prodStars = document.getElementById('prodStars');
+const prodCash = document.getElementById('prodCash');
+const prodQty = document.getElementById('prodQty');
+const saveProductBtn = document.getElementById('saveProductBtn');
+
+let currentAdmin = null;
+
+/* ---------------- Admin Login ---------------- */
+adminLoginBtn.addEventListener('click', async () => {
+  const email = adminEmailInput.value.trim().toLowerCase();
+  if (!email) return loginMsg.textContent = 'Enter email';
+  loginMsg.textContent = 'Checking...';
+
   try {
     const adminCol = collection(db, 'admins');
     const adminDocs = await getDocs(adminCol);
-    const allowed = adminDocs.docs.some(d => d.id === sanitizeEmail(email));
-    if (!allowed) return alert('Access Denied');
 
-    // show dashboard
-    loginDiv.style.display = 'none';
-    dashboardDiv.style.display = 'block';
-    renderAdminTab('orders');
-  } catch(e) { console.error(e); alert('Error verifying admin'); }
-  finally { hideSpinner(); }
+    const allowed = adminDocs.docs.some(d => d.data().email.toLowerCase() === email);
+
+    if (!allowed) return loginMsg.textContent = 'Access Denied';
+
+    currentAdmin = email;
+    loginPage.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    loginMsg.textContent = '';
+
+    loadUsers();
+    loadProducts();
+    loadOrders();
+
+  } catch (err) {
+    console.error(err);
+    loginMsg.textContent = 'Error checking admin';
+  }
 });
 
-/* ---------------- TABS ---------------- */
-const tabs = document.querySelectorAll('.tab-btn');
-tabs.forEach(tab => tab.addEventListener('click', () => {
-  tabs.forEach(t=>t.classList.remove('active'));
-  tab.classList.add('active');
-
-  const name = tab.dataset.tab;
-  document.querySelectorAll('.tabContent').forEach(c => c.classList.remove('active'));
-  document.getElementById(name+'Tab').classList.add('active');
-
-  renderAdminTab(name);
-}));
-
-/* ---------------- RENDER ADMIN TABS ---------------- */
-async function renderAdminTab(tab){
-  if(tab==='orders') await renderOrders();
-  else if(tab==='products') await renderProducts();
-  else if(tab==='users') await renderUsers();
-}
-
-/* ---------------- RENDER ORDERS ---------------- */
-async function renderOrders(){
-  showSpinner();
-  try {
-    const ordersTable = document.querySelector('#ordersTable tbody');
-    ordersTable.innerHTML = '';
-    const snap = await getDocs(collection(db,'purchases'));
-    snap.forEach(docSnap => {
-      const data = docSnap.data();
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${docSnap.id}</td>
-        <td>${data.email||''}</td>
-        <td>${data.productName||''}</td>
-        <td>${data.cost||0}</td>
-        <td>${data.cashReward||0}</td>
-        <td>${data.timestamp?.toDate?.().toLocaleString()||''}</td>
-        <td><button class="action-btn refund">Refund</button></td>
-      `;
-      tr.querySelector('.refund').addEventListener('click', async()=>{
-        if(!confirm('Confirm refund?')) return;
-        await refundOrder(docSnap.id, data);
-      });
-      ordersTable.appendChild(tr);
-    });
-  } catch(e){ console.error(e); }
-  finally{ hideSpinner(); }
-}
-
-async function refundOrder(id, data){
-  showSpinner();
-  try{
-    await runTransaction(db, async t=>{
-      const userRef = doc(db,'users',sanitizeEmail(data.email||''));
-      const userSnap = await t.get(userRef);
-      if(!userSnap.exists()) return;
-      const uData = userSnap.data();
-      t.update(userRef, { 
-        stars: (uData.stars||0) + (data.cost||0), 
-        cash: (uData.cash||0) + (data.cashReward||0) 
-      });
-      const purchaseRef = doc(db,'purchases',id);
-      t.update(purchaseRef, { refunded:true });
-      const productRef = doc(db,'shopItems',data.productId);
-      const pSnap = await t.get(productRef);
-      if(pSnap.exists()){
-        t.update(productRef,{ available: (pSnap.data().available||0)+1 });
-      }
-    });
-    alert('Refund successful!');
-    renderOrders();
-    renderProducts();
-  }catch(e){ console.error(e); alert('Refund failed'); }
-  finally{ hideSpinner(); }
-}
-
-/* ---------------- RENDER PRODUCTS ---------------- */
-async function renderProducts(){
-  showSpinner();
-  try {
-    const productsTable = document.querySelector('#productsTable tbody');
-    productsTable.innerHTML='';
-    const snap = await getDocs(collection(db,'shopItems'));
-    snap.forEach(docSnap=>{
-      const data = docSnap.data();
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${docSnap.id}</td>
-        <td>${data.name||''}</td>
-        <td>${data.cost||0}</td>
-        <td>${data.cashReward||0}</td>
-        <td>${data.available||0}</td>
-        <td><button class="action-btn update">Update</button></td>
-      `;
-      tr.querySelector('.update').addEventListener('click', ()=>{
-        document.getElementById('productName').value = data.name;
-        document.getElementById('productCost').value = data.cost||0;
-        document.getElementById('productCash').value = data.cashReward||0;
-        document.getElementById('productAvailable').value = data.available||0;
-        document.getElementById('productImage').value = data.img||'';
-      });
-      productsTable.appendChild(tr);
-    });
-  }catch(e){ console.error(e); }
-  finally{ hideSpinner(); }
-}
-
-/* ---------------- ADD / UPDATE PRODUCT ---------------- */
-document.getElementById('productForm').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const name = document.getElementById('productName').value.trim();
-  const cost = Number(document.getElementById('productCost').value) || 0;
-  const cashReward = Number(document.getElementById('productCash').value) || 0;
-  const available = Number(document.getElementById('productAvailable').value) || 0;
-  const img = document.getElementById('productImage').value.trim() || '';
-
-  showSpinner();
-  try {
-    const shopCol = collection(db,'shopItems');
-    // Use product name as ID for simplicity
-    const prodRef = doc(db, 'shopItems', name.replace(/\s+/g,'_'));
-    await setDoc(prodRef, { name, cost, cashReward, available, img }, { merge:true });
-    alert('Product added/updated!');
-    renderProducts();
-  } catch(e){ console.error(e); alert('Failed to add/update product'); }
-  finally{ hideSpinner(); }
+logoutBtn.addEventListener('click', () => {
+  currentAdmin = null;
+  dashboard.classList.add('hidden');
+  loginPage.classList.remove('hidden');
 });
 
-/* ---------------- RENDER USERS ---------------- */
-async function renderUsers(){
-  showSpinner();
-  try{
-    const usersTable = document.querySelector('#usersTable tbody');
-    usersTable.innerHTML='';
-    const snap = await getDocs(collection(db,'users'));
-    snap.forEach(docSnap=>{
-      const data = docSnap.data();
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${docSnap.id}</td>
-        <td>${data.email||''}</td>
-        <td>${data.stars||0}</td>
-        <td>${data.cash||0}</td>
-        <td>${data.isVIP? 'Yes':'No'}</td>
-        <td>${data.isHost? 'Yes':'No'}</td>
-      `;
-      usersTable.appendChild(tr);
+/* ---------------- Users ---------------- */
+const loadUsers = async () => {
+  const usersCol = collection(db, 'users');
+  const snap = await getDocs(usersCol);
+  renderUsers(snap.docs.map(d => ({ id:d.id, ...d.data() })));
+};
+
+const renderUsers = (users) => {
+  usersList.innerHTML = '';
+  const search = userSearch.value.trim().toLowerCase();
+  users.filter(u => !search || (u.email && u.email.toLowerCase().includes(search)))
+    .forEach(u => {
+      const card = document.createElement('div');
+      card.className = 'user-card';
+      card.innerHTML = `<div>${u.email}</div><div>Stars: ${u.stars||0} ⭐ | Cash: ₦${u.cash||0}</div>`;
+      usersList.appendChild(card);
     });
-  }catch(e){ console.error(e); }
-  finally{ hideSpinner(); }
-}
+};
+
+userSearch.addEventListener('input', () => loadUsers());
+
+/* ---------------- Products ---------------- */
+addProductBtn.addEventListener('click', () => productModal.classList.remove('hidden'));
+closeProductModal.addEventListener('click', () => productModal.classList.add('hidden'));
+
+saveProductBtn.addEventListener('click', async () => {
+  const name = prodName.value.trim();
+  if (!name) return alert('Enter product name');
+  const docRef = doc(collection(db, 'shopItems'));
+  await setDoc(docRef, {
+    name,
+    img: prodImg.value || '',
+    cost: Number(prodStars.value) || 0,
+    cashReward: Number(prodCash.value) || 0,
+    available: Number(prodQty.value) || 0,
+    timestamp: serverTimestamp()
+  });
+  productModal.classList.add('hidden');
+  prodName.value=''; prodImg.value=''; prodStars.value=''; prodCash.value=''; prodQty.value='';
+  loadProducts();
+});
+
+const loadProducts = async () => {
+  const snap = await getDocs(collection(db, 'shopItems'));
+  productsList.innerHTML = '';
+  snap.docs.forEach(docSnap => {
+    const p = docSnap.data();
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `<div>${p.name}</div>
+                      <div>${p.cost} ⭐ | ₦${p.cashReward||0}</div>
+                      <div>${p.available||0} left</div>`;
+    productsList.appendChild(card);
+  });
+};
+
+/* ---------------- Orders ---------------- */
+const loadOrders = async () => {
+  const snap = await getDocs(collection(db, 'purchases'));
+  ordersList.innerHTML = '';
+  snap.docs.forEach(docSnap => {
+    const o = docSnap.data();
+    const card = document.createElement('div');
+    card.className = 'order-card';
+    const ts = o.timestamp?.toDate ? o.timestamp.toDate().toLocaleString() : '';
+    card.innerHTML = `<div>${o.productName} - ${o.cost} ⭐${o.cashReward? ' / ₦'+o.cashReward:''}</div>
+                      <div>${o.email}</div>
+                      <div>${ts}</div>`;
+    ordersList.appendChild(card);
+  });
+};
