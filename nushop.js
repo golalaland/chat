@@ -91,6 +91,27 @@ const triggerConfetti = () => {
   document.body.appendChild(s);
 };
 
+/* ------------------ Product modal helper ------------------ */
+function openProductModal(product) {
+  const modal = document.getElementById("productModal");
+  const modalTitle = document.getElementById("productModalTitle");
+  const modalDesc = document.getElementById("productModalDesc");
+  const modalClose = document.getElementById("closeProductModal");
+
+  if (!modal || !modalTitle || !modalDesc) return;
+
+  // Use product.description coming from Firestore, fallback text if missing
+  modalTitle.textContent = product?.name || 'Unnamed';
+  modalDesc.textContent = (product && (product.description || product.desc)) || 'No description yet 🌸';
+
+  modal.classList.remove('hidden');
+
+  // Optional: close when close button clicked (we also wire global listener below)
+  if (modalClose) {
+    modalClose.onclick = () => modal.classList.add('hidden');
+  }
+}
+
 /* ------------------ Modal helpers ------------------ */
 let _themedTimeout = null;
 const closeModal = () => {
@@ -455,21 +476,50 @@ const renderMyOrders = async () => {
 };
 
 /* ------------------ Shop rendering + card creation ------------------ */
+/* ------------------ Shop rendering + card creation ------------------ */
+/* ------------------ Shop rendering + card creation ------------------ */
 const createProductCard = (product) => {
-  const card = document.createElement('div'); card.className = 'product-card';
-  const img = document.createElement('img'); img.src = product.img || 'https://via.placeholder.com/300'; img.alt = product.name || 'Item';
+  const card = document.createElement('div');
+  card.className = 'product-card';
+
+  // Image (preview only)
+  const img = document.createElement('img');
+  img.src = product.img || 'https://via.placeholder.com/300';
+  img.alt = product.name || 'Item';
   img.addEventListener('click', () => previewImage(img.src));
-  const badge = document.createElement('span'); badge.className = 'availability-badge';
+
+  // Availability badge
+  const badge = document.createElement('span');
+  badge.className = 'availability-badge';
   const avail = Number(product.available) || 0;
   badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
   if (avail <= 0) badge.style.background = '#666';
-  const title = document.createElement('h3'); title.textContent = product.name || 'Unnamed';
-  const price = document.createElement('div'); price.className = 'price'; price.textContent = `${Number(product.cost) || 0} ⭐`;
-  const btn = document.createElement('button'); btn.className = 'buy-btn';
+
+  // Title - clicking the name opens the description modal
+  const title = document.createElement('h3');
+  title.textContent = product.name || 'Unnamed';
+  title.className = 'product-title';
+  title.style.cursor = 'pointer';
+  title.addEventListener('click', () => openProductModal(product)); // <— this triggers description modal
+
+  // Price
+  const price = document.createElement('div');
+  price.className = 'price';
+  price.textContent = `${Number(product.cost) || 0} ⭐`;
+
+  // Redeem button
+  const btn = document.createElement('button');
+  btn.className = 'buy-btn';
   btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
-  if (avail <= 0 || (product.hostOnly && currentUser && !currentUser.isHost) || (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) btn.disabled = true;
-  card.append(badge, img, title, price, btn);
+  if (avail <= 0 || (product.hostOnly && currentUser && !currentUser.isHost) ||
+      (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
+    btn.disabled = true;
+  }
   btn.addEventListener('click', () => redeemProduct(product));
+
+  // Assemble the card
+  card.append(badge, img, title, price, btn);
+
   return card;
 };
 
@@ -544,6 +594,7 @@ const redeemProduct = async (product) => {
 };
 
 /* ------------------ Render shop ------------------ */
+/* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
   showSpinner();
@@ -558,9 +609,22 @@ const renderShop = async () => {
 
     let delay = 0;
     DOM.shopItems.innerHTML = ''; // clear
+
+    // ForEach on QuerySnapshot
     shopSnap.forEach(docSnap => {
-      const product = docSnap.data();
-      product.id = docSnap.id;
+      const data = docSnap.data() || {};
+      // Ensure product object contains id + description (if present)
+      const product = {
+        id: docSnap.id,
+        name: data.name || '',
+        img: data.img || '',
+        cost: data.cost || 0,
+        available: data.available || 0,
+        hostOnly: data.hostOnly || false,
+        cashReward: data.cashReward || 0,
+        description: data.description || data.desc || '' // support either field name
+      };
+
       const card = createProductCard(product);
       card.style.opacity = '0';
       card.style.animation = `fadeInUp 0.35s forwards`;
@@ -606,30 +670,21 @@ const renderShop = async () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("productModal");
-  const modalTitle = document.getElementById("productModalTitle");
-  const modalDesc = document.getElementById("productModalDesc");
-  const closeModal = document.getElementById("closeProductModal");
+  const modalClose = document.getElementById("closeProductModal");
 
-  // 💬 Cute themed descriptions
-  const productDescriptions = {
-    "Star Mug": "☕✨ Sip your morning magic in this cosmic mug! Perfect for star collectors.",
-    "Galaxy Hoodie": "🪐 Cozy up like a space queen 👑. Soft, warm & out of this world.",
-    "Xixi Cap": "🧢 Stylish, sleek & gives off that exclusive club energy ✨.",
-    "Reward Badge": "🏅 Show off your stardust status with this premium badge!",
-  };
-
-  document.body.addEventListener("click", (e) => {
-    if (e.target.matches(".product-card h3")) {
-      const title = e.target.textContent.trim();
-      modalTitle.textContent = title;
-      modalDesc.textContent = productDescriptions[title] || "No description yet 🌸";
-      modal.classList.remove("hidden");
-    }
+  // Close button
+  modalClose?.addEventListener("click", () => {
+    modal?.classList.add("hidden");
   });
 
-  closeModal.addEventListener("click", () => modal.classList.add("hidden"));
-  modal.addEventListener("click", (e) => {
+  // Close when clicking outside content (modal overlay)
+  modal?.addEventListener("click", (e) => {
     if (e.target === modal) modal.classList.add("hidden");
+  });
+
+  // Optional: ESC key to close modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') modal?.classList.add('hidden');
   });
 });
 /* ------------------ Init ------------------ */
