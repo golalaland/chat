@@ -616,36 +616,6 @@ async function renderShop() {
     hideSpinner();
   }
 }
-
-    // ============================================================
-    // 🧾 DESCRIPTION MODAL LOGIC (MATCHES YOUR HTML EXACTLY)
-    // ============================================================
-    const modal = document.getElementById("productModal");
-    const modalTitle = document.getElementById("productModalTitle");
-    const modalDesc = document.getElementById("productModalDesc");
-    const modalClose = document.getElementById("closeProductModal");
-
-    document.body.addEventListener("click", (e) => {
-      // 🔹 Open when product title is clicked
-      if (e.target.classList.contains("product-title")) {
-        const title = e.target.textContent.trim();
-        modalTitle.textContent = title;
-        modalDesc.textContent = productDescriptions[title] || "No description yet 🌸";
-        modal.classList.remove("hidden");
-      }
-
-      // 🔹 Close modal
-      if (e.target === modal || e.target === modalClose) {
-        modal.classList.add("hidden");
-      }
-    });
-
-  } catch (err) {
-    console.error("Error loading shop:", err);
-  } finally {
-    hideSpinner();
-  }
-}
 /* -------------------------------
    🌗 Theme Toggle Script
 --------------------------------- */
