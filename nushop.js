@@ -491,7 +491,6 @@ const renderMyOrders = async () => {
 
 /* ------------------ Shop rendering + card creation ------------------ */
 /* ------------------ Shop rendering + card creation ------------------ */
-/* ------------------ Shop rendering + card creation ------------------ */
 const createProductCard = (product) => {
   const card = document.createElement('div');
   card.className = 'product-card';
