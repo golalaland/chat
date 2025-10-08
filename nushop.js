@@ -92,25 +92,39 @@ const triggerConfetti = () => {
 };
 
 /* ------------------ Product modal helper ------------------ */
+// Open modal with product info
 function openProductModal(product) {
   const modal = document.getElementById("productModal");
-  const modalTitle = document.getElementById("productModalTitle");
-  const modalDesc = document.getElementById("productModalDesc");
-  const modalClose = document.getElementById("closeProductModal");
+  const title = document.getElementById("productModalTitle");
+  const desc = document.getElementById("productModalDesc");
 
-  if (!modal || !modalTitle || !modalDesc) return;
+  if (!modal || !title || !desc) return;
 
-  // Use product.description coming from Firestore, fallback text if missing
-  modalTitle.textContent = product?.name || 'Unnamed';
-  modalDesc.textContent = (product && (product.description || product.desc)) || 'No description yet 🌸';
+  title.textContent = product?.name || 'Unnamed';
+  desc.textContent = product?.description || product?.desc || 'No description available.';
 
-  modal.classList.remove('hidden');
-
-  // Optional: close when close button clicked (we also wire global listener below)
-  if (modalClose) {
-    modalClose.onclick = () => modal.classList.add('hidden');
-  }
+  modal.classList.add('show');
 }
+
+// Close modal by clicking outside content
+document.getElementById('productModal').addEventListener('click', (e) => {
+  const content = e.currentTarget.querySelector('.product-modal-content');
+  if (!content.contains(e.target)) {
+    e.currentTarget.classList.remove('show');
+  }
+});
+
+// Example: attach click event to product names dynamically
+document.querySelectorAll('.product-card h3').forEach(nameEl => {
+  nameEl.addEventListener('click', () => {
+    const card = nameEl.closest('.product-card');
+    const product = {
+      name: card.querySelector('h3').textContent,
+      description: card.dataset.desc || 'No description available.'
+    };
+    openProductModal(product);
+  });
+});
 
 /* ------------------ Modal helpers ------------------ */
 let _themedTimeout = null;
