@@ -3,128 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Shop Dashboard</title>
+<title>Shop Admin Dashboard</title>
 <style>
-  /* ---------- General ---------- */
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-  body { background: #f4f6f9; color: #333; }
-  hidden { display: none; }
+  /* ---------- GENERAL ---------- */
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f2f5; color:#333; }
+  h1,h2,h3 { margin:0; }
+  button { cursor:pointer; }
 
-  /* ---------- Login Page ---------- */
-  #loginPage {
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+  /* ---------- LOADER ---------- */
+  #loaderOverlay {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.4);
+    z-index:2000;
+    justify-content:center;
+    align-items:center;
   }
-  #loginPage input {
-    padding: 10px; margin: 10px 0; width: 250px; border-radius: 6px; border: none;
-  }
-  #adminLoginBtn {
-    padding: 10px 20px; background: #ff7e5f; border: none; border-radius: 6px; color: #fff; cursor: pointer;
-  }
-  #loginMsg { margin-top: 10px; color: #ffcccc; }
+  #loaderOverlay span { background:#fff; padding:12px 20px; border-radius:8px; font-weight:bold; }
 
-  /* ---------- Dashboard ---------- */
-  #dashboard {
-    display: none; padding: 20px;
-  }
-  #dashboard h1 { margin-bottom: 20px; color: #222; }
-  .section { margin-bottom: 40px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
-  th { background: #667eea; color: #fff; }
-  tr:hover { background: #f1f1f1; }
-  button { padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; background: #667eea; color: #fff; }
-  button:hover { background: #556cd6; }
+  /* ---------- LOGIN GATE ---------- */
+  #adminGate { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
+  #adminGate input { padding:10px; width:250px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; }
+  #adminGate button { padding:10px 20px; border:none; background:#007bff; color:#fff; border-radius:6px; }
 
-  /* ---------- Top Controls ---------- */
-  #logoutBtn { float: right; margin-top: -50px; background: #ff4d4d; }
-  #addProductBtn { margin-bottom: 15px; background: #28a745; }
+  /* ---------- DASHBOARD ---------- */
+  #adminPanel { display:none; padding:20px; }
+  .section { background:#fff; border-radius:8px; padding:15px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
 
-  /* ---------- Product Modal ---------- */
-  #productModal {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 999;
-  }
-  #productModal .modal {
-    background: #fff; padding: 20px; border-radius: 10px; width: 400px; max-width: 90%;
-    display: flex; flex-direction: column;
-  }
-  #productModal input, #productModal textarea {
-    margin-bottom: 10px; padding: 8px; border-radius: 5px; border: 1px solid #ccc;
-  }
-  #productModal button { margin-top: 10px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
+  th { background:#f7f7f7; }
 
-  /* ---------- Alerts & Spinner ---------- */
-  #alertMsg {
-    position: fixed; top: 20px; right: 20px; background: #ffce00; padding: 10px 15px;
-    border-radius: 6px; display: none; z-index: 1000;
-  }
-  #spinner {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    display: none; border: 6px solid #f3f3f3; border-top: 6px solid #667eea;
-    border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; z-index: 1000;
-  }
-  @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+  .btn { padding:5px 10px; border:none; border-radius:5px; }
+  .btn-primary { background:#007bff; color:#fff; }
+  .btn-danger { background:#dc3545; color:#fff; }
+  .btn-small { padding:3px 6px; font-size:12px; }
 
-  /* ---------- Responsive ---------- */
-  @media (max-width: 600px) {
-    #productModal .modal { width: 95%; }
-    table, th, td { font-size: 14px; }
+  .hidden { display:none; }
+
+  /* ---------- MODAL ---------- */
+  .modalOverlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; z-index:3000;
+  }
+  .modalContent {
+    background:#fff; padding:20px; border-radius:8px; min-width:300px; max-width:90%;
   }
 </style>
 </head>
 <body>
 
-<!-- ---------- Login Page ---------- -->
-<div id="loginPage">
-  <h1>Admin Login</h1>
+<!-- LOADER -->
+<div id="loaderOverlay"><span id="loaderText">Processing...</span></div>
+
+<!-- ADMIN LOGIN GATE -->
+<div id="adminGate">
+  <h2>Admin Login</h2>
   <input type="email" id="adminEmail" placeholder="Enter admin email">
-  <button id="adminLoginBtn">Login</button>
-  <div id="loginMsg"></div>
+  <button id="adminCheckBtn">Enter Dashboard</button>
+  <p id="adminGateMsg" style="color:red;margin-top:5px;"></p>
 </div>
 
-<!-- ---------- Dashboard ---------- -->
-<div id="dashboard">
-  <h1>Admin Shop Dashboard</h1>
-  <button id="logoutBtn">Logout</button>
+<!-- DASHBOARD -->
+<div id="adminPanel">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Shop Admin Dashboard</h1>
+    <div>
+      <span id="currentAdminEmail"></span>
+      <button id="logoutBtn" class="btn btn-danger">Logout</button>
+    </div>
+  </div>
 
-  <!-- Users Section -->
-  <div class="section" id="usersSection">
+  <!-- USERS SECTION -->
+  <div class="section">
     <h2>Users</h2>
-    <div id="usersList">Loading users...</div>
+    <input type="text" id="userSearch" placeholder="Search by email or ID" style="margin-bottom:10px;padding:6px;width:200px;">
+    <table id="usersTable">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Stars</th>
+          <th>Cash</th>
+          <th>VIP</th>
+          <th>Admin</th>
+          <th>Subscription</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button id="exportCsv" class="btn btn-primary" style="margin-top:10px;">Export CSV</button>
   </div>
 
-  <!-- Products Section -->
-  <div class="section" id="productsSection">
+  <!-- PRODUCTS SECTION -->
+  <div class="section">
     <h2>Products</h2>
-    <button id="addProductBtn">Add New Product</button>
-    <div id="productsList">Loading products...</div>
-  </div>
-
-  <!-- Orders Section -->
-  <div class="section" id="ordersSection">
-    <h2>Orders</h2>
-    <div id="ordersList">Loading orders...</div>
+    <table id="productsTable">
+      <thead>
+        <tr><th>Name</th><th>Price</th><th>Stars</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 </div>
-
-<!-- ---------- Product Modal ---------- -->
-<div id="productModal">
-  <div class="modal">
-    <h3>Add / Edit Product</h3>
-    <input type="text" id="prodName" placeholder="Product Name">
-    <input type="text" id="prodImg" placeholder="Product Image URL">
-    <input type="number" id="prodStars" placeholder="Cost (Stars)">
-    <input type="number" id="prodCash" placeholder="Cash Reward">
-    <input type="number" id="prodQty" placeholder="Quantity">
-    <button id="saveProductBtn">Save Product</button>
-    <button id="closeProductModal">Close</button>
-  </div>
-</div>
-
-<!-- ---------- Alerts & Spinner ---------- -->
-<div id="alertMsg"></div>
-<div id="spinner"></div>
 
 <script type="module" src="adminshop.js"></script>
 </body>
