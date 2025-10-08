@@ -821,6 +821,56 @@ body.dark #confirmModal #confirmNo {
 body.dark #confirmModal #confirmNo:hover {
   background: rgba(230,238,248,0.1);
 }
+
+/* ---------- PRODUCT TITLE TAP + MODAL ---------- */
+.product-card h3 {
+  margin: 0.5rem 0 0.2rem;
+  font-size: 0.85rem;   /* 👈 smaller title */
+  color: #111;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.product-card h3:hover {
+  color: var(--theme-solid);
+}
+
+#productModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 3000;
+}
+
+#productModal.hidden {
+  display: none;
+}
+
+.product-modal-content {
+  background: #fff;
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  max-width: 320px;
+  width: 85%;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  animation: pop 0.25s ease;
+}
+
+.product-modal-content h3 {
+  font-size: 1rem;
+  color: var(--theme-solid);
+  margin-bottom: 0.4rem;
+}
+
+.product-modal-content p {
+  font-size: 0.88rem;
+  color: #444;
+  line-height: 1.4;
+}
   </style>
 </head>
 <body>
