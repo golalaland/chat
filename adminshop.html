@@ -1,118 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Shop Dashboard</title>
-  <style>
-    /* ---------------- BASIC RESET ---------------- */
-    * { margin:0; padding:0; box-sizing:border-box; font-family: Arial,sans-serif; }
-    body { background:#f4f4f4; color:#333; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<style>
+  /* ---------------- Body ---------------- */
+  body { font-family: sans-serif; margin:0; padding:0; background:#f5f5f5; color:#222; }
+  .centered { display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; gap:10px; }
+  .hidden { display:none; }
+  input { padding:8px; margin:5px 0; width:200px; border:1px solid #ccc; border-radius:4px; }
+  button { padding:8px 16px; cursor:pointer; border:none; border-radius:4px; background:#007bff; color:white; }
+  button:hover { background:#0056b3; }
+  .msg { color:red; margin-top:5px; }
 
-    /* ---------------- SPINNER ---------------- */
-    .shop-spinner { 
-      position:fixed; top:0; left:0; width:100%; height:100%; 
-      background: rgba(0,0,0,0.3); display:flex; justify-content:center; align-items:center; 
-      opacity:0; pointer-events:none; transition:0.3s; z-index:1000;
-    }
-    .shop-spinner.active { opacity:1; pointer-events:auto; }
-    .shop-spinner div { width:50px; height:50px; border:5px solid #ccc; border-top-color:#333; border-radius:50%; animation:spin 1s linear infinite; }
-    @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  #dashboard { padding:20px; }
+  section { margin-bottom:30px; }
+  #usersList, #productsList, #ordersList { background:#fff; padding:10px; border-radius:5px; max-height:300px; overflow:auto; }
 
-    /* ---------------- LOGIN ---------------- */
-    #adminLoginDiv { max-width:400px; margin:80px auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
-    #adminLoginDiv h2 { margin-bottom:20px; text-align:center; }
-    #adminLoginDiv input { width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px; }
-    #adminLoginDiv button { width:100%; padding:10px; border:none; border-radius:5px; background:#333; color:#fff; cursor:pointer; }
+  .product-card, .user-card, .order-card { border:1px solid #ccc; padding:10px; margin:5px 0; border-radius:5px; display:flex; justify-content:space-between; align-items:center; }
 
-    /* ---------------- DASHBOARD ---------------- */
-    #adminDashboard { display:none; padding:20px; max-width:1200px; margin:20px auto; }
-    .tabs { display:flex; gap:10px; margin-bottom:20px; }
-    .tabs button { padding:10px 20px; border:none; border-radius:5px; cursor:pointer; background:#ddd; }
-    .tabs button.active { background:#333; color:#fff; }
+  /* ---------------- Modal ---------------- */
+  .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; }
+  .modal-content { background:#fff; padding:20px; border-radius:8px; min-width:300px; display:flex; flex-direction:column; gap:8px; }
+  .close { align-self:flex-end; cursor:pointer; font-size:20px; font-weight:bold; }
+  .close:hover { color:red; }
 
-    .tabContent { display:none; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
-    .tabContent.active { display:block; }
-
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    table th, table td { padding:10px; border:1px solid #ccc; text-align:left; }
-    table th { background:#f0f0f0; }
-
-    button.action-btn { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
-    button.refund { background:#e74c3c; color:#fff; }
-    button.update { background:#27ae60; color:#fff; }
-
-    /* Product form */
-    #productForm { display:flex; flex-direction:column; gap:10px; margin-top:20px; }
-    #productForm input { padding:10px; border:1px solid #ccc; border-radius:5px; }
-    #productForm button { background:#333; color:#fff; border:none; padding:10px; border-radius:5px; cursor:pointer; }
-  </style>
+  input[type=number] { width:100%; }
+  input[type=url] { width:100%; }
+</style>
 </head>
 <body>
 
-  <!-- SPINNER -->
-  <div class="shop-spinner"><div></div></div>
+<!-- ---------- Login Page ---------- -->
+<div id="loginPage" class="centered">
+  <h2>Admin Login</h2>
+  <input type="email" id="adminEmail" placeholder="Admin Email">
+  <button id="adminLoginBtn">Login</button>
+  <div id="loginMsg" class="msg"></div>
+</div>
 
-  <!-- LOGIN -->
-  <div id="adminLoginDiv">
-    <h2>Admin Login</h2>
-    <input type="email" id="adminEmail" placeholder="Enter admin email" />
-    <button id="adminLoginBtn">Login</button>
+<!-- ---------- Dashboard ---------- -->
+<div id="dashboard" class="hidden">
+  <h1>Admin Dashboard</h1>
+  <button id="logoutBtn">Logout</button>
+
+  <section>
+    <h2>Users</h2>
+    <input type="text" id="userSearch" placeholder="Search by email">
+    <div id="usersList"></div>
+  </section>
+
+  <section>
+    <h2>Products</h2>
+    <button id="addProductBtn">Add Product</button>
+    <div id="productsList"></div>
+  </section>
+
+  <section>
+    <h2>Orders</h2>
+    <div id="ordersList"></div>
+  </section>
+</div>
+
+<!-- ---------- Product Modal ---------- -->
+<div id="productModal" class="modal hidden">
+  <div class="modal-content">
+    <span id="closeProductModal" class="close">&times;</span>
+    <h3 id="modalTitle">Add Product</h3>
+    <input type="text" id="prodName" placeholder="Product Name">
+    <input type="url" id="prodImg" placeholder="Image URL">
+    <input type="number" id="prodStars" placeholder="Cost in ⭐">
+    <input type="number" id="prodCash" placeholder="Cash Reward (optional)">
+    <input type="number" id="prodQty" placeholder="Available Quantity">
+    <button id="saveProductBtn">Save Product</button>
   </div>
+</div>
 
-  <!-- DASHBOARD -->
-  <div id="adminDashboard">
-    <h1>🛠 Admin Dashboard</h1>
+<!-- ---------- JS ---------- -->
+<script type="module" src="adminshop.js"></script>
 
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="orders">Orders</button>
-      <button class="tab-btn" data-tab="products">Products</button>
-      <button class="tab-btn" data-tab="users">Users</button>
-    </div>
-
-    <!-- Orders Tab -->
-    <div id="ordersTab" class="tabContent active">
-      <h3>Orders</h3>
-      <table id="ordersTable">
-        <thead>
-          <tr><th>Order ID</th><th>User</th><th>Product</th><th>Cost ⭐</th><th>Cash Reward ₦</th><th>Date</th><th>Actions</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <!-- Products Tab -->
-    <div id="productsTab" class="tabContent">
-      <h3>Products</h3>
-      <table id="productsTable">
-        <thead>
-          <tr><th>ID</th><th>Name</th><th>Cost ⭐</th><th>Cash Reward ₦</th><th>Available</th><th>Actions</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <form id="productForm">
-        <input type="text" id="productName" placeholder="Product Name" required />
-        <input type="number" id="productCost" placeholder="Cost in ⭐" required />
-        <input type="number" id="productCash" placeholder="Cash Reward ₦" />
-        <input type="number" id="productAvailable" placeholder="Quantity" required />
-        <input type="text" id="productImage" placeholder="Image URL" />
-        <button type="submit">Add / Update Product</button>
-      </form>
-    </div>
-
-    <!-- Users Tab -->
-    <div id="usersTab" class="tabContent">
-      <h3>Users</h3>
-      <table id="usersTable">
-        <thead>
-          <tr><th>User ID</th><th>Email</th><th>Stars</th><th>Cash ₦</th><th>VIP</th><th>Host</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <script type="module" src="adminshop.js"></script>
 </body>
 </html>
