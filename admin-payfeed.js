@@ -1,4 +1,4 @@
-// admin-payfeed.js (FULL FIXED & OPTIMIZED)
+// admin-payfeed.js (fixed duplicate issue)
 
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -48,7 +48,7 @@ function showLoader(text = "Processing...") {
   if (loaderText) loaderText.textContent = text;
   if (loaderOverlay) loaderOverlay.style.display = "flex";
 }
-function hideLoader() { if (loaderOverlay) loaderOverlay.style.display = "none"; }
+function hideLoader() { loaderOverlay.style.display = "none"; }
 function downloadCSV(filename, rows) {
   const csvContent = rows.map(r => r.map(v => `"${String(v ?? "")}"`).join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -66,9 +66,20 @@ function createToggleCheckbox(value) {
 function showConfirmModal(title, message) {
   return new Promise(resolve => {
     const overlay = document.createElement("div");
-    Object.assign(overlay.style, { position: "fixed", inset: "0", background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 });
+    Object.assign(overlay.style, {
+      position: "fixed", inset: "0",
+      background: "rgba(0,0,0,0.35)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      zIndex: 3000
+    });
+
     const card = document.createElement("div");
-    Object.assign(card.style, { background: "#fff", padding: "18px", borderRadius: "10px", minWidth: "300px", maxWidth: "90%", textAlign: "center", boxShadow: "0 8px 30px rgba(0,0,0,0.12)" });
+    Object.assign(card.style, {
+      background: "#fff", padding: "18px", borderRadius: "10px",
+      minWidth: "300px", maxWidth: "90%", textAlign: "center",
+      boxShadow: "0 8px 30px rgba(0,0,0,0.12)"
+    });
+
     const h = document.createElement("h3"); h.textContent = title; h.style.margin = "0 0 8px";
     const p = document.createElement("p"); p.textContent = message; p.style.margin = "0 0 14px"; p.style.color="#333";
     const btnRow = document.createElement("div"); Object.assign(btnRow.style,{display:"flex",justifyContent:"center",gap:"10px"});
@@ -87,12 +98,10 @@ let currentAdmin = null;
 async function checkAdmin(emailRaw) {
   const email = String(emailRaw||"").trim().toLowerCase();
   if(!email) return null;
-  try {
-    const snap = await getDocs(query(collection(db,"users"),where("email","==",email)));
-    if(snap.empty) return null;
-    const d = snap.docs[0].data()||{};
-    return d.isAdmin===true ? { email, id:snap.docs[0].id } : null;
-  } catch(e) { console.error("checkAdmin error:", e); return null; }
+  const snap = await getDocs(query(collection(db,"users"),where("email","==",email)));
+  if(snap.empty) return null;
+  const d = snap.docs[0].data()||{};
+  return d.isAdmin===true ? { email, id:snap.docs[0].id } : null;
 }
 adminCheckBtn.addEventListener("click", async () => {
   adminGateMsg.textContent="";
@@ -110,7 +119,7 @@ adminCheckBtn.addEventListener("click", async () => {
 adminEmailInput.addEventListener("keydown", e => { if(e.key==="Enter") adminCheckBtn.click(); });
 logoutBtn.addEventListener("click", () => { currentAdmin=null; adminPanel.classList.add("hidden"); adminGate.classList.remove("hidden"); adminEmailInput.value=""; });
 
-// ---------- Users rendering ----------
+// ---------- Users list/render ----------
 let usersCache = [];
 async function loadUsers() {
   try {
@@ -120,59 +129,100 @@ async function loadUsers() {
     renderUsers(usersCache);
   } catch(e){ console.error(e); usersTableBody.innerHTML=`<tr><td colspan="10" class="muted">Failed to load users.</td></tr>`; }
 }
-function renderUsers(users){
-  usersTableBody.innerHTML="";
-  users.forEach(u=>{
+
+function renderUsers(users) {
+  usersTableBody.innerHTML = "";
+  
+  users.forEach(u => {
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
-      <td>${u.email||""}</td><td>${u.phone||""}</td><td>${u.chatId||""}</td>
-      <td><input type="number" min="0" value="${u.stars||0}" style="width:60px"/></td>
-      <td><input type="number" min="0" value="${u.cash||0}" style="width:60px"/></td>
-      <td></td><td></td><td></td><td></td><td></td>
+      <td>${u.email || ""}</td>
+      <td>${u.phone || ""}</td>
+      <td>${u.chatId || ""}</td>
+      <td><input type="number" min="0" value="${u.stars || 0}" style="width:60px" /></td>
+      <td><input type="number" min="0" value="${u.cash || 0}" style="width:60px" /></td>
+      <td></td><td></td><td></td>
+      <td></td>
+      <td></td>
     `;
+
     const isVIP = createToggleCheckbox(u.isVIP);
     const isAdminToggle = createToggleCheckbox(u.isAdmin);
     const isHost = createToggleCheckbox(u.isHost);
     const subscriptionActive = createToggleCheckbox(u.subscriptionActive);
-    tr.children[5].appendChild(isVIP); tr.children[6].appendChild(isAdminToggle);
-    tr.children[7].appendChild(isHost); tr.children[8].appendChild(subscriptionActive);
+
+    tr.children[5].appendChild(isVIP);
+    tr.children[6].appendChild(isAdminToggle);
+    tr.children[7].appendChild(isHost);
+    tr.children[8].appendChild(subscriptionActive);
 
     const actionsTd = tr.children[9];
-    const actionsDiv = document.createElement("div"); actionsDiv.className="actions";
-    const enterBtn = document.createElement("button"); enterBtn.className="btn btn-primary"; enterBtn.textContent="Enter";
-    const removeBtn = document.createElement("button"); removeBtn.className="btn btn-danger"; removeBtn.textContent="Remove";
+    const actionsDiv = document.createElement("div"); actionsDiv.className = "actions";
+    const enterBtn = document.createElement("button"); enterBtn.className = "btn btn-primary"; enterBtn.textContent = "Enter";
+    const removeBtn = document.createElement("button"); removeBtn.className = "btn btn-danger"; removeBtn.textContent = "Remove";
     actionsDiv.appendChild(enterBtn); actionsDiv.appendChild(removeBtn); actionsTd.appendChild(actionsDiv);
 
-    // Enter
-    enterBtn.addEventListener("click", async ()=>{
-      const confirmed = await showConfirmModal("Update user", `Apply changes for ${u.email||"(no email)"}?`);
-      if(!confirmed) return;
+    // ---------- Enter button ----------
+    enterBtn.addEventListener("click", async () => {
+      const confirmed = await showConfirmModal("Update user", `Apply changes for ${u.email || "(no email)"}?`);
+      if (!confirmed) return;
+
       showLoader("Updating user...");
       try {
-        const stars = Number(tr.children[3].querySelector("input").value||0);
-        const cash = Number(tr.children[4].querySelector("input").value||0);
-        const updates = {stars,cash,isVIP:isVIP.checked,isAdmin:isAdminToggle.checked,isHost:isHost.checked,subscriptionActive:subscriptionActive.checked};
-        if(updates.subscriptionActive){ updates.subscriptionStartTime = Date.now(); updates.subscriptionCount = (u.subscriptionCount||0)+1; }
-        const emailKey = (u.email||"").toLowerCase();
-        await setDoc(doc(db,"users",emailKey),{...u,...updates},{merge:true});
-        if(updates.subscriptionActive){
-          await setDoc(doc(db,"whitelist",emailKey),{email:emailKey,phone:u.phone||"",chatId:u.chatId||"",subscriptionActive:true,subscriptionStartTime:updates.subscriptionStartTime},{merge:true});
-        } else { await updateDoc(doc(db,"whitelist",emailKey),{subscriptionActive:false}).catch(()=>{}); }
-        hideLoader(); await loadUsers(); await loadWhitelist(); alert("User updated successfully.");
-      } catch(err){ hideLoader(); console.error(err); alert("Failed to update user."); }
+        const stars = Number(tr.children[3].querySelector("input").value || 0);
+        const cash = Number(tr.children[4].querySelector("input").value || 0);
+        const updates = {
+          stars,
+          cash,
+          isVIP: !!isVIP.checked,
+          isAdmin: !!isAdminToggle.checked,
+          isHost: !!isHost.checked,
+          subscriptionActive: !!subscriptionActive.checked
+        };
+        if (updates.subscriptionActive) {
+          updates.subscriptionStartTime = Date.now();
+          updates.subscriptionCount = (u.subscriptionCount || 0) + 1;
+        }
+
+        const userDoc = await getUserDocByEmail(u.email);
+        if(!userDoc) throw new Error("User not found.");
+
+        await updateDoc(userDoc.ref, updates);
+
+        const wlRef = doc(db, "whitelist", (u.email || "").toLowerCase());
+        if (updates.subscriptionActive) {
+          await setDoc(wlRef, {
+            email: (u.email || "").toLowerCase(),
+            phone: u.phone || "",
+            chatId: u.chatId || "",
+            subscriptionActive: true,
+            subscriptionStartTime: updates.subscriptionStartTime
+          }, { merge: true });
+        } else {
+          await updateDoc(wlRef, { subscriptionActive: false }).catch(()=>{});
+        }
+
+        hideLoader();
+        await loadUsers(); await loadWhitelist();
+        alert("User updated successfully.");
+      } catch(err){ hideLoader(); console.error(err); alert("Failed to update user. See console."); }
     });
 
-    // Remove
-    removeBtn.addEventListener("click", async ()=>{
-      const confirmed = await showConfirmModal("Remove user", `Delete ${u.email||"(no email)"} from database?`);
-      if(!confirmed) return;
+    // ---------- Remove button ----------
+    removeBtn.addEventListener("click", async () => {
+      const confirmed = await showConfirmModal("Remove user", `Delete ${u.email || "(no email)"} from database?`);
+      if (!confirmed) return;
+
       showLoader("Removing user...");
       try {
-        const emailKey = (u.email||"").toLowerCase();
-        await deleteDoc(doc(db,"users",emailKey)).catch(()=>{});
-        await deleteDoc(doc(db,"whitelist",emailKey)).catch(()=>{});
-        hideLoader(); await loadUsers(); await loadWhitelist(); alert(`${u.email||"(no email)"} removed successfully.`);
-      } catch(err){ hideLoader(); console.error(err); alert("Failed to remove user."); }
+        const userDoc = await getUserDocByEmail(u.email);
+        if(userDoc) await deleteDoc(userDoc.ref);
+        if(u.email) await deleteDoc(doc(db,"whitelist",u.email.toLowerCase())).catch(()=>{});
+        hideLoader();
+        await loadUsers(); await loadWhitelist();
+        alert(`${u.email || "(no email)"} removed successfully.`);
+      } catch(err){ hideLoader(); console.error(err); alert("Failed to remove user. See console."); }
     });
 
     usersTableBody.appendChild(tr);
@@ -180,132 +230,104 @@ function renderUsers(users){
 }
 
 // ---------- Search ----------
-userSearch.addEventListener("input", ()=>{
+userSearch.addEventListener("input",()=>{
   const q=(userSearch.value||"").toLowerCase();
-  renderUsers(usersCache.filter(u=>(u.email||"").toLowerCase().includes(q)||(u.chatId||"").toLowerCase().includes(q)));
+  renderUsers(usersCache.filter(u=>(u.email||"").toLowerCase().includes(q) || (u.chatId||"").toLowerCase().includes(q)));
 });
 
-// ---------- Whitelist rendering ----------
-async function loadWhitelist(){
-  try{
-    whitelistTableBody.innerHTML="";
-    const snap = await getDocs(collection(db,"whitelist"));
-    snap.docs.forEach(w=>{
-      const d=w.data()||{};
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${d.email||""}</td><td>${d.phone||""}</td><td>${d.subscriptionActive?"Active":"Inactive"}</td><td></td>`;
-      const actionTd = tr.children[3];
-      const removeBtn = document.createElement("button"); removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
-      removeBtn.addEventListener("click", async ()=>{
-        const confirmed = await showConfirmModal("Remove from whitelist", `Delete ${d.email||"(no email)"}?`);
-        if(!confirmed) return;
-        showLoader("Removing...");
-        try { await deleteDoc(doc(db,"whitelist",d.email.toLowerCase())).catch(()=>{}); await updateDoc(doc(db,"users",d.email.toLowerCase()),{subscriptionActive:false}).catch(()=>{}); hideLoader(); await loadWhitelist(); await loadUsers(); } catch(e){ hideLoader(); console.error(e); alert("Failed."); }
-      });
-      actionTd.appendChild(removeBtn); whitelistTableBody.appendChild(tr);
-    });
-  } catch(e){ console.error(e); whitelistTableBody.innerHTML=`<tr><td colspan="4" class="muted">Failed to load whitelist.</td></tr>`; }
+// ---------- CSV helpers ----------
+function stripQuotes(str){ return str.replace(/^"(.*)"$/,"$1").trim(); }
+async function getUserDocByEmail(emailRaw) {
+  const email = (emailRaw||"").trim().toLowerCase();
+  if(!email) return null;
+  const snap = await getDocs(query(collection(db,"users"),where("email","==",email)));
+  return snap.empty ? null : snap.docs[0];
 }
 
 // ---------- Manual whitelist add ----------
 addWhitelistBtn.addEventListener("click", async ()=>{
-  const emailRaw = (wlEmailInput.value||"").trim(); const phone=(wlPhoneInput.value||"").trim();
+  const emailRaw=(wlEmailInput.value||"").trim();
+  const phone=(wlPhoneInput.value||"").trim();
   if(!emailRaw||!phone) return alert("Enter email & phone");
-  const email = emailRaw.toLowerCase();
-  const confirmed = await showConfirmModal("Add to whitelist", `Add ${email}?`);
+  const email=emailRaw.toLowerCase();
+  const confirmed=await showConfirmModal("Add to whitelist", `Add ${email} to whitelist?`);
   if(!confirmed) return;
-  showLoader("Adding...");
+  showLoader("Adding to whitelist...");
   try{
-    await setDoc(doc(db,"users",email),{email,phone,chatId:"",subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:1},{merge:true});
+    const userDoc = await getUserDocByEmail(email);
+    if(userDoc){
+      const data=userDoc.data()||{};
+      await updateDoc(userDoc.ref,{
+        phone,
+        subscriptionActive:true,
+        subscriptionStartTime:Date.now(),
+        subscriptionCount:(data.subscriptionCount||0)+1
+      });
+    } else {
+      await setDoc(doc(db,"users",email),{
+        email, phone, chatId:"", subscriptionActive:true,
+        subscriptionStartTime:Date.now(), subscriptionCount:1
+      });
+    }
     await setDoc(doc(db,"whitelist",email),{email,phone,subscriptionActive:true,subscriptionStartTime:Date.now()},{merge:true});
-    hideLoader(); await loadUsers(); await loadWhitelist(); alert(`${email} added.`);
-  } catch(e){ hideLoader(); console.error(e); alert("Failed to add."); }
+    hideLoader();
+    await loadWhitelist(); await loadUsers();
+    alert(`${email} added/updated on whitelist.`);
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to add to whitelist."); }
 });
 
 // ---------- CSV batch injection ----------
-wlCsvUpload.addEventListener("change", async e => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  const confirmed = await showConfirmModal("CSV Batch", "Inject CSV batch to whitelist?");
-  if (!confirmed) return;
-
+wlCsvUpload.addEventListener("change", async e=>{
+  const file=e.target.files?.[0]; if(!file) return;
+  const confirmed=await showConfirmModal("CSV Batch","Inject CSV batch to whitelist?");
+  if(!confirmed) return;
   showLoader("Processing CSV...");
+  try{
+    const text=await file.text();
+    const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+    const batchEmails=[];
+    for(const line of lines){
+      const parts=line.split(",").map(stripQuotes);
+      const emailRaw=parts[0]||""; const phone=parts[1]||""; const chatId=parts[2]||"";
+      if(!emailRaw||!phone||!chatId) continue;
+      const email=emailRaw.toLowerCase(); batchEmails.push(email);
 
-  try {
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-    const batchEmails = [];
-
-    for (const line of lines) {
-      const parts = line.split(",").map(s => s.replace(/^"(.*)"$/, "$1").trim());
-      const emailRaw = parts[0] || "";
-      const phone = parts[1] || "";
-      const chatId = parts[2] || "";
-      if (!emailRaw || !phone || !chatId) continue;
-
-      const email = emailRaw.toLowerCase();
-      batchEmails.push(email);
-
-      // 🔸 Check for existing doc by email field (global search)
-      const existingSnap = await getDocs(query(collection(db, "users"), where("email", "==", email)));
-
-      if (!existingSnap.empty) {
-        // ✅ Update existing
-        const userDoc = existingSnap.docs[0];
-        const data = userDoc.data() || {};
-        await updateDoc(userDoc.ref, {
-          phone,
-          chatId,
-          subscriptionActive: true,
-          subscriptionStartTime: Date.now(),
-          subscriptionCount: (data.subscriptionCount || 0) + 1
+      const userDoc = await getUserDocByEmail(email);
+      if(userDoc){
+        const data = userDoc.data()||{};
+        await updateDoc(userDoc.ref,{
+          phone, chatId, subscriptionActive:true,
+          subscriptionStartTime:Date.now(),
+          subscriptionCount:(data.subscriptionCount||0)+1
         });
       } else {
-        // 🆕 Create new (ID = email)
-        await setDoc(doc(db, "users", email), {
-          email,
-          phone,
-          chatId,
-          subscriptionActive: true,
-          subscriptionStartTime: Date.now(),
-          subscriptionCount: 1
+        await setDoc(doc(db,"users",email),{
+          email, phone, chatId, subscriptionActive:true,
+          subscriptionStartTime:Date.now(),
+          subscriptionCount:1
         });
       }
 
-      // Sync whitelist
-      await setDoc(doc(db, "whitelist", email), {
-        email,
-        phone,
-        chatId,
-        subscriptionActive: true,
-        subscriptionStartTime: Date.now()
-      }, { merge: true });
+      await setDoc(doc(db,"whitelist",email),{email,phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now()},{merge:true});
     }
 
-    // 🧼 Cleanup Lady
-    if (cleanUpLadyToggle.checked) {
-      const wlSnap = await getDocs(collection(db, "whitelist"));
-      for (const wlDoc of wlSnap.docs) {
-        const key = (wlDoc.id || "").toLowerCase();
-        if (!batchEmails.includes(key)) {
-          await updateDoc(doc(db, "users", key), { subscriptionActive: false }).catch(() => {});
-          await deleteDoc(doc(db, "whitelist", key)).catch(() => {});
+    if(cleanUpLadyToggle.checked){
+      const wlSnap=await getDocs(collection(db,"whitelist"));
+      for(const wlDoc of wlSnap.docs){
+        const key=(wlDoc.id||"").toLowerCase();
+        if(!batchEmails.includes(key)){
+          const userDoc = await getUserDocByEmail(key);
+          if(userDoc) await updateDoc(userDoc.ref,{subscriptionActive:false}).catch(()=>{});
+          await deleteDoc(doc(db,"whitelist",key)).catch(()=>{});
         }
       }
     }
 
     hideLoader();
-    await loadWhitelist();
-    await loadUsers();
-    alert("CSV batch processed without duplicates ✅");
-  } catch (err) {
-    hideLoader();
-    console.error(err);
-    alert("CSV processing failed.");
-  } finally {
-    wlCsvUpload.value = "";
-  }
+    await loadWhitelist(); await loadUsers();
+    alert("CSV batch processed.");
+  }catch(err){ hideLoader(); console.error(err); alert("CSV processing failed."); }
+  finally{ wlCsvUpload.value=""; }
 });
 
 // ---------- Export CSV ----------
