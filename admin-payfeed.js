@@ -223,35 +223,89 @@ addWhitelistBtn.addEventListener("click", async ()=>{
 });
 
 // ---------- CSV batch injection ----------
-wlCsvUpload.addEventListener("change", async e=>{
-  const file=e.target.files?.[0]; if(!file) return;
-  const confirmed = await showConfirmModal("CSV Batch","Inject CSV batch to whitelist?");
-  if(!confirmed) return;
+wlCsvUpload.addEventListener("change", async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const confirmed = await showConfirmModal("CSV Batch", "Inject CSV batch to whitelist?");
+  if (!confirmed) return;
+
   showLoader("Processing CSV...");
-  try{
+
+  try {
     const text = await file.text();
-    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
-    const batchEmails=[];
-    for(const line of lines){
-      const [emailRaw,phone,chatId] = line.split(",").map(s=>s.replace(/^"(.*)"$/,"$1").trim());
-      if(!emailRaw||!phone||!chatId) continue;
-      const email=emailRaw.toLowerCase(); batchEmails.push(email);
-      await setDoc(doc(db,"users",email),{email,phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:1},{merge:true});
-      await setDoc(doc(db,"whitelist",email),{email,phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now()},{merge:true});
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    const batchEmails = [];
+
+    for (const line of lines) {
+      const parts = line.split(",").map(s => s.replace(/^"(.*)"$/, "$1").trim());
+      const emailRaw = parts[0] || "";
+      const phone = parts[1] || "";
+      const chatId = parts[2] || "";
+      if (!emailRaw || !phone || !chatId) continue;
+
+      const email = emailRaw.toLowerCase();
+      batchEmails.push(email);
+
+      // 🔸 Check for existing doc by email field (global search)
+      const existingSnap = await getDocs(query(collection(db, "users"), where("email", "==", email)));
+
+      if (!existingSnap.empty) {
+        // ✅ Update existing
+        const userDoc = existingSnap.docs[0];
+        const data = userDoc.data() || {};
+        await updateDoc(userDoc.ref, {
+          phone,
+          chatId,
+          subscriptionActive: true,
+          subscriptionStartTime: Date.now(),
+          subscriptionCount: (data.subscriptionCount || 0) + 1
+        });
+      } else {
+        // 🆕 Create new (ID = email)
+        await setDoc(doc(db, "users", email), {
+          email,
+          phone,
+          chatId,
+          subscriptionActive: true,
+          subscriptionStartTime: Date.now(),
+          subscriptionCount: 1
+        });
+      }
+
+      // Sync whitelist
+      await setDoc(doc(db, "whitelist", email), {
+        email,
+        phone,
+        chatId,
+        subscriptionActive: true,
+        subscriptionStartTime: Date.now()
+      }, { merge: true });
     }
-    if(cleanUpLadyToggle.checked){
-      const wlSnap = await getDocs(collection(db,"whitelist"));
-      for(const wlDoc of wlSnap.docs){
-        const key=(wlDoc.id||"").toLowerCase();
-        if(!batchEmails.includes(key)){
-          await updateDoc(doc(db,"users",key),{subscriptionActive:false}).catch(()=>{});
-          await deleteDoc(doc(db,"whitelist",key)).catch(()=>{});
+
+    // 🧼 Cleanup Lady
+    if (cleanUpLadyToggle.checked) {
+      const wlSnap = await getDocs(collection(db, "whitelist"));
+      for (const wlDoc of wlSnap.docs) {
+        const key = (wlDoc.id || "").toLowerCase();
+        if (!batchEmails.includes(key)) {
+          await updateDoc(doc(db, "users", key), { subscriptionActive: false }).catch(() => {});
+          await deleteDoc(doc(db, "whitelist", key)).catch(() => {});
         }
       }
     }
-    hideLoader(); await loadUsers(); await loadWhitelist(); alert("CSV batch processed.");
-  } catch(e){ hideLoader(); console.error(e); alert("CSV processing failed."); }
-  finally{ wlCsvUpload.value=""; }
+
+    hideLoader();
+    await loadWhitelist();
+    await loadUsers();
+    alert("CSV batch processed without duplicates ✅");
+  } catch (err) {
+    hideLoader();
+    console.error(err);
+    alert("CSV processing failed.");
+  } finally {
+    wlCsvUpload.value = "";
+  }
 });
 
 // ---------- Export CSV ----------
