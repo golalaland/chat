@@ -582,25 +582,26 @@ const renderShop = async () => {
   const btn = document.getElementById('themeToggle');
   if (!btn) return;
 
-  // Apply saved theme if any
+  // Load saved theme
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') document.body.classList.add('dark');
-  if (savedTheme === 'light') document.body.classList.remove('dark');
-
-  // If no saved theme, follow system preference
-  if (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  if (savedTheme === 'dark') {
+    document.body.classList.add('dark');
+  } else if (savedTheme === 'light') {
+    document.body.classList.add('light-mode-forced');
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
     document.body.classList.add('dark');
   }
 
-  // Toggle theme on click
+  // Set correct icon
+  btn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
+
+  // Toggle on click
   btn.addEventListener('click', () => {
     const isDark = document.body.classList.toggle('dark');
+    document.body.classList.toggle('light-mode-forced', !isDark);
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     btn.textContent = isDark ? '🌙' : '☀️';
   });
-
-  // Initial icon setup
-  btn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
 })();
 
 /* ------------------ Init ------------------ */
