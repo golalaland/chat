@@ -1,338 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>乂丨乂丨 Admin Shop</title>
   <style>
-    /* ---------- THEME ---------- */
-    :root {
-      --primary: #ff4081;
-      --dark-bg: #111;
-      --light-bg: #1c1c1c;
-      --text: #fff;
-      --border: #333;
+    :root{
+      --primary:#ff4081;
+      --bg:#0f0f10;
+      --panel:#151516;
+      --muted:#999;
+      --accent:#ee0979;
+      --card:#1b1b1c;
     }
-
-    * {
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
-
-    body {
-      background: var(--dark-bg);
-      color: var(--text);
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background: var(--primary);
-      color: #fff;
-      text-align: center;
-      padding: 1rem;
-      font-weight: bold;
-      font-size: 1.2rem;
-      letter-spacing: 1px;
-    }
-
-    /* ---------- TABS ---------- */
-    .host-tabs {
-      display: flex;
-      justify-content: center;
-      background: var(--light-bg);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 1rem;
-      cursor: pointer;
-      background: transparent;
-      color: var(--text);
-      border: none;
-      outline: none;
-      font-size: 1rem;
-      transition: 0.3s;
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-    }
-
-    /* ---------- SPINNER ---------- */
-    #shopSpinner {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
-
-    #shopSpinner.active {
-      display: flex;
-    }
-
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #fff;
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* ---------- TOOLBAR ---------- */
-    .toolbar {
-      display: flex;
-      justify-content: flex-end;
-      padding: 1rem;
-    }
-
-    .themed-btn {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 0.7rem 1.2rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.3s;
-    }
-
-    .themed-btn:hover {
-      opacity: 0.9;
-    }
-
-    /* ---------- TABS CONTENT ---------- */
-    .tab-section {
-      display: none;
-      padding: 1.5rem;
-    }
-
-    .tab-section.active {
-      display: block;
-    }
-
-    /* ---------- GRID ---------- */
-    .shop-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1rem;
-    }
-
-    .product-card {
-      background: var(--light-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.8rem;
-      text-align: center;
-      transition: 0.3s;
-    }
-
-    .product-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--primary);
-    }
-
-    .product-card img {
-      width: 100%;
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
-      height: 180px;
-      object-fit: cover;
-    }
-
-    .product-card h3 {
-      margin: 0.3rem 0;
-      font-size: 1.1rem;
-      color: var(--primary);
-    }
-
-    .admin-btns {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 0.5rem;
-    }
-
-    .admin-btns button {
-      flex: 1;
-      margin: 0 3px;
-      border: none;
-      padding: 0.4rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      color: #fff;
-    }
-
-    .edit-btn {
-      background: #4caf50;
-    }
-
-    .delete-btn {
-      background: #f44336;
-    }
-
-    /* ---------- MODAL ---------- */
-    #productModal.hidden {
-      display: none;
-    }
-
-    #productModal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.85);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .product-modal-content {
-      background: var(--light-bg);
-      padding: 1.5rem;
-      border-radius: 10px;
-      width: 95%;
-      max-width: 420px;
-      border: 1px solid var(--border);
-      color: var(--text);
-      position: relative;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: none;
-      color: #fff;
-      font-size: 1.4rem;
-      border: none;
-      cursor: pointer;
-    }
-
-    input,
-    textarea {
-      width: 100%;
-      background: #222;
-      color: #fff;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.6rem 0.8rem;
-      margin: 0.3rem 0;
-      font-size: 0.9rem;
-    }
-
-    textarea {
-      resize: none;
-      height: 80px;
-    }
-
-    label {
-      display: flex;
-      align-items: center;
-      margin-top: 0.6rem;
-    }
-
-    label input {
-      width: auto;
-      margin-right: 8px;
-    }
-
-    /* ---------- ORDERS ---------- */
-    .orders-list {
-      margin-top: 1rem;
-    }
-
-    .order-item {
-      background: var(--light-bg);
-      border: 1px solid var(--border);
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 0.8rem;
-    }
-
-    .order-actions button {
-      margin-right: 6px;
-      border: none;
-      border-radius: 6px;
-      padding: 0.5rem 0.8rem;
-      font-size: 0.8rem;
-      color: #fff;
-      cursor: pointer;
-    }
-
-    .fulfill-btn {
-      background: #2196f3;
-    }
-
-    .refund-btn {
-      background: #ff9800;
-    }
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{margin:0;background:var(--bg);color:#fff}
+    header{background:linear-gradient(135deg,#ff6a00,#ee0979,#9d00ff);padding:14px;text-align:center;font-weight:700}
+    .container{max-width:1200px;margin:20px auto;padding:12px}
+    .host-tabs{display:flex;background:var(--panel);border-radius:10px;overflow:hidden}
+    .tab-btn{flex:1;padding:12px;border:0;background:transparent;color:#ddd;cursor:pointer}
+    .tab-btn.active{background:linear-gradient(135deg,#ff6a00,#ee0979)}
+    #shopSpinner{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:9999}
+    #shopSpinner.active{display:flex}
+    .spinner{width:56px;height:56px;border:6px solid rgba(255,255,255,0.12);border-top-color:var(--primary);border-radius:50%;animation:spin 0.9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:16px 0}
+    .themed-btn{background:linear-gradient(135deg,#ff6a00,#ee0979);border:0;padding:8px 12px;border-radius:8px;color:#fff;cursor:pointer}
+    .themed-btn.ghost{background:transparent;border:1px solid #333;color:#fff}
+    .tab-section{display:none;background:var(--card);padding:14px;border-radius:10px;margin-top:14px}
+    .tab-section.active{display:block}
+    .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .product-card{background:linear-gradient(180deg,#171718,#151516);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    .product-card img{width:100%;height:150px;object-fit:cover;border-radius:8px}
+    .product-card h3{margin:8px 0 6px;color:var(--accent);font-size:1.05rem}
+    .meta{font-size:0.9rem;color:var(--muted)}
+    .admin-btns{display:flex;gap:8px;margin-top:8px}
+    .admin-btns button{flex:1;padding:8px;border-radius:8px;border:0;cursor:pointer}
+    .edit-btn{background:#2e7d32;color:#fff}
+    .delete-btn{background:#c62828;color:#fff}
+    .orders-list{display:flex;flex-direction:column;gap:10px}
+    .order-item{background:#101010;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
+    .order-row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .order-actions button{margin-left:8px;padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
+    .fulfill-btn{background:#1976d2;color:#fff}
+    .refund-btn{background:#ff9800;color:#000}
+    /* modal */
+    #productModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:2000}
+    #productModal .panel{background:var(--panel);padding:18px;border-radius:10px;width:94%;max-width:520px;border:1px solid rgba(255,255,255,0.04)}
+    input,textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);background:#0f0f10;color:#fff;margin-top:8px}
+    textarea{min-height:90px}
+    .row{display:flex;gap:8px}
+    .col{flex:1}
+    .close-btn{position:absolute;right:18px;top:14px;background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer}
+    /* login */
+    #loginPanel{max-width:420px;margin:40px auto;padding:18px;background:var(--panel);border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    .muted{color:var(--muted);font-size:0.9rem}
+    .links{display:flex;gap:8px;justify-content:flex-end}
+    /* small helpers */
+    .small{font-size:0.85rem;color:var(--muted)}
+    .badge{padding:6px 8px;border-radius:12px;background:#0006;font-size:0.85rem}
+    .export-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:8px;color:#fff}
+    .user-details{font-size:0.9rem;color:var(--muted);margin-top:6px}
   </style>
 </head>
-
 <body>
   <header>乂丨乂丨 Admin Control</header>
 
-  <!-- Navigation Tabs -->
-  <div class="host-tabs">
-    <button class="tab-btn active" data-tab="products">Products</button>
-    <button class="tab-btn" data-tab="orders">Orders</button>
+  <div class="container" id="mainApp" style="display:none;">
+    <div class="host-tabs">
+      <button class="tab-btn active" data-tab="products">Products</button>
+      <button class="tab-btn" data-tab="orders">Purchases</button>
+    </div>
+
+    <div class="toolbar">
+      <div>
+        <button id="addProductBtn" class="themed-btn">+ Add Item</button>
+        <button id="exportCsvBtn" class="themed-btn" style="margin-left:8px">Export Purchases CSV</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="adminEmail" class="small muted"></div>
+        <button id="signOutBtn" class="themed-btn ghost">Sign out</button>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <section id="products-section" class="tab-section active">
+      <div id="productsGrid" class="shop-grid"></div>
+    </section>
+
+    <!-- Purchases -->
+    <section id="orders-section" class="tab-section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Purchases</h3>
+        <div class="small muted">You can view, fulfill, refund & export purchases</div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="orders-list" id="ordersList"></div>
+      </div>
+    </section>
   </div>
 
   <!-- Spinner -->
-  <div id="shopSpinner">
-    <div class="spinner"></div>
+  <div id="shopSpinner"><div class="spinner"></div></div>
+
+  <!-- Product Modal -->
+  <div id="productModal">
+    <div class="panel">
+      <button class="close-btn" id="closeProductModal">&times;</button>
+      <h3 id="modalTitle">Add / Edit Product</h3>
+
+      <label class="small muted">Name</label>
+      <input id="productName" placeholder="Product name">
+
+      <label class="small muted">Image URL</label>
+      <input id="productImage" placeholder="Image URL">
+
+      <div class="row">
+        <div class="col">
+          <label class="small muted">Cost (stars)</label>
+          <input id="productCost" type="number" placeholder="e.g., 20">
+        </div>
+        <div class="col">
+          <label class="small muted">Cash Reward (₦)</label>
+          <input id="productCashReward" type="number" placeholder="e.g., 0">
+        </div>
+      </div>
+
+      <label class="small muted">Available (number of items)</label>
+      <input id="productAvailable" type="number" placeholder="e.g., 9946">
+
+      <label class="small muted">Description</label>
+      <textarea id="productDescription" placeholder="Full description shown in store"></textarea>
+
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+        <button id="saveProductBtn" class="themed-btn">Save</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Products Section -->
-  <section id="products-section" class="tab-section active">
-    <div class="toolbar">
-      <button id="addProductBtn" class="themed-btn">+ Add Product</button>
+  <!-- Login Panel (shown until auth+isAdmin) -->
+  <div id="loginPanel" style="display:none;margin-top:40px">
+    <div style="text-align:center;margin-bottom:12px">
+      <h2>Admin Login</h2>
+      <div class="small muted">Sign in with your admin email & password</div>
     </div>
-    <div id="productsGrid" class="shop-grid"></div>
-  </section>
 
-  <!-- Orders Section -->
-  <section id="orders-section" class="tab-section">
-    <h2>Orders</h2>
-    <div id="ordersList" class="orders-list"></div>
-  </section>
+    <label class="small muted">Email</label>
+    <input id="loginEmail" placeholder="admin@you.com" />
+    <label class="small muted">Password</label>
+    <input id="loginPassword" placeholder="password" type="password" />
 
-  <!-- Modal -->
-  <div id="productModal" class="hidden">
-    <div class="product-modal-content">
-      <button id="closeProductModal" class="close-btn">&times;</button>
-      <h3 id="modalTitle">Add Product</h3>
-
-      <input id="productName" placeholder="Product Name" />
-      <textarea id="productDesc" placeholder="Description"></textarea>
-      <input id="productStars" placeholder="Price in ⭐" type="number" />
-      <input id="productCash" placeholder="Price in ₦" type="number" />
-      <input id="productImage" placeholder="Image URL" />
-
-      <label>
-        <input type="checkbox" id="productAvailable" checked />
-        Available
-      </label>
-
-      <button id="saveProductBtn" class="themed-btn">Save</button>
+    <div style="display:flex;justify-content:space-between;margin-top:12px;align-items:center">
+      <div class="muted small">Make sure your Firestore user doc contains <code>isAdmin: true</code></div>
+      <div>
+        <button id="signInBtn" class="themed-btn">Sign in</button>
+        <button id="tryDevBtn" class="themed-btn ghost" title="Create example admin">Create example admin</button>
+      </div>
     </div>
+    <div style="margin-top:12px" class="small muted">If you need me to auto-create a seeded admin document I can add that to the JS.</div>
   </div>
 
   <script type="module" src="adminshop.js"></script>
