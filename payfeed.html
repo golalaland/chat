@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Xixi Admin — Pay Feed</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding:20px; background:#f7f7fb; color:#111 }
+    .card { background:#fff; padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:14px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap }
+    input, button, select, textarea { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e9; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #f0f0f4; }
+    .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 10px; }
+    .btn-danger { background:#ff6b6b; color:#fff }
+    .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff }
+    .muted { color:#888; font-size:0.9rem }
+    .search { width:260px }
+    .small { font-size:0.9rem; padding:6px 8px; }
+    .pill { padding:6px 10px; border-radius:999px; background:#efefef; }
+    .flex-between { display:flex; justify-content:space-between; align-items:center }
+    .hidden { display:none }
+    .danger-outline { border:1px solid #ffb3b3 }
+    .scroll-box { max-height:360px; overflow:auto; padding-right:8px }
+    .toggle { cursor:pointer; padding:6px 10px; border-radius:8px; background:#efefef }
+    .modal-bg { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999 }
+    .modal { background:#fff; padding:20px; border-radius:12px; max-width:400px; width:90%; box-shadow:0 6px 18px rgba(0,0,0,0.2); }
+    .modal h3 { margin-top:0 }
+    .modal input { width:100%; margin-bottom:10px; }
+  </style>
+</head>
+<body>
+
+<h2>Xixi Admin — Pay Feed</h2>
+
+<!-- Admin gate -->
+<div id="adminGate" class="card">
+  <div class="row">
+    <input id="adminEmail" placeholder="Admin email (registered)"/>
+    <button id="adminCheckBtn" class="btn btn-primary">Enter Admin</button>
+    <span id="adminGateMsg" class="muted"></span>
+  </div>
+  <p class="muted" style="margin-top:8px">This page uses a simple admin-check (isAdmin flag). Protect folder or use Firebase Auth later.</p>
+</div>
+
+<!-- Admin panel -->
+<div id="adminPanel" class="hidden">
+
+  <div class="card flex-between">
+    <div>
+      <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
+    </div>
+    <div class="row">
+      <input id="userSearch" class="search small" placeholder="Search users by email or chatId"/>
+      <button id="exportCsv" class="btn">Export CSV</button>
+      <button id="logoutBtn" class="btn">Logout</button>
+    </div>
+  </div>
+
+  <!-- Users management -->
+  <div class="card">
+    <h3 style="margin:0 0 8px 0">Users</h3>
+    <div class="muted" style="margin-bottom:8px">Edit stars, cash, VIP, subscription, or remove users.</div>
+    <div class="scroll-box">
+      <table id="usersTable">
+        <thead><tr>
+          <th>Email</th><th>ChatId</th><th>Stars</th><th>Cash</th><th>VIP</th><th>isHost</th><th>Subscription</th><th>Sub Count</th><th>Actions</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Whitelist manager -->
+  <div class="card">
+    <h3 style="margin:0 0 8px 0">Whitelist Injector</h3>
+    <div class="row" style="margin-bottom:8px">
+      <input id="wlEmail" placeholder="email"/>
+      <input id="wlPhone" placeholder="phone"/>
+      <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
+      <input type="file" id="csvFile" accept=".csv"/>
+      <button id="massInjectBtn" class="btn btn-primary">Inject CSV</button>
+      <button id="cleanupToggle" class="toggle">Clean Up Lady 🧼 OFF</button>
+    </div>
+    <div class="scroll-box">
+      <table id="whitelistTable"><thead><tr><th>Email</th><th>Phone</th><th>Subscription</th><th>Action</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modals -->
+<div id="modalBg" class="modal-bg hidden">
+  <div class="modal">
+    <h3 id="modalTitle">Title</h3>
+    <input id="modalInput" placeholder="Value"/>
+    <div class="row" style="justify-content:flex-end; gap:6px;">
+      <button id="modalConfirm" class="btn btn-primary">Confirm</button>
+      <button id="modalCancel" class="btn btn-danger">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="admin-payfeed.js"></script>
+
+</body>
+</html>
