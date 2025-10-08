@@ -595,6 +595,19 @@ body.dark {
   }
 }
 
+/* ☀️ Force light mode even if OS prefers dark */
+body.light-mode-forced {
+  --bg: #fefefe;
+  --panel: #ffffff;
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  --text: #111;
+  --muted: #555;
+  --muted-weak: #999;
+  --backdrop: rgba(0,0,0,0.2);
+  --modal-bg: #fff;
+  --glass-bg: rgba(255,255,255,0.06);
+}
+
 /* Apply variables across components (overrides hard-coded colors) */
 body {
   background: var(--bg) !important;
