@@ -567,17 +567,32 @@ header {
 }
 
 /* Dark theme variables */
-body.dark,
-@media (prefers-color-scheme: dark) {
-  --bg: #0b0d0f;              /* page background */
-  --panel: #0f1113;           /* cards & panels */
+/* 🌙 Dark theme variables (manual toggle) */
+body.dark {
+  --bg: #0b0d0f;
+  --panel: #0f1113;
   --card-shadow: 0 12px 30px rgba(0,0,0,0.6);
-  --text: #e6eef8;            /* primary text */
+  --text: #e6eef8;
   --muted: rgba(230,238,248,0.7);
   --muted-weak: rgba(230,238,248,0.45);
   --backdrop: rgba(0,0,0,0.6);
-  --modal-bg: linear-gradient(180deg, #121215, #151718); /* modal inner background */
+  --modal-bg: linear-gradient(180deg, #121215, #151718);
   --glass-bg: rgba(255,255,255,0.02);
+}
+
+/* 🌙 Auto dark mode (OS preference) */
+@media (prefers-color-scheme: dark) {
+  body:not(.light-mode-forced) {
+    --bg: #0b0d0f;
+    --panel: #0f1113;
+    --card-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    --text: #e6eef8;
+    --muted: rgba(230,238,248,0.7);
+    --muted-weak: rgba(230,238,248,0.45);
+    --backdrop: rgba(0,0,0,0.6);
+    --modal-bg: linear-gradient(180deg, #121215, #151718);
+    --glass-bg: rgba(255,255,255,0.02);
+  }
 }
 
 /* Apply variables across components (overrides hard-coded colors) */
