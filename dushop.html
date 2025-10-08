@@ -6,170 +6,88 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-/* ----------------------------------- */
 /* ---------- THEME VARIABLES ---------- */
-/* ----------------------------------- */
-
 :root {
-  /* Light Mode Colors */
-  --bg-primary: #fefefe;    /* light white background */
-  --bg-secondary: #fff;     /* white card/header background */
-  --text-primary: #111;     /* dark text for readability */
-  --text-secondary: #555;   /* muted dark for labels */
-  --border-color: #ddd;     /* subtle divider */
-  --shadow-color: rgba(0,0,0,0.1); /* light shadow */
-  --tab-inactive: #888;     /* inactive tab text */
-  --tab-disabled: #ccc;     /* disabled button background */
-  --tab-disabled-text: #888; /* disabled button text */
-  --preview-backdrop: rgba(255,255,255,0.95);
-
-  /* Theme/Accent Colors (unchanged) */
   --theme-gradient: linear-gradient(135deg, #ff6a00, #ee0979, #9d00ff);
   --theme-solid: #ee0979; /* fallback solid color for text */
 }
 
-/* 🌙 Night Mode Specific Variables */
-.dark-mode {
-  --bg-primary: #121212;    /* Dark gray background */
-  --bg-secondary: #1e1e1e;  /* Slightly lighter dark card/header background */
-  --text-primary: #f0f0f0;  /* Light text */
-  --text-secondary: #b0b0b0; /* Light gray for labels */
-  --border-color: #333;     /* Darker divider */
-  --shadow-color: rgba(0,0,0,0.4); /* Stronger shadow in dark mode */
-  --tab-inactive: #888;
-  --tab-disabled: #3a3a3a;
-  --tab-disabled-text: #b0b0b0;
-  --preview-backdrop: rgba(0,0,0,0.9);
-}
-
-/* ----------------------------------- */
-/* ---------- GLOBAL STYLES ---------- */
-/* ----------------------------------- */
-
+/* ---------- GLOBAL ---------- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: Arial, sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: #fefefe;    /* light white background */
+  color: #111;             /* dark text for readability */
   -webkit-font-smoothing: antialiased;
-  transition: background 0.3s, color 0.3s; /* Smooth theme transition */
 }
 
-/* ----------------------------------- */
-/* ---------- HEADER & TOGGLE ---------- */
-/* ----------------------------------- */
-
+/* ---------- HEADER ---------- */
 header {
-  position: relative; /* For the toggle button */
-  background: var(--bg-secondary);
+  background: #fff;        /* white header */
   padding: 1rem;
   text-align: center;
   font-size: 1.4rem;
   font-weight: bold;
-  color: var(--text-primary);
-  border-bottom: 2px solid var(--border-color);
-  transition: background 0.3s, color 0.3s, border-color 0.3s;
+  color: #111;             /* dark text */
+  border-bottom: 2px solid #ddd;  /* subtle divider */
 }
 
-#theme-toggle {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.5rem;
-  color: var(--text-primary);
-  transition: color 0.3s;
+/* ---------- PROFILE CARD ---------- */
+#user-info {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
 }
-#theme-toggle:hover {
+.profile-card {
+  background: #fff;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  min-width: 280px;
+}
+#username {
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+.balances {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.balance-item { text-align: center; }
+.balance-label {
+  font-size: 0.85rem;
+  color: #555;  /* muted dark for label */
+  margin-bottom: 0.2rem;
+}
+.balance-value {
+  font-size: 1rem;
+  font-weight: bold;
   color: var(--theme-solid);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px; /* space between number and emoji */
+  font-variant-numeric: tabular-nums; /* THIS makes numbers line up */
 }
-
-/* ----------------------------------- */
-/* ---------- CARD STYLES ---------- */
-/* ----------------------------------- */
-
-.profile-card,
-.host-tabs,
-.tab-content,
-.product-card,
-#confirmModal .modal-content {
-  background: var(--bg-secondary);
-  box-shadow: 0 4px 12px var(--shadow-color);
-  transition: background 0.3s, box-shadow 0.3s;
-}
-
-.balance-label,
-.stat-label,
-#confirmModal p,
-.product-card h3 {
-  color: var(--text-secondary);
-}
-
-/* Overrides for specific dark mode items */
-.dark-mode #shopSpinner .spinner {
-  border: 4px solid #333; /* Darker border for dark mode spinner */
-}
-
-/* Overrides for existing elements using variables */
-.balance-label,
-.stat-label,
-.chatid,
-#orders-list .muted {
-  color: var(--text-secondary);
-}
-.tab-btn {
-  color: var(--tab-inactive);
-}
-.buy-btn[disabled] {
-  background: var(--tab-disabled);
-  color: var(--tab-disabled-text);
-}
-#orders-list .stat-block {
-  border-bottom: 1px solid var(--border-color);
-}
-#imagePreview {
-  background: var(--preview-backdrop);
-}
-.close-btn {
-  color: var(--text-primary);
-}
-
-/* Friend card in dark mode (if used) */
-.dark-mode .friend-card {
-  background: #2a2a2a; /* Slightly different dark shade */
-}
-
-/* --- Keep the rest of your original CSS untouched below --- */
-
-/* ---------- ORIGINAL CSS (REPLACED VARS ABOVE) ---------- */
-
-/* The following original styles are kept, but now use the new CSS variables */
-/*
-body { background: var(--bg-primary); color: var(--text-primary); ... }
-header { background: var(--bg-secondary); color: var(--text-primary); border-bottom: 2px solid var(--border-color); ... }
-#username, .product-card h3 { color: var(--text-primary); ... }
-.balance-label, .stat-label { color: var(--text-secondary); ... }
-.profile-card, .host-tabs, .tab-content, .product-card { background: var(--bg-secondary); box-shadow: 0 4px 12px var(--shadow-color); ... }
-.tab-btn { color: var(--tab-inactive); ... }
-.buy-btn[disabled] { background: var(--tab-disabled); color: var(--tab-disabled-text); ... }
-*/
-
 /* ---------- HOST TABS ---------- */
 .host-tabs {
   display: flex;
   justify-content: center;
   gap: 10px;
   margin: 1rem auto 0;
+  background: #fff;
   padding: 8px;
   border-radius: 12px;
   width: fit-content;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .tab-btn {
   background: transparent;
   border: none;
+  color: #888;
   font-weight: bold;
   font-size: 0.9rem;
   padding: 8px 16px;
@@ -182,17 +100,17 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   background: var(--theme-gradient);
   color: #fff;
 }
-/* ... (Keep the rest of your original CSS as it was, it now uses the new variables) ... */
 
 /* ---------- DYNAMIC PANEL ---------- */
 .tab-content {
+  background: #fff;
   border-radius: 12px;
   padding: 1rem;
   margin: 1rem auto;
   width: 260px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   text-align: center;
 }
-/* ... (remaining styles for stat-block, product-card, etc.) ... */
 .stat-block {
   display: flex;
   flex-direction: column;
@@ -206,6 +124,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 }
 .stat-label {
   font-size: 0.85rem;
+  color: #555;
 }
 .copy-btn:hover {
   filter: brightness(1.1);
@@ -214,19 +133,23 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 #orders-list .stat-block {
   margin-bottom: 0.6rem;
   padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
 }
 
 #orders-list .stat-value {
   font-size: 0.95rem; /* smaller than default */
   font-weight: bold;
+  color: #111;
 }
 
 #orders-list .stat-label {
   font-size: 0.8rem; /* smaller than default */
+  color: #555;
 }
 
 #orders-list .muted {
   font-size: 0.75rem; /* smaller timestamp */
+  color: #999;
   margin-top: 2px;
 }
 
@@ -276,9 +199,11 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 }
 .product-card {
   position: relative;
+  background: #fff;
   border-radius: 12px;
   text-align: center;
   padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   transition: transform 0.2s;
   min-height: 230px;
   display: flex;
@@ -297,6 +222,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 .product-card h3 {
   margin: 0.7rem 0 0.3rem;
   font-size: 1rem;
+  color: #111;
 }
 .product-card .price {
   font-size: 0.95rem;
@@ -314,6 +240,11 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   cursor: pointer;
   transition: filter 0.2s;
   width: 100%;
+}
+.buy-btn[disabled] {
+  background: #ccc;
+  color: #888;
+  cursor: not-allowed;
 }
 .buy-btn:hover { filter: brightness(1.1); }
 
@@ -355,6 +286,8 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 .spinner {
   width: 40px;            /* smaller size */
   height: 40px;
+  border: 4px solid #eee; /* thinner border */
+  border-top: 4px solid transparent;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   background: conic-gradient(from 0deg, #ff6a00, #ee0979, #9d00ff, #ff6a00);
@@ -383,6 +316,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 
 .chatid {
   font-size: 0.85rem;
+  color: #aaa;
 }
 
 @keyframes spin {
@@ -396,6 +330,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   display: none;
   justify-content: center;
   align-items: center;
+  background: rgba(255,255,255,0.95);
   z-index: 1200;
 }
 #imagePreview .preview-wrapper {
@@ -420,6 +355,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   right: 8px;
   font-size: 2rem;
   font-weight: bold;
+  color: #111;
   cursor: pointer;
   background: transparent;
   border: none;
@@ -453,6 +389,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  background: #1a1a1a;
   border-radius: 12px;
   padding: 10px;
   min-width: 160px;
@@ -477,15 +414,17 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   z-index: 1000;
 }
 #confirmModal .modal-content {
+  background: #fff;
   padding: 18px 20px;
   border-radius: 12px;
   max-width: 360px;
   width: 90%;
   text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
   animation: popIn 0.2s forwards;
 }
 #confirmModal h3 { margin-top: 0; font-size: 1.1rem; color: var(--theme-solid); }
-#confirmModal p { font-size: 0.95rem; margin: 10px 0 15px; }
+#confirmModal p { font-size: 0.95rem; margin: 10px 0 15px; color: #555; }
 #confirmModal .btn-row { display:flex; justify-content:center; gap:12px; margin-top: 10px; }
 #confirmModal button {
   background: var(--theme-gradient);
@@ -499,8 +438,8 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   min-width: 100px;
 }
 #confirmModal #confirmNo {
-  background: var(--tab-disabled);
-  color: var(--text-secondary);
+  background: #ccc;
+  color: #555;
 }
 #confirmModal #confirmNo:hover { background: #bbb; }
 
@@ -514,7 +453,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- BEAUTIFUL REWARD MODAL (unchanged) ---------- */
+/* ---------- BEAUTIFUL REWARD MODAL ---------- */
 #rewardModal {
   position: fixed;
   inset: 0;
@@ -606,21 +545,261 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 #home-btn:hover { filter: brightness(1.1); }
 
 /* small helper */
-.muted { font-size:0.9rem; }
+.muted { color:#999; font-size:0.9rem; }
+
+/* ------------------ DARK MODE OVERRIDES ------------------ */
+/* Use class-based toggle: add `class="dark"` to <body> OR rely on system preference */
+:root {
+  /* accent values kept from original for consistency */
+  --accent-gradient: linear-gradient(135deg, #ff6a00, #ee0979, #9d00ff);
+  --accent-solid: #ee0979;
+
+  /* neutral variables */
+  --bg: #fefefe;
+  --panel: #ffffff;
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  --text: #111;
+  --muted: #555;
+  --muted-weak: #999;
+  --backdrop: rgba(0,0,0,0.2);
+  --modal-bg: #fff;
+  --glass-bg: rgba(255,255,255,0.06);
+}
+
+/* Dark theme variables */
+/* 🌙 Dark theme variables (manual toggle) */
+body.dark {
+  --bg: #0b0d0f;
+  --panel: #0f1113;
+  --card-shadow: 0 12px 30px rgba(0,0,0,0.6);
+  --text: #e6eef8;
+  --muted: rgba(230,238,248,0.7);
+  --muted-weak: rgba(230,238,248,0.45);
+  --backdrop: rgba(0,0,0,0.6);
+  --modal-bg: linear-gradient(180deg, #121215, #151718);
+  --glass-bg: rgba(255,255,255,0.02);
+}
+
+/* 🌙 Auto dark mode (OS preference) */
+@media (prefers-color-scheme: dark) {
+  body:not(.light-mode-forced) {
+    --bg: #0b0d0f;
+    --panel: #0f1113;
+    --card-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    --text: #e6eef8;
+    --muted: rgba(230,238,248,0.7);
+    --muted-weak: rgba(230,238,248,0.45);
+    --backdrop: rgba(0,0,0,0.6);
+    --modal-bg: linear-gradient(180deg, #121215, #151718);
+    --glass-bg: rgba(255,255,255,0.02);
+  }
+}
+
+/* ☀️ Force light mode even if OS prefers dark */
+body.light-mode-forced {
+  --bg: #fefefe;
+  --panel: #ffffff;
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  --text: #111;
+  --muted: #555;
+  --muted-weak: #999;
+  --backdrop: rgba(0,0,0,0.2);
+  --modal-bg: #fff;
+  --glass-bg: rgba(255,255,255,0.06);
+}
+
+/* Apply variables across components (overrides hard-coded colors) */
+body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* header */
+header {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-bottom-color: rgba(255,255,255,0.04);
+  box-shadow: none;
+}
+
+/* profile card */
+.profile-card,
+.host-tabs,
+.tab-content,
+.product-card,
+#confirmModal .modal-content,
+.reward-content,
+#orders-content,
+#imagePreview .preview-wrapper {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  box-shadow: var(--card-shadow) !important;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* profile card internal text */
+.balance-label,
+.stat-label,
+#orders-list .stat-label,
+.chatid,
+.muted {
+  color: var(--muted) !important;
+}
+
+/* values & headings retain accent */
+.balance-value,
+.stat-value,
+.product-card .price,
+.product-card h3,
+#username,
+.user-name {
+  color: var(--accent-solid) !important;
+}
+
+/* host tabs: make tab background subtle */
+.host-tabs {
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.02);
+  box-shadow: none;
+}
+
+/* tab buttons in dark */
+.tab-btn {
+  color: var(--muted) !important;
+  background: transparent !important;
+}
+.tab-btn.active {
+  background: var(--accent-gradient) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+
+/* products and grid */
+.shop-grid { background: transparent; }
+.product-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.02);
+  color: var(--text);
+}
+
+/* buttons keep gradient but improve contrast on dark */
+.themed-btn,
+.buy-btn,
+.copy-link-btn,
+#home-btn,
+#confirmModal button {
+  background: var(--accent-gradient) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 20px rgba(157,0,255,0.08);
+}
+
+/* disabled button on dark */
+.buy-btn[disabled] {
+  background: #2a2a2a !important;
+  color: #666 !important;
+}
+
+/* spinner: make backdrop darker and spinner border subtle */
+#shopSpinner {
+  background: rgba(0,0,0,0.45) !important;
+}
+#shopSpinner .spinner,
+.spinner {
+  border: 4px solid rgba(255,255,255,0.04);
+  border-top: 4px solid transparent;
+  background: conic-gradient(from 0deg, #ff6a00, #ee0979, #9d00ff, #ff6a00);
+  -webkit-mask: radial-gradient(farthest-side, transparent 70%, black 71%);
+          mask: radial-gradient(farthest-side, transparent 70%, black 71%);
+}
+
+/* availability badge */
+.availability-badge {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+
+/* friend card keep the slightly darker background (already in file) but soften border */
+.friend-card {
+  background: #141516 !important;
+  border: 1px solid rgba(255,255,255,0.02) !important;
+  color: var(--text);
+}
+
+/* confirm/overlay modals */
+#confirmModal {
+  background: var(--backdrop);
+}
+#confirmModal .modal-content {
+  background: var(--modal-bg);
+  color: var(--text);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+}
+
+/* reward modal */
+#rewardModal {
+  background: rgba(0,0,0,0.75);
+}
+.reward-content {
+  /* keep your colorful radial gradient but slightly darker for contrast */
+  background: radial-gradient(circle at top left, #ffc95a, #ff6a88 40%, #a44dff 100%);
+  color: #0b0d0f;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.7);
+}
+
+/* image preview backdrop for dark */
+#imagePreview {
+  background: rgba(0,0,0,0.85) !important;
+}
+#imagePreview .preview-wrapper {
+  box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+}
+
+/* close button color */
+.close-btn { color: var(--text) !important; text-shadow: 0 0 8px rgba(0,0,0,0.6); }
+
+/* reduce border colors on orders list for dark */
+#orders-list .stat-block {
+  border-bottom-color: rgba(255,255,255,0.03);
+}
+
+/* subtle text tweaks to improve contrast on small muted text */
+#orders-list .muted,
+.chatid {
+  color: var(--muted-weak) !important;
+}
+
+/* ensure inputs and focus outlines (if any) are visible */
+button:focus, .tab-btn:focus, .themed-btn:focus {
+  outline: 2px solid rgba(255,255,255,0.06);
+  outline-offset: 2px;
+}
+
+/* small responsive tweak for home button on dark */
+#home-btn {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* utility: auto-apply dark if user OS prefers it (only if no explicit class toggle) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-mode-forced) {
+    /* This media query sets body to dark automatically for supportive browsers */
+    body:not(.light-mode-forced) {
+      background: var(--bg);
+      color: var(--text);
+    }
+  }
+}
   </style>
 </head>
 <body>
   
-  <div class="shop-spinner" id="shopSpinner">
+  <!-- 🌐 Fullscreen Spinner Overlay -->
+<div class="shop-spinner" id="shopSpinner">
   <div class="spinner"></div>
 </div>
 
-  <header>
-    乂丨乂丨Redeem
-    <button id="theme-toggle" aria-label="Toggle Night Mode">
-      <span id="theme-icon">☀️</span> 
-    </button>
-  </header>
+  <!-- HEADER -->
+  <header>乂丨乂丨Redeem</header>
 <div id="user-info">
   <div class="profile-card">
     <div id="username">******</div>
@@ -635,6 +814,10 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
 </div>
     </div>
   </div>
+</div>
+
+<!-- place this anywhere, e.g. inside header -->
+<button id="themeToggle" aria-label="Toggle dark mode" style="position:fixed; right:12px; bottom:12px; z-index:99999; padding:8px 10px; border-radius:10px; border:none; cursor:pointer;">🌓</button>
 
 <div class="host-tabs" id="hostTabs" style="display:none;">
   <button class="tab-btn active" data-tab="vip">VIP</button>
@@ -682,6 +865,7 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   </div>
 </div>
 
+<!-- ✨ Reward Modal -->
 <div id="rewardModal" class="hidden">
   <div class="reward-content">
     <div class="sparkle"></div>
@@ -691,59 +875,13 @@ header { background: var(--bg-secondary); color: var(--text-primary); border-bot
   </div>
 </div>
 
+<!-- 🖼️ Image Preview (MOVED OUT) -->
 <div id="imagePreview">
   <div class="preview-wrapper">
     <span id="closePreview" class="close-btn">&times;</span>
     <img id="previewImg" src="" alt="Preview">
   </div>
 </div>
-
-<script>
-  /**
-   * Night Mode Toggle Script
-   * Toggles the 'dark-mode' class on the document's <body> element
-   * and saves the preference to localStorage.
-   */
-  document.addEventListener('DOMContentLoaded', () => {
-    const toggleButton = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
-    const body = document.body;
-    const storageKey = 'theme-preference';
-
-    // 1. Function to set the theme
-    function setTheme(isDark) {
-      if (isDark) {
-        body.classList.add('dark-mode');
-        themeIcon.textContent = '🌙'; // Moon icon for night mode
-        localStorage.setItem(storageKey, 'dark');
-      } else {
-        body.classList.remove('dark-mode');
-        themeIcon.textContent = '☀️'; // Sun icon for light mode
-        localStorage.setItem(storageKey, 'light');
-      }
-    }
-
-    // 2. Load the saved theme on page load
-    const savedTheme = localStorage.getItem(storageKey);
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    // Check saved preference, fall back to system preference, then default to light
-    if (savedTheme === 'dark') {
-      setTheme(true);
-    } else if (savedTheme === 'light') {
-      setTheme(false);
-    } else {
-      // If no preference saved, use system preference
-      setTheme(prefersDark);
-    }
-
-    // 3. Add event listener to the toggle button
-    toggleButton.addEventListener('click', () => {
-      // Toggle the current state
-      const isCurrentlyDark = body.classList.contains('dark-mode');
-      setTheme(!isCurrentlyDark);
-    });
-  });
-</script>
+<script type="module" src="nushop.js"></script>
 </body>
 </html>
