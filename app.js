@@ -281,15 +281,19 @@ async function loginWhitelist(email, phone) {
 }
 
 /* ---------- Stars auto-earning (cleaned) ---------- */
+/* ---------- Stars auto-earning (✅ milestone popup fixed, jam-free) ---------- */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval); // clear previous interval
+  if (starInterval) clearInterval(starInterval);
 
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
 
-  // Smoothly animate star count in the UI
+  // Track milestone so popup shows once per new 1000 stars
+  let lastMilestone = Math.floor(displayedStars / 1000) * 1000;
+
+  // Smooth number animation
   function updateStarDisplay(target) {
     if (!refs.starCountEl) return;
     const diff = target - displayedStars;
@@ -303,7 +307,7 @@ function startStarEarning(uid) {
     animationTimeout = setTimeout(() => updateStarDisplay(target), 50);
   }
 
-  // Listen for real-time Firestore updates
+  // Real-time Firestore listener
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.data();
@@ -313,19 +317,7 @@ function startStarEarning(uid) {
     if (animationTimeout) clearTimeout(animationTimeout);
     updateStarDisplay(targetStars);
 
-      // Track last milestone so popup only shows once per 1000 increment
-  let lastMilestone = Math.floor((currentUser.stars || 0) / 1000) * 1000;
-
-  onSnapshot(userRef, snap => {
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const targetStars = data.stars || 0;
-    currentUser.stars = targetStars;
-
-    if (animationTimeout) clearTimeout(animationTimeout);
-    updateStarDisplay(targetStars);
-
-    // Show popup only when crossing a new 1000 threshold
+    // Milestone popup — only once per new 1000 threshold
     const currentMilestone = Math.floor(targetStars / 1000) * 1000;
     if (currentMilestone > lastMilestone && currentMilestone > 0) {
       lastMilestone = currentMilestone;
@@ -333,29 +325,27 @@ function startStarEarning(uid) {
     }
   });
 
-  // Auto-increment stars every minute (max 250 stars per day)
+  // Auto-increment stars every minute (daily cap 250)
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
-
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
     const data = snap.data();
     const today = new Date().toISOString().split("T")[0];
 
-    // Reset daily earned stars if new day
     if (data.lastStarDate !== today) {
       await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
       return;
     }
 
-    // Only increment if under daily cap
     if ((data.starsToday || 0) < 250) {
-      await updateDoc(userRef, { 
-        stars: increment(10), 
-        starsToday: increment(10) 
-      });
+      await updateDoc(userRef, { stars: increment(10), starsToday: increment(10) });
     }
   }, 60000);
+
+  // Cleanup on unload
+  window.addEventListener("beforeunload", () => clearInterval(starInterval));
+}
 
   // Clean up on page unload
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
