@@ -245,6 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
         createdAt:serverTimestamp(),
         subscriptionActive:false,
         subscriptionCount:0
+        socialShare: false,
+        instagram,
+        tiktok,
+        whatsapp,
+        telegram,
       };
 
       await setDoc(userRef,userData);
