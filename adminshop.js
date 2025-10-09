@@ -497,28 +497,42 @@ exportCsvBtn.onclick = async () => {
   showSpinner(true);
   try {
     const rows = [];
-    // Use the actual field name 'timestamp'
     const snap = await getDocs(query(collection(db, "purchases"), orderBy("timestamp", "desc")));
     if (snap.empty) return showToast("No purchases to export");
 
     // header
-    rows.push(["purchaseId","timestamp","userId","userEmail","productId","productName","amount","paymentType","status","fulfilledAt","refundedAt"].join(","));
+    rows.push([
+      "purchaseId",
+      "timestamp",
+      "userId",
+      "userEmail",
+      "productId",
+      "productName",
+      "starsSpent",
+      "cashReward",
+      "redeemedCash",
+      "status",
+      "fulfilledAt",
+      "refundedAt"
+    ].join(","));
 
     for (const docSnap of snap.docs) {
       const o = docSnap.data();
       const timestamp = o.timestamp?.toDate ? o.timestamp.toDate().toISOString() : (o.timestamp || "");
       const fulfilledAt = o.fulfilledAt?.toDate ? o.fulfilledAt.toDate().toISOString() : "";
       const refundedAt = o.refundedAt?.toDate ? o.refundedAt.toDate().toISOString() : "";
+      
       const row = [
         `"${docSnap.id}"`,
         `"${timestamp}"`,
-        `"${(o.userId||'')}"`,
-        `"${(o.userEmail||'')}"`,
-        `"${(o.productId||'')}"`,
-        `"${(o.productName||'')}"`,
-        `"${(o.amount||'')}"`,
-        `"${(o.paymentType||'')}"`,
-        `"${(o.status||'')}"`,
+        `"${o.userId || ''}"`,
+        `"${o.email || ''}"`,
+        `"${o.productId || ''}"`,
+        `"${o.productName || ''}"`,
+        `"${o.cost || 0}"`,
+        `"${o.cashReward || 0}"`,
+        `"${o.redeemedCash || 0}"`,
+        `"${o.status || ''}"`,
         `"${fulfilledAt}"`,
         `"${refundedAt}"`
       ].join(",");
@@ -535,7 +549,7 @@ exportCsvBtn.onclick = async () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    showToast("CSV exported");
+    showToast("CSV exported with stars & cash info");
   } catch (err) {
     console.error(err);
     showToast("CSV export failed: " + err.message);
