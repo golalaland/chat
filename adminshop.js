@@ -330,12 +330,16 @@ async function loadPurchases() {
       const id = docSnap.id;
       const status = p.status || 'pending';
 
-      // determine payment display
+      // ---------------- Payment display fix ----------------
       let paymentDesc = "";
-      if (p.cashReward && Number(p.cashReward) > 0) {
-        paymentDesc = `${Number(p.cashReward)} ⭐`;
+      if (p.paymentType === 'stars' && p.cost && Number(p.cost) > 0) {
+        // user paid stars
+        paymentDesc = `${Number(p.cost)} ⭐`;
+      } else if (p.paymentType === 'cash' && p.cashReward && Number(p.cashReward) > 0) {
+        // user paid cash
+        paymentDesc = `₦${Number(p.cashReward)}`;
       } else {
-        paymentDesc = `₦${Number(p.cost || 0)}`;
+        paymentDesc = "—";
       }
 
       // user info
@@ -451,33 +455,39 @@ window.__refundPurchase = async function(id) {
 
     const userId = purchase.userId || null;
     const userEmail = purchase.email || null;
-    const refundAmount = Number(purchase.cost || 0); // amount to refund
 
-    // If you refund stars, use `cashReward`; if cash, log in refunds collection
+    // Determine what was used to pay
+    const isStars = purchase.paymentType === 'stars' || (purchase.cost && Number(purchase.cost) > 0 && !purchase.cashReward);
+    const refundAmount = isStars ? Number(purchase.cost || 0) : Number(purchase.cashReward || 0);
+    const refundMethod = isStars ? 'stars' : 'cash';
+
+    // Log the refund
     if (refundAmount > 0) {
       await addDoc(collection(db, "refunds"), {
         orderId: id,
         userId,
         userEmail,
         amount: refundAmount,
-        method: "cash",
+        method: refundMethod,
         createdAt: serverTimestamp()
       });
     }
 
-    // mark purchase as refunded
+    // Update the purchase status
     await updateDoc(doc(db, "purchases", id), {
       status: "refunded",
       refundedAt: serverTimestamp(),
-      refundMethod: "cash"
+      refundMethod
     });
 
-    showToast(`Refund logged for "${purchase.productName}" by ${userEmail || 'unknown user'}`);
-    loadPurchases(); // reload list
+    showToast(`Refunded ${refundAmount} ${refundMethod === 'stars' ? '⭐️' : '₦'} for "${purchase.productName}" to ${userEmail || 'unknown user'}`);
+    loadPurchases(); // reload admin list
   } catch (err) {
     console.error(err);
     showToast("Refund failed: " + err.message);
-  } finally { showSpinner(false); }
+  } finally {
+    showSpinner(false);
+  }
 };
 
 // ---------------- CSV EXPORT ----------------
