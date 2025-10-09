@@ -381,39 +381,43 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   color: #fff;                  /* subtle hover effect */
 }
 
-#userPopup, #userPopup * {
-  touch-action: manipulation;
-}
-
-/* Popup background */
+/* Dim background blur */
 .popup {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.65);
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  backdrop-filter: blur(3px);
 }
 
-/* Card styling */
+/* Card itself */
 .user-popup-content {
-  background: rgba(20, 20, 20, 0.85);
-  padding: 22px;
-  border-radius: 14px;
+  background: rgba(20, 20, 20, 0.8);
+  padding: 20px;
+  border-radius: 16px;
   text-align: center;
   position: relative;
-  min-width: 260px;
-  backdrop-filter: blur(10px);
+  min-width: 220px;
+  max-width: 240px;
+  backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  animation: popupFade 0.2s ease;
 }
 
-/* Close button */
+@keyframes popupFade {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Close (X) */
 .close-btn {
   position: absolute;
   top: 8px;
-  right: 12px;
+  right: 10px;
   font-size: 22px;
   cursor: pointer;
   color: #fff;
@@ -422,29 +426,29 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .close-btn:hover { opacity: 1; }
 
-/* Profile photo (optional) */
+/* Profile photo (only for hosts) */
 .popup-photo {
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
 }
 
 /* Username */
 #popupUsername {
   color: #ff69b4;
-  margin-bottom: 6px;
+  font-size: 16px;
   font-weight: 600;
-  font-size: 18px;
+  margin-bottom: 4px;
 }
 
 /* Gender and Age */
 #popupGender, #popupAge {
   color: #ccc;
-  font-size: 14px;
-  margin: 2px 0;
+  font-size: 13px;
+  margin: 1px 0;
   text-transform: lowercase;
 }
 
@@ -452,40 +456,37 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .socials {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin: 14px 0;
+  gap: 8px;
+  margin: 10px 0 14px 0;
 }
 .social img {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  opacity: 0.9;
+  transition: transform 0.2s, opacity 0.2s;
 }
 .social img:hover {
-  transform: scale(1.15);
-  opacity: 0.9;
+  transform: scale(1.1);
+  opacity: 1;
 }
 
-/* BUZZ button with flickering outline */
-.buzz-btn {
+/* 🚨 Popup Buzz Button */
+.popup-buzz-btn {
   background: #111;
   color: #fff;
   border: 2px solid #ff69b4;
-  border-radius: 6px;
-  padding: 10px 26px;
-  font-weight: bold;
+  border-radius: 50%;
+  width: 54px;
+  height: 54px;
+  font-size: 22px;
   cursor: pointer;
-  font-size: 15px;
-  animation: flicker 1.3s infinite;
-  text-shadow: 0 0 4px #ff69b4;
-  letter-spacing: 1px;
+  animation: pulseBuzz 1.3s infinite;
 }
 
-@keyframes flicker {
-  0%, 100% { box-shadow: 0 0 6px #ff69b4, 0 0 10px #ff69b4; }
-  25% { box-shadow: 0 0 10px #ff4081, 0 0 20px #ff4081; }
-  50% { box-shadow: 0 0 8px #ff69b4, 0 0 15px #ff69b4; }
-  75% { box-shadow: 0 0 12px #ff4081, 0 0 25px #ff4081; }
+@keyframes pulseBuzz {
+  0%, 100% { box-shadow: 0 0 10px #ff69b4, 0 0 20px #ff69b4; }
+  50% { box-shadow: 0 0 16px #ff4081, 0 0 26px #ff4081; }
 }
 
 /* ---------- Auth Inputs ---------- */
@@ -625,22 +626,24 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   <div class="user-popup-content">
     <span id="popupCloseBtn" class="close-btn">&times;</span>
 
-    <!-- Profile photo (optional, for hosts) -->
     <img id="popupPhoto" class="popup-photo" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile Photo">
 
     <h3 id="popupUsername">Username</h3>
     <p id="popupGender">female</p>
-    <p id="popupAge">Age: 20’s</p>
+    <p id="popupAge">20’s</p>
 
     <!-- Social icons -->
     <div class="socials">
-      <a href="#" class="social instagram" title="Instagram"><img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram"></a>
-      <a href="#" class="social whatsapp" title="WhatsApp"><img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp"></a>
-      <!-- Only two icons shown dynamically -->
+      <a href="#" class="social instagram" title="Instagram">
+        <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram">
+      </a>
+      <a href="#" class="social whatsapp" title="WhatsApp">
+        <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp">
+      </a>
     </div>
 
-    <!-- BUZZ button below socials -->
-    <button id="buzzBtn" class="buzz-btn">BUZZ</button>
+    <!-- Circular Buzzer Button -->
+    <button id="popupBuzzBtn" class="popup-buzz-btn">🚨</button>
   </div>
 </div>
 <script type="module" src="app.js"></script>
