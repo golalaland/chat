@@ -1,195 +1,204 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scramble Game - Cute Version</title>
+<meta charset="utf-8" />
+<meta name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Scramble Game</title>
+<link rel="icon" href="data:," />
 <style>
-/* ----- Root colors ----- */
 :root{
-  --bg:#0b0b0b;
-  --card:#1a1a1a;
-  --accent:#FF1493;
+  --bg:#000;
+  --card:#111;
   --muted:#aaa;
-  --glass: rgba(255,255,255,0.05);
-  --popup-bg:#222;
-  --popup-color:#FF1493;
+  --accent:#FF1493;
+  --glass: rgba(255,255,255,0.03);
 }
 
-/* ----- Body ----- */
-body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);color:#fff;display:flex;flex-direction:column;align-items:center;}
+/* App wrapper */
+html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
 
-/* ----- Header / Stats ----- */
-.header{width:100%;max-width:480px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--card);border-radius:12px;margin:12px 0;box-shadow:0 0 12px rgba(255,20,147,0.2);}
-.header div{display:flex;align-items:center;gap:6px;font-weight:700;}
-.header .label{color:var(--muted);font-weight:500;font-size:13px;}
+/* Brand/Header */
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
+.room-subtitle{font-size:12px;font-weight:600;text-align:center;margin-top:4px;color:var(--accent);opacity:0.85;}
 
-/* ----- Scramble Board ----- */
-.scramble-board{width:100%;max-width:480px;background:var(--card);border-radius:12px;padding:16px;text-align:center;box-shadow:0 0 20px rgba(255,20,147,0.1);margin-bottom:10px;}
-#scrambleLetters{font-size:28px;letter-spacing:6px;margin-bottom:12px;font-weight:800;color:var(--accent);}
-input#scrambleInput{padding:10px 14px;border-radius:999px;border:none;width:180px;margin-right:6px;background:#222;color:#fff;font-size:16px;outline:none;}
-input#scrambleInput::placeholder{color:var(--muted);}
-button#buzzBtn{padding:10px 14px;border-radius:999px;border:none;background:var(--accent);color:#000;font-weight:700;font-size:16px;cursor:pointer;transition:0.2s;}
-button#buzzBtn:hover{transform:scale(1.05);}
+/* Scramble Board */
+.scramble-board{background:var(--card);padding:12px 16px;border-radius:12px;box-shadow:0 0 12px rgba(255,20,147,0.2);margin-bottom:6px;text-align:center;}
+#scrambleLetters{font-size:28px;letter-spacing:6px;font-weight:800;color:var(--accent);margin-bottom:10px;}
+#scrambleInput{padding:10px 14px;border-radius:999px;border:1px solid rgba(255,20,147,0.2);width:150px;margin-right:6px;background:#222;color:#fff;font-size:16px;outline:none;}
+#submissionsLeft{font-size:12px;color:var(--muted);}
+.buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
+.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
+@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
-/* ----- Buzz Log ----- */
-.buzz-log{width:100%;max-width:480px;height:180px;overflow-y:auto;margin-top:8px;padding:8px;background:var(--card);border-radius:12px;box-shadow:0 0 12px rgba(255,20,147,0.1);}
-.buzz-item{background:var(--accent);color:#000;margin:4px 0;padding:6px 10px;border-radius:8px;font-weight:700;}
+/* Chat Messages */
+#messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;border-radius:8px;background:var(--bg);margin-bottom:70px;box-sizing:border-box;}
+.msg{padding:8px 10px;border-radius:8px;background:var(--glass);max-width:100%;display:flex;gap:8px;align-items:center;}
+.msg.me{background: rgba(255, 20, 147, 0.06);}
+.msg .meta{font-weight:700;font-size:13px;white-space:nowrap;color:inherit;}
+.msg .content{font-size:13px;color:#fff;white-space:pre-wrap;word-break:break-word;display:inline-block;}
 
-/* ----- Star Popup ----- */
-.star-popup{position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--popup-bg);padding:10px 16px;border-radius:12px;display:none;font-weight:700;color:var(--popup-color);box-shadow:0 0 12px rgba(255,20,147,0.3);}
+/* Bottom Input Area */
+.send-area{position:fixed;bottom:0;left:0;width:100%;max-width:480px;margin:0 auto;display:flex;align-items:center;gap:8px;background:var(--card);padding:10px;border-radius:999px;box-sizing:border-box;z-index:100;}
+.send-area input{flex:1;padding:12px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background-color:#0e0e0e;color:#fff;font-size:16px;outline:none;}
+.send-area input::placeholder{color:var(--muted, #aaa);}
+.send-area input:focus{border-color:var(--accent);box-shadow:0 0 12px rgba(255,20,147,0.15);}
+.send-btn{padding:10px 16px;border-radius:999px;background-color:var(--accent);color:#000;cursor:pointer;font-weight:700;border:none;font-size:14px;transition:all 0.2s ease;}
+.send-btn:hover{background-color:#ff33a1;transform:scale(1.05);}
 
-/* ----- Twitch-style bottom input ----- */
-.send-area{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;align-items:center;gap:8px;background:var(--card);padding:12px;border-radius:999px;box-shadow:0 0 12px rgba(255,20,147,0.2);}
-.send-area input{flex:1;padding:12px 16px;border-radius:999px;border:none;background:#222;color:#fff;font-size:16px;outline:none;}
-.send-area input::placeholder{color:var(--muted);}
-.send-area button{padding:10px 16px;border-radius:999px;border:none;background:var(--accent);color:#000;font-weight:700;font-size:16px;cursor:pointer;transition:0.2s;}
-.send-area button:hover{transform:scale(1.05);}
-
-/* ----- Scrollbar for buzz log ----- */
-.buzz-log::-webkit-scrollbar{width:6px;}
-.buzz-log::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px;}
-.buzz-log::-webkit-scrollbar-track{background:#111;}
+/* Profile Card */
+.profile{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
+.profile-name{font-weight:800;color:#fff;}
+.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
+.profile-value{color: #fff;font-family: ui-monospace;font-weight:400;font-size:11px;}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
 </style>
 </head>
 <body>
 
-<!-- Header Stats -->
-<div class="header">
-  <div>Stars: <span id="starCount">100</span>⭐</div>
-  <div>Cash: ₦<span id="cashCount">0</span></div>
-</div>
+<div id="appWrapper">
+  <div class="app">
+    <div class="brand">乂丨乂丨</div>
+    <div id="greeting">✨ Welcome to Scramble!</div>
 
-<!-- Scramble Board -->
-<div class="scramble-board">
-  <div id="scrambleLetters">S K P K T S D</div>
-  <div>
-    <input type="text" id="scrambleInput" placeholder="Type word">
-    <button id="buzzBtn">🚨 Buzz!</button>
+    <!-- Scramble Board -->
+    <div class="scramble-board">
+      <div id="scrambleLetters">S K P K T S D</div>
+      <div>
+        <input type="text" id="scrambleInput" placeholder="Type a word">
+        <button id="buzzBtn" class="buzz-btn">🚨 Buzz!</button>
+      </div>
+      <div>Submissions left: <span id="submissionsLeft">25</span></div>
+    </div>
+
+    <!-- Messages / Buzz log -->
+    <div id="messages"></div>
+
+    <!-- Profile -->
+    <div class="profile" id="profileBox">
+      <div class="profile-card">
+        <div class="profile-name" id="profileName">GUEST 0000</div>
+        <div><span class="profile-label">STARS COLLECTED:</span> <span class="profile-value"><span id="starCount">0</span>⭐️</span></div>
+        <div><span class="profile-label">CASH EARNED:</span> <span class="profile-value">₦<span id="cashCount">0</span></span></div>
+      </div>
+    </div>
+
+    <!-- Bottom Input -->
+    <div class="send-area">
+      <input type="text" id="bottomInput" placeholder="Send a buzz message...">
+      <button id="sendBottomBtn" class="send-btn">🚨</button>
+    </div>
   </div>
-  <div>Submissions left: <span id="submissionsLeft">25</span></div>
 </div>
 
-<!-- Buzz Log -->
-<div class="buzz-log" id="buzzLog"></div>
-
-<!-- Star Popup -->
 <div class="star-popup" id="starPopup">+10 Stars!</div>
 
-<!-- Bottom input (Twitch-style) -->
-<div class="send-area">
-  <input type="text" id="bottomInput" placeholder="Send a buzz message...">
-  <button id="sendBottomBtn">🚨</button>
-</div>
+<script type="module">
+// ------ Firebase Auto Load Current User ------
+import { db, currentUser } from './app.js';
+import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script>
-(() => {
-  // ----- Game State -----
-  let currentLetters = ["S","K","P","K","T","S","D"];
-  let validWords = ["SKIP","TIPS","SPOT","STOP","POTS","KITS","DIPS","TIP","KIT","TOP","PIT","SIT","POT","DOT","KITTY","SIP","SKIT","SKID","DIT","TID","PITS","SOD"];
-  let submissions = new Set();
-  let submissionsLeft = 25;
-  let starCount = 100;
-  let cashCount = 0;
-  const STAR_COST = 5;
-  const STAR_REWARD = 10;
-  const CASH_REWARD = 50;
+// ------ Scramble State ------
+let currentLetters = ["S","K","P","K","T","S","D"];
+let validWords = ["SKIP","TIPS","SPOT","STOP","POTS","KITS","DIPS","TIP","KIT","TOP","PIT","SIT","POT","DOT","KITTY","SIP","SKIT","SKID","DIT","TID","PITS","SOD"];
+let submissions = new Set();
+let submissionsLeft = 25;
+const STAR_COST = 5;
+const STAR_REWARD = 10;
+const CASH_REWARD = 50;
 
-  const lettersEl = document.getElementById("scrambleLetters");
-  const inputEl = document.getElementById("scrambleInput");
-  const buzzBtn = document.getElementById("buzzBtn");
-  const buzzLog = document.getElementById("buzzLog");
-  const starCountEl = document.getElementById("starCount");
-  const cashCountEl = document.getElementById("cashCount");
-  const submissionsLeftEl = document.getElementById("submissionsLeft");
-  const starPopup = document.getElementById("starPopup");
-  const bottomInput = document.getElementById("bottomInput");
-  const sendBottomBtn = document.getElementById("sendBottomBtn");
+const lettersEl = document.getElementById("scrambleLetters");
+const inputEl = document.getElementById("scrambleInput");
+const buzzBtn = document.getElementById("buzzBtn");
+const messagesEl = document.getElementById("messages");
+const starCountEl = document.getElementById("starCount");
+const cashCountEl = document.getElementById("cashCount");
+const submissionsLeftEl = document.getElementById("submissionsLeft");
+const starPopup = document.getElementById("starPopup");
+const bottomInput = document.getElementById("bottomInput");
+const sendBottomBtn = document.getElementById("sendBottomBtn");
 
-  function showPopup(text){
-    starPopup.textContent=text;
-    starPopup.style.display="block";
-    setTimeout(()=>starPopup.style.display="none",1500);
-  }
+function showPopup(text){
+  starPopup.textContent=text;
+  starPopup.style.display="block";
+  setTimeout(()=>starPopup.style.display="none",1500);
+}
 
-  function validateWord(word){
-    if(!word) return false;
-    word = word.toUpperCase();
-    if(!validWords.includes(word)) return false;
-    if(submissions.has(word)) return false;
-    return true;
-  }
+function validateWord(word){
+  if(!word) return false;
+  word = word.toUpperCase();
+  if(!validWords.includes(word)) return false;
+  if(submissions.has(word)) return false;
+  return true;
+}
 
-  function submitWord(){
-    const word = inputEl.value.trim().toUpperCase();
-    if(starCount < STAR_COST){
-      showPopup("Not enough stars!");
-      return;
-    }
-    if(submissionsLeft<=0){
-      showPopup("Scramble full! Wait for next one.");
-      return;
-    }
-    if(!validateWord(word)){
-      showPopup("Invalid or duplicate!");
-      inputEl.value="";
-      return;
-    }
-    // Deduct stars
-    starCount -= STAR_COST;
-    // Accept submission
-    submissions.add(word);
-    submissionsLeft--;
-    submissionsLeftEl.textContent=submissionsLeft;
+async function submitWord(){
+  const word = inputEl.value.trim().toUpperCase();
+  if(!currentUser) return showPopup("Sign in first!");
+  if(submissionsLeft<=0) return showPopup("Scramble full! Wait for next one.");
+  if(!validateWord(word)){ inputEl.value=""; return showPopup("Invalid or duplicate!"); }
 
-    // Reward
-    starCount += STAR_REWARD;
-    cashCount += CASH_REWARD;
-    starCountEl.textContent=starCount;
-    cashCountEl.textContent=cashCount;
+  // Deduct stars
+  if(currentUser.stars<STAR_COST) return showPopup("Not enough stars!");
+  
+  // Update Firebase
+  const userRef = doc(db,"users",currentUser.uid);
+  await updateDoc(userRef,{
+    stars: increment(-STAR_COST+STAR_REWARD),
+    cash: increment(CASH_REWARD)
+  });
 
-    // Buzz log
-    const item=document.createElement("div");
-    item.className="buzz-item";
-    item.textContent=word;
-    buzzLog.appendChild(item);
-    buzzLog.scrollTop=buzzLog.scrollHeight;
+  // Update local
+  currentUser.stars = currentUser.stars-STAR_COST+STAR_REWARD;
+  currentUser.cash = (currentUser.cash||0)+CASH_REWARD;
+  starCountEl.textContent=currentUser.stars;
+  cashCountEl.textContent=currentUser.cash;
 
-    showPopup(`+${STAR_REWARD}⭐ & +₦${CASH_REWARD}`);
-    inputEl.value="";
-  }
+  // Add submission
+  submissions.add(word);
+  submissionsLeft--;
+  submissionsLeftEl.textContent=submissionsLeft;
 
-  buzzBtn.addEventListener("click",submitWord);
-  inputEl.addEventListener("keypress",(e)=>{if(e.key==="Enter")submitWord();});
+  // Add to message log
+  const msgDiv = document.createElement("div");
+  msgDiv.className="msg me";
+  msgDiv.innerHTML=`<span class="content buzz-content">${word}</span>`;
+  messagesEl.appendChild(msgDiv);
+  messagesEl.scrollTop=messagesEl.scrollHeight;
 
-  // Bottom input just echoes buzz messages for demo
-  function sendBottom(){
-    const msg = bottomInput.value.trim();
-    if(!msg) return;
-    const item = document.createElement("div");
-    item.className="buzz-item";
-    item.textContent=msg;
-    buzzLog.appendChild(item);
-    buzzLog.scrollTop=buzzLog.scrollHeight;
-    bottomInput.value="";
-  }
+  showPopup(`+${STAR_REWARD}⭐ & +₦${CASH_REWARD}`);
+  inputEl.value="";
+}
 
-  sendBottomBtn.addEventListener("click",sendBottom);
-  bottomInput.addEventListener("keypress",(e)=>{if(e.key==="Enter")sendBottom();});
+buzzBtn.addEventListener("click",submitWord);
+inputEl.addEventListener("keypress",(e)=>{if(e.key==="Enter") submitWord();});
 
-  // ----- Auto scramble every 60 seconds -----
-  function startNewScramble(){
-    submissions.clear();
-    submissionsLeft=25;
-    submissionsLeftEl.textContent=submissionsLeft;
-    inputEl.value="";
-    buzzLog.innerHTML="";
-    showPopup("New Scramble Started!");
-  }
-  setInterval(startNewScramble,60000);
+// Bottom input echoes buzz messages
+function sendBottom(){
+  const msg = bottomInput.value.trim();
+  if(!msg) return;
+  const msgDiv=document.createElement("div");
+  msgDiv.className="msg";
+  msgDiv.innerHTML=`<span class="content">${msg}</span>`;
+  messagesEl.appendChild(msgDiv);
+  messagesEl.scrollTop=messagesEl.scrollHeight;
+  bottomInput.value="";
+}
+sendBottomBtn.addEventListener("click",sendBottom);
+bottomInput.addEventListener("keypress",(e)=>{if(e.key==="Enter") sendBottom();});
 
-})();
+// Auto-scramble reset every 60s
+setInterval(()=>{
+  submissions.clear();
+  submissionsLeft=25;
+  submissionsLeftEl.textContent=submissionsLeft;
+  inputEl.value="";
+  messagesEl.innerHTML="";
+  showPopup("New Scramble Started!");
+},60000);
 </script>
-
 </body>
 </html>
