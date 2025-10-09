@@ -380,107 +380,75 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-/* --- User Popup Overlay --- */
+
+#userPopup, #userPopup * {
+  touch-action: manipulation;
+}
+
+/* ---------- User Popup Glass Card ---------- */
 #userPopup {
   position: fixed;
-  inset: 0;
-  display: none;
-  justify-content: center;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5); /* semi-transparent overlay */
+  display: none; /* show via JS */
   align-items: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
+  justify-content: center;
   z-index: 9999;
-  animation: fadeIn 0.25s ease forwards;
+  backdrop-filter: blur(4px); /* subtle blur for mobile too */
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* --- Popup Card --- */
-.user-popup-card {
-  position: relative;
-  background: rgba(30, 30, 30, 0.8);
-  backdrop-filter: blur(25px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+.user-popup-content {
+  background: rgba(255, 255, 255, 0.1); /* slightly transparent glass */
   border-radius: 16px;
-  padding: 22px 25px;
-  width: 260px;
-  max-width: 90%;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+  padding: 24px 32px;
+  max-width: 320px;
+  width: 90%;
   color: #fff;
-  text-align: center;
-  transform: scale(0.9);
-  animation: popIn 0.25s ease forwards;
-  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); /* soft, realistic shadow */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  opacity: 0;
+  transform: translateY(-20px);
 }
 
-@keyframes popIn {
-  from { transform: scale(0.85); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+.user-popup-content.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
+/* Close button */
 #popupClose {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 20px;
+  align-self: flex-end;
   cursor: pointer;
-  color: #bbb;
-  transition: 0.2s;
-  z-index: 10;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  user-select: none;
 }
-#popupClose:hover { color: #fff; }
 
+/* Username / Gender display */
 #popupUsername {
-  font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 6px;
-  letter-spacing: 0.5px;
-  text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  font-size: 1.2rem;
+  margin-bottom: 4px;
 }
 
 #popupGender {
-  font-size: 0.9rem;
-  color: #ccc;
-  margin-bottom: 14px;
+  font-size: 0.95rem;
+  opacity: 0.8;
 }
 
-.social-icons {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
+/* Optional: smooth hover on the card (mobile friendly) */
+.user-popup-content:hover {
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
 }
 
-.social-icons img {
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  filter: drop-shadow(0 0 6px rgba(255,255,255,0.15));
-}
-
-.social-icons img:hover {
-  transform: scale(1.15);
-  filter: drop-shadow(0 0 8px rgba(255,255,255,0.4));
-}
-
-.social-icons img.inactive {
-  opacity: 0.35;
-  filter: grayscale(100%) brightness(0.7);
-  cursor: default;
-  transform: none;
-}
-.chat-username {
-  cursor: pointer;
-  transition: opacity 0.25s ease, color 0.25s ease;
-}
-
-.chat-username.username-tapped {
-  opacity: 0.4; /* temporarily fades */
-  color: #aaa;  /* looks like it’s pressed */
-}
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
