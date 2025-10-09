@@ -30,8 +30,8 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
 /* ---------- Room & chat ---------- */
-const ROOM_ID = "room5";
-const CHAT_COLLECTION = "messages_room5";
+const ROOM_ID = "room6";
+const CHAT_COLLECTION = "messages_room6";
 
 /* ---------- State ---------- */
 let currentUser = null;
