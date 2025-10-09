@@ -380,40 +380,93 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-.user-popup {
+/* --- User Popup Card --- */
+#userPopup {
   position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #222;
-  color: #fff;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 16px;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: none;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.25s ease forwards;
   z-index: 9999;
-  width: 250px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.user-popup-card {
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 20px 22px;
+  width: 280px;
+  max-width: 90%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+  color: #fff;
   text-align: center;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  transform: scale(0.92);
+  animation: popIn 0.25s ease forwards;
+  transition: all 0.3s ease;
 }
-.user-popup-content img {
-  width: 32px;
-  margin: 8px;
-  cursor: pointer;
-  filter: brightness(0.9);
-  transition: transform 0.2s;
+
+@keyframes popIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
-.user-popup-content img:hover {
-  transform: scale(1.1);
-  filter: brightness(1.1);
-}
+
 #popupClose {
   position: absolute;
-  top: 6px; right: 10px;
+  top: 12px;
+  right: 16px;
+  font-size: 20px;
   cursor: pointer;
-  color: #aaa;
-  font-size: 18px;
+  color: #bbb;
+  transition: 0.2s;
 }
 #popupClose:hover { color: #fff; }
+
+#popupUsername {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+
+#popupGender {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 15px;
+}
+
+.social-icons {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+
+.social-icons img {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  transition: 0.3s;
+  filter: brightness(0.85);
+}
+
+.social-icons img:hover {
+  transform: scale(1.15);
+  filter: brightness(1.1);
+}
+
+.social-icons img.inactive {
+  opacity: 0.4;
+  filter: grayscale(100%);
+  cursor: default;
+  transform: none;
+}
 
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
