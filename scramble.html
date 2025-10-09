@@ -3,51 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scramble Game Demo</title>
+<title>Scramble Game - Cute Version</title>
 <style>
-  body { font-family: sans-serif; background: #111; color: #fff; display:flex; flex-direction:column; align-items:center; margin:0; padding:20px;}
-  .stats { display:flex; gap:20px; margin-bottom:10px; font-weight:bold;}
-  .scramble-board { background:#222; padding:15px; border-radius:10px; text-align:center; margin-bottom:10px;}
-  #scrambleLetters { font-size:24px; letter-spacing:4px; margin-bottom:10px;}
-  input, button { padding:8px 12px; border-radius:8px; border:none; font-size:16px;}
-  input { width:200px; margin-right:5px; }
-  button { background:#ff1493; color:#000; cursor:pointer; }
-  button:hover { transform:scale(1.05); }
-  .buzz-log { max-height:200px; overflow-y:auto; width:100%; max-width:400px; margin-top:10px; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:5px; }
-  .buzz-item { background:#FF1493; color:#000; margin:4px 0; padding:4px 8px; border-radius:6px; font-weight:bold; }
-  .star-popup { position:fixed; top:20%; left:50%; transform:translateX(-50%); background:#222; padding:10px 15px; border-radius:8px; display:none; font-weight:bold; color:#FF1493; }
+/* ----- Root colors ----- */
+:root{
+  --bg:#0b0b0b;
+  --card:#1a1a1a;
+  --accent:#FF1493;
+  --muted:#aaa;
+  --glass: rgba(255,255,255,0.05);
+  --popup-bg:#222;
+  --popup-color:#FF1493;
+}
+
+/* ----- Body ----- */
+body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);color:#fff;display:flex;flex-direction:column;align-items:center;}
+
+/* ----- Header / Stats ----- */
+.header{width:100%;max-width:480px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--card);border-radius:12px;margin:12px 0;box-shadow:0 0 12px rgba(255,20,147,0.2);}
+.header div{display:flex;align-items:center;gap:6px;font-weight:700;}
+.header .label{color:var(--muted);font-weight:500;font-size:13px;}
+
+/* ----- Scramble Board ----- */
+.scramble-board{width:100%;max-width:480px;background:var(--card);border-radius:12px;padding:16px;text-align:center;box-shadow:0 0 20px rgba(255,20,147,0.1);margin-bottom:10px;}
+#scrambleLetters{font-size:28px;letter-spacing:6px;margin-bottom:12px;font-weight:800;color:var(--accent);}
+input#scrambleInput{padding:10px 14px;border-radius:999px;border:none;width:180px;margin-right:6px;background:#222;color:#fff;font-size:16px;outline:none;}
+input#scrambleInput::placeholder{color:var(--muted);}
+button#buzzBtn{padding:10px 14px;border-radius:999px;border:none;background:var(--accent);color:#000;font-weight:700;font-size:16px;cursor:pointer;transition:0.2s;}
+button#buzzBtn:hover{transform:scale(1.05);}
+
+/* ----- Buzz Log ----- */
+.buzz-log{width:100%;max-width:480px;height:180px;overflow-y:auto;margin-top:8px;padding:8px;background:var(--card);border-radius:12px;box-shadow:0 0 12px rgba(255,20,147,0.1);}
+.buzz-item{background:var(--accent);color:#000;margin:4px 0;padding:6px 10px;border-radius:8px;font-weight:700;}
+
+/* ----- Star Popup ----- */
+.star-popup{position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--popup-bg);padding:10px 16px;border-radius:12px;display:none;font-weight:700;color:var(--popup-color);box-shadow:0 0 12px rgba(255,20,147,0.3);}
+
+/* ----- Twitch-style bottom input ----- */
+.send-area{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;align-items:center;gap:8px;background:var(--card);padding:12px;border-radius:999px;box-shadow:0 0 12px rgba(255,20,147,0.2);}
+.send-area input{flex:1;padding:12px 16px;border-radius:999px;border:none;background:#222;color:#fff;font-size:16px;outline:none;}
+.send-area input::placeholder{color:var(--muted);}
+.send-area button{padding:10px 16px;border-radius:999px;border:none;background:var(--accent);color:#000;font-weight:700;font-size:16px;cursor:pointer;transition:0.2s;}
+.send-area button:hover{transform:scale(1.05);}
+
+/* ----- Scrollbar for buzz log ----- */
+.buzz-log::-webkit-scrollbar{width:6px;}
+.buzz-log::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px;}
+.buzz-log::-webkit-scrollbar-track{background:#111;}
 </style>
 </head>
 <body>
 
-<div class="stats">
+<!-- Header Stats -->
+<div class="header">
   <div>Stars: <span id="starCount">100</span>⭐</div>
   <div>Cash: ₦<span id="cashCount">0</span></div>
 </div>
 
+<!-- Scramble Board -->
 <div class="scramble-board">
-  <div id="scrambleLetters">...</div>
-  <input type="text" id="scrambleInput" placeholder="Type a word">
-  <button id="buzzBtn">🚨 Buzz!</button>
+  <div id="scrambleLetters">S K P K T S D</div>
+  <div>
+    <input type="text" id="scrambleInput" placeholder="Type word">
+    <button id="buzzBtn">🚨 Buzz!</button>
+  </div>
   <div>Submissions left: <span id="submissionsLeft">25</span></div>
 </div>
 
+<!-- Buzz Log -->
 <div class="buzz-log" id="buzzLog"></div>
 
+<!-- Star Popup -->
 <div class="star-popup" id="starPopup">+10 Stars!</div>
+
+<!-- Bottom input (Twitch-style) -->
+<div class="send-area">
+  <input type="text" id="bottomInput" placeholder="Send a buzz message...">
+  <button id="sendBottomBtn">🚨</button>
+</div>
 
 <script>
 (() => {
   // ----- Game State -----
-  let currentLetters = [];
-  let validWords = [];
+  let currentLetters = ["S","K","P","K","T","S","D"];
+  let validWords = ["SKIP","TIPS","SPOT","STOP","POTS","KITS","DIPS","TIP","KIT","TOP","PIT","SIT","POT","DOT","KITTY","SIP","SKIT","SKID","DIT","TID","PITS","SOD"];
   let submissions = new Set();
   let submissionsLeft = 25;
   let starCount = 100;
   let cashCount = 0;
-  const STAR_COST = 5;     // Cost per submission
-  const STAR_REWARD = 10;  // Reward per valid word
-  const CASH_REWARD = 50;  // Cash per valid word
+  const STAR_COST = 5;
+  const STAR_REWARD = 10;
+  const CASH_REWARD = 50;
 
   const lettersEl = document.getElementById("scrambleLetters");
   const inputEl = document.getElementById("scrambleInput");
@@ -57,34 +103,16 @@
   const cashCountEl = document.getElementById("cashCount");
   const submissionsLeftEl = document.getElementById("submissionsLeft");
   const starPopup = document.getElementById("starPopup");
+  const bottomInput = document.getElementById("bottomInput");
+  const sendBottomBtn = document.getElementById("sendBottomBtn");
 
-  // ----- Sample word list generator -----
-  const sampleWords = ["SKIP","TIPS","SPOT","STOP","POTS","KITS","DIPS","TIP","KIT","TOP","PIT","SIT","POT","DOT","KITTY","SIP","SKIT","POTS","SKID","DIT","TID","PITS","SKID","SKIT","KID","SOD"];
-
-  function pickRandomLetters() {
-    // pick 7 letters that will generate at least 25 sample words
-    return ["S","K","P","K","T","S","D"];
-  }
-
-  function startNewScramble() {
-    currentLetters = pickRandomLetters();
-    validWords = sampleWords.slice(0,25);
-    submissions.clear();
-    submissionsLeft = 25;
-    lettersEl.textContent = currentLetters.join(" ");
-    submissionsLeftEl.textContent = submissionsLeft;
-    inputEl.value = "";
-    buzzLog.innerHTML = "";
-    showPopup("New Scramble! Try your luck!");
-  }
-
-  function showPopup(text) {
-    starPopup.textContent = text;
-    starPopup.style.display = "block";
+  function showPopup(text){
+    starPopup.textContent=text;
+    starPopup.style.display="block";
     setTimeout(()=>starPopup.style.display="none",1500);
   }
 
-  function validateWord(word) {
+  function validateWord(word){
     if(!word) return false;
     word = word.toUpperCase();
     if(!validWords.includes(word)) return false;
@@ -92,53 +120,72 @@
     return true;
   }
 
-  function submitWord() {
+  function submitWord(){
     const word = inputEl.value.trim().toUpperCase();
     if(starCount < STAR_COST){
       showPopup("Not enough stars!");
       return;
     }
-    if(submissionsLeft <=0){
+    if(submissionsLeft<=0){
       showPopup("Scramble full! Wait for next one.");
       return;
     }
     if(!validateWord(word)){
-      showPopup("Invalid or duplicate word!");
+      showPopup("Invalid or duplicate!");
       inputEl.value="";
       return;
     }
-
     // Deduct stars
     starCount -= STAR_COST;
-    starCountEl.textContent = starCount;
-
     // Accept submission
     submissions.add(word);
     submissionsLeft--;
-    submissionsLeftEl.textContent = submissionsLeft;
+    submissionsLeftEl.textContent=submissionsLeft;
 
     // Reward
     starCount += STAR_REWARD;
     cashCount += CASH_REWARD;
-    starCountEl.textContent = starCount;
-    cashCountEl.textContent = cashCount;
+    starCountEl.textContent=starCount;
+    cashCountEl.textContent=cashCount;
 
-    // Add to log
-    const item = document.createElement("div");
-    item.className = "buzz-item";
-    item.textContent = word;
+    // Buzz log
+    const item=document.createElement("div");
+    item.className="buzz-item";
+    item.textContent=word;
     buzzLog.appendChild(item);
-    buzzLog.scrollTop = buzzLog.scrollHeight;
+    buzzLog.scrollTop=buzzLog.scrollHeight;
 
-    showPopup(`+${STAR_REWARD} Stars & +₦${CASH_REWARD}`);
+    showPopup(`+${STAR_REWARD}⭐ & +₦${CASH_REWARD}`);
     inputEl.value="";
   }
 
   buzzBtn.addEventListener("click",submitWord);
-  inputEl.addEventListener("keypress",(e)=>{if(e.key==="Enter") submitWord();});
+  inputEl.addEventListener("keypress",(e)=>{if(e.key==="Enter")submitWord();});
+
+  // Bottom input just echoes buzz messages for demo
+  function sendBottom(){
+    const msg = bottomInput.value.trim();
+    if(!msg) return;
+    const item = document.createElement("div");
+    item.className="buzz-item";
+    item.textContent=msg;
+    buzzLog.appendChild(item);
+    buzzLog.scrollTop=buzzLog.scrollHeight;
+    bottomInput.value="";
+  }
+
+  sendBottomBtn.addEventListener("click",sendBottom);
+  bottomInput.addEventListener("keypress",(e)=>{if(e.key==="Enter")sendBottom();});
 
   // ----- Auto scramble every 60 seconds -----
-  startNewScramble();
+  function startNewScramble(){
+    submissions.clear();
+    submissionsLeft=25;
+    submissionsLeftEl.textContent=submissionsLeft;
+    inputEl.value="";
+    buzzLog.innerHTML="";
+    showPopup("New Scramble Started!");
+  }
   setInterval(startNewScramble,60000);
 
 })();
