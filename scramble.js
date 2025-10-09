@@ -345,10 +345,6 @@ function startStarEarning(uid) {
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
-
-/* ---------- DOMContentLoaded ---------- */
-window.addEventListener("DOMContentLoaded", () => {
-
   /* ---------- Loading Bar Helper ---------- */
   function showLoadingBar(duration = 1000) {
     const postLoginLoader = document.getElementById("postLoginLoader");
@@ -375,7 +371,34 @@ window.addEventListener("DOMContentLoaded", () => {
     }, interval);
   }
 
-  // Cache DOM elements (existing + scramble UI)
+/* ---------- DOMContentLoaded ---------- */
+window.addEventListener("DOMContentLoaded", () => {
+
+  // ---------- Loading Bar Helper ----------
+  function showLoadingBar(duration = 1000) {
+    const postLoginLoader = document.getElementById("postLoginLoader");
+    const loadingBar = document.getElementById("loadingBar");
+    if (!postLoginLoader || !loadingBar) return;
+
+    postLoginLoader.style.display = "flex";
+    loadingBar.style.width = "0%";
+
+    let progress = 0;
+    const interval = 50;
+    const step = 100 / (duration / interval);
+
+    const loadingInterval = setInterval(() => {
+      progress += step + Math.random() * 5;
+      if (progress >= 100) progress = 100;
+      loadingBar.style.width = progress + "%";
+      if (progress >= 100) {
+        clearInterval(loadingInterval);
+        setTimeout(() => { postLoginLoader.style.display = "none"; }, 300);
+      }
+    }, interval);
+  }
+
+  // ---------- Cache DOM elements ----------
   refs = {
     authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
@@ -402,6 +425,100 @@ window.addEventListener("DOMContentLoaded", () => {
     adminScrambleBtn: document.getElementById("adminScrambleBtn")
   };
 
+  // Limit chatID input length
+  if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength", "12");
+
+  /* ---------- SCRAMBLE GAME MODULE ---------- */
+  if (refs.scrambleBannerEl && refs.scrambleLettersEl && refs.scrambleInputEl && refs.scrambleSubmitBtn && refs.adminScrambleBtn) {
+    const SCRAMBLE_DURATION = 120000; // 2 minutes
+    const SCRAMBLE_LETTER_COUNT = 7;
+    const SCRAMBLE_STAR_REWARD = 20;
+
+    let currentScramble = null;
+    let scrambleTimeout = null;
+    let submittedWords = {}; // uid => Set of words
+
+    const lettersPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    function generateLetters() {
+      let letters = [];
+      for (let i = 0; i < SCRAMBLE_LETTER_COUNT; i++) {
+        letters.push(lettersPool[Math.floor(Math.random() * lettersPool.length)]);
+      }
+      return letters;
+    }
+
+    function startScramble() {
+      if (!currentUser?.isAdmin) return showStarPopup("Only admin can start a scramble");
+
+      const letters = generateLetters();
+      currentScramble = { letters, startTime: Date.now() };
+      submittedWords = {};
+
+      refs.scrambleBannerEl.style.display = "block";
+      refs.scrambleLettersEl.textContent = letters.join(" ");
+      refs.scrambleInputEl.value = "";
+      refs.scrambleInputEl.disabled = false;
+      refs.scrambleSubmitBtn.disabled = false;
+
+      showStarPopup(`Scramble started! Form words using these letters: ${letters.join(" ")}`);
+
+      if (scrambleTimeout) clearTimeout(scrambleTimeout);
+      scrambleTimeout = setTimeout(endScramble, SCRAMBLE_DURATION);
+    }
+
+    function validateWord(word) {
+      if (!currentScramble) return false;
+      word = word.toUpperCase();
+      const available = [...currentScramble.letters];
+      for (let char of word) {
+        const idx = available.indexOf(char);
+        if (idx === -1) return false;
+        available.splice(idx, 1);
+      }
+      return true;
+    }
+
+    async function submitScrambleWord() {
+      if (!currentUser || !currentScramble) return;
+      let word = (refs.scrambleInputEl.value || "").trim().toUpperCase();
+      if (!word) return showStarPopup("Type a word to submit!");
+      if (!validateWord(word)) return showStarPopup("Invalid word for current letters!");
+
+      submittedWords[currentUser.uid] = submittedWords[currentUser.uid] || new Set();
+      if (submittedWords[currentUser.uid].has(word)) return showStarPopup("You already submitted this word!");
+
+      submittedWords[currentUser.uid].add(word);
+
+      const userRef = doc(db, "users", currentUser.uid);
+      currentUser.stars = (currentUser.stars || 0) + SCRAMBLE_STAR_REWARD;
+      refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+      await updateDoc(userRef, { stars: increment(SCRAMBLE_STAR_REWARD) });
+
+      showStarPopup(`✅ "${word}" accepted! +${SCRAMBLE_STAR_REWARD} stars`);
+      refs.scrambleInputEl.value = "";
+    }
+
+    function endScramble() {
+      if (!currentScramble) return;
+      showStarPopup("⏰ Scramble ended!");
+      refs.scrambleBannerEl.style.display = "none";
+      refs.scrambleLettersEl.textContent = "";
+      refs.scrambleInputEl.disabled = true;
+      refs.scrambleSubmitBtn.disabled = true;
+      currentScramble = null;
+      submittedWords = {};
+    }
+
+    // Bind buttons
+    refs.adminScrambleBtn.addEventListener("click", startScramble);
+    refs.scrambleSubmitBtn.addEventListener("click", submitScrambleWord);
+    refs.scrambleInputEl.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") submitScrambleWord();
+    });
+  }
+
+});
   // Limit chatID input length
   if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength", "12");
 
@@ -574,102 +691,3 @@ refs.buzzBtn?.addEventListener("click", async () => {
     loadVideo(0);
   }
 });
-/* ---------- SCRAMBLE GAME MODULE ---------- */
-(() => {
-  if (!refs.scrambleBannerEl || !refs.scrambleLettersEl || !refs.scrambleInputEl || !refs.scrambleSubmitBtn || !refs.adminScrambleBtn) return;
-
-  const SCRAMBLE_DURATION = 120000; // 2 minutes
-  const SCRAMBLE_LETTER_COUNT = 7;  // number of letters per scramble
-  const SCRAMBLE_STAR_REWARD = 20;  // stars per valid word
-
-  let currentScramble = null;
-  let scrambleTimeout = null;
-  let submittedWords = {}; // uid => Set of words
-
-  const lettersPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-  function generateLetters() {
-    let letters = [];
-    for (let i = 0; i < SCRAMBLE_LETTER_COUNT; i++) {
-      letters.push(lettersPool[Math.floor(Math.random() * lettersPool.length)]);
-    }
-    return letters;
-  }
-
-  function startScramble() {
-    if (!currentUser?.isAdmin) return showStarPopup("Only admin can start a scramble");
-
-    const letters = generateLetters();
-    currentScramble = {
-      letters,
-      startTime: Date.now()
-    };
-    submittedWords = {};
-
-    // Update UI
-    refs.scrambleBannerEl.style.display = "block";
-    refs.scrambleLettersEl.textContent = letters.join(" ");
-    refs.scrambleInputEl.value = "";
-    refs.scrambleInputEl.disabled = false;
-    refs.scrambleSubmitBtn.disabled = false;
-
-    showStarPopup(`Scramble started! Form words using these letters: ${letters.join(" ")}`);
-
-    // Auto-end scramble after timer
-    if (scrambleTimeout) clearTimeout(scrambleTimeout);
-    scrambleTimeout = setTimeout(endScramble, SCRAMBLE_DURATION);
-  }
-
-  function validateWord(word) {
-    if (!currentScramble) return false;
-    word = word.toUpperCase();
-    const available = [...currentScramble.letters];
-    for (let char of word) {
-      const idx = available.indexOf(char);
-      if (idx === -1) return false;
-      available.splice(idx, 1);
-    }
-    return true;
-  }
-
-  async function submitScrambleWord() {
-    if (!currentUser || !currentScramble) return;
-    let word = (refs.scrambleInputEl.value || "").trim().toUpperCase();
-    if (!word) return showStarPopup("Type a word to submit!");
-    if (!validateWord(word)) return showStarPopup("Invalid word for current letters!");
-
-    submittedWords[currentUser.uid] = submittedWords[currentUser.uid] || new Set();
-    if (submittedWords[currentUser.uid].has(word)) return showStarPopup("You already submitted this word!");
-
-    submittedWords[currentUser.uid].add(word);
-
-    // Award stars
-    const userRef = doc(db, "users", currentUser.uid);
-    currentUser.stars = (currentUser.stars || 0) + SCRAMBLE_STAR_REWARD;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(userRef, { stars: increment(SCRAMBLE_STAR_REWARD) });
-
-    showStarPopup(`✅ "${word}" accepted! +${SCRAMBLE_STAR_REWARD} stars`);
-    refs.scrambleInputEl.value = "";
-  }
-
-  function endScramble() {
-    if (!currentScramble) return;
-    showStarPopup("⏰ Scramble ended!");
-    refs.scrambleBannerEl.style.display = "none";
-    refs.scrambleLettersEl.textContent = "";
-    refs.scrambleInputEl.disabled = true;
-    refs.scrambleSubmitBtn.disabled = true;
-    currentScramble = null;
-    submittedWords = {};
-  }
-
-  // Bind buttons
-  refs.adminScrambleBtn.addEventListener("click", startScramble);
-  refs.scrambleSubmitBtn.addEventListener("click", submitScrambleWord);
-
-  // Optional: allow Enter key to submit
-  refs.scrambleInputEl.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") submitScrambleWord();
-  });
-})();
