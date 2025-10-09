@@ -603,17 +603,22 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<!-- User Popup Modal -->
 <div id="userPopup" class="hidden">
   <div class="user-popup-backdrop"></div>
   <div class="user-popup-card">
     <span id="popupClose">&times;</span>
+
     <div class="popup-avatar-wrapper">
       <img id="popupAvatar" src="https://via.placeholder.com/80" alt="User Avatar"/>
     </div>
+
     <div id="popupUsername" class="popup-username">USERNAME</div>
-    <div class="popup-actions">
-      <button class="popup-btn buzz-btn">🚨 Buzz</button>
+    <div id="popupGender" class="popup-label">FEMALE</div>
+
+    <div class="popup-actions" style="justify-content:center;gap:12px;">
+      <button id="popupBuzzBtn" class="popup-btn buzz-btn" title="Buzz 🚨">🚨</button>
+      <a id="popupSocial1" class="popup-btn" href="#" target="_blank">🐦</a>
+      <a id="popupSocial2" class="popup-btn" href="#" target="_blank">📸</a>
     </div>
   </div>
 </div>
