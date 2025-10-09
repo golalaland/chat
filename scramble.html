@@ -120,7 +120,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
 .room-desc{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
 #greeting{font-size:13px;text-align:center;font-weight:600;margin-bottom:6px;color:var(--accent);}
-#helloText{font-size:21px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
+#helloText{font-size:20px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
 #center{flex:1;display:flex;flex-direction:column;gap:6px;}
 
 /* Sticky video wrapper */
@@ -243,8 +243,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
 }
 
-
-
 .send-btn {
   padding: 10px 16px;
   border-radius: 999px;
@@ -260,6 +258,36 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .send-btn:hover {
   background-color: #ff33a1;
   transform: scale(1.05);
+}
+
+
+#postLoginLoader {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  flex-direction: column;
+}
+
+#loadingBarWrapper {
+  width: 80%;
+  max-width: 300px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+
+#loadingBar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg,#FF69B4,#FF1493);
+  border-radius: 4px;
+  animation: loadingAnim 2.5s linear forwards;
 }
 
 
@@ -337,15 +365,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   .send-area input{padding:10px;font-size:13px;}
   .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
 }
-  #adminUserSelectContainer { margin-top: 10px; }
-  #adminControls { display: none; flex-direction: column; gap: 6px; margin-top: 8px; }
-  .profile-label { font-weight: bold; }
-  .buttons-container { display: flex; flex-wrap: wrap; gap: 6px; }
-  .small-btn { padding: 6px 12px; font-size: 14px; cursor: pointer; }
-  #adminUserSearch, #adminUserSelect { margin-top: 6px; width: 100%; padding: 6px; box-sizing: border-box; }
-/* Make sure to include Montserrat in your HTML head:
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
-*/
 .room-subtitle {
   font-size: 12px;              /* same as #helloText */
   font-weight: 600;             /* slightly lighter than HELLO */
@@ -361,167 +380,47 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-#emailAuthWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* centers horizontally */
-  gap: 10px;           /* spacing between input and button */
-  margin-top: 12px;    /* space from above text */
-  width: 100%;
-}
-
-#emailAuthWrapper input.auth-input {
-  width: 90%;          /* smaller than full width, responsive */
-  max-width: 320px;
-  padding: 12px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background-color: #0e0e0e;
-  color: #fff;
-  font-size: 16px;
-  outline: none;
+/* ---------- Auth Inputs ---------- */
+#authBox{display:flex;justify-content:center;margin-top:12px;}
+#emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
+#emailAuthWrapper input.auth-input{
+  width:90%; max-width:320px;
+  padding:12px 16px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.08);
+  background-color:#0e0e0e;
+  color:#fff;
+  font-size:16px;
+  outline:none;
   transition: all 0.2s ease-in-out;
 }
-
-#emailAuthWrapper input.auth-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
-}
-/* Centered modal with glow backdrop */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: none; /* toggle with JS */
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  
-  /* Glow themed background */
-  background: radial-gradient(circle at center, rgba(255,20,147,0.2) 0%, rgba(0,0,0,0.85) 100%);
-  backdrop-filter: blur(4px);
+#emailAuthWrapper input.auth-input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 12px rgba(255,20,147,0.15);
 }
 
-.modal-content {
-  background: var(--card, #111);
-  padding: 20px 24px;
-  border-radius: 16px;
-  max-width: 360px;
-  width: 90%;
-  text-align: center;
-  box-shadow: 0 0 20px rgba(255,20,147,0.6),
-              0 0 40px rgba(255,20,147,0.3);
-  border: 1px solid rgba(255,20,147,0.15);
+/* ---------- Buttons ---------- */
+.google-btn{
+  display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;width:90%;max-width:320px;justify-content:center;
 }
-
-.modal-content h3 {
-  color: var(--accent, #FF1493);
-  font-size: 18px;
-  margin-bottom: 14px;
-}
-
-.modal-content input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.2);
-  margin-bottom: 14px;
-  background: #111;
-  color: #fff;
-  font-size: 15px;
-  outline: none;
-}
-
-.modal-content input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(255,20,147,0.3);
-}
-
-.modal-content button {
-  padding: 12px;
-  width: 100%;
-  border-radius: 12px;
-  background: var(--accent, #FF1493);
-  color: #000;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.modal-content button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(255,20,147,0.5);
-}
-#messagePopup {
-  position: fixed;
-  top: 30%; /* centered vertically */
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--card);
-  color: var(--accent);
-  padding: 12px 20px;
-  border-radius: 14px;
-  font-size: 14px;
-  font-weight: 700;
-  z-index: 9999;
-  display: none;
-  pointer-events: none;
-
-  /* Glow */
-  box-shadow: 0 0 12px rgba(255,20,147,0.5),
-              0 0 24px rgba(255,20,147,0.3),
-              0 0 36px rgba(255,20,147,0.2);
-  text-align: center;
-
-  animation: popupFade 0.5s ease forwards;
-}
-
-@keyframes popupFade {
-  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
-  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-/* Footer styles */
-#startupFooter {
-  margin-top: 20px;
-  text-align: center;
-  color: var(--muted, #aaa);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-#startupFooter a {
-  color: var(--accent, #FF1493);
-  text-decoration: none;
-  margin: 0 6px;
-}
-
-#startupFooter span {
-  letter-spacing: 1px;
-}
-
-/* Optional: make sure footer visible on small screens */
-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.app {
-  flex: 1; /* allow footer to stay at bottom */
-}
+.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
 </style>
 </head>
 <body>
+  
+  <!-- Loading Overlay (hidden by default) -->
+<div id="postLoginLoader" style="display:none;">
+  <div id="loadingBarWrapper">
+    <div id="loadingBar"></div>
+  </div>
+</div>
+
 <audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
 <div id="appWrapper">
   <div class="app">
     <div class="brand">乂丨乂丨</div>
-    <div id="greeting">Chat. Own Your Vibe. </div>
+    <div id="greeting">✨</div>
     <div id="center">
     <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
 <div id="videoWrapper">
@@ -535,60 +434,42 @@ body {
 <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
 <span id="onlineCount" class="onlineCount"></span>
 
-      <div id="guestMsg"></div>
-      <div id="authBox">
+ <div id="guestMsg"></div>
+<div id="authBox">
 
-<div id="messagePopup" style="
-  position: fixed;
-  bottom: 80px; /* above chat input */
-  right: 20px;
-  background: rgba(30,30,30,0.9);
-  color: var(--accent);
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  z-index: 9999;
-  display: none;
-  pointer-events: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-"></div>
+  <!-- VIP Access Login Wrapper -->
+  <div id="emailAuthWrapper">
+    <!-- Phone Number Input -->
+    <input 
+      type="tel" 
+      id="phoneInput" 
+      placeholder="Enter your phone number" 
+      class="auth-input" 
+      pattern="\+\d{1,4}\d{6,15}"
+    >
 
-<!-- VIP Access Login Wrapper -->
-<div id="emailAuthWrapper">
-  <!-- Phone Number Input -->
-  <input 
-    type="tel" 
-    id="phoneInput" 
-    placeholder="Enter your phone number" 
-    class="auth-input" 
-    pattern="\+\d{1,4}\d{6,15}"
-  >
+    <!-- Email Input -->
+    <input 
+      type="email" 
+      id="emailInput" 
+      placeholder="Enter your email" 
+      class="auth-input"
+    >
 
-  <!-- Email Input -->
-  <input 
-    type="email" 
-    id="emailInput" 
-    placeholder="Enter your email" 
-    class="auth-input"
-  >
+    <!-- VIP Access Button -->
+    <button id="whitelistLoginBtn" class="google-btn">
+      <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
+      VIP Access
+    </button>
 
-<!-- VIP Access Button -->
-  <button id="whitelistLoginBtn" class="google-btn">
-    <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
-    VIP Access
-  </button>
+    <!-- Google Sign-In Button -->
+    <button id="googleSignInBtn" class="google-btn">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+      Sign in with Google
+    </button>
+  </div>
 
-  <!-- Moved Google Sign-In Button here -->
-  <button id="googleSignInBtn" class="google-btn">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
-    Sign in with Google
-  </button>
 </div>
-
-
-
-
-
 <!-- Chat ID Modal -->
 <div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
   <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
@@ -607,58 +488,37 @@ body {
 </div>
 
 <button id="adminScrambleBtn">Start Scramble (Admin only)</button>
-
 <div class="send-area" id="sendArea" style="display:none;">
   <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
   <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
   <button id="sendBtn" class="send-btn">Send</button>
 </div>
     </div>
-    
-    
-   <div class="profile" id="profileBox">
-  <div class="profile-card">
-    <div class="profile-top">
-      <div class="profile-left">
-        <div id="profileName" class="profile-name">GUEST 0000</div>
-        
-        <!-- BADGE CONTAINER -->
-        <div id="badgeContainer" style="display:flex;gap:4px;margin-top:4px;"></div>
-        
-        <div>
-          <span class="profile-label">STARS COLLECTED:</span>
-          <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+    <div class="profile" id="profileBox">
+      <div class="profile-card">
+        <div class="profile-top">
+          <div class="profile-left">
+            <div id="profileName" class="profile-name">GUEST 0000</div>
+            <div>
+              <span class="profile-label">STARS COLLECTED:</span>
+              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+            </div>
+          </div>
+          <div class="profile-actions">
+           <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
+            <button id="tipBtn" class="small-btn">💵</button>
+          </div>
         </div>
-      </div>
-      <div class="profile-actions">
-        <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
-        <button id="tipBtn" class="small-btn">💵</button>
-      </div>
-    </div>
-    <div>
-      <span class="profile-label">CASH EARNED:</span>
-      <span class="profile-value">₦<span id="cashCount">0</span></span>
-    </div>
-  </div>
-</div>
-      </div>
+        <div>
+          <span class="profile-label">CASH EARNED:</span>
+          <span class="profile-value">₦<span id="cashCount">0</span></span>
+        </div>
     </div>
   </div>
 </div>
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-
-<!-- Footer (pre-login page) -->
-<footer id="startupFooter">
-  <div>©5786 <span>Own Your Vibe</span></div>
-  <div>自分の雰囲気を楽しもう</div>
-  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
-  <div style="margin-top:4px;">
-    <a href="#">Privacy Policy</a> |
-    <a href="#">Terms of Service</a>
-  </div>
-</footer>
-<script type="module" src="newchatroom.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
