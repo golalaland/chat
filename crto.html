@@ -380,17 +380,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-/* --- User Popup Card --- */
+/* --- User Popup Overlay --- */
 #userPopup {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
   display: none;
   justify-content: center;
   align-items: center;
-  backdrop-filter: blur(3px);
-  animation: fadeIn 0.25s ease forwards;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
   z-index: 9999;
+  animation: fadeIn 0.25s ease forwards;
 }
 
 @keyframes fadeIn {
@@ -398,17 +398,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   to { opacity: 1; }
 }
 
+/* --- Popup Card --- */
 .user-popup-card {
-  background: rgba(20, 20, 20, 0.9);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  padding: 20px 22px;
-  width: 280px;
+  position: relative;
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 22px 25px;
+  width: 260px;
   max-width: 90%;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.7);
   color: #fff;
   text-align: center;
-  transform: scale(0.92);
+  transform: scale(0.9);
   animation: popIn 0.25s ease forwards;
   transition: all 0.3s ease;
 }
@@ -420,26 +423,28 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 #popupClose {
   position: absolute;
-  top: 12px;
-  right: 16px;
+  top: 8px;
+  right: 12px;
   font-size: 20px;
   cursor: pointer;
   color: #bbb;
   transition: 0.2s;
+  z-index: 10;
 }
 #popupClose:hover { color: #fff; }
 
 #popupUsername {
   font-size: 1.25rem;
   font-weight: 600;
+  margin-bottom: 6px;
   letter-spacing: 0.5px;
-  margin-bottom: 5px;
+  text-shadow: 0 0 8px rgba(255,255,255,0.3);
 }
 
 #popupGender {
   font-size: 0.9rem;
   color: #ccc;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
 }
 
 .social-icons {
@@ -449,25 +454,24 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .social-icons img {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   cursor: pointer;
-  transition: 0.3s;
-  filter: brightness(0.85);
+  transition: all 0.25s ease;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.15));
 }
 
 .social-icons img:hover {
   transform: scale(1.15);
-  filter: brightness(1.1);
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.4));
 }
 
 .social-icons img.inactive {
-  opacity: 0.4;
-  filter: grayscale(100%);
+  opacity: 0.35;
+  filter: grayscale(100%) brightness(0.7);
   cursor: default;
   transform: none;
 }
-
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
