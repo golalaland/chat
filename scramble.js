@@ -1,13 +1,13 @@
-/* ---------- Imports (Firebase v10) ---------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot
-  , query, orderBy, increment, getDocs, where
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { db, currentUser } from './app.js'; // Import Firestore & currentUser
+import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Now scramble.js can safely check currentUser and update stars:
+async function rewardStars(amount) {
+  if (!currentUser) return console.warn("No current user yet");
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { stars: increment(amount) });
+  currentUser.stars += amount;
+}
 
 /* ---------- Firebase config ---------- */
 const firebaseConfig = {
