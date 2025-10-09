@@ -157,45 +157,51 @@ async function showUserPopup(username) {
   const whatsappIcon = document.getElementById("whatsappIcon");
   const telegramIcon = document.getElementById("telegramIcon");
 
-  // 👇 Add this log so you can see what’s being passed and fetched
-  console.log("🔍 showUserPopup() called with:", username);
+  console.log("🔍 showUserPopup called with:", username);
 
+  // since username is already sanitized (like user.uid = email with commas)
   const userRef = doc(db, "users", username);
-  console.log("🗝️  Firestore key used:", safeEmailKey);
-
-  const userRef = doc(db, "users", safeEmailKey);
   const snap = await getDoc(userRef);
+
   if (!snap.exists()) {
-    console.warn("⚠️  Firestore returned no doc for:", safeEmailKey);
+    console.warn("⚠️ User not found in Firestore:", username);
     alert("User not found");
     return;
   }
 
   const data = snap.data();
+  console.log("✅ Firestore data:", data);
+
   popupUsername.textContent = data.chatId || username;
   popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
 
   const showMsg = msg => showStarPopup(`${data.chatId || username} hasn’t shared ${msg} yet.`);
-
   const openLink = (url, msg) => {
     if (url) window.open(url, "_blank");
     else showMsg(msg);
   };
 
-  // Only show WhatsApp & Telegram if isHost
+  // Show WhatsApp & Telegram only if host
   whatsappIcon.style.display = data.isHost ? "inline-block" : "none";
   telegramIcon.style.display = data.isHost ? "inline-block" : "none";
 
+  // Click handlers
   instaIcon.onclick = () => openLink(data.instagram, "Instagram");
   tiktokIcon.onclick = () => openLink(data.tiktok, "TikTok");
   whatsappIcon.onclick = () => {
     if (data.whatsapp)
-      window.open(`https://wa.me/${data.whatsapp}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "_blank");
+      window.open(
+        `https://wa.me/${data.whatsapp}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`,
+        "_blank"
+      );
     else showMsg("WhatsApp");
   };
   telegramIcon.onclick = () => {
     if (data.telegram)
-      window.open(`https://t.me/${data.telegram}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "_blank");
+      window.open(
+        `https://t.me/${data.telegram}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`,
+        "_blank"
+      );
     else showMsg("Telegram");
   };
 
@@ -210,7 +216,6 @@ window.addEventListener("click", e => {
   const popup = document.getElementById("userPopup");
   if (e.target === popup) popup.style.display = "none";
 });
-
 /* ---------- Messages listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
