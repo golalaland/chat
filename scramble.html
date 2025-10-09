@@ -1,245 +1,664 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat + Scramble</title>
+<meta charset="utf-8" />
+<meta name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Xixi</title>
+<link rel="icon" href="data:," />
 <style>
-  /* ---------- THEME ---------- */
-  :root {
-    --primary-color: #ff4081;
-    --bg-color: #111;
-    --text-color: #eee;
-    --input-bg: #222;
-    --input-border: #333;
-    --highlight-color: #ffd700;
+:root{
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
+  --accent:#FF1493;
+  --glass: rgba(255,255,255,0.03);
+}
+#videoWrapper .nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+  position: absolute;
+  bottom: 6px; /* overlay near bottom of video */
+  width: 100%;
+  pointer-events: auto;
+}
+
+#videoWrapper .nav-buttons button {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,20,147,0.2);
+  background: rgba(30,30,30,0.7);
+  color: var(--accent);
+  cursor: pointer;
+}
+#videoWrapper .nav-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(255,20,147,0.3);
+}
+#videoWrapper {
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111;
+
+  /* NEW: make sticky */
+  position: sticky;
+  top: 0;
+  z-index: 50; /* make sure it’s above messages but below popups like stars */
+}
+
+/* Video container inside wrapper */
+#videoContainer {
+  width: 100%;
+  height: 100%;       /* fill the wrapper */
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 10;
+}
+#prev { left: 5px; }
+#next { right: 5px; }
+  /* Minimal, almost invisible Prev/Next buttons */
+  #prevBtn, #nextBtn {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.05); /* very subtle */
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    opacity: 0;               /* invisible by default */
+    transition: opacity 0.3s ease;
   }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; height: 100vh; }
-  #messages { flex:1; overflow-y: auto; padding:10px; }
-  .msg { margin-bottom: 6px; display:flex; flex-wrap: wrap; }
-  .meta { font-weight: 700; margin-right: 4px; }
-  .content { padding:2px 6px; border-radius:4px; background:#222; }
-  .buzz-content { font-weight:700; border-radius:4px; padding:2px 6px; }
-  #sendArea { display:flex; gap:6px; padding:6px; background:#1a1a1a; }
-  #sendArea input { flex:1; padding:8px; border-radius:4px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); }
-  #sendArea button { padding:8px 12px; border:none; border-radius:4px; background:var(--primary-color); color:#fff; font-weight:700; }
-  #profileBox { display:flex; justify-content: space-between; align-items: center; padding:6px; background:#1a1a1a; }
-  #scrambleBanner { display:none; padding:10px; background:#222; border:1px solid var(--highlight-color); margin:10px; border-radius:6px; text-align:center; font-weight:700; }
-  #authBox { padding:10px; display:flex; flex-direction: column; gap:6px; background:#222; }
-  #authBox input { padding:8px; border-radius:4px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); }
-  #starPopup { position: fixed; top:10px; left:50%; transform:translateX(-50%); background:var(--highlight-color); color:#000; padding:8px 12px; border-radius:6px; display:none; font-weight:700; z-index:1000; }
+
+  #prevBtn:hover, #nextBtn:hover,
+  #prevBtn.active, #nextBtn.active {
+    opacity: 0.8;             /* appear on hover or when active */
+    cursor: pointer;
+  }
+
+  #prevBtn { left: 10px; }
+  #nextBtn { right: 10px; }
+  
+  .arrow {
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.arrow.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+  
+/* overall layout */
+html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
+.room-desc{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
+#greeting{font-size:13px;text-align:center;font-weight:600;margin-bottom:6px;color:var(--accent);}
+#helloText{font-size:21px;font-weight:800;text-align:center;margin:6px 0;color:#fff;transition:color .2s ease;}
+#center{flex:1;display:flex;flex-direction:column;gap:6px;}
+
+/* Sticky video wrapper */
+#videoPlayerWrapper {
+  position: fixed;
+  top: 10px; /* distance from top */
+  right: 10px; /* or left: 50%; transform: translateX(-50%) for center */
+  width: 320px;
+  height: 180px;
+  z-index: 999;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  background: #111;
+}
+#videoPlayer {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* or contain if you prefer full visibility */
+}
+
+#guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
+
+/* messages */
+/* 🔥 Chat messages container */
+/* 🔥 Chat messages container */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  background: #000;
+
+  /* ✅ give space so last message never hides behind bar */
+  margin-bottom: 70px;
+  box-sizing: border-box;
+}
+
+/* 🔥 Message bubble */
+.msg {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--glass);
+  max-width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.msg.me { background: rgba(255, 20, 147, 0.06); }
+.msg .meta {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 4px;
+  color: inherit;
+}
+.msg .content {
+  font-size: 13px;
+  color: #fff;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: inline-block;
+}
+
+/* 🔥 Keypad (chat input) - always at bottom */
+.send-area {
+  position: fixed;       
+  bottom: 0;           /* sits at the very bottom */
+  left: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  padding: 10px;
+  border-radius: 999px;  
+  box-sizing: border-box;
+  z-index: 100;           
+}
+
+/* 🔥 Chat input area */
+.send-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card, #111);
+  padding: 10px;
+  position: sticky;   /* sticky inside container */
+  bottom: 0;          /* always at bottom */
+  z-index: 10;
+  border-radius: 999px;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.send-area input {
+  flex: 1;
+  padding: 12px 16px;       /* your preferred size */
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #0e0e0e;
+  color: #fff;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.send-area input::placeholder {
+  color: var(--muted, #aaa);
+  opacity: 0.7;
+}
+
+.send-area input:focus {
+  border-color: var(--accent, #FF1493);
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
+}
+
+
+
+.send-btn {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background-color: var(--accent, #FF1493);
+  color: #000;
+  cursor: pointer;
+  font-weight: 700;
+  border: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.send-btn:hover {
+  background-color: #ff33a1;
+  transform: scale(1.05);
+}
+
+
+/* 🔥 Glass bar with neon accent glow under input */
+.glass-bar {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  margin-top: 6px; /* sits just under input */
+  z-index: 5;      /* stays beneath input */
+  
+  /* 🔥 Neon underglow */
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.25),
+              0 0 24px rgba(255, 20, 147, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+/* When typing/focused – stronger glow */
+.send-area:focus-within + .glass-bar {
+  transform: translateY(2px); 
+  box-shadow: 0 0 16px rgba(255, 20, 147, 0.45),
+              0 0 32px rgba(255, 20, 147, 0.25);
+}
+.buzz-content {
+  font-weight: 800;    /* really thick */
+  color: #000 !important;  /* force black text */
+  padding: 4px 6px;    /* make text breathe inside color */
+  border-radius: 4px;  /* rounded backdrop */
+  display: inline-block;
+}
+.room-subtitle {
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateY(0);
+}
+
+.room-subtitle.hidden {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none; /* optional: avoids ghost clicks */
+}
+
+.buzz-btn{padding:10px 12px;border-radius:999px;background:#1d1d1d;color:var(--accent);cursor:pointer;font-weight:700;font-size:14px;border:1px solid rgba(255,20,147,0.18);}
+.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
+@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
+
+/* profile glass bar */
+.profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
+.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
+.profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.profile-left{display:flex;flex-direction:column;gap:2px;}
+.profile-name{font-weight:800;}
+.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
+.profile-value{color: #fff;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight: 400;font-size: 11px;}
+.profile-value span,.profile-value .icon{margin-left:2px;}
+.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
+.small-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border: 0;color: #000;cursor: pointer;font-weight:700;font-size:12px;text-decoration: none;transition: transform .15s, box-shadow .15s;}
+.small-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 10px rgba(255,20,147,0.3);}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
+.onlineCount{font-size:11px;color:var(--muted);}
+#authBox{display:flex;justify-content:center;margin:12px 0;}
+.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;}
+.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
+.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
+@media (max-width:420px){
+  .send-area input{padding:10px;font-size:13px;}
+  .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
+}
+  #adminUserSelectContainer { margin-top: 10px; }
+  #adminControls { display: none; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .profile-label { font-weight: bold; }
+  .buttons-container { display: flex; flex-wrap: wrap; gap: 6px; }
+  .small-btn { padding: 6px 12px; font-size: 14px; cursor: pointer; }
+  #adminUserSearch, #adminUserSelect { margin-top: 6px; width: 100%; padding: 6px; box-sizing: border-box; }
+/* Make sure to include Montserrat in your HTML head:
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+*/
+.room-subtitle {
+  font-size: 12px;              /* same as #helloText */
+  font-weight: 600;             /* slightly lighter than HELLO */
+  text-align: center;
+  margin-top: 4px;
+  font-family: 'Montserrat', sans-serif; /* Montserrat font */
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+  transition: color 0.2s ease;
+}
+
+.room-subtitle:hover {
+  color: #fff;                  /* subtle hover effect */
+}
+#emailAuthWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* centers horizontally */
+  gap: 10px;           /* spacing between input and button */
+  margin-top: 12px;    /* space from above text */
+  width: 100%;
+}
+
+#emailAuthWrapper input.auth-input {
+  width: 90%;          /* smaller than full width, responsive */
+  max-width: 320px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #0e0e0e;
+  color: #fff;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+#emailAuthWrapper input.auth-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.15);
+}
+/* Centered modal with glow backdrop */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none; /* toggle with JS */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  
+  /* Glow themed background */
+  background: radial-gradient(circle at center, rgba(255,20,147,0.2) 0%, rgba(0,0,0,0.85) 100%);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--card, #111);
+  padding: 20px 24px;
+  border-radius: 16px;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(255,20,147,0.6),
+              0 0 40px rgba(255,20,147,0.3);
+  border: 1px solid rgba(255,20,147,0.15);
+}
+
+.modal-content h3 {
+  color: var(--accent, #FF1493);
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  margin-bottom: 14px;
+  background: #111;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+}
+
+.modal-content input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255,20,147,0.3);
+}
+
+.modal-content button {
+  padding: 12px;
+  width: 100%;
+  border-radius: 12px;
+  background: var(--accent, #FF1493);
+  color: #000;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.modal-content button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255,20,147,0.5);
+}
+#messagePopup {
+  position: fixed;
+  top: 30%; /* centered vertically */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--card);
+  color: var(--accent);
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+
+  /* Glow */
+  box-shadow: 0 0 12px rgba(255,20,147,0.5),
+              0 0 24px rgba(255,20,147,0.3),
+              0 0 36px rgba(255,20,147,0.2);
+  text-align: center;
+
+  animation: popupFade 0.5s ease forwards;
+}
+
+@keyframes popupFade {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Footer styles */
+#startupFooter {
+  margin-top: 20px;
+  text-align: center;
+  color: var(--muted, #aaa);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#startupFooter a {
+  color: var(--accent, #FF1493);
+  text-decoration: none;
+  margin: 0 6px;
+}
+
+#startupFooter span {
+  letter-spacing: 1px;
+}
+
+/* Optional: make sure footer visible on small screens */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app {
+  flex: 1; /* allow footer to stay at bottom */
+}
 </style>
 </head>
 <body>
+<audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
+<div id="appWrapper">
+  <div class="app">
+    <div class="brand">乂丨乂丨</div>
+    <div id="greeting">Chat. Own Your Vibe. </div>
+    <div id="center">
+    <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+<div id="videoWrapper">
+  <video id="videoPlayer" muted playsinline></video>
+  <button class="arrow" id="prev">&#10094;</button>
+  <button class="arrow" id="next">&#10095;</button>
+</div>
+      <div id="helloText" aria-live="polite">HELLO</div>
+      <div class="room-desc">Chat. Own your vibe.
+        
+<div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
+<span id="onlineCount" class="onlineCount"></span>
 
-<div id="authBox">
-  <input type="email" id="emailInput" placeholder="Email">
-  <input type="text" id="phoneInput" placeholder="Phone">
-  <button id="whitelistLoginBtn">Login</button>
+      <div id="guestMsg"></div>
+      <div id="authBox">
+
+<div id="messagePopup" style="
+  position: fixed;
+  bottom: 80px; /* above chat input */
+  right: 20px;
+  background: rgba(30,30,30,0.9);
+  color: var(--accent);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+"></div>
+
+<!-- VIP Access Login Wrapper -->
+<div id="emailAuthWrapper">
+  <!-- Phone Number Input -->
+  <input 
+    type="tel" 
+    id="phoneInput" 
+    placeholder="Enter your phone number" 
+    class="auth-input" 
+    pattern="\+\d{1,4}\d{6,15}"
+  >
+
+  <!-- Email Input -->
+  <input 
+    type="email" 
+    id="emailInput" 
+    placeholder="Enter your email" 
+    class="auth-input"
+  >
+
+<!-- VIP Access Button -->
+  <button id="whitelistLoginBtn" class="google-btn">
+    <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email logo">
+    VIP Access
+  </button>
+
+  <!-- Moved Google Sign-In Button here -->
+  <button id="googleSignInBtn" class="google-btn">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+    Sign in with Google
+  </button>
 </div>
 
-<div id="profileBox" style="display:none;">
-  <div>Stars: <span id="starCount">0</span></div>
-  <div>Cash: <span id="cashCount">0</span></div>
-  <div id="profileName">Guest</div>
+
+
+
+
+<!-- Chat ID Modal -->
+<div id="chatIDModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;">
+  <div style="background:var(--card);padding:20px;border-radius:12px;max-width:320px;width:90%;text-align:center;">
+    <h3 style="margin-bottom:12px;color:var(--accent);">Choose your Chat ID</h3>
+    <input id="chatIDInput" type="text" placeholder="Your chat ID" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);margin-bottom:12px;font-size:16px;color:#fff;background:#111;outline:none;" />
+    <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
+  </div>
+</div>
+  <div id="messages"></div>
 </div>
 
-<div id="scrambleBanner">
-  <div>🧩 Scramble Letters: <span id="scrambleLetters"></span></div>
-  <button id="adminScrambleBtn" style="display:none;">Start Scramble</button>
+<div id="scrambleBanner" style="display:none;">
+  <div id="scrambleLetters"></div>
+  <input id="scrambleInput" type="text" placeholder="Type a word"/>
+  <button id="scrambleSubmitBtn">Submit</button>
 </div>
 
-<div id="messages"></div>
+<button id="adminScrambleBtn">Start Scramble (Admin only)</button>
 
-<div id="sendArea" style="display:none;">
-  <input type="text" id="messageInput" placeholder="Type a message...">
-  <button id="sendBtn">Send</button>
-  <button id="buzzBtn">BUZZ</button>
+<div class="send-area" id="sendArea" style="display:none;">
+  <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+  <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+  <button id="sendBtn" class="send-btn">Send</button>
+</div>
+    </div>
+    
+    
+   <div class="profile" id="profileBox">
+  <div class="profile-card">
+    <div class="profile-top">
+      <div class="profile-left">
+        <div id="profileName" class="profile-name">GUEST 0000</div>
+        
+        <!-- BADGE CONTAINER -->
+        <div id="badgeContainer" style="display:flex;gap:4px;margin-top:4px;"></div>
+        
+        <div>
+          <span class="profile-label">STARS COLLECTED:</span>
+          <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
+        <button id="tipBtn" class="small-btn">💵</button>
+      </div>
+    </div>
+    <div>
+      <span class="profile-label">CASH EARNED:</span>
+      <span class="profile-value">₦<span id="cashCount">0</span></span>
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="star-popup" id="starPopup">
+  <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
 
-<div id="starPopup"><span id="starText"></span></div>
-
-<script type="module">
-// ---------- Imports ----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, addDoc, updateDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, getDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-// ---------- Firebase config ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const rtdb = getDatabase(app);
-
-const ROOM_ID = "room5";
-const CHAT_COLLECTION = "messages_room5";
-
-let currentUser = null;
-let lastMessagesArray = [];
-
-const BUZZ_COST = 50;
-const SEND_COST = 1;
-
-const refs = {
-  authBox: document.getElementById("authBox"),
-  messagesEl: document.getElementById("messages"),
-  sendAreaEl: document.getElementById("sendArea"),
-  messageInputEl: document.getElementById("messageInput"),
-  sendBtn: document.getElementById("sendBtn"),
-  buzzBtn: document.getElementById("buzzBtn"),
-  profileBoxEl: document.getElementById("profileBox"),
-  profileNameEl: document.getElementById("profileName"),
-  starCountEl: document.getElementById("starCount"),
-  cashCountEl: document.getElementById("cashCount"),
-  scrambleBannerEl: document.getElementById("scrambleBanner"),
-  scrambleLettersEl: document.getElementById("scrambleLetters"),
-  adminScrambleBtn: document.getElementById("adminScrambleBtn")
-};
-
-function showStarPopup(txt){
-  const popup = document.getElementById("starPopup");
-  const starText = document.getElementById("starText");
-  starText.innerText = txt;
-  popup.style.display="block";
-  setTimeout(()=>{ popup.style.display="none"; }, 1500);
-}
-
-function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
-function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
-function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n||0); }
-
-// ---------- Login ----------
-async function loginWhitelist(email, phone){
-  try{
-    const q = query(collection(db,"whitelist"), where("email","==",email), where("phone","==",phone));
-    const snap = await getDocs(q);
-    if(snap.empty){ showStarPopup("Not on whitelist"); return false; }
-    const uidKey = sanitizeKey(email);
-    const userRef = doc(db,"users",uidKey);
-    const docSnap = await getDoc(userRef);
-    if(!docSnap.exists()){ showStarPopup("User not found"); return false; }
-    const data = docSnap.data()||{};
-    currentUser = {
-      uid: uidKey,
-      email: data.email,
-      phone: data.phone,
-      chatId: data.chatId || "Guest",
-      stars: data.stars||0,
-      cash: data.cash||0,
-      usernameColor: data.usernameColor||randomColor(),
-      isAdmin: data.isAdmin||false
-    };
-    refs.authBox.style.display="none";
-    refs.sendAreaEl.style.display="flex";
-    refs.profileBoxEl.style.display="flex";
-    refs.profileNameEl.innerText=currentUser.chatId;
-    refs.profileNameEl.style.color=currentUser.usernameColor;
-    refs.starCountEl.innerText=formatNumber(currentUser.stars);
-    refs.cashCountEl.innerText=formatNumber(currentUser.cash);
-    if(currentUser.isAdmin) refs.adminScrambleBtn.style.display="inline-block";
-    return true;
-  }catch(e){ console.error(e); showStarPopup("Login failed"); return false; }
-}
-
-refs.whitelistLoginBtn?.addEventListener("click", async()=>{
-  const email = refs.emailInput?.value.trim().toLowerCase();
-  const phone = refs.phoneInput?.value.trim();
-  if(!email||!phone){ showStarPopup("Enter email and phone"); return; }
-  await loginWhitelist(email, phone);
-});
-
-// ---------- Messages ----------
-function renderMessages(msgs){
-  msgs.forEach(m=>{
-    if(document.getElementById(m.id)) return;
-    const div = document.createElement("div");
-    div.className="msg"; div.id=m.id;
-    const meta = document.createElement("span"); meta.className="meta"; meta.textContent=m.data.chatId+":";
-    meta.style.color=currentUser?.usernameColor||"#fff";
-    const content = document.createElement("span"); content.className=m.data.buzzColor?"buzz-content content":"content";
-    content.textContent=" "+(m.data.content||"");
-    if(m.data.buzzColor) content.style.background=m.data.buzzColor;
-    div.appendChild(meta); div.appendChild(content);
-    refs.messagesEl.appendChild(div);
-  });
-  refs.messagesEl.scrollTop=refs.messagesEl.scrollHeight;
-}
-
-function attachMessagesListener(){
-  const q = query(collection(db,CHAT_COLLECTION), orderBy("timestamp","asc"));
-  onSnapshot(q, snap=>{
-    snap.docChanges().forEach(c=>{
-      if(c.type==="added"){
-        lastMessagesArray.push({id:c.doc.id,data:c.doc.data()});
-        renderMessages([{id:c.doc.id,data:c.doc.data()}]);
-      }
-    });
-  });
-}
-attachMessagesListener();
-
-// ---------- Send & BUZZ ----------
-refs.sendBtn?.addEventListener("click", async()=>{
-  if(!currentUser){ showStarPopup("Login first"); return; }
-  const txt = refs.messageInputEl.value.trim(); if(!txt) return showStarPopup("Type message");
-  const userRef = doc(db,"users",currentUser.uid);
-  const snap = await getDoc(userRef);
-  if((snap.data()?.stars||0)<SEND_COST){ showStarPopup("Not enough stars"); return; }
-  await updateDoc(userRef,{stars:increment(-SEND_COST)});
-  currentUser.stars-=SEND_COST; refs.starCountEl.innerText=formatNumber(currentUser.stars);
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
-    content:txt, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), buzzColor:randomColor()
-  });
-  refs.messageInputEl.value=""; renderMessages([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,buzzColor:randomColor()}}]);
-});
-
-refs.buzzBtn?.addEventListener("click", async()=>{
-  if(!currentUser){ showStarPopup("Login first"); return; }
-  const txt = refs.messageInputEl.value.trim(); if(!txt) return showStarPopup("Type message to BUZZ");
-  const userRef = doc(db,"users",currentUser.uid);
-  const snap = await getDoc(userRef);
-  if((snap.data()?.stars||0)<BUZZ_COST){ showStarPopup("Not enough stars"); return; }
-  await updateDoc(userRef,{stars:increment(-BUZZ_COST)});
-  currentUser.stars-=BUZZ_COST; refs.starCountEl.innerText=formatNumber(currentUser.stars);
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
-    content:txt, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), buzzColor:randomColor()
-  });
-  refs.messageInputEl.value=""; showStarPopup("BUZZ sent!");
-  renderMessages([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,buzzColor}}]);
-});
-
-// ---------- Scramble (admin only) ----------
-const DICTIONARY=["alert","later","slate","tails","stale","laser","rinse","aisle","inert","tales","lines","least","alter","slant","alien","resin","train","liner","snail","lairs","nails","sentinel"];
-let currentScramble={letters:"",validWords:[],submissions:{}};
-function shuffleArray(arr){return arr.sort(()=>Math.random()-0.5);}
-function generateScramble(){ 
-  const letters = shuffleArray("EARTLSIN".split("")).join(''); 
-  const validWords = DICTIONARY.filter(w=> w.split("").every(l=>letters.includes(l)) && w.length>=5); 
-  return {letters,validWords}; 
-}
-async function sendAdminScrambleBuzz(){
-  if(!currentUser?.isAdmin) return;
-  const {letters,validWords}=generateScramble();
-  currentScramble.letters=letters;
-  currentScramble.validWords=validWords;
-  currentScramble.submissions={};
-  refs.scrambleBannerEl.style.display="block";
-  refs.scrambleLettersEl.textContent=letters;
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
-    content:`🧩 Scramble Round! Letters: ${letters}`, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFD700"
-  });
-}
-refs.adminScrambleBtn?.addEventListener("click",sendAdminScrambleBuzz);
-
-</script>
+<!-- Footer (pre-login page) -->
+<footer id="startupFooter">
+  <div>©5786 <span>Own Your Vibe</span></div>
+  <div>自分の雰囲気を楽しもう</div>
+  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
+  <div style="margin-top:4px;">
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Terms of Service</a>
+  </div>
+</footer>
+<script type="module" src="newchatroom.js"></script>
 </body>
 </html>
