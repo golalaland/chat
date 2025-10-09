@@ -385,7 +385,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   touch-action: manipulation;
 }
 
-/* ---------- User Popup Glass Card ---------- */
+/* ---------- Overlay ---------- */
 #userPopup {
   position: fixed;
   top: 0;
@@ -397,27 +397,30 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  backdrop-filter: blur(4px); /* subtle blur for mobile too */
+  touch-action: manipulation;
+  backdrop-filter: blur(4px); /* subtle blur */
 }
 
-.user-popup-content {
-  background: rgba(255, 255, 255, 0.1); /* slightly transparent glass */
-  border-radius: 16px;
-  padding: 24px 32px;
-  max-width: 320px;
+/* ---------- Glassy Popup Card ---------- */
+.user-popup-card {
+  background: rgba(255, 255, 255, 0.08); /* light glass effect */
+  border-radius: 14px;
+  padding: 16px 20px;    /* smaller padding for mobile */
+  max-width: 280px;
   width: 90%;
   color: #fff;
   backdrop-filter: blur(8px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); /* soft, realistic shadow */
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
   gap: 12px;
   transition: transform 0.25s ease, opacity 0.25s ease;
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(-10px);
 }
 
-.user-popup-content.show {
+/* Show animation */
+.user-popup-card.show {
   opacity: 1;
   transform: translateY(0);
 }
@@ -426,29 +429,79 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #popupClose {
   align-self: flex-end;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #fff;
   user-select: none;
 }
 
-/* Username / Gender display */
+/* Username / Gender */
 #popupUsername {
   font-weight: 600;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin-bottom: 4px;
+  text-align: center;
 }
 
 #popupGender {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   opacity: 0.8;
+  text-align: center;
 }
 
-/* Optional: smooth hover on the card (mobile friendly) */
-.user-popup-content:hover {
+/* Social icons row */
+.social-icons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.social-icons img {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.social-icons img:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(255,20,147,0.4);
+}
+
+/* ---------- Mobile Adjustments ---------- */
+@media (max-width: 400px) {
+  .user-popup-card {
+    max-width: 240px;
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  #popupUsername {
+    font-size: 1rem;
+  }
+
+  #popupGender {
+    font-size: 0.85rem;
+  }
+
+  .social-icons img {
+    width: 28px;
+    height: 28px;
+  }
+
+  #popupClose {
+    font-size: 16px;
+  }
+}
+
+/* Optional: subtle hover effect for card (desktop only) */
+.user-popup-card:hover {
   box-shadow: 0 12px 32px rgba(0,0,0,0.5);
 }
-
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
