@@ -529,6 +529,47 @@ exportCsvBtn.onclick = async () => {
   } finally { showSpinner(false); }
 };
 
+const clearPurchasesBtn = document.getElementById('clearPurchasesBtn');
+
+clearPurchasesBtn.onclick = async () => {
+  if (!confirm("Are you sure you want to delete ALL purchases? This cannot be undone.")) return;
+  showSpinner(true);
+  try {
+    const snap = await getDocs(collection(db, "purchases"));
+    if (snap.empty) {
+      showToast("No purchases to delete.");
+      return;
+    }
+
+    const batchSize = 500; // Firestore batch limit
+    let batchCount = 0;
+    const batches = [];
+
+    // Split docs into batches
+    snap.docs.forEach((docSnap, index) => {
+      const batchIndex = Math.floor(index / batchSize);
+      if (!batches[batchIndex]) batches[batchIndex] = [];
+      batches[batchIndex].push(docSnap.ref);
+    });
+
+    // Delete each batch
+    for (const batchRefs of batches) {
+      const batch = writeBatch(db); // ✅ correct way to create batch
+      batchRefs.forEach(ref => batch.delete(ref));
+      await batch.commit();
+      batchCount += batchRefs.length;
+    }
+
+    showToast(`Deleted ${batchCount} purchases.`);
+    loadPurchases(); // reload empty list
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to clear purchases: " + err.message);
+  } finally {
+    showSpinner(false);
+  }
+};
+
 // ---------------- Utilities ----------------
 function escapeHtml(s) {
   if (!s) return "";
