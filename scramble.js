@@ -2,14 +2,22 @@
 
 // ---------- Imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  getFirestore, doc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, deleteDoc, where, getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // ---------- Firebase config ----------
-const firebaseConfig = { 
-  apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", 
-  messagingSenderId: "...", appId: "...", databaseURL: "..." 
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
@@ -91,10 +99,10 @@ function renderMessagesFromArray(arr){
     meta.style.marginRight="4px";
 
     const content = document.createElement("span");
-    content.className = m.highlight||m.buzzColor?"buzz-content content":"content";
+    content.className = m.highlight||m.buzzColor||m.scramble?"buzz-content content":"content";
     content.textContent = " "+(m.content||"");
     if(m.buzzColor) content.style.background = m.buzzColor;
-    if(m.highlight){ content.style.color="#000"; content.style.fontWeight="700"; }
+    if(m.highlight||m.scramble){ content.style.color="#000"; content.style.fontWeight="700"; }
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
@@ -172,7 +180,11 @@ async function loginWhitelist(email,phone){
 window.currentScramble={letters:"",validWords:[],submissions:{}};
 const DICTIONARY=["alert","later","slate","tails","stale","laser","rinse","aisle","inert","tales","lines","least","alter","slant","alien","resin","train","liner","snail","lairs","nails","sentinel"];
 function shuffleArray(arr){return arr.sort(()=>Math.random()-0.5);}
-function generateScramble(){ const letters = shuffleArray("EARTLSIN".split("")).join(''); const validWords = DICTIONARY.filter(w=> w.split("").every(l=>letters.includes(l)) && w.length>=5); return {letters,validWords}; }
+function generateScramble(){ 
+  const letters = shuffleArray("EARTLSIN".split("")).join(''); 
+  const validWords = DICTIONARY.filter(w=> w.split("").every(l=>letters.includes(l)) && w.length>=5); 
+  return {letters,validWords}; 
+}
 async function sendAdminScrambleBuzz(){
   if(!currentUser?.isAdmin) return;
   const {letters,validWords} = generateScramble();
@@ -229,7 +241,8 @@ window.addEventListener("DOMContentLoaded",()=>{
     adminClearMessagesBtn:document.getElementById("adminClearMessagesBtn"),
     scrambleBannerEl:document.getElementById("scrambleBanner"),
     scrambleLettersEl:document.getElementById("scrambleLetters"),
-    scrambleLeaderboardEl:document.getElementById("scrambleLeaderboard")
+    scrambleLeaderboardEl:document.getElementById("scrambleLeaderboard"),
+    adminScrambleBtn:document.getElementById("adminScrambleBtn")
   };
 
   const emailInput = document.getElementById("emailInput");
@@ -248,24 +261,47 @@ window.addEventListener("DOMContentLoaded",()=>{
   if(vipUser?.email&&vipUser?.phone){ (async()=>{ const success = await loginWhitelist(vipUser.email,vipUser.phone); if(!success) return; updateRedeemLink(); })(); }
 
   // ---------- Send & BUZZ ----------
-  refs.sendBtn?.addEventListener("click",async()=>{
+  refs.sendBtn?.addEventListener("click", async () => {
     if(!currentUser) return showStarPopup("Sign in to chat");
-    const txt = refs.messageInputEl?.value.trim(); if(!txt) return showStarPopup("Type a message"); 
-    if(currentScramble.letters) await handlePlayerSubmission(txt);
+    const txt = refs.messageInputEl?.value.trim();
+    if(!txt) return showStarPopup("Type a message");
+
+    // Scramble check
+    if(currentScramble.letters){
+      await handlePlayerSubmission(txt);
+      refs.messageInputEl.value="";
+      return;
+    }
+
+    // Normal message
     const userRef = doc(db,"users",currentUser.uid);
     const snap = await getDoc(userRef);
     if((snap.data()?.stars||0)<SEND_COST) return showStarPopup("Not enough stars");
-    await updateDoc(userRef,{stars:increment(-SEND_COST)}); currentUser.stars-=SEND_COST;
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION),{ content:txt, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor:randomColor() });
-    refs.messageInputEl.value=""; renderMessagesFromArray([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:randomColor()}}]);
+    await updateDoc(userRef,{stars:increment(-SEND_COST)});
+    currentUser.stars -= SEND_COST;
+    if(refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+    const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      timestamp: serverTimestamp(),
+      highlight:true,
+      buzzColor: randomColor()
+    });
+    refs.messageInputEl.value="";
+    renderMessagesFromArray([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:randomColor()}}]);
   });
 
-  refs.buzzBtn?.addEventListener("click",async()=>{
+  refs.buzzBtn?.addEventListener("click", async () => {
     if(!currentUser) return showStarPopup("Sign in to BUZZ");
     const txt = refs.messageInputEl?.value.trim(); if(!txt) return showStarPopup("Type a message to BUZZ 🚨");
     const userRef = doc(db,"users",currentUser.uid); const snap = await getDoc(userRef);
     if((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
     await updateDoc(userRef,{stars:increment(-BUZZ_COST)});
+    currentUser.stars -= BUZZ_COST;
+    if(refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
     const buzzColor = randomColor();
     const docRef = await addDoc(collection(db,CHAT_COLLECTION),{ content:txt, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor });
     refs.messageInputEl.value=""; showStarPopup("BUZZ sent!");
@@ -273,6 +309,17 @@ window.addEventListener("DOMContentLoaded",()=>{
   });
 
   // ---------- Admin ----------
-  refs.adminClearMessagesBtn?.addEventListener("click",async()=>{ if(!currentUser?.isAdmin) return; const snap=await getDocs(collection(db,CHAT_COLLECTION)); snap.forEach(docSnap=>deleteDoc(doc(db,CHAT_COLLECTION,docSnap.id))); });
-  if(currentUser?.isAdmin) setInterval(sendAdminScrambleBuzz,31*60*1000);
+  refs.adminClearMessagesBtn?.addEventListener("click", async () => { 
+    if(!currentUser?.isAdmin) return; 
+    const snap=await getDocs(collection(db,CHAT_COLLECTION)); 
+    snap.forEach(docSnap=>deleteDoc(doc(db,CHAT_COLLECTION,docSnap.id))); 
+  });
+
+  if(currentUser?.isAdmin){
+    refs.adminScrambleBtn.style.display="inline-block";
+    refs.adminScrambleBtn.addEventListener("click", sendAdminScrambleBuzz);
+  }
+
+  // Optional auto-scramble interval (remove if manual only)
+  // if(currentUser?.isAdmin) setInterval(sendAdminScrambleBuzz,31*60*1000);
 });
