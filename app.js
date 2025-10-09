@@ -100,7 +100,7 @@ setupUsersListener();
 
 /* ---------- Render messages ---------- */
 let scrollPending = false;
-function renderMessagesFromArray(arr){
+function renderMessagesFromArray(arr) {
   if (!refs.messagesEl) return;
 
   arr.forEach(item => {
@@ -114,14 +114,19 @@ function renderMessagesFromArray(arr){
     const meta = document.createElement("span");
     meta.className = "meta";
     meta.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
-    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
+    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) 
+      ? refs.userColors[m.uid] 
+      : "#ffffff";
     meta.style.marginRight = "4px";
 
     const content = document.createElement("span");
     content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
     content.textContent = " " + (m.content || "");
     if (m.buzzColor) content.style.background = m.buzzColor;
-    if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
+    if (m.highlight) { 
+      content.style.color = "#000"; 
+      content.style.fontWeight = "700"; 
+    }
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
@@ -140,11 +145,22 @@ function renderMessagesFromArray(arr){
   }
 }
 
-document.addEventListener("click", e => {
+/* ---------- Username click handler with glow feedback ---------- */
+/* ---------- Username click handler with tap feedback ---------- */
+document.addEventListener("click", async (e) => {
   const el = e.target.closest(".chat-username");
   if (!el) return;
+
   const uid = el.dataset.username;
-  if (uid && uid !== currentUser.uid) showUserPopup(uid);
+  if (!uid || uid === currentUser?.uid) return;
+
+  // 👇🏽 add a soft tap fade
+  el.classList.add("username-tapped");
+  
+  setTimeout(async () => {
+    await showUserPopup(uid);
+    el.classList.remove("username-tapped");
+  }, 180); // short delay so user sees the effect
 });
 
 // ---------- USER POPUP ----------
@@ -157,7 +173,7 @@ async function showUserPopup(uidKey) {
   const whatsappIcon = document.getElementById("whatsappIcon");
   const telegramIcon = document.getElementById("telegramIcon");
 
-  // 🔐 1. Fetch Firestore user document
+  // 1️⃣ Fetch Firestore user document
   const userRef = doc(db, "users", uidKey);
   const snap = await getDoc(userRef);
 
@@ -166,16 +182,18 @@ async function showUserPopup(uidKey) {
     return;
   }
 
-  // 2️⃣ Extract data
   const data = snap.data();
 
-  // 3️⃣ Populate popup (use random color for username)
+  // 2️⃣ Random color generator for username
+  const colors = ["#ff4fa1", "#4fc3ff", "#7dff4f", "#ffc24f", "#b94fff"];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
   popupUsername.textContent = data.chatId || "Unknown User";
-  popupUsername.style.color = randomColor(); // 💫 random new color every tap
+  popupUsername.style.color = randomColor;
+  popupUsername.style.textShadow = `0 0 8px ${randomColor}, 0 0 16px ${randomColor}`;
   popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
 
-  // 4️⃣ Social logic
-  const showMsg = (msg) => showStarPopup(`${data.chatId || "User"} hasn’t shared ${msg} yet.`);
+  // 3️⃣ Social handling
+  const showMsg = msg => showStarPopup(`${data.chatId || "User"} hasn’t shared ${msg} yet.`);
   const openLink = (url, msg) => {
     if (url) window.open(url, "_blank");
     else showMsg(msg);
@@ -198,25 +216,29 @@ async function showUserPopup(uidKey) {
     else showMsg("Telegram");
   };
 
-  // 5️⃣ Show popup
-  popup.style.display = "block";
+  // 4️⃣ Make inactive socials greyed-out
+  instaIcon.classList.toggle("inactive", !data.instagram);
+  tiktokIcon.classList.toggle("inactive", !data.tiktok);
+  whatsappIcon.classList.toggle("inactive", !data.whatsapp);
+  telegramIcon.classList.toggle("inactive", !data.telegram);
+
+  // 5️⃣ Show popup centered & blurred
+  popup.style.display = "flex"; // <— critical change (not block!)
 }
-/* ---------- Messages listener ---------- */
-function attachMessagesListener() {
-  const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
-  onSnapshot(q, snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const msgData = change.doc.data();
-        lastMessagesArray.push({ id: change.doc.id, data: msgData });
-        renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
-        if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
-          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-        }
-      }
-    });
-  });
-}
+
+/* ---------- Popup close handlers ---------- */
+document.getElementById("popupClose").onclick = () => {
+  document.getElementById("userPopup").style.display = "none";
+};
+
+// Tap anywhere outside the card to close
+window.addEventListener("click", (e) => {
+  const popup = document.getElementById("userPopup");
+  const card = document.querySelector(".user-popup-card");
+  if (popup.style.display === "flex" && !card.contains(e.target)) {
+    popup.style.display = "none";
+  }
+});
 
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
