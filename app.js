@@ -145,7 +145,6 @@ function renderMessagesFromArray(arr) {
   }
 }
 
-/* ---------- Username click handler with glow feedback ---------- */
 /* ---------- Username click handler with tap feedback ---------- */
 document.addEventListener("click", async (e) => {
   const el = e.target.closest(".chat-username");
@@ -154,18 +153,18 @@ document.addEventListener("click", async (e) => {
   const uid = el.dataset.username;
   if (!uid || uid === currentUser?.uid) return;
 
-  // 👇🏽 add a soft tap fade
+  // 💫 Soft tap fade feedback
   el.classList.add("username-tapped");
-  
-  setTimeout(async () => {
-    await showUserPopup(uid);
-    el.classList.remove("username-tapped");
-  }, 180); // short delay so user sees the effect
+  setTimeout(() => el.classList.remove("username-tapped"), 250);
+
+  // 🪄 Open popup
+  await showUserPopup(uid);
 });
 
-// ---------- USER POPUP ----------
+/* ---------- USER POPUP ---------- */
 async function showUserPopup(uidKey) {
   const popup = document.getElementById("userPopup");
+  const popupCard = popup?.querySelector(".user-popup-card"); // safer
   const popupUsername = document.getElementById("popupUsername");
   const popupGender = document.getElementById("popupGender");
   const instaIcon = document.getElementById("instaIcon");
@@ -173,70 +172,61 @@ async function showUserPopup(uidKey) {
   const whatsappIcon = document.getElementById("whatsappIcon");
   const telegramIcon = document.getElementById("telegramIcon");
 
-  // 1️⃣ Fetch Firestore user document
-  const userRef = doc(db, "users", uidKey);
-  const snap = await getDoc(userRef);
+  if (!popup || !popupUsername) return;
 
-  if (!snap.exists()) {
-    alert("User not found");
-    return;
+  try {
+    const userRef = doc(db, "users", uidKey);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return alert("User not found");
+
+    const data = snap.data();
+    const colors = ["#ff4fa1", "#4fc3ff", "#7dff4f", "#ffc24f", "#b94fff"];
+    const randColor = colors[Math.floor(Math.random() * colors.length)];
+
+    popupUsername.textContent = data.chatId || "Unknown User";
+    popupUsername.style.color = randColor;
+    popupUsername.style.textShadow = `0 0 10px ${randColor}`;
+    popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
+
+    const showMsg = (msg) => showStarPopup(`${data.chatId || "User"} hasn’t shared ${msg} yet.`);
+    const openLink = (url, msg) => url ? window.open(url, "_blank") : showMsg(msg);
+
+    whatsappIcon.style.display = data.isHost ? "inline-block" : "none";
+    telegramIcon.style.display = data.isHost ? "inline-block" : "none";
+
+    instaIcon.onclick = () => openLink(data.instagram, "Instagram");
+    tiktokIcon.onclick = () => openLink(data.tiktok, "TikTok");
+    whatsappIcon.onclick = () => openLink(data.whatsapp && `https://wa.me/${data.whatsapp}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "WhatsApp");
+    telegramIcon.onclick = () => openLink(data.telegram && `https://t.me/${data.telegram}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "Telegram");
+
+    instaIcon.classList.toggle("inactive", !data.instagram);
+    tiktokIcon.classList.toggle("inactive", !data.tiktok);
+    whatsappIcon.classList.toggle("inactive", !data.whatsapp);
+    telegramIcon.classList.toggle("inactive", !data.telegram);
+
+    popup.style.display = "flex";
+    popup.style.opacity = "0";
+    popup.style.transition = "opacity 0.25s ease";
+    setTimeout(() => popup.style.opacity = "1", 30);
+  } catch (err) {
+    console.error("Popup error:", err);
   }
-
-  const data = snap.data();
-
-  // 2️⃣ Random color generator for username
-  const colors = ["#ff4fa1", "#4fc3ff", "#7dff4f", "#ffc24f", "#b94fff"];
-  const randomColor = colors[Math.floor(Math.random() * colors.length)];
-  popupUsername.textContent = data.chatId || "Unknown User";
-  popupUsername.style.color = randomColor;
-  popupUsername.style.textShadow = `0 0 8px ${randomColor}, 0 0 16px ${randomColor}`;
-  popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
-
-  // 3️⃣ Social handling
-  const showMsg = msg => showStarPopup(`${data.chatId || "User"} hasn’t shared ${msg} yet.`);
-  const openLink = (url, msg) => {
-    if (url) window.open(url, "_blank");
-    else showMsg(msg);
-  };
-
-  // WhatsApp & Telegram only for hosts
-  whatsappIcon.style.display = data.isHost ? "inline-block" : "none";
-  telegramIcon.style.display = data.isHost ? "inline-block" : "none";
-
-  instaIcon.onclick = () => openLink(data.instagram, "Instagram");
-  tiktokIcon.onclick = () => openLink(data.tiktok, "TikTok");
-  whatsappIcon.onclick = () => {
-    if (data.whatsapp)
-      window.open(`https://wa.me/${data.whatsapp}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "_blank");
-    else showMsg("WhatsApp");
-  };
-  telegramIcon.onclick = () => {
-    if (data.telegram)
-      window.open(`https://t.me/${data.telegram}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "_blank");
-    else showMsg("Telegram");
-  };
-
-  // 4️⃣ Make inactive socials greyed-out
-  instaIcon.classList.toggle("inactive", !data.instagram);
-  tiktokIcon.classList.toggle("inactive", !data.tiktok);
-  whatsappIcon.classList.toggle("inactive", !data.whatsapp);
-  telegramIcon.classList.toggle("inactive", !data.telegram);
-
-  // 5️⃣ Show popup centered & blurred
-  popup.style.display = "flex"; // <— critical change (not block!)
 }
 
 /* ---------- Popup close handlers ---------- */
-document.getElementById("popupClose").onclick = () => {
-  document.getElementById("userPopup").style.display = "none";
-};
+document.getElementById("popupClose")?.addEventListener("click", () => {
+  const popup = document.getElementById("userPopup");
+  if (!popup) return;
+  popup.style.opacity = "0";
+  setTimeout(() => popup.style.display = "none", 200);
+});
 
-// Tap anywhere outside the card to close
 window.addEventListener("click", (e) => {
   const popup = document.getElementById("userPopup");
-  const card = document.querySelector(".user-popup-card");
-  if (popup.style.display === "flex" && !card.contains(e.target)) {
-    popup.style.display = "none";
+  const card = popup?.querySelector(".user-popup-card");
+  if (popup?.style.display === "flex" && card && !card.contains(e.target)) {
+    popup.style.opacity = "0";
+    setTimeout(() => popup.style.display = "none", 200);
   }
 });
 
