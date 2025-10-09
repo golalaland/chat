@@ -3,57 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIP Chat + Scramble</title>
+<title>VIP Chatroom</title>
 <style>
-body { background:#111; color:#eee; font-family:sans-serif; margin:0; padding:0; }
-#authBox, #sendArea, #profileBox { padding:10px; margin:10px; }
-#messages { height:300px; overflow-y:auto; background:#222; padding:10px; border-radius:6px; }
-.msg { margin-bottom:6px; }
-.meta { font-weight:bold; }
-.buzz-content { background:#444; padding:2px 4px; border-radius:3px; color:#fff; }
-#starPopup { display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:#FFD700; color:#000; padding:10px 20px; border-radius:6px; z-index:1000; }
-#scrambleBanner { display:none; background:#333; padding:10px; margin:10px; border-radius:6px; }
+/* ---------- THEME VARIABLES ---------- */
+:root {
+  --primary-color: #ff4081;
+  --background-color: #111;
+  --text-color: #eee;
+  --input-bg: #222;
+  --input-border: #333;
+  --highlight-color: #FFD700;
+  --buzz-color: #FF69B4;
+  --scramble-color: #FFA500;
+}
+
+/* ---------- RESET & LAYOUT ---------- */
+*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif;}
+body{background:var(--background-color);color:var(--text-color);}
+button{cursor:pointer;border:none;border-radius:4px;padding:6px 12px;font-weight:700;}
+a{text-decoration:none;color:var(--primary-color);}
+
+/* ---------- MODAL / AUTH ---------- */
+#authBox{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#222;padding:20px;border-radius:8px;width:300px;box-shadow:0 0 10px #000;}
+#authBox input{width:100%;margin-bottom:10px;padding:8px;border-radius:4px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-color);}
+#authBox button{width:100%;background:var(--primary-color);color:#fff;}
+
+/* ---------- CHAT CONTAINER ---------- */
+#chatContainer{display:flex;flex-direction:column;height:100vh;padding:10px;}
+#messages{flex:1;overflow-y:auto;margin-bottom:10px;padding:5px;border:1px solid var(--input-border);border-radius:4px;background:#1a1a1a;}
+.msg{margin-bottom:4px;display:flex;align-items:center;}
+.meta{font-weight:700;margin-right:4px;}
+.buzz-content{padding:2px 6px;border-radius:4px;}
+.content{color:var(--text-color);}
+
+/* ---------- SEND AREA ---------- */
+#sendArea{display:flex;gap:5px;margin-bottom:10px;}
+#sendArea input{flex:1;padding:8px;border-radius:4px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-color);}
+#sendArea button{background:var(--primary-color);color:#fff;}
+
+/* ---------- PROFILE / STATS ---------- */
+#profileBox{display:flex;gap:15px;align-items:center;margin-bottom:10px;}
+#profileBox span{font-weight:700;}
+
+/* ---------- SCRAMBLE ---------- */
+#scrambleBanner{display:none;background:#333;color:#fff;padding:10px;border-radius:6px;margin-bottom:10px;text-align:center;}
+#scrambleLetters{font-weight:700;font-size:1.2em;}
+
+/* ---------- ADMIN CONTROLS ---------- */
+#adminControls{display:none;gap:10px;margin-bottom:10px;}
+#adminControls button{background:var(--scramble-color);color:#000;}
+
+/* ---------- STAR POPUP ---------- */
+#starPopup{position:fixed;top:10%;left:50%;transform:translateX(-50%);background:var(--highlight-color);color:#000;padding:10px 20px;border-radius:6px;display:none;font-weight:700;z-index:100;}
 </style>
 </head>
 <body>
 
-<!-- Star Popup -->
+<!-- Star popup -->
 <div id="starPopup"><span id="starText"></span></div>
 
-<!-- Scramble Banner -->
-<div id="scrambleBanner">
-  Scramble! Letters: <span id="scrambleLetters"></span>
-</div>
-
-<!-- VIP Login -->
+<!-- Auth modal -->
 <div id="authBox">
+  <h3>VIP Login</h3>
   <input type="email" id="emailInput" placeholder="Email">
   <input type="text" id="phoneInput" placeholder="Phone">
   <button id="whitelistLoginBtn">Login</button>
 </div>
 
-<!-- Profile -->
-<div id="profileBox" style="display:none;">
-  <div>Name: <span id="profileName"></span></div>
-  <div>Stars: <span id="starCount"></span></div>
-  <div>Cash: <span id="cashCount"></span></div>
-  <a id="redeemBtn" href="#" target="_blank">Redeem</a>
+<!-- Main chat container -->
+<div id="chatContainer" style="display:none;flex-direction:column;height:100vh;">
+  
+  <!-- Profile / stats -->
+  <div id="profileBox">
+    <span id="profileName"></span>
+    <span>⭐ <span id="starCount">0</span></span>
+    <span>💰 <span id="cashCount">0</span></span>
+    <a id="redeemBtn" href="#" target="_blank">Redeem</a>
+  </div>
+
+  <!-- Scramble banner -->
+  <div id="scrambleBanner">
+    🧩 SCRAMBLE! Letters: <span id="scrambleLetters"></span>
+  </div>
+
+  <!-- Chat messages -->
+  <div id="messages"></div>
+
+  <!-- Send area -->
+  <div id="sendArea">
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button id="sendBtn">Send</button>
+    <button id="buzzBtn">BUZZ 🚨</button>
+  </div>
+
+  <!-- Admin controls -->
+  <div id="adminControls">
+    <button id="adminClearMessagesBtn">Clear Messages</button>
+    <button id="adminScrambleBtn" style="display:none;">Start Scramble</button>
+  </div>
+
+  <!-- Online count -->
+  <div id="onlineCount">(0 online)</div>
 </div>
 
-<!-- Chat Area -->
-<div id="messages"></div>
-<div id="sendArea" style="display:none;">
-  <input type="text" id="messageInput" placeholder="Type message...">
-  <button id="sendBtn">Send</button>
-  <button id="buzzBtn">BUZZ</button>
-</div>
-
-<!-- Admin Controls -->
-<div id="adminControls" style="display:none;">
-  <button id="adminClearMessagesBtn">Clear Messages</button>
-</div>
-
-<!-- Scripts -->
+<!-- Include your cleaned JS here -->
 <script type="module" src="scramble.js"></script>
 
 </body>
