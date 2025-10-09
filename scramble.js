@@ -325,88 +325,107 @@ async function endScrambleRound(){
       refs.scrambleBannerEl.style.display = "none";
   }
 }
-  // ---------------- SCRAMBLE MODULE ----------------
-  window.currentScramble = { letters: "", validWords: [], submissions: {} };
-  const DICTIONARY = ["alert","later","slate","tails","stale","laser","rinse","aisle","inert","tales","lines","least","alter","slant","alien","resin","train","liner","snail","lairs","nails","sentinel"];
+ // ---------------- SCRAMBLE MODULE ----------------
+window.currentScramble = { letters: "", validWords: [], submissions: {} };
+const DICTIONARY = ["alert","later","slate","tails","stale","laser","rinse","aisle","inert","tales","lines","least","alter","slant","alien","resin","train","liner","snail","lairs","nails","sentinel"];
 
-  function shuffleArray(arr){ return arr.sort(() => Math.random() - 0.5); }
+function shuffleArray(arr){ return arr.sort(() => Math.random() - 0.5); }
 
-  function generateScramble(){
-    const letters = shuffleArray("EARTLSIN".split("")).join('');
-    const validWords = DICTIONARY.filter(w=>w.split("").every(l=>letters.includes(l)) && w.length>=5);
-    return { letters, validWords };
+function generateScramble(){
+  const letters = shuffleArray("EARTLSIN".split("")).join('');
+  const validWords = DICTIONARY.filter(w=>w.split("").every(l=>letters.includes(l)) && w.length>=5);
+  return { letters, validWords };
+}
+
+// Assign DOM references
+refs.scrambleBannerEl = document.getElementById("scrambleBanner");
+refs.scrambleLettersEl = document.getElementById("scrambleLetters");
+
+// Show letters when scramble starts
+async function sendAdminScrambleBuzz(){
+  if(!currentUser?.isAdmin) return;
+  const { letters, validWords } = generateScramble();
+  currentScramble.letters = letters;
+  currentScramble.validWords = validWords;
+  currentScramble.submissions = {};
+
+  // Update UI banner
+  if(refs.scrambleBannerEl && refs.scrambleLettersEl){
+      refs.scrambleLettersEl.textContent = letters;
+      refs.scrambleBannerEl.style.display = "block";
   }
 
-  async function sendAdminScrambleBuzz(){
-    if(!currentUser?.isAdmin) return;
-    const { letters, validWords } = generateScramble();
-    currentScramble.letters = letters;
-    currentScramble.validWords = validWords;
-    currentScramble.submissions = {};
+  const content = `🧩 SCRAMBLE ROUND! Letters (5+): ${letters}`;
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    content, uid:currentUser.uid, chatId:currentUser.chatId,
+    timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFD700", scramble:true
+  });
+  renderMessagesFromArray([{id:docRef.id,data:{content,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:"#FFD700",scramble:true}}]);
 
-    const content = `🧩 SCRAMBLE ROUND! Letters (5+): ${letters}`;
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      content, uid: currentUser.uid, chatId: currentUser.chatId,
-      timestamp: serverTimestamp(), highlight:true, buzzColor:"#FFD700", scramble:true
-    });
-    renderMessagesFromArray([{id:docRef.id,data:{content,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:"#FFD700",scramble:true}}]);
+  setTimeout(endScrambleRound, 5*60*1000); // 5 min round
+}
 
-    setTimeout(endScrambleRound, 5*60*1000);
+// Hide banner when scramble ends
+async function endScrambleRound(){
+  if(!currentUser?.isAdmin) return;
+  const summary = Object.entries(currentScramble.submissions)
+    .map(([chatId, words])=>`${chatId}: ${words.join(", ")}`).join("\n")||"No submissions this round!";
+
+  await addDoc(collection(db,CHAT_COLLECTION),{
+    content:`📝 Round Over! Words submitted:\n${summary}`,
+    uid:currentUser.uid, chatId:currentUser.chatId,
+    timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFA500", scramble:true
+  });
+
+  currentScramble.letters = "";
+  currentScramble.validWords = [];
+  currentScramble.submissions = {};
+
+  // Hide UI banner
+  if(refs.scrambleBannerEl){
+      refs.scrambleBannerEl.style.display = "none";
   }
+}
 
-  async function handlePlayerSubmission(txt){
-    if(!currentScramble.letters || !currentScramble.validWords.length) return;
-    const word = txt.trim().toLowerCase();
-    if(!currentScramble.validWords.includes(word)) return showStarPopup("❌ Invalid word!");
+async function handlePlayerSubmission(txt){
+  if(!currentScramble.letters || !currentScramble.validWords.length) return;
+  const word = txt.trim().toLowerCase();
+  if(!currentScramble.validWords.includes(word)) return showStarPopup("❌ Invalid word!");
 
-    const allSubmitted = Object.values(currentScramble.submissions).flat();
-    if(allSubmitted.includes(word)) return showStarPopup("⚠️ Word already used!");
+  const allSubmitted = Object.values(currentScramble.submissions).flat();
+  if(allSubmitted.includes(word)) return showStarPopup("⚠️ Word already used!");
 
-    currentScramble.submissions[currentUser.chatId] = currentScramble.submissions[currentUser.chatId]||[];
-    currentScramble.submissions[currentUser.chatId].push(word);
+  currentScramble.submissions[currentUser.chatId] = currentScramble.submissions[currentUser.chatId]||[];
+  currentScramble.submissions[currentUser.chatId].push(word);
 
-    const rewardStars = 20;
-    const userRef = doc(db,"users",currentUser.uid);
-    await updateDoc(userRef,{stars:increment(rewardStars)});
-    currentUser.stars += rewardStars;
+  const rewardStars = 20;
+  const userRef = doc(db,"users",currentUser.uid);
+  await updateDoc(userRef,{stars:increment(rewardStars)});
+  currentUser.stars += rewardStars;
 
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
-      content:`✅ ${currentUser.chatId} found: ${word}`,
-      uid:currentUser.uid, chatId:currentUser.chatId,
-      timestamp:serverTimestamp(), highlight:true, buzzColor:"#C8E6C9", scramble:true
-    });
-    renderMessagesFromArray([{id:docRef.id,data:{content:`✅ ${currentUser.chatId} found: ${word}`,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:"#C8E6C9",scramble:true}}]);
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
+    content:`✅ ${currentUser.chatId} found: ${word}`,
+    uid:currentUser.uid, chatId:currentUser.chatId,
+    timestamp:serverTimestamp(), highlight:true, buzzColor:"#C8E6C9", scramble:true
+  });
+  renderMessagesFromArray([{id:docRef.id,data:{content:`✅ ${currentUser.chatId} found: ${word}`,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:"#C8E6C9",scramble:true}}]);
 
-    showStarPopup(`✅ Correct! +${rewardStars} stars`);
-    showLeaderboard();
-  }
+  showStarPopup(`✅ Correct! +${rewardStars} stars`);
+  showLeaderboard();
+}
 
-  async function endScrambleRound(){
-    if(!currentUser?.isAdmin) return;
-    const summary = Object.entries(currentScramble.submissions)
-      .map(([chatId, words])=>`${chatId}: ${words.join(", ")}`).join("\n")||"No submissions this round!";
+function showLeaderboard(){
+  const leaderboard = Object.entries(currentScramble.submissions)
+    .map(([chatId, words])=>({chatId,count:words.length}))
+    .sort((a,b)=>b.count-a.count);
+  const content = leaderboard.length ? "🏆 Leaderboard:\n"+leaderboard.map(p=>`${p.chatId}: ${p.count}`).join("\n") : "";
+  if(!content) return;
+  addDoc(collection(db,CHAT_COLLECTION),{
+    content, uid:currentUser.uid, chatId:currentUser.chatId,
+    timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFD700", scramble:true
+  });
+}
 
-    await addDoc(collection(db,CHAT_COLLECTION),{
-      content:`📝 Round Over! Words submitted:\n${summary}`,
-      uid:currentUser.uid, chatId:currentUser.chatId,
-      timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFA500", scramble:true
-    });
-
-    currentScramble.letters=""; currentScramble.validWords=[]; currentScramble.submissions={};
-  }
-
-  function showLeaderboard(){
-    const leaderboard = Object.entries(currentScramble.submissions)
-      .map(([chatId, words])=>({chatId,count:words.length}))
-      .sort((a,b)=>b.count-a.count);
-    const content = leaderboard.length ? "🏆 Leaderboard:\n"+leaderboard.map(p=>`${p.chatId}: ${p.count}`).join("\n") : "";
-    if(!content) return;
-    addDoc(collection(db,CHAT_COLLECTION),{
-      content, uid:currentUser.uid, chatId:currentUser.chatId,
-      timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFD700", scramble:true
-    });
-  }
-
-  if(currentUser?.isAdmin) setInterval(sendAdminScrambleBuzz, 31*60*1000);
-
+// Auto-start for admin every 31 mins
+if(currentUser?.isAdmin) setInterval(sendAdminScrambleBuzz, 31*60*1000);
 }); // end DOMContentLoaded
