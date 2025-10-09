@@ -312,8 +312,8 @@ window.__deleteProduct = async function(id) {
   } finally { showSpinner(false); }
 };
 
-// ---------------- PURCHASES ----------------
-// ---------------- LOAD PURCHASES ----------------
+
+// ---------------- LOAD PURCHASES (Admin) ----------------
 async function loadPurchases() {
   showSpinner(true);
   ordersList.innerHTML = "";
@@ -328,8 +328,17 @@ async function loadPurchases() {
     for (const docSnap of snap.docs) {
       const p = docSnap.data();
       const id = docSnap.id;
-
       const status = p.status || 'pending';
+
+      // determine payment display
+      let paymentDesc = "";
+      if (p.cashReward && Number(p.cashReward) > 0) {
+        paymentDesc = `${Number(p.cashReward)} ⭐`;
+      } else {
+        paymentDesc = `₦${Number(p.cost || 0)}`;
+      }
+
+      // user info
       const userInfo = `
         <div class="user-details">
           <div><strong>${escapeHtml(p.email || p.userId || '—')}</strong></div>
@@ -338,13 +347,14 @@ async function loadPurchases() {
         </div>
       `;
 
+      // render row
       ordersList.insertAdjacentHTML('beforeend', `
         <div class="order-item" data-id="${id}">
           <div class="order-row">
             <div style="flex:1">
               <div><strong>${escapeHtml(p.productName || p.productId || '—')}</strong> • <span class="small muted">${new Date(p.timestamp?.toDate ? p.timestamp.toDate() : p.timestamp || Date.now()).toLocaleString()}</span></div>
               <div class="small muted">Buyer: ${escapeHtml(p.email || p.userId || '—')}</div>
-              <div class="small muted">Cost: ${Number(p.cost || 0)} ⭐</div>
+              <div class="small muted">Payment: ${paymentDesc}</div>
               <div class="small muted">Status: <span class="badge">${escapeHtml(status)}</span></div>
               ${userInfo}
             </div>
@@ -352,6 +362,7 @@ async function loadPurchases() {
               <div>
                 <button class="fulfill-btn" onclick="window.__fulfillPurchase('${id}')">Fulfill</button>
                 <button class="refund-btn" onclick="window.__refundPurchase('${id}')">Refund</button>
+                <button class="delete-btn" onclick="window.__deletePurchase('${id}')">Delete</button>
               </div>
               <div style="margin-top:10px">
                 <button class="themed-btn ghost" onclick="window.__viewPurchase('${id}')">View Raw</button>
@@ -368,6 +379,22 @@ async function loadPurchases() {
     showSpinner(false);
   }
 }
+
+// ---------------- DELETE PURCHASE ----------------
+window.__deletePurchase = async function(id) {
+  if (!confirm("Delete this purchase permanently?")) return;
+  showSpinner(true);
+  try {
+    await deleteDoc(doc(db, "purchases", id));
+    showToast("Purchase deleted");
+    loadPurchases();
+  } catch(err) {
+    console.error(err);
+    showToast("Delete failed: " + err.message);
+  } finally {
+    showSpinner(false);
+  }
+};
 
 // expose view raw (simple alert)
 window.__viewPurchase = async function(id) {
