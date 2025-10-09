@@ -380,64 +380,41 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
 }
-.social-popup {
+.user-popup {
   position: fixed;
-  top: 50%;
-  left: 50%;
+  top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  background: #1a1a1a;
-  color: #eee;
+  background: #222;
+  color: #fff;
   border: 1px solid #333;
   border-radius: 10px;
-  padding: 20px;
+  padding: 16px;
+  display: none;
   z-index: 9999;
-  width: 280px;
-  display: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-}
-
-.popup-content {
+  width: 250px;
   text-align: center;
-  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
-
-.close-btn {
+.user-popup-content img {
+  width: 32px;
+  margin: 8px;
+  cursor: pointer;
+  filter: brightness(0.9);
+  transition: transform 0.2s;
+}
+.user-popup-content img:hover {
+  transform: scale(1.1);
+  filter: brightness(1.1);
+}
+#popupClose {
   position: absolute;
-  top: 10px;
-  right: 14px;
+  top: 6px; right: 10px;
   cursor: pointer;
-  font-size: 20px;
-  color: #888;
-}
-
-.social-icons {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin: 10px 0;
-}
-
-.social-icons img {
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-  transition: 0.3s;
-  filter: brightness(0) invert(1);
-}
-
-.social-icons img:hover {
-  transform: scale(1.15);
-  filter: brightness(0) invert(0.7);
-}
-
-.popup-message {
-  font-size: 14px;
   color: #aaa;
-  margin-top: 8px;
+  font-size: 18px;
 }
-.hidden {
-  display: none;
-}
+#popupClose:hover { color: #fff; }
+
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
@@ -570,14 +547,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<!-- Social Info Popup -->
-<div id="socialPopup" class="social-popup hidden">
-  <div class="popup-content">
-    <span id="closePopup" class="close-btn">&times;</span>
-    <h3 id="popupUsername">@Username</h3>
-    <p id="popupGender">Gender: Female</p>
-    <div id="popupSocials" class="social-icons"></div>
-    <p id="popupMessage" class="popup-message"></p>
+<div id="userPopup" class="user-popup">
+  <div class="user-popup-content">
+    <span id="popupClose">&times;</span>
+    <h3 id="popupUsername"></h3>
+    <p id="popupGender"></p>
+    <div class="popup-socials">
+      <img id="instaIcon" src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" />
+      <img id="tiktokIcon" src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" alt="TikTok" />
+      <img id="whatsappIcon" src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp" />
+      <img id="telegramIcon" src="https://cdn-icons-png.flaticon.com/512/2111/2111646.png" alt="Telegram" />
+    </div>
   </div>
 </div>
 <script type="module" src="app.js"></script>
