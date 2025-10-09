@@ -1,13 +1,11 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scramble Game</title>
-
-<!-- Arcade font -->
+<link rel="icon" href="data:," />
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
 <style>
 :root {
   --bg:#000;
@@ -17,171 +15,154 @@
   --glass: rgba(255,255,255,0.03);
 }
 
-/* ---------- Layout ---------- */
-html,body{margin:0;padding:0;height:100%;font-family:'XiXi',Inter,sans-serif;color:#fff;background:var(--bg);}
-#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
-.app{display:flex;flex-direction:column;width:100%;max-width:480px;padding:10px;gap:10px;box-sizing:border-box;}
-#messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--bg);margin-bottom:140px;border-radius:8px;}
+body, html {margin:0; padding:0; height:100%; font-family: 'Inter', sans-serif; background: var(--bg); color:#fff; display:flex; justify-content:center;}
+#appWrapper{width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; position:relative;}
 
 /* ---------- Header ---------- */
-#gameHeader{font-family:'Press Start 2P', cursive;font-size:22px;text-align:center;color:var(--accent);font-weight:900;}
-#gameHeader span{margin-right:6px;}
-#wordMarquee{overflow:hidden;white-space:nowrap;margin:8px 0;font-size:14px;color:var(--accent);}
+#gameHeader {text-align:center; margin-top:10px;}
+#welcomeText{font-family:'Press Start 2P', cursive; font-size:12px; color:var(--accent);}
+#scrambleText{font-family:'Press Start 2P', cursive; font-size:22px; color:var(--accent); margin-top:2px;}
+
+/* ---------- Rules ---------- */
+#rulesBtn {display:block; margin:6px auto; padding:6px 12px; border-radius:12px; background:var(--card); border:1px solid rgba(255,20,147,0.2); color:var(--accent); font-weight:700; cursor:pointer;}
+
+/* ---------- Marquee ---------- */
+#wordMarquee {width:100%; overflow:hidden; white-space:nowrap; display:block; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1); padding:4px 0; margin-bottom:6px; color:var(--accent); font-size:12px;}
+#wordMarquee span {margin-right:12px; display:inline-block;}
 
 /* ---------- Scramble Board ---------- */
-.scramble-board{text-align:center;margin-top:10px;}
-#scrambleWord{font-size:36px;letter-spacing:6px;color:#fff;}
+.scramble-board {text-align:center; margin:8px 0;}
+#scrambleWord {font-family:'Press Start 2P', cursive; font-size:18px; letter-spacing:6px; color:#fff;}
+
+/* ---------- Messages ---------- */
+#messages {flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px;}
 
 /* ---------- Bottom Input ---------- */
-.send-area{position:fixed;bottom:0;left:0;width:100%;max-width:480px;display:flex;align-items:center;gap:8px;background:var(--card);padding:10px;border-radius:999px;box-sizing:border-box;z-index:100;}
-.send-area input{flex:1;padding:12px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:#0e0e0e;color:#fff;font-size:16px;outline:none;}
-.send-btn{padding:10px 14px;border-radius:999px;background:#000;border:2px solid var(--accent);color:var(--accent);cursor:pointer;font-weight:700;font-size:18px;animation:buzzFlicker 1.2s infinite;}
-@keyframes buzzFlicker{
-  0%,50%,100%{box-shadow:0 0 0 0 var(--accent);}
-  25%,75%{box-shadow:0 0 8px 2px var(--accent);}
-}
+.send-area {position:fixed; bottom:0; left:0; width:100%; max-width:480px; display:flex; align-items:center; gap:8px; background:var(--card); padding:10px; border-radius:999px; box-sizing:border-box; z-index:100;}
+.send-area input {flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background-color:#0e0e0e; color:#fff; font-size:16px; outline:none;}
 
-/* ---------- Profile Card ---------- */
-.profile{position:fixed;bottom:70px;width:100%;max-width:480px;left:0;display:flex;justify-content:center;z-index:99;}
-.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;text-align:center;}
-.profile-name{font-weight:800;color:var(--accent);}
-.profile-value{color:#fff;font-family:monospace;font-weight:400;font-size:14px;}
-.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
+/* Buzz Button */
+.buzz-btn {padding:10px; border-radius:999px; background:#000; border:1px solid var(--accent); color:var(--accent); font-weight:700; font-size:16px; cursor:pointer; animation: flicker 2s infinite alternate;}
+@keyframes flicker {0%{opacity:1;}50%{opacity:0.6;}100%{opacity:1;}}
+
+/* ---------- Profile Panel ---------- */
+.profile {position:fixed; bottom:60px; width:100%; max-width:480px; left:0; display:flex; justify-content:center; z-index:99;}
+.profile-card {background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:6px; text-align:center;}
+.profile-name {font-weight:800; font-size:14px; color:var(--accent);}
+.profile-info {font-size:12px; color:#fff;}
+
+/* Star popup */
+.star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
-
 <div id="appWrapper">
-  <div class="app">
-    <!-- Header -->
-    <div id="gameHeader"><span>🧩</span>WELCOME TO SCRAMBLE</div>
-    <div id="wordMarquee"><marquee>Sample words scrolling... 🔹 Sample words... 🔹</marquee></div>
+  <!-- Header -->
+  <div id="gameHeader">
+    <div id="welcomeText">WELCOME TO</div>
+    <div id="scrambleText">SCRAMBLE 🧩</div>
+  </div>
 
-    <!-- Scramble letters -->
-    <div class="scramble-board">
-      <div id="scrambleWord">S K P K D K S</div>
+  <!-- Rules -->
+  <button id="rulesBtn">Rules</button>
+
+  <!-- Marquee for past words -->
+  <div id="wordMarquee"></div>
+
+  <!-- Scramble letters -->
+  <div class="scramble-board">
+    <div id="scrambleWord">S K P K D K S</div>
+  </div>
+
+  <!-- Messages -->
+  <div id="messages"></div>
+
+  <!-- Bottom input -->
+  <div class="send-area">
+    <input type="text" id="bottomInput" placeholder="Type your word...">
+    <button id="buzzBtn" class="buzz-btn">🚨</button>
+  </div>
+
+  <!-- Profile panel -->
+  <div class="profile" id="profilePanel">
+    <div class="profile-card">
+      <div class="profile-name" id="profileName">GUEST 0000</div>
+      <div class="profile-info">STARS COLLECTED: <span id="starCount">0</span>⭐️</div>
+      <div class="profile-info">CASH EARNED: ₦<span id="cashCount">0</span></div>
     </div>
-
-    <!-- Messages -->
-    <div id="messages"></div>
-
-    <!-- Bottom Input -->
-    <div class="send-area">
-      <input type="text" id="bottomInput" placeholder="Type your word..." autocomplete="off">
-      <button id="sendBottomBtn" class="send-btn">🚨</button>
-    </div>
-
-    <!-- Profile Card -->
-    <div class="profile" id="profileBox">
-      <div class="profile-card">
-        <div class="profile-name" id="profileName">GUEST 0000</div>
-        <div>STARS COLLECTED: <span class="profile-value" id="starCount">0</span>⭐️</div>
-        <div>CASH EARNED: <span class="profile-value" id="cashCount">0</span></div>
-      </div>
-    </div>
-
-    <!-- Star Popup -->
-    <div class="star-popup" id="starPopup">+0⭐</div>
-
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<!-- Star popup -->
+<div class="star-popup" id="starPopup">+1 ⭐</div>
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+<script>
+/* ---------------- Sample User Data ---------------- */
+let currentUser = {
+  uid: 'guest001',
+  name: 'GUEST 0000',
+  stars: 0,
+  cash: 0
 };
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+document.getElementById('profileName').textContent = currentUser.name;
+document.getElementById('starCount').textContent = currentUser.stars;
+document.getElementById('cashCount').textContent = currentUser.cash;
 
-// DOM
-const messagesEl = document.getElementById("messages");
-const bottomInput = document.getElementById("bottomInput");
-const sendBtn = document.getElementById("sendBottomBtn");
+/* ---------------- Game Logic ---------------- */
+const SCRAMBLE_LETTERS = "S K P K D K S".split(" ");
+const submittedWords = new Set();
+const wordMarquee = document.getElementById("wordMarquee");
 const scrambleWordEl = document.getElementById("scrambleWord");
+const bottomInput = document.getElementById("bottomInput");
+const messagesEl = document.getElementById("messages");
 const starPopup = document.getElementById("starPopup");
-const starCountEl = document.getElementById("starCount");
-const cashCountEl = document.getElementById("cashCount");
-const profileNameEl = document.getElementById("profileName");
 
-// State
-let currentUserData = null;
-let currentScramble = { letters: ['S','K','P','K','D','K','S'], usedWords: new Set(), maxSubmissions: 25 };
-
-// Helpers
-function showStarPopup(text){
-  starPopup.innerText = text;
-  starPopup.style.display = "block";
-  setTimeout(()=>{starPopup.style.display="none"},1500);
-}
-function validateWord(word){
-  const lettersCopy = [...currentScramble.letters];
-  for(let c of word.toUpperCase()){
-    const idx = lettersCopy.indexOf(c);
-    if(idx===-1) return false;
-    lettersCopy.splice(idx,1);
+/* Marquee Animation */
+function animateMarquee(){
+  const firstChild = wordMarquee.firstElementChild;
+  if(firstChild){
+    wordMarquee.appendChild(firstChild);
   }
-  return true;
+}
+setInterval(animateMarquee, 2000);
+
+function showStarPopup(text) {
+  starPopup.textContent = text;
+  starPopup.style.display = "block";
+  setTimeout(()=>{starPopup.style.display="none";},1500);
 }
 
-// Submit handler
-async function submitWord(){
-  if(!currentUserData) return;
-  let word = bottomInput.value.trim().toUpperCase();
-  if(!word) return showStarPopup("Type a word!");
-  if(!validateWord(word)) return showStarPopup("Invalid!");
-  if(currentScramble.usedWords.has(word)) return showStarPopup("Already used!");
-  if(currentScramble.usedWords.size>=currentScramble.maxSubmissions) return showStarPopup("Round full!");
+/* Buzz submission */
+document.getElementById('buzzBtn').addEventListener('click',()=>{
+  const word = bottomInput.value.trim().toUpperCase();
+  if(!word){showStarPopup("Type a word!"); return;}
+  if(submittedWords.has(word)){showStarPopup("Word already used!"); return;}
+  submittedWords.add(word);
 
-  currentScramble.usedWords.add(word);
-  bottomInput.value = "";
-
-  // Firestore update
-  const userRef = doc(db,"users",currentUserData.uid);
-  await updateDoc(userRef,{stars: increment(10), cash: increment(50)});
-  currentUserData.stars += 10;
-  currentUserData.cash += 50;
-
-  // Update UI
-  starCountEl.innerText = currentUserData.stars;
-  cashCountEl.innerText = currentUserData.cash;
-  messagesEl.innerHTML += `<div class="msg"><div class="content">✅ ${word} +10⭐ +₦50</div></div>`;
+  // Add to messages
+  const msg = document.createElement('div');
+  msg.className = 'msg';
+  msg.textContent = currentUser.name + ": " + word;
+  messagesEl.appendChild(msg);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
-  showStarPopup(`+10⭐ +₦50`);
-}
+  // Update stars/cash
+  currentUser.stars += 5;
+  currentUser.cash += 50;
+  document.getElementById('starCount').textContent = currentUser.stars;
+  document.getElementById('cashCount').textContent = currentUser.cash;
 
-// Event
-sendBtn.addEventListener("click",submitWord);
-bottomInput.addEventListener("keypress",(e)=>{if(e.key==="Enter") submitWord();});
+  // Add to marquee
+  const span = document.createElement('span');
+  span.textContent = word;
+  wordMarquee.appendChild(span);
 
-// Auth listener
-onAuthStateChanged(auth, async user=>{
-  if(user){
-    currentUserData = { uid:user.uid, name:user.displayName||"GUEST", stars:0, cash:0 };
-    profileNameEl.innerText = currentUserData.name;
-    const userDoc = await getDoc(doc(db,"users",user.uid));
-    if(userDoc.exists()){
-      currentUserData.stars = userDoc.data().stars||0;
-      currentUserData.cash = userDoc.data().cash||0;
-      starCountEl.innerText = currentUserData.stars;
-      cashCountEl.innerText = currentUserData.cash;
-    }else{
-      await updateDoc(doc(db,"users",user.uid),{stars:0,cash:0});
-    }
-  }else{
-    // TODO: implement Google Sign-in
-  }
+  bottomInput.value = "";
+});
+
+/* Rules button */
+document.getElementById('rulesBtn').addEventListener('click',()=>{
+  alert("🎮 Scramble Rules:\n- Form words using the letters above.\n- Each correct word gives you stars and cash.\n- Max 25 submissions per round.\n- First come, first served!");
 });
 </script>
 </body>
