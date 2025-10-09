@@ -190,7 +190,7 @@ async function showUserPopup(uidKey) {
 }
 
 /* ---------- Detect username tap ---------- */
-document.addEventListener("click", e => {
+document.addEventListener("pointerdown", e => {
   const el = e.target.closest(".chat-username");
   if (!el) return;
   const uid = el.dataset.username;
@@ -612,3 +612,21 @@ refs.buzzBtn?.addEventListener("click", async () => {
     loadVideo(0);
   }
 });
+// Popup close logic (works on mobile too)
+const popup = document.getElementById("userPopup");
+const closeBtn = document.getElementById("popupClose");
+
+if (popup && closeBtn) {
+  // Close when clicking the X
+  closeBtn.addEventListener("pointerdown", e => {
+    e.stopPropagation();
+    popup.style.display = "none";
+  });
+
+  // Close when tapping outside the popup card
+  popup.addEventListener("pointerdown", e => {
+    if (e.target === popup) {
+      popup.style.display = "none";
+    }
+  });
+}
