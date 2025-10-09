@@ -160,10 +160,7 @@ async function showUserPopup(username) {
   // 👇 Add this log so you can see what’s being passed and fetched
   console.log("🔍 showUserPopup() called with:", username);
 
-  const safeEmailKey = username.includes("@")
-    ? username.replace(/\./g, ",")
-    : username; // only convert if it’s an email
-
+  const userRef = doc(db, "users", username);
   console.log("🗝️  Firestore key used:", safeEmailKey);
 
   const userRef = doc(db, "users", safeEmailKey);
