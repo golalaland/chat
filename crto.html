@@ -385,90 +385,107 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   touch-action: manipulation;
 }
 
-/* Modal backdrop */
-.user-popup-backdrop {
+/* Popup background */
+.popup {
+  display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(8px);
-  z-index: 9998;
+  background: rgba(0, 0, 0, 0.7);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
 }
 
-/* Modal card */
-.user-popup-card {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 260px;
-  padding: 20px;
-  border-radius: 20px;
-  background: rgba(20,20,20,0.85);
-  box-shadow: 0 0 20px rgba(255,20,147,0.3);
-  backdrop-filter: blur(12px) saturate(150%);
-  color: #fff;
+/* Card styling */
+.user-popup-content {
+  background: rgba(20, 20, 20, 0.85);
+  padding: 22px;
+  border-radius: 14px;
   text-align: center;
-  z-index: 9999;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  position: relative;
+  min-width: 260px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 /* Close button */
-#popupClose {
+.close-btn {
   position: absolute;
-  top: 12px;
-  right: 16px;
+  top: 8px;
+  right: 12px;
   font-size: 22px;
   cursor: pointer;
-  color: #bbb;
-  transition: color 0.2s;
+  color: #fff;
+  opacity: 0.7;
+  transition: 0.2s;
 }
-#popupClose:hover { color: #fff; }
+.close-btn:hover { opacity: 1; }
 
-/* Avatar */
-.popup-avatar-wrapper {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 10px;
+/* Profile photo (optional) */
+.popup-photo {
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid #FF1493;
-  box-shadow: 0 0 12px rgba(255,20,147,0.3);
-}
-.popup-avatar-wrapper img {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
+  margin-bottom: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
 }
 
 /* Username */
-.popup-username {
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: #FF69B4;
-  text-shadow: 0 0 8px rgba(255,20,147,0.3);
+#popupUsername {
+  color: #ff69b4;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 18px;
 }
 
-/* Action button */
-.popup-actions {
+/* Gender and Age */
+#popupGender, #popupAge {
+  color: #ccc;
+  font-size: 14px;
+  margin: 2px 0;
+  text-transform: lowercase;
+}
+
+/* Social icons */
+.socials {
   display: flex;
   justify-content: center;
+  gap: 10px;
+  margin: 14px 0;
 }
-.popup-btn {
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: none;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+.social img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
+.social img:hover {
+  transform: scale(1.15);
+  opacity: 0.9;
+}
+
+/* BUZZ button with flickering outline */
 .buzz-btn {
-  background: rgba(255,20,147,0.2);
-  color: #FF69B4;
+  background: #111;
+  color: #fff;
+  border: 2px solid #ff69b4;
+  border-radius: 6px;
+  padding: 10px 26px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 15px;
+  animation: flicker 1.3s infinite;
+  text-shadow: 0 0 4px #ff69b4;
+  letter-spacing: 1px;
 }
-.popup-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(255,20,147,0.5);
+
+@keyframes flicker {
+  0%, 100% { box-shadow: 0 0 6px #ff69b4, 0 0 10px #ff69b4; }
+  25% { box-shadow: 0 0 10px #ff4081, 0 0 20px #ff4081; }
+  50% { box-shadow: 0 0 8px #ff69b4, 0 0 15px #ff69b4; }
+  75% { box-shadow: 0 0 12px #ff4081, 0 0 25px #ff4081; }
 }
 
 /* ---------- Auth Inputs ---------- */
@@ -603,23 +620,27 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<div id="userPopup" class="hidden">
-  <div class="user-popup-backdrop"></div>
-  <div class="user-popup-card">
-    <span id="popupClose">&times;</span>
+<!-- User Popup Card -->
+<div id="userPopup" class="popup">
+  <div class="user-popup-content">
+    <span id="popupCloseBtn" class="close-btn">&times;</span>
 
-    <div class="popup-avatar-wrapper">
-      <img id="popupAvatar" src="https://via.placeholder.com/80" alt="User Avatar"/>
+    <!-- Profile photo (optional, for hosts) -->
+    <img id="popupPhoto" class="popup-photo" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile Photo">
+
+    <h3 id="popupUsername">Username</h3>
+    <p id="popupGender">female</p>
+    <p id="popupAge">Age: 20’s</p>
+
+    <!-- Social icons -->
+    <div class="socials">
+      <a href="#" class="social instagram" title="Instagram"><img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram"></a>
+      <a href="#" class="social whatsapp" title="WhatsApp"><img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp"></a>
+      <!-- Only two icons shown dynamically -->
     </div>
 
-    <div id="popupUsername" class="popup-username">USERNAME</div>
-    <div id="popupGender" class="popup-label">FEMALE</div>
-
-    <div class="popup-actions" style="justify-content:center;gap:12px;">
-      <button id="popupBuzzBtn" class="popup-btn buzz-btn" title="Buzz 🚨">🚨</button>
-      <a id="popupSocial1" class="popup-btn" href="#" target="_blank">🐦</a>
-      <a id="popupSocial2" class="popup-btn" href="#" target="_blank">📸</a>
-    </div>
+    <!-- BUZZ button below socials -->
+    <button id="buzzBtn" class="buzz-btn">BUZZ</button>
   </div>
 </div>
 <script type="module" src="app.js"></script>
