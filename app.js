@@ -162,31 +162,44 @@ function attachMessagesListener() {
 /* ---------- User Popup Logic ---------- */
 async function showUserPopup(uidKey) {
   const popup = document.getElementById("userPopup");
-  const popupContent = popup.querySelector(".user-popup-content");
-  const popupUsername = document.getElementById("popupUsername");
-  const popupGender = document.getElementById("popupGender");
+  const usernameEl = document.getElementById("popupUsername");
+  const genderAgeEl = document.getElementById("popupGenderAge");
+  const photoEl = document.getElementById("popupPhoto");
+  const socialsEl = document.getElementById("popupSocials");
   const closeBtn = document.getElementById("popupCloseBtn");
 
   // Fetch Firestore user
   const userRef = doc(db, "users", uidKey);
   const snap = await getDoc(userRef);
-  if (!snap.exists()) return alert("User not found");
+  if (!snap.exists()) return showStarPopup("User not found");
 
   const data = snap.data();
-  popupUsername.textContent = data.chatId || "Unknown User";
-  popupUsername.style.color = randomColor();
-  popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
+
+  // Populate popup dynamically
+  usernameEl.textContent = data.chatId || "Unknown";
+  usernameEl.style.color = randomColor();
+
+  // Optional: gender & age
+  genderAgeEl.textContent = `${data.gender || "Unknown"}`; // remove age if you don't track
+
+  photoEl.src = data.photoURL || "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+
+  socialsEl.innerHTML = "";
+  if(data.socials){
+    for(const key in data.socials){
+      const link = document.createElement("a");
+      link.href = data.socials[key];
+      link.target = "_blank";
+      link.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/${key === 'ig' ? '174/174855' : '733/733585'}.png" alt="${key}">`;
+      socialsEl.appendChild(link);
+    }
+  }
 
   popup.style.display = "flex";
-  setTimeout(() => popupContent.classList.add("show"), 10);
 
-  const closePopup = () => {
-    popupContent.classList.remove("show");
-    setTimeout(() => { popup.style.display = "none"; }, 200);
-  };
-
-  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
-  closeBtn.onclick = closePopup;
+  // Close popup
+  closeBtn.onclick = () => popup.style.display = "none";
+  popup.onclick = (e) => { if(e.target === popup) popup.style.display = "none"; };
 }
 
 /* ---------- Detect username tap ---------- */
