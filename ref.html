@@ -224,32 +224,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const userData = {
-        chatId,
-        chatIdLower:chatId.toLowerCase(),
-        fullName,
-        stars:50,
-        starsToday:0,
-        starsGifted:0,
-        lastStarDate:new Date().toISOString().split("T")[0],
-        cash:0,
-        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
-        isAdmin:false,
-        isVIP,
-        isHost:!isVIP,
-        hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-        invitedBy:referrer||null,
-        email,
-        phone,
-        gender,
-        createdAt:serverTimestamp(),
-        subscriptionActive:false,
-        subscriptionCount:0
-        socialShare:false,
-        instagram,
-        tiktok,
-        whatsapp,
-        telegram,
+const userData = {
+  chatId,
+  chatIdLower:chatId.toLowerCase(),
+  fullName,
+  stars:50,
+  starsToday:0,
+  starsGifted:0,
+  lastStarDate:new Date().toISOString().split("T")[0],
+  cash:0,
+  usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+  isAdmin:false,
+  isVIP,
+  isHost:!isVIP,
+  hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+  invitedBy:referrer||null,
+  email,
+  phone,
+  gender,
+  createdAt:serverTimestamp(),
+  subscriptionActive:false,
+  subscriptionCount:0,  // 👈 this comma was missing
+  socialShare:false,
+  instagram:"",
+  tiktok:"",
+  whatsapp:"",
+  telegram:"",
 };
 
       await setDoc(userRef,userData);
