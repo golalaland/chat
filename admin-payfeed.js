@@ -1,4 +1,4 @@
-// admin-payfeed.js (fully fixed & optimized)
+// admin-payfeed.js (revamped & optimized with 乂丨乂丨 font)
 
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -46,9 +46,10 @@ const loaderText = document.getElementById("loaderText");
 // ---------- Helpers ----------
 function showLoader(text = "Processing...") {
   if (loaderText) loaderText.textContent = text;
-  if (loaderOverlay) loaderOverlay.style.display = "flex";
+  loaderOverlay.style.display = "flex";
 }
-function hideLoader() { if (loaderOverlay) loaderOverlay.style.display = "none"; }
+function hideLoader() { loaderOverlay.style.display = "none"; }
+
 function downloadCSV(filename, rows) {
   const csvContent = rows.map(r => r.map(v => `"${String(v ?? "")}"`).join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -57,32 +58,39 @@ function downloadCSV(filename, rows) {
   link.download = filename;
   link.click();
 }
+
 function createToggleCheckbox(value) {
   const input = document.createElement("input");
   input.type = "checkbox";
   input.checked = !!value;
+  input.style.transform = "scale(1.2)";
   return input;
 }
+
 function showConfirmModal(title, message) {
   return new Promise(resolve => {
     const overlay = document.createElement("div");
-    Object.assign(overlay.style, { position: "fixed", inset: "0", background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 });
+    Object.assign(overlay.style, { position: "fixed", inset: "0", background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, fontFamily: "'乂丨乂丨', monospace" });
 
     const card = document.createElement("div");
     Object.assign(card.style, { background: "#fff", padding: "18px", borderRadius: "10px", minWidth: "300px", maxWidth: "90%", textAlign: "center", boxShadow: "0 8px 30px rgba(0,0,0,0.12)" });
 
     const h = document.createElement("h3"); h.textContent = title; h.style.margin = "0 0 8px";
     const p = document.createElement("p"); p.textContent = message; p.style.margin = "0 0 14px"; p.style.color="#333";
+
     const btnRow = document.createElement("div"); Object.assign(btnRow.style,{display:"flex",justifyContent:"center",gap:"10px"});
     const confirmBtn = document.createElement("button"); confirmBtn.className="btn btn-primary"; confirmBtn.textContent="Confirm";
     const cancelBtn = document.createElement("button"); cancelBtn.className="btn btn-danger"; cancelBtn.textContent="Cancel";
+
     confirmBtn.onclick = () => { overlay.remove(); resolve(true); };
     cancelBtn.onclick = () => { overlay.remove(); resolve(false); };
     btnRow.appendChild(confirmBtn); btnRow.appendChild(cancelBtn);
+
     card.appendChild(h); card.appendChild(p); card.appendChild(btnRow);
     overlay.appendChild(card); document.body.appendChild(overlay);
   });
 }
+
 function stripQuotes(str){ return str.replace(/^"(.*)"$/,"$1").trim(); }
 
 // ---------- Admin login ----------
@@ -95,6 +103,7 @@ async function checkAdmin(emailRaw){
   const d = snap.docs[0].data()||{};
   return d.isAdmin===true ? { email, id:snap.docs[0].id } : null;
 }
+
 adminCheckBtn.addEventListener("click", async () => {
   adminGateMsg.textContent="";
   const emailRaw = (adminEmailInput.value||"").trim();
@@ -126,6 +135,7 @@ function renderUsers(users){
   usersTableBody.innerHTML="";
   users.forEach(u=>{
     const tr = document.createElement("tr");
+    tr.style.fontFamily="'乂丨乂丨', monospace";
     tr.innerHTML=`
       <td>${u.email||""}</td>
       <td>${u.phone||""}</td>
@@ -161,12 +171,13 @@ function renderUsers(users){
         const cash=Number(tr.children[4].querySelector("input").value||0);
         const updates={stars,cash,isVIP:isVIP.checked,isAdmin:isAdminToggle.checked,isHost:isHost.checked,subscriptionActive:subscriptionActive.checked};
         if(updates.subscriptionActive){ updates.subscriptionStartTime=Date.now(); updates.subscriptionCount=(u.subscriptionCount||0)+1; }
-        // UPDATE user by ID
         await updateDoc(doc(db,"users",u.id),updates);
+
         // whitelist sync
         const wlRef=doc(db,"whitelist",(u.email||"").toLowerCase());
         if(updates.subscriptionActive) await setDoc(wlRef,{email:(u.email||"").toLowerCase(),phone:u.phone||"",chatId:u.chatId||"",subscriptionActive:true,subscriptionStartTime:updates.subscriptionStartTime},{merge:true});
         else await updateDoc(wlRef,{subscriptionActive:false}).catch(()=>{});
+
         hideLoader(); await loadUsers(); await loadWhitelist();
         alert("User updated successfully.");
       }catch(err){ hideLoader(); console.error("Enter update error:",err); alert("Failed to update user. See console."); }
@@ -190,9 +201,20 @@ function renderUsers(users){
 }
 
 // ---------- Search ----------
+let searchTimeout = null;
 userSearch.addEventListener("input", ()=>{
-  const q=(userSearch.value||"").toLowerCase();
-  renderUsers(usersCache.filter(u=>(u.email||"").toLowerCase().includes(q)||(u.chatId||"").toLowerCase().includes(q)));
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(()=>{
+    const q=(userSearch.value||"").toLowerCase();
+    renderUsers(usersCache.filter(u=>(u.email||"").toLowerCase().includes(q)||(u.chatId||"").toLowerCase().includes(q)));
+  }, 200);
+});
+
+// ---------- Export CSV ----------
+exportCsvBtn.addEventListener("click", ()=>{
+  const rows=[["email","phone","chatId","stars","cash","isVIP","isAdmin","isHost","subscriptionActive","subscriptionStartTime","subscriptionCount"]];
+  usersCache.forEach(u=>rows.push([u.email||"",u.phone||"",u.chatId||"",u.stars||0,u.cash||0,!!u.isVIP,!!u.isAdmin,!!u.isHost,!!u.subscriptionActive,u.subscriptionStartTime||"",u.subscriptionCount||0]));
+  downloadCSV("users_export.csv",rows);
 });
 
 // ---------- Whitelist + CSV injection ----------
@@ -269,13 +291,6 @@ wlCsvUpload.addEventListener("change", async e=>{
   finally{ wlCsvUpload.value=""; }
 });
 
-// ---------- Export CSV ----------
-exportCsvBtn.addEventListener("click", ()=>{
-  const rows=[["email","phone","chatId","stars","cash","isVIP","isAdmin","isHost","subscriptionActive","subscriptionStartTime","subscriptionCount"]];
-  usersCache.forEach(u=>rows.push([u.email||"",u.phone||"",u.chatId||"",u.stars||0,u.cash||0,!!u.isVIP,!!u.isAdmin,!!u.isHost,!!u.subscriptionActive,u.subscriptionStartTime||"",u.subscriptionCount||0]));
-  downloadCSV("users_export.csv",rows);
-});
-
 // ---------- Load whitelist ----------
 async function loadWhitelist(){
   try{
@@ -284,6 +299,7 @@ async function loadWhitelist(){
     for(const d of snap.docs){
       const data=d.data()||{};
       const tr=document.createElement("tr");
+      tr.style.fontFamily="'乂丨乂丨', monospace";
       tr.innerHTML=`<td>${data.email||""}</td><td>${data.phone||""}</td><td>${!!data.subscriptionActive}</td><td></td>`;
       const removeBtn=document.createElement("button");
       removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
