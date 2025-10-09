@@ -113,7 +113,7 @@ function renderMessagesFromArray(arr){
 
     const meta = document.createElement("span");
     meta.className = "meta";
-    meta.textContent = (m.chatId || "Guest") + ":";
+   meta.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
     meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
     meta.style.marginRight = "4px";
 
@@ -140,6 +140,8 @@ function renderMessagesFromArray(arr){
   }
 }
 
+
+
 /* ---------- Messages listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
@@ -156,6 +158,49 @@ function attachMessagesListener() {
     });
   });
 }
+
+/* ---------- User Popup Logic ---------- */
+async function showUserPopup(uidKey) {
+  const popup = document.getElementById("userPopup");
+  const popupContent = popup.querySelector(".user-popup-content");
+  const popupUsername = document.getElementById("popupUsername");
+  const popupGender = document.getElementById("popupGender");
+  const closeBtn = document.getElementById("popupCloseBtn");
+
+  // Fetch Firestore user
+  const userRef = doc(db, "users", uidKey);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) return alert("User not found");
+
+  const data = snap.data();
+  popupUsername.textContent = data.chatId || "Unknown User";
+  popupUsername.style.color = randomColor();
+  popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
+
+  popup.style.display = "flex";
+  setTimeout(() => popupContent.classList.add("show"), 10);
+
+  const closePopup = () => {
+    popupContent.classList.remove("show");
+    setTimeout(() => { popup.style.display = "none"; }, 200);
+  };
+
+  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
+  closeBtn.onclick = closePopup;
+}
+
+/* ---------- Detect username tap ---------- */
+document.addEventListener("click", e => {
+  const el = e.target.closest(".chat-username");
+  if (!el) return;
+  const uid = el.dataset.username;
+  if (uid && uid !== currentUser?.uid) showUserPopup(uid);
+
+  // Small visual feedback (tapped highlight)
+  el.style.transition = "opacity 0.15s";
+  el.style.opacity = "0.5";
+  setTimeout(() => (el.style.opacity = "1"), 150);
+});
 
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
