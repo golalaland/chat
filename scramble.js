@@ -276,6 +276,55 @@ window.addEventListener("DOMContentLoaded", () => {
     }]);
   });
 
+// ---------------- SCRAMBLE BANNER ----------------
+refs.scrambleBannerEl = document.getElementById("scrambleBanner");
+refs.scrambleLettersEl = document.getElementById("scrambleLetters");
+
+// Show letters when scramble starts
+async function sendAdminScrambleBuzz(){
+  if(!currentUser?.isAdmin) return;
+  const { letters, validWords } = generateScramble();
+  currentScramble.letters = letters;
+  currentScramble.validWords = validWords;
+  currentScramble.submissions = {};
+
+  // Update UI banner
+  if(refs.scrambleBannerEl && refs.scrambleLettersEl){
+      refs.scrambleLettersEl.textContent = letters;
+      refs.scrambleBannerEl.style.display = "block";
+  }
+
+  const content = `🧩 SCRAMBLE ROUND! Letters (5+): ${letters}`;
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    content, uid:currentUser.uid, chatId:currentUser.chatId,
+    timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFD700", scramble:true
+  });
+  renderMessagesFromArray([{id:docRef.id,data:{content,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:"#FFD700",scramble:true}}]);
+
+  setTimeout(endScrambleRound, 5*60*1000); // 5 min round
+}
+
+// Hide banner when scramble ends
+async function endScrambleRound(){
+  if(!currentUser?.isAdmin) return;
+  const summary = Object.entries(currentScramble.submissions)
+    .map(([chatId, words])=>`${chatId}: ${words.join(", ")}`).join("\n")||"No submissions this round!";
+
+  await addDoc(collection(db,CHAT_COLLECTION),{
+    content:`📝 Round Over! Words submitted:\n${summary}`,
+    uid:currentUser.uid, chatId:currentUser.chatId,
+    timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFA500", scramble:true
+  });
+
+  currentScramble.letters = "";
+  currentScramble.validWords = [];
+  currentScramble.submissions = {};
+
+  // Hide UI banner
+  if(refs.scrambleBannerEl){
+      refs.scrambleBannerEl.style.display = "none";
+  }
+}
   // ---------------- SCRAMBLE MODULE ----------------
   window.currentScramble = { letters: "", validWords: [], submissions: {} };
   const DICTIONARY = ["alert","later","slate","tails","stale","laser","rinse","aisle","inert","tales","lines","least","alter","slant","alien","resin","train","liner","snail","lairs","nails","sentinel"];
