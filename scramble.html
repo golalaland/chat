@@ -478,19 +478,21 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <button id="chatIDConfirmBtn" class="small-btn" style="width:100%;padding:10px;">Confirm</button>
   </div>
 </div>
-<div id="scrambleBanner" style="display:none;">
-  <div id="scrambleLetters"></div>
-  <input id="scrambleInput" type="text" placeholder="Type a word"/>
-  <button id="scrambleSubmitBtn">Submit</button>
+<div class="send-area-wrapper">
+  <div id="scrambleBanner" style="display:none;">
+    <div id="scrambleLetters"></div>
+    <input id="scrambleInput" type="text" placeholder="Type a word"/>
+    <button id="scrambleSubmitBtn">Submit</button>
+  </div>
+
+  <div class="send-area" id="sendArea" style="display:none;">
+    <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
+    <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
+    <button id="sendBtn" class="send-btn">Send</button>
+  </div>
 </div>
 
 <button id="adminScrambleBtn">Start Scramble (Admin only)</button>
-<div class="send-area" id="sendArea" style="display:none;">
-  <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" />
-  <button id="buzzBtn" class="buzz-btn" title="Send BUZZ 🚨">🚨</button>
-  <button id="sendBtn" class="send-btn">Send</button>
-</div>
-    </div>
   <div id="messages"></div>
 </div>
 
