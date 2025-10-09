@@ -313,56 +313,59 @@ window.__deleteProduct = async function(id) {
 };
 
 // ---------------- PURCHASES ----------------
+// ---------------- PURCHASES ----------------
 async function loadPurchases() {
   showSpinner(true);
   ordersList.innerHTML = "";
   try {
-    const q = query(collection(db, "purchases"), orderBy("createdAt", "desc"));
+    // Query your purchases collection ordered by 'timestamp'
+    const q = query(collection(db, "purchases"), orderBy("timestamp", "desc"));
     const snap = await getDocs(q);
+
     if (snap.empty) {
       ordersList.innerHTML = `<div class="small muted">No purchases yet</div>`;
       return;
     }
-    // Build rows
+
+    // Loop through each purchase
     for (const docSnap of snap.docs) {
       const o = docSnap.data();
       const id = docSnap.id;
-      // fetch purchaser user details if exist
-      let userDetails = { email: o.userEmail || o.user || '—' };
-      try {
-        // attempt to load users doc by uid or email
-        if (o.userId) {
+
+      // Prepare basic user info
+      let userDetails = { email: o.email || '—', phone: o.phone || '—' };
+
+      // Attempt to fetch user doc if userId exists
+      if (o.userId) {
+        try {
           const udoc = await getDoc(doc(db, "users", o.userId));
           if (udoc.exists()) userDetails = udoc.data();
-          else {
-            // fallback query by email
-            const q2 = query(collection(db, "users"), where("email", "==", o.userEmail || o.user || ""));
-            const res = await getDocs(q2);
-            if (!res.empty) userDetails = res.docs[0].data();
-          }
-        } else if (o.userEmail) {
-          const q2 = query(collection(db, "users"), where("email", "==", o.userEmail));
-          const res = await getDocs(q2);
-          if (!res.empty) userDetails = res.docs[0].data();
+        } catch (e) {
+          console.warn("User lookup failed", e);
         }
-      } catch(e){ console.warn("user lookup failed", e) }
+      }
 
       ordersList.insertAdjacentHTML('beforeend', purchaseRowHTML(id, o, userDetails));
     }
   } catch (err) {
     console.error(err);
     showToast("Load purchases failed: " + err.message);
-  } finally { showSpinner(false); }
+  } finally {
+    showSpinner(false);
+  }
 }
 
 function purchaseRowHTML(id, o, user) {
   const status = o.status || 'pending';
-  const paymentDesc = (o.paymentType === 'stars') ? `${o.amount} ⭐` : `₦${o.amount}`;
+  const paymentDesc = o.cost ? `₦${o.cost}` : "—";
+  const timestamp = o.timestamp?.toDate ? o.timestamp.toDate() : o.timestamp || new Date();
+
   const userInfo = `
     <div class="user-details">
-      <div><strong>${escapeHtml(user.displayName || user.email || o.userEmail || o.user || '—')}</strong></div>
-      <div class="small muted">Email: ${escapeHtml(user.email || o.userEmail || '—')}</div>
-      <div class="small muted">Stars: ${Number(user.stars || 0)} • Cash: ₦${Number(user.cash || 0)}</div>
+      <div><strong>${escapeHtml(user.displayName || user.email || o.email || '—')}</strong></div>
+      <div class="small muted">Email: ${escapeHtml(user.email || o.email || '—')}</div>
+      <div class="small muted">Phone: ${escapeHtml(user.phone || o.phone || '—')}</div>
+      <div class="small muted">Cash Reward: ₦${Number(o.cashReward || 0)}</div>
     </div>
   `;
 
@@ -370,8 +373,8 @@ function purchaseRowHTML(id, o, user) {
     <div class="order-item" data-id="${id}">
       <div class="order-row">
         <div style="flex:1">
-          <div><strong>${escapeHtml(o.productName || o.productId || '—')}</strong> • <span class="small muted">${new Date(o.createdAt?.toDate ? o.createdAt.toDate() : o.createdAt || Date.now()).toLocaleString()}</span></div>
-          <div class="small muted">Buyer: ${escapeHtml(o.userEmail || o.user || o.userId || '—')}</div>
+          <div><strong>${escapeHtml(o.productName || o.productId || '—')}</strong> • <span class="small muted">${new Date(timestamp).toLocaleString()}</span></div>
+          <div class="small muted">Buyer: ${escapeHtml(o.email || o.userEmail || '—')}</div>
           <div class="small muted">Payment: ${escapeHtml(paymentDesc)}</div>
           <div class="small muted">Status: <span class="badge">${escapeHtml(status)}</span></div>
           ${userInfo}
