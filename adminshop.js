@@ -451,38 +451,44 @@ window.__refundPurchase = async function(id) {
     const userId = purchase.userId || null;
     const userEmail = purchase.email || null;
 
-    // Determine what was used to pay
-    const isStars = purchase.paymentType === 'stars' || (purchase.cost && Number(purchase.cost) > 0 && !purchase.cashReward);
-    const refundAmount = isStars ? Number(purchase.cost || 0) : Number(purchase.cashReward || 0);
-    const refundMethod = isStars ? 'stars' : 'cash';
-
-    // Log the refund
-    if (refundAmount > 0) {
+    if (Number(purchase.cost || 0) > 0) {
+      // Stars purchase refund
+      await updateDoc(doc(db, "users", userId), {
+        stars: increment(Number(purchase.cost))
+      });
       await addDoc(collection(db, "refunds"), {
         orderId: id,
         userId,
         userEmail,
-        amount: refundAmount,
-        method: refundMethod,
+        amount: Number(purchase.cost),
+        method: "stars",
+        createdAt: serverTimestamp()
+      });
+    } else if (Number(purchase.cashReward || 0) > 0) {
+      // Cash purchase refund
+      await addDoc(collection(db, "refunds"), {
+        orderId: id,
+        userId,
+        userEmail,
+        amount: Number(purchase.cashReward),
+        method: "cash",
         createdAt: serverTimestamp()
       });
     }
 
-    // Update the purchase status
+    // mark purchase as refunded
     await updateDoc(doc(db, "purchases", id), {
       status: "refunded",
       refundedAt: serverTimestamp(),
-      refundMethod
+      refundMethod: Number(purchase.cost || 0) > 0 ? "stars" : "cash"
     });
 
-    showToast(`Refunded ${refundAmount} ${refundMethod === 'stars' ? '⭐️' : '₦'} for "${purchase.productName}" to ${userEmail || 'unknown user'}`);
-    loadPurchases(); // reload admin list
+    showToast(`Refund issued for "${purchase.productName}" to ${userEmail || 'unknown user'}`);
+    loadPurchases(); // reload list
   } catch (err) {
     console.error(err);
     showToast("Refund failed: " + err.message);
-  } finally {
-    showSpinner(false);
-  }
+  } finally { showSpinner(false); }
 };
 
 // ---------------- CSV EXPORT ----------------
