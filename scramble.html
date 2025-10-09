@@ -2,184 +2,187 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport"
-  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scramble Game</title>
+
+<!-- Arcade font -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
 <style>
-:root{
+:root {
   --bg:#000;
   --card:#111;
   --muted:#aaa;
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
-  --game-font: 'XiXi', 'Arial Black', sans-serif;
 }
 
-html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+/* ---------- Layout ---------- */
+html,body{margin:0;padding:0;height:100%;font-family:'XiXi',Inter,sans-serif;color:#fff;background:var(--bg);}
 #appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
-.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
+.app{display:flex;flex-direction:column;width:100%;max-width:480px;padding:10px;gap:10px;box-sizing:border-box;}
+#messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--bg);margin-bottom:140px;border-radius:8px;}
 
-/* Brand/Header */
-.brand{font-weight:700;font-size:28px;color:var(--accent);text-align:center;font-family:var(--game-font);}
-#greeting{text-align:center;font-size:16px;margin-bottom:6px;color:var(--accent);}
-.room-subtitle{font-size:12px;font-weight:600;text-align:center;margin-top:4px;color:var(--accent);opacity:0.85;}
+/* ---------- Header ---------- */
+#gameHeader{font-family:'Press Start 2P', cursive;font-size:22px;text-align:center;color:var(--accent);font-weight:900;}
+#gameHeader span{margin-right:6px;}
+#wordMarquee{overflow:hidden;white-space:nowrap;margin:8px 0;font-size:14px;color:var(--accent);}
 
-/* Scramble Board */
-.scramble-board{
-  background:var(--card);
-  padding:20px;
-  border-radius:16px;
-  box-shadow:0 0 20px rgba(255,20,147,0.3);
-  margin:20px auto;
-  text-align:center;
-  font-family:var(--game-font);
-}
-#scrambleWord{
-  font-size:48px;
-  letter-spacing:8px;
-  color:var(--accent);
-  font-weight:900;
-  margin-bottom:12px;
+/* ---------- Scramble Board ---------- */
+.scramble-board{text-align:center;margin-top:10px;}
+#scrambleWord{font-size:36px;letter-spacing:6px;color:#fff;}
+
+/* ---------- Bottom Input ---------- */
+.send-area{position:fixed;bottom:0;left:0;width:100%;max-width:480px;display:flex;align-items:center;gap:8px;background:var(--card);padding:10px;border-radius:999px;box-sizing:border-box;z-index:100;}
+.send-area input{flex:1;padding:12px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:#0e0e0e;color:#fff;font-size:16px;outline:none;}
+.send-btn{padding:10px 14px;border-radius:999px;background:#000;border:2px solid var(--accent);color:var(--accent);cursor:pointer;font-weight:700;font-size:18px;animation:buzzFlicker 1.2s infinite;}
+@keyframes buzzFlicker{
+  0%,50%,100%{box-shadow:0 0 0 0 var(--accent);}
+  25%,75%{box-shadow:0 0 8px 2px var(--accent);}
 }
 
-/* Chat / messages */
-#messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;border-radius:8px;background:var(--bg);margin-bottom:100px;box-sizing:border-box;}
-.msg{padding:8px 12px;border-radius:8px;background:var(--glass);max-width:100%;display:flex;gap:8px;align-items:center;}
-.msg.me{background: rgba(255, 20, 147, 0.06);}
-.msg .content{font-size:13px;color:#fff;white-space:pre-wrap;word-break:break-word;display:inline-block;}
-
-/* Bottom Input */
-.send-area{position:fixed;bottom:0;left:0;width:100%;max-width:480px;margin:0 auto;display:flex;align-items:center;gap:8px;background:var(--card);padding:10px;border-radius:999px;box-sizing:border-box;z-index:100;}
-.send-area input{flex:1;padding:12px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background-color:#0e0e0e;color:#fff;font-size:16px;outline:none;}
-.send-area input::placeholder{color:var(--muted, #aaa);}
-.send-area input:focus{border-color:var(--accent);box-shadow:0 0 12px rgba(255,20,147,0.15);}
-.send-btn{padding:10px 16px;border-radius:999px;background-color:var(--accent);color:#000;cursor:pointer;font-weight:700;border:none;font-size:14px;transition:all 0.2s ease;}
-.send-btn:hover{background-color:#ff33a1;transform:scale(1.05);}
-
-/* Profile Card (below keypad) */
-.profile{display:flex;flex-direction:column;gap:8px;margin-top:10px;position:fixed;bottom:70px;width:100%;max-width:480px;}
-.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
-.profile-name{font-weight:800;color:#fff;}
-.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
-.profile-value{color: #fff;font-family: ui-monospace;font-weight:400;font-size:11px;}
-.star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
+/* ---------- Profile Card ---------- */
+.profile{position:fixed;bottom:70px;width:100%;max-width:480px;left:0;display:flex;justify-content:center;z-index:99;}
+.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;text-align:center;}
+.profile-name{font-weight:800;color:var(--accent);}
+.profile-value{color:#fff;font-family:monospace;font-weight:400;font-size:14px;}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
 
 <div id="appWrapper">
   <div class="app">
-    <div class="brand">乂丨乂丨</div>
-    <div id="greeting">✨ Welcome to Scramble!</div>
+    <!-- Header -->
+    <div id="gameHeader"><span>🧩</span>WELCOME TO SCRAMBLE</div>
+    <div id="wordMarquee"><marquee>Sample words scrolling... 🔹 Sample words... 🔹</marquee></div>
 
-    <!-- Scramble Board -->
+    <!-- Scramble letters -->
     <div class="scramble-board">
-      <div id="scrambleWord">S K P K T S D</div>
-      <div id="submissionsLeft">Submissions left: 25</div>
+      <div id="scrambleWord">S K P K D K S</div>
     </div>
 
     <!-- Messages -->
     <div id="messages"></div>
 
+    <!-- Bottom Input -->
+    <div class="send-area">
+      <input type="text" id="bottomInput" placeholder="Type your word..." autocomplete="off">
+      <button id="sendBottomBtn" class="send-btn">🚨</button>
+    </div>
+
     <!-- Profile Card -->
     <div class="profile" id="profileBox">
       <div class="profile-card">
         <div class="profile-name" id="profileName">GUEST 0000</div>
-        <div><span class="profile-label">STARS COLLECTED:</span> <span class="profile-value"><span id="starCount">0</span>⭐️</span></div>
-        <div><span class="profile-label">CASH EARNED:</span> <span class="profile-value">₦<span id="cashCount">0</span></span></div>
+        <div>STARS COLLECTED: <span class="profile-value" id="starCount">0</span>⭐️</div>
+        <div>CASH EARNED: <span class="profile-value" id="cashCount">0</span></div>
       </div>
     </div>
 
-    <!-- Bottom Input -->
-    <div class="send-area">
-      <input type="text" id="bottomInput" placeholder="Type your word..." autocomplete="off">
-      <button id="sendBottomBtn" class="send-btn">🚨 Buzz</button>
-    </div>
+    <!-- Star Popup -->
+    <div class="star-popup" id="starPopup">+0⭐</div>
+
   </div>
 </div>
 
-<div class="star-popup" id="starPopup">+10 Stars!</div>
-
 <script type="module">
-import { db, currentUser } from './app.js';
-import { doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-let currentLetters = ["S","K","P","K","T","S","D"];
-let validWords = ["SKIP","TIPS","SPOT","STOP","POTS","KITS","DIPS","TIP","KIT","TOP","PIT","SIT","POT","DOT","KITTY","SIP","SKIT","SKID","DIT","TID","PITS","SOD"];
-let submissions = new Set();
-let submissionsLeft = 25;
-const STAR_COST = 5;
-const STAR_REWARD = 10;
-const CASH_REWARD = 50;
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-const scrambleWordEl = document.getElementById("scrambleWord");
-const submissionsLeftEl = document.getElementById("submissionsLeft");
+// DOM
 const messagesEl = document.getElementById("messages");
 const bottomInput = document.getElementById("bottomInput");
-const sendBottomBtn = document.getElementById("sendBottomBtn");
+const sendBtn = document.getElementById("sendBottomBtn");
+const scrambleWordEl = document.getElementById("scrambleWord");
 const starPopup = document.getElementById("starPopup");
 const starCountEl = document.getElementById("starCount");
 const cashCountEl = document.getElementById("cashCount");
+const profileNameEl = document.getElementById("profileName");
 
-function showPopup(text){
-  starPopup.textContent=text;
-  starPopup.style.display="block";
-  setTimeout(()=>starPopup.style.display="none",1500);
+// State
+let currentUserData = null;
+let currentScramble = { letters: ['S','K','P','K','D','K','S'], usedWords: new Set(), maxSubmissions: 25 };
+
+// Helpers
+function showStarPopup(text){
+  starPopup.innerText = text;
+  starPopup.style.display = "block";
+  setTimeout(()=>{starPopup.style.display="none"},1500);
 }
-
 function validateWord(word){
-  if(!word) return false;
-  word = word.toUpperCase();
-  if(!validWords.includes(word)) return false;
-  if(submissions.has(word)) return false;
+  const lettersCopy = [...currentScramble.letters];
+  for(let c of word.toUpperCase()){
+    const idx = lettersCopy.indexOf(c);
+    if(idx===-1) return false;
+    lettersCopy.splice(idx,1);
+  }
   return true;
 }
 
+// Submit handler
 async function submitWord(){
-  const word = bottomInput.value.trim().toUpperCase();
-  if(!currentUser) return showPopup("Sign in first!");
-  if(submissionsLeft<=0) return showPopup("Scramble full! Wait for next round.");
-  if(!validateWord(word)){ bottomInput.value=""; return showPopup("Invalid or duplicate!"); }
+  if(!currentUserData) return;
+  let word = bottomInput.value.trim().toUpperCase();
+  if(!word) return showStarPopup("Type a word!");
+  if(!validateWord(word)) return showStarPopup("Invalid!");
+  if(currentScramble.usedWords.has(word)) return showStarPopup("Already used!");
+  if(currentScramble.usedWords.size>=currentScramble.maxSubmissions) return showStarPopup("Round full!");
 
-  if(currentUser.stars<STAR_COST) return showPopup("Not enough stars!");
-  
-  const userRef = doc(db,"users",currentUser.uid);
-  await updateDoc(userRef,{
-    stars: increment(-STAR_COST+STAR_REWARD),
-    cash: increment(CASH_REWARD)
-  });
+  currentScramble.usedWords.add(word);
+  bottomInput.value = "";
 
-  currentUser.stars = currentUser.stars-STAR_COST+STAR_REWARD;
-  currentUser.cash = (currentUser.cash||0)+CASH_REWARD;
-  starCountEl.textContent=currentUser.stars;
-  cashCountEl.textContent=currentUser.cash;
+  // Firestore update
+  const userRef = doc(db,"users",currentUserData.uid);
+  await updateDoc(userRef,{stars: increment(10), cash: increment(50)});
+  currentUserData.stars += 10;
+  currentUserData.cash += 50;
 
-  submissions.add(word);
-  submissionsLeft--;
-  submissionsLeftEl.textContent=submissionsLeft;
+  // Update UI
+  starCountEl.innerText = currentUserData.stars;
+  cashCountEl.innerText = currentUserData.cash;
+  messagesEl.innerHTML += `<div class="msg"><div class="content">✅ ${word} +10⭐ +₦50</div></div>`;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 
-  const msgDiv=document.createElement("div");
-  msgDiv.className="msg me";
-  msgDiv.innerHTML=`<span class="content buzz-content">${word}</span>`;
-  messagesEl.appendChild(msgDiv);
-  messagesEl.scrollTop=messagesEl.scrollHeight;
-
-  showPopup(`+${STAR_REWARD}⭐ & +₦${CASH_REWARD}`);
-  bottomInput.value="";
+  showStarPopup(`+10⭐ +₦50`);
 }
 
-sendBottomBtn.addEventListener("click",submitWord);
+// Event
+sendBtn.addEventListener("click",submitWord);
 bottomInput.addEventListener("keypress",(e)=>{if(e.key==="Enter") submitWord();});
 
-// Auto reset every 60 seconds
-setInterval(()=>{
-  submissions.clear();
-  submissionsLeft=25;
-  submissionsLeftEl.textContent=submissionsLeft;
-  bottomInput.value="";
-  messagesEl.innerHTML="";
-  showPopup("New Scramble Started!");
-},60000);
+// Auth listener
+onAuthStateChanged(auth, async user=>{
+  if(user){
+    currentUserData = { uid:user.uid, name:user.displayName||"GUEST", stars:0, cash:0 };
+    profileNameEl.innerText = currentUserData.name;
+    const userDoc = await getDoc(doc(db,"users",user.uid));
+    if(userDoc.exists()){
+      currentUserData.stars = userDoc.data().stars||0;
+      currentUserData.cash = userDoc.data().cash||0;
+      starCountEl.innerText = currentUserData.stars;
+      cashCountEl.innerText = currentUserData.cash;
+    }else{
+      await updateDoc(doc(db,"users",user.uid),{stars:0,cash:0});
+    }
+  }else{
+    // TODO: implement Google Sign-in
+  }
+});
 </script>
 </body>
 </html>
