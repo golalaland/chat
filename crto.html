@@ -381,44 +381,45 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   color: #fff;                  /* subtle hover effect */
 }
 
-/* Dim background blur */
+/* Dim background with slight blur */
 .popup {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.6);
   justify-content: center;
   align-items: center;
-  z-index: 9999;
   backdrop-filter: blur(3px);
+  z-index: 9999;
 }
 
-/* Card itself */
-.user-popup-content {
-  background: rgba(20, 20, 20, 0.8);
-  padding: 20px;
-  border-radius: 16px;
-  text-align: center;
-  position: relative;
-  min-width: 220px;
-  max-width: 240px;
-  backdrop-filter: blur(14px);
+/* Door Panel Card */
+.door-panel {
+  background: linear-gradient(145deg, #1b1b1b, #141414);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-  animation: popupFade 0.2s ease;
+  border-radius: 14px;
+  padding: 14px 16px;
+  width: 220px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  animation: fadeInPanel 0.25s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-@keyframes popupFade {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes fadeInPanel {
+  from { opacity: 0; transform: scale(0.9) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Close (X) */
+/* X button */
 .close-btn {
   position: absolute;
-  top: 8px;
-  right: 10px;
-  font-size: 22px;
+  top: 6px;
+  right: 8px;
+  font-size: 18px;
   cursor: pointer;
   color: #fff;
   opacity: 0.7;
@@ -426,44 +427,58 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .close-btn:hover { opacity: 1; }
 
-/* Profile photo (only for hosts) */
-.popup-photo {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
+/* Top section layout */
+.panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 10px;
   margin-bottom: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.12);
 }
 
-/* Username */
+.panel-photo {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: #222;
+}
+
+.panel-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 #popupUsername {
-  color: #ff69b4;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 4px;
+  color: #ff4081;
+  margin: 0;
 }
-
-/* Gender and Age */
-#popupGender, #popupAge {
-  color: #ccc;
-  font-size: 13px;
-  margin: 1px 0;
+#popupGender,
+#popupAge {
+  margin: 0;
+  color: #bdbdbd;
+  font-size: 12px;
+  line-height: 1.2;
   text-transform: lowercase;
 }
 
-/* Social icons */
-.socials {
+/* Socials line */
+.panel-socials {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin: 10px 0 14px 0;
+  gap: 10px;
+  margin: 6px 0 10px;
 }
+
 .social img {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  opacity: 0.9;
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
   transition: transform 0.2s, opacity 0.2s;
 }
 .social img:hover {
@@ -471,22 +486,22 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   opacity: 1;
 }
 
-/* 🚨 Popup Buzz Button */
-.popup-buzz-btn {
+/* 🚨 Doorbell Button */
+.doorbell-btn {
   background: #111;
   color: #fff;
-  border: 2px solid #ff69b4;
+  border: 2px solid #ff4081;
   border-radius: 50%;
-  width: 54px;
-  height: 54px;
+  width: 48px;
+  height: 48px;
   font-size: 22px;
   cursor: pointer;
-  animation: pulseBuzz 1.3s infinite;
+  animation: flicker 1.4s infinite ease-in-out;
 }
 
-@keyframes pulseBuzz {
-  0%, 100% { box-shadow: 0 0 10px #ff69b4, 0 0 20px #ff69b4; }
-  50% { box-shadow: 0 0 16px #ff4081, 0 0 26px #ff4081; }
+@keyframes flicker {
+  0%, 100% { box-shadow: 0 0 6px #ff4081, 0 0 14px #ff4081; }
+  50% { box-shadow: 0 0 10px #ff69b4, 0 0 18px #ff69b4; }
 }
 
 /* ---------- Auth Inputs ---------- */
@@ -621,29 +636,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<!-- User Popup Card -->
+<!-- User Popup (Door Panel Style) -->
 <div id="userPopup" class="popup">
-  <div class="user-popup-content">
+  <div class="door-panel">
     <span id="popupCloseBtn" class="close-btn">&times;</span>
 
-    <img id="popupPhoto" class="popup-photo" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Profile Photo">
-
-    <h3 id="popupUsername">Username</h3>
-    <p id="popupGender">female</p>
-    <p id="popupAge">20’s</p>
-
-    <!-- Social icons -->
-    <div class="socials">
-      <a href="#" class="social instagram" title="Instagram">
-        <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram">
-      </a>
-      <a href="#" class="social whatsapp" title="WhatsApp">
-        <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp">
-      </a>
+    <div class="panel-top">
+      <img id="popupPhoto" class="panel-photo" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="User Photo">
+      <div class="panel-info">
+        <h3 id="popupUsername">harrypotter</h3>
+        <p id="popupGender">female</p>
+        <p id="popupAge">20’s</p>
+      </div>
     </div>
 
-    <!-- Circular Buzzer Button -->
-    <button id="popupBuzzBtn" class="popup-buzz-btn">🚨</button>
+    <div class="panel-socials">
+      <a href="#" class="social"><img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="IG"></a>
+      <a href="#" class="social"><img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WA"></a>
+    </div>
+
+    <button id="popupBuzzBtn" class="doorbell-btn">🚨</button>
   </div>
 </div>
 <script type="module" src="app.js"></script>
