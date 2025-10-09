@@ -3,11 +3,11 @@
 // ---------- Imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
-  getFirestore, doc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, deleteDoc, where, getDoc
+  getFirestore, doc, setDoc, updateDoc, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, deleteDoc, where, getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// ---------- Firebase config ----------
+
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -36,7 +36,10 @@ const SEND_COST = 1;
 
 // ---------- Helpers ----------
 function formatNumberWithCommas(n){ return new Intl.NumberFormat('en-NG').format(n||0); }
-function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
+function randomColor(){ 
+  const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; 
+  return colors[Math.floor(Math.random()*colors.length)]; 
+}
 function showStarPopup(text){ 
   const popup = document.getElementById("starPopup");
   const starText = document.getElementById("starText");
@@ -50,7 +53,7 @@ function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 // ---------- UI refs ----------
 let refs = {};
 
-// ---------- Redeem link update ----------
+// ---------- Redeem link ----------
 function updateRedeemLink(){ 
   if(refs.redeemBtn && currentUser){ 
     refs.redeemBtn.href = `https://golalaland.github.io/chat/nushop.html?uid=${encodeURIComponent(currentUser.uid)}`;
@@ -133,50 +136,47 @@ function attachMessagesListener(){
   });
 }
 
-// ---------- VIP login ----------
-async function loginWhitelist(email,phone){
+// ---------- Login ----------
+async function loginWhitelist(email, phone){
   try{
-    const q=query(collection(db,"whitelist"),where("email","==",email),where("phone","==",phone));
+    const q = query(collection(db, "whitelist"), where("email", "==", email));
     const snap = await getDocs(q);
     if(snap.empty){ showStarPopup("You’re not on the whitelist."); return false; }
 
-    const uidKey = sanitizeKey(email);
-    const userRef = doc(db,"users",uidKey);
-    const docSnap = await getDoc(userRef);
-    if(!docSnap.exists()){ showStarPopup("User not found."); return false; }
-    const data = docSnap.data() || {};
+    const whitelistEntry = snap.docs[0].data();
+    if(whitelistEntry.phone !== phone){ showStarPopup("Phone does not match whitelist."); return false; }
 
-    currentUser = {
-      uid: uidKey,
-      email: data.email,
-      phone: data.phone,
-      chatId: data.chatId,
-      chatIdLower: data.chatIdLower,
-      stars: data.stars||0,
-      cash: data.cash||0,
-      usernameColor: data.usernameColor||randomColor(),
-      isAdmin: data.isAdmin||false,
-      isVIP: data.isVIP||false
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
+    let docSnap = await getDoc(userRef);
+    if(!docSnap.exists()){ 
+      await setDoc(userRef, {email, phone, chatId: email.split("@")[0], stars:0, cash:0, usernameColor:randomColor(), isAdmin:false, isVIP:true});
+      docSnap = await getDoc(userRef);
+    }
+
+    const data = docSnap.data();
+    currentUser = { 
+      uid: uidKey, email:data.email, phone:data.phone, chatId:data.chatId, stars:data.stars||0, cash:data.cash||0, usernameColor:data.usernameColor||randomColor(), isAdmin:data.isAdmin||false, isVIP:data.isVIP||false 
     };
 
     updateRedeemLink();
     setupPresence(currentUser);
     attachMessagesListener();
-    localStorage.setItem("vipUser", JSON.stringify({email,phone}));
+    localStorage.setItem("vipUser", JSON.stringify({email, phone}));
 
     if(refs.authBox) refs.authBox.style.display="none";
     if(refs.sendAreaEl) refs.sendAreaEl.style.display="flex";
     if(refs.profileBoxEl) refs.profileBoxEl.style.display="block";
-    if(refs.profileNameEl){ refs.profileNameEl.innerText=currentUser.chatId; refs.profileNameEl.style.color = currentUser.usernameColor; }
-    if(refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if(refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if(refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin?"flex":"none";
+    if(refs.profileNameEl){ refs.profileNameEl.innerText=currentUser.chatId; refs.profileNameEl.style.color=currentUser.usernameColor; }
+    if(refs.starCountEl) refs.starCountEl.innerText=formatNumberWithCommas(currentUser.stars);
+    if(refs.cashCountEl) refs.cashCountEl.innerText=formatNumberWithCommas(currentUser.cash);
+    if(refs.adminControlsEl) refs.adminControlsEl.style.display=currentUser.isAdmin?"flex":"none";
 
     return true;
   }catch(e){ console.error(e); showStarPopup("Login failed."); return false; }
 }
 
-// ---------- SCRAMBLE MODULE ----------
+// ---------- SCRAMBLE ----------
 window.currentScramble={letters:"",validWords:[],submissions:{}};
 const DICTIONARY=["alert","later","slate","tails","stale","laser","rinse","aisle","inert","tales","lines","least","alter","slant","alien","resin","train","liner","snail","lairs","nails","sentinel"];
 function shuffleArray(arr){return arr.sort(()=>Math.random()-0.5);}
@@ -185,39 +185,21 @@ function generateScramble(){
   const validWords = DICTIONARY.filter(w=> w.split("").every(l=>letters.includes(l)) && w.length>=5); 
   return {letters,validWords}; 
 }
-async function sendAdminScrambleBuzz(){
-  if(!currentUser?.isAdmin) return;
-  const {letters,validWords} = generateScramble();
-  currentScramble.letters = letters;
-  currentScramble.validWords = validWords;
-  currentScramble.submissions = {};
-  if(refs.scrambleBannerEl&&refs.scrambleLettersEl){ refs.scrambleLettersEl.textContent = letters; refs.scrambleBannerEl.style.display="block"; }
-  const content = `🧩 SCRAMBLE ROUND! Letters (5+): ${letters}`;
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION), { content, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFD700", scramble:true });
-  renderMessagesFromArray([{id:docRef.id,data:{content,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:"#FFD700",scramble:true}}]);
-  setTimeout(endScrambleRound, 5*60*1000);
-}
-async function endScrambleRound(){
-  const summary = Object.entries(currentScramble.submissions).map(([chatId,words])=>`${chatId}: ${words.join(", ")}`).join("\n")||"No submissions this round!";
-  await addDoc(collection(db,CHAT_COLLECTION), { content:`📝 Round Over! Words submitted:\n${summary}`, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFA500", scramble:true });
-  currentScramble.letters=""; currentScramble.validWords=[]; currentScramble.submissions={};
-  if(refs.scrambleBannerEl) refs.scrambleBannerEl.style.display="none";
-}
 async function handlePlayerSubmission(txt){
   if(!currentScramble.letters||!currentScramble.validWords.length) return;
-  const word = txt.trim().toLowerCase();
+  const word=txt.trim().toLowerCase();
   if(!currentScramble.validWords.includes(word)) return showStarPopup("❌ Invalid word!");
   const allSubmitted = Object.values(currentScramble.submissions).flat();
   if(allSubmitted.includes(word)) return showStarPopup("⚠️ Word already used!");
   currentScramble.submissions[currentUser.chatId] = currentScramble.submissions[currentUser.chatId]||[];
   currentScramble.submissions[currentUser.chatId].push(word);
-  const rewardStars = 20;
+  const rewardStars=20;
   const userRef = doc(db,"users",currentUser.uid);
   await updateDoc(userRef,{stars:increment(rewardStars)});
-  currentUser.stars += rewardStars;
-  if(refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-  const content = `✅ ${currentUser.chatId} found: ${word}`;
-  const docRef = await addDoc(collection(db,CHAT_COLLECTION), { content, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor:"#C8E6C9", scramble:true });
+  currentUser.stars+=rewardStars;
+  if(refs.starCountEl) refs.starCountEl.textContent=formatNumberWithCommas(currentUser.stars);
+  const content=`✅ ${currentUser.chatId} found: ${word}`;
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{content,uid:currentUser.uid,chatId:currentUser.chatId,timestamp:serverTimestamp(),highlight:true,buzzColor:"#C8E6C9",scramble:true});
   renderMessagesFromArray([{id:docRef.id,data:{content,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:"#C8E6C9",scramble:true}}]);
   showStarPopup(`✅ Correct! +${rewardStars} stars`);
 }
@@ -245,81 +227,77 @@ window.addEventListener("DOMContentLoaded",()=>{
     adminScrambleBtn:document.getElementById("adminScrambleBtn")
   };
 
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
-
-  if(loginBtn){ loginBtn.addEventListener("click",async()=>{
+  // ---------- Login ----------
+  const emailInput=document.getElementById("emailInput");
+  const phoneInput=document.getElementById("phoneInput");
+  const loginBtn=document.getElementById("whitelistLoginBtn");
+  loginBtn?.addEventListener("click",async()=>{
     const email=(emailInput.value||"").trim().toLowerCase();
     const phone=(phoneInput.value||"").trim();
     if(!email||!phone){ showStarPopup("Enter your email and phone"); return; }
-    const success = await loginWhitelist(email,phone); if(!success) return;
+    const success = await loginWhitelist(email, phone);
+    if(!success) return;
     updateRedeemLink();
-  });}
+  });
 
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  // Auto-login from localStorage
+  const vipUser=JSON.parse(localStorage.getItem("vipUser"));
   if(vipUser?.email&&vipUser?.phone){ (async()=>{ const success = await loginWhitelist(vipUser.email,vipUser.phone); if(!success) return; updateRedeemLink(); })(); }
 
-  // ---------- Send & BUZZ ----------
-  refs.sendBtn?.addEventListener("click", async () => {
+  // ---------- Send ----------
+  refs.sendBtn?.addEventListener("click",async()=>{
     if(!currentUser) return showStarPopup("Sign in to chat");
-    const txt = refs.messageInputEl?.value.trim();
-    if(!txt) return showStarPopup("Type a message");
+    const txt=refs.messageInputEl?.value.trim(); if(!txt) return showStarPopup("Type a message");
+    if(currentScramble.letters){ await handlePlayerSubmission(txt); refs.messageInputEl.value=""; return; }
 
-    // Scramble check
-    if(currentScramble.letters){
-      await handlePlayerSubmission(txt);
-      refs.messageInputEl.value="";
-      return;
-    }
-
-    // Normal message
-    const userRef = doc(db,"users",currentUser.uid);
-    const snap = await getDoc(userRef);
+    const userRef=doc(db,"users",currentUser.uid);
+    const snap=await getDoc(userRef);
     if((snap.data()?.stars||0)<SEND_COST) return showStarPopup("Not enough stars");
-    await updateDoc(userRef,{stars:increment(-SEND_COST)});
-    currentUser.stars -= SEND_COST;
-    if(refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(userRef,{stars:increment(-SEND_COST)}); currentUser.stars-=SEND_COST;
+    if(refs.starCountEl) refs.starCountEl.textContent=formatNumberWithCommas(currentUser.stars);
 
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: serverTimestamp(),
+    const docRef=await addDoc(collection(db,CHAT_COLLECTION),{
+      content:txt,
+      uid:currentUser.uid,
+      chatId:currentUser.chatId,
+      timestamp:serverTimestamp(),
       highlight:true,
-      buzzColor: randomColor()
+      buzzColor:randomColor()
     });
     refs.messageInputEl.value="";
     renderMessagesFromArray([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor:randomColor()}}]);
   });
 
-  refs.buzzBtn?.addEventListener("click", async () => {
+  // ---------- BUZZ ----------
+  refs.buzzBtn?.addEventListener("click",async()=>{
     if(!currentUser) return showStarPopup("Sign in to BUZZ");
-    const txt = refs.messageInputEl?.value.trim(); if(!txt) return showStarPopup("Type a message to BUZZ 🚨");
-    const userRef = doc(db,"users",currentUser.uid); const snap = await getDoc(userRef);
+    const txt=refs.messageInputEl?.value.trim(); if(!txt) return showStarPopup("Type a message to BUZZ 🚨");
+    const userRef=doc(db,"users",currentUser.uid); const snap=await getDoc(userRef);
     if((snap.data()?.stars||0)<BUZZ_COST) return showStarPopup("Not enough stars");
-    await updateDoc(userRef,{stars:increment(-BUZZ_COST)});
-    currentUser.stars -= BUZZ_COST;
-    if(refs.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(userRef,{stars:increment(-BUZZ_COST)}); currentUser.stars-=BUZZ_COST;
+    if(refs.starCountEl) refs.starCountEl.textContent=formatNumberWithCommas(currentUser.stars);
 
-    const buzzColor = randomColor();
-    const docRef = await addDoc(collection(db,CHAT_COLLECTION),{ content:txt, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor });
+    const buzzColor=randomColor();
+    const docRef=await addDoc(collection(db,CHAT_COLLECTION),{
+      content:txt,
+      uid:currentUser.uid,
+      chatId:currentUser.chatId,
+      timestamp:serverTimestamp(),
+      highlight:true,
+      buzzColor
+    });
     refs.messageInputEl.value=""; showStarPopup("BUZZ sent!");
     renderMessagesFromArray([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,highlight:true,buzzColor}}]);
   });
 
   // ---------- Admin ----------
-  refs.adminClearMessagesBtn?.addEventListener("click", async () => { 
+  refs.adminClearMessagesBtn?.addEventListener("click",async()=>{ 
     if(!currentUser?.isAdmin) return; 
-    const snap=await getDocs(collection(db,CHAT_COLLECTION)); 
-    snap.forEach(docSnap=>deleteDoc(doc(db,CHAT_COLLECTION,docSnap.id))); 
+    const snap=await getDocs(collection(db,CHAT_COLLECTION));
+    snap.forEach(docSnap=>deleteDoc(doc(db,CHAT_COLLECTION,docSnap.id)));
   });
-
   if(currentUser?.isAdmin){
     refs.adminScrambleBtn.style.display="inline-block";
-    refs.adminScrambleBtn.addEventListener("click", sendAdminScrambleBuzz);
+    refs.adminScrambleBtn.addEventListener("click", async()=>sendAdminScrambleBuzz());
   }
-
-  // Optional auto-scramble interval (remove if manual only)
-  // if(currentUser?.isAdmin) setInterval(sendAdminScrambleBuzz,31*60*1000);
 });
