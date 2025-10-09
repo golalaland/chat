@@ -472,6 +472,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   cursor: default;
   transform: none;
 }
+.chat-username {
+  cursor: pointer;
+  transition: opacity 0.25s ease, color 0.25s ease;
+}
+
+.chat-username.username-tapped {
+  opacity: 0.4; /* temporarily fades */
+  color: #aaa;  /* looks like it’s pressed */
+}
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
