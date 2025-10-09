@@ -3,155 +3,243 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat Gamified VIP</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<title>Chat + Scramble</title>
 <style>
-  /* ---------- Theme & Typography ---------- */
+  /* ---------- THEME ---------- */
   :root {
+    --primary-color: #ff4081;
     --bg-color: #111;
     --text-color: #eee;
-    --accent-color: #ff4081;
-    --highlight-color: #FFD700;
     --input-bg: #222;
     --input-border: #333;
-    --modal-bg: #1b1b1b;
-    --btn-bg: #333;
-    --btn-hover: #555;
+    --highlight-color: #ffd700;
   }
-
-  body {
-    margin:0;
-    font-family: 'Press Start 2P', monospace;
-    background: var(--bg-color);
-    color: var(--text-color);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:flex-start;
-    min-height:100vh;
-    padding:20px;
-  }
-
-  h1 { color: var(--accent-color); margin-bottom:20px; text-align:center; }
-
-  /* ---------- Modal ---------- */
-  .modal {
-    background: var(--modal-bg);
-    padding: 20px;
-    border-radius: 12px;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: 0 0 15px #000;
-    margin-bottom:20px;
-  }
-
-  .modal h2 {
-    font-size:14px;
-    color: var(--highlight-color);
-    text-align:center;
-  }
-
-  .modal input {
-    width: calc(100% - 20px);
-    padding: 8px;
-    margin: 6px 0;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius:6px;
-    color: var(--text-color);
-  }
-
-  .modal button {
-    width:100%;
-    padding:10px;
-    margin-top:10px;
-    background: var(--btn-bg);
-    color: var(--text-color);
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-weight:bold;
-    transition:0.2s;
-  }
-
-  .modal button:hover { background: var(--btn-hover); }
-
-  /* ---------- Chat ---------- */
-  #messages {
-    width: 100%;
-    max-width: 600px;
-    height: 300px;
-    background: #1a1a1a;
-    overflow-y: auto;
-    padding: 10px;
-    border-radius: 12px;
-    margin-bottom:10px;
-    border:1px solid #333;
-  }
-
-  .msg { margin-bottom:6px; font-size:12px; }
-  .msg .meta { font-weight:bold; }
-  .buzz-content { padding:2px 4px; border-radius:3px; }
-
-  /* ---------- Send Area ---------- */
-  #sendArea { display:none; width:100%; max-width:600px; display:flex; margin-bottom:10px; }
-  #messageInput { flex:1; padding:10px; border-radius:6px 0 0 6px; border:1px solid #333; background: var(--input-bg); color: var(--text-color); }
-  #sendBtn, #buzzBtn { padding:0 12px; border-radius:0 6px 6px 0; margin-left:2px; }
-
-  /* ---------- Profile ---------- */
-  #profileBox { display:none; background: #222; padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; }
-  #profileBox span { font-size:12px; }
-
-  /* ---------- Scramble Banner ---------- */
-  #scrambleBanner { display:none; background:#333; padding:10px; border-radius:8px; margin-bottom:10px; text-align:center; font-weight:bold; color:#FFD700; }
-
-  /* ---------- Star Popup ---------- */
-  #starPopup { display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); background: #ff4081; color:#fff; padding:10px 20px; border-radius:10px; font-weight:bold; z-index:999; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; height: 100vh; }
+  #messages { flex:1; overflow-y: auto; padding:10px; }
+  .msg { margin-bottom: 6px; display:flex; flex-wrap: wrap; }
+  .meta { font-weight: 700; margin-right: 4px; }
+  .content { padding:2px 6px; border-radius:4px; background:#222; }
+  .buzz-content { font-weight:700; border-radius:4px; padding:2px 6px; }
+  #sendArea { display:flex; gap:6px; padding:6px; background:#1a1a1a; }
+  #sendArea input { flex:1; padding:8px; border-radius:4px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); }
+  #sendArea button { padding:8px 12px; border:none; border-radius:4px; background:var(--primary-color); color:#fff; font-weight:700; }
+  #profileBox { display:flex; justify-content: space-between; align-items: center; padding:6px; background:#1a1a1a; }
+  #scrambleBanner { display:none; padding:10px; background:#222; border:1px solid var(--highlight-color); margin:10px; border-radius:6px; text-align:center; font-weight:700; }
+  #authBox { padding:10px; display:flex; flex-direction: column; gap:6px; background:#222; }
+  #authBox input { padding:8px; border-radius:4px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); }
+  #starPopup { position: fixed; top:10px; left:50%; transform:translateX(-50%); background:var(--highlight-color); color:#000; padding:8px 12px; border-radius:6px; display:none; font-weight:700; z-index:1000; }
 </style>
 </head>
 <body>
 
-<h1>🌌 Golala VIP Chat</h1>
-
-<div id="starPopup"><span id="starText"></span></div>
-
-<!-- ---------- Login Modal ---------- -->
-<div class="modal" id="authBox">
-  <h2>VIP Login</h2>
-  <input type="text" id="emailInput" placeholder="Email">
+<div id="authBox">
+  <input type="email" id="emailInput" placeholder="Email">
   <input type="text" id="phoneInput" placeholder="Phone">
   <button id="whitelistLoginBtn">Login</button>
 </div>
 
-<!-- ---------- Profile ---------- -->
-<div id="profileBox">
-  <span id="profileName">Username</span>
-  <span>⭐ <span id="starCount">0</span> | 💰 <span id="cashCount">0</span></span>
-  <a id="redeemBtn" href="#" target="_blank" style="display:none;">Redeem</a>
+<div id="profileBox" style="display:none;">
+  <div>Stars: <span id="starCount">0</span></div>
+  <div>Cash: <span id="cashCount">0</span></div>
+  <div id="profileName">Guest</div>
 </div>
 
-<!-- ---------- Scramble Banner ---------- -->
 <div id="scrambleBanner">
-  Letters: <span id="scrambleLetters"></span>
+  <div>🧩 Scramble Letters: <span id="scrambleLetters"></span></div>
+  <button id="adminScrambleBtn" style="display:none;">Start Scramble</button>
 </div>
 
-<!-- ---------- Chat Messages ---------- -->
 <div id="messages"></div>
 
-<!-- ---------- Send Area ---------- -->
-<div id="sendArea">
-  <input type="text" id="messageInput" placeholder="Type your message">
+<div id="sendArea" style="display:none;">
+  <input type="text" id="messageInput" placeholder="Type a message...">
   <button id="sendBtn">Send</button>
   <button id="buzzBtn">BUZZ</button>
 </div>
 
-<!-- ---------- Admin Controls ---------- -->
-<div class="modal" id="adminControls" style="display:none;">
-  <button id="adminScrambleBtn">Start Scramble Round</button>
-  <button id="adminClearMessagesBtn">Clear All Messages</button>
-</div>
+<div id="starPopup"><span id="starText"></span></div>
 
-<script type="module" src="app.js"></script>
+<script type="module">
+// ---------- Imports ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, serverTimestamp, onSnapshot, query, orderBy, where, getDocs, getDoc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+// ---------- Firebase config ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const rtdb = getDatabase(app);
+
+const ROOM_ID = "room5";
+const CHAT_COLLECTION = "messages_room5";
+
+let currentUser = null;
+let lastMessagesArray = [];
+
+const BUZZ_COST = 50;
+const SEND_COST = 1;
+
+const refs = {
+  authBox: document.getElementById("authBox"),
+  messagesEl: document.getElementById("messages"),
+  sendAreaEl: document.getElementById("sendArea"),
+  messageInputEl: document.getElementById("messageInput"),
+  sendBtn: document.getElementById("sendBtn"),
+  buzzBtn: document.getElementById("buzzBtn"),
+  profileBoxEl: document.getElementById("profileBox"),
+  profileNameEl: document.getElementById("profileName"),
+  starCountEl: document.getElementById("starCount"),
+  cashCountEl: document.getElementById("cashCount"),
+  scrambleBannerEl: document.getElementById("scrambleBanner"),
+  scrambleLettersEl: document.getElementById("scrambleLetters"),
+  adminScrambleBtn: document.getElementById("adminScrambleBtn")
+};
+
+function showStarPopup(txt){
+  const popup = document.getElementById("starPopup");
+  const starText = document.getElementById("starText");
+  starText.innerText = txt;
+  popup.style.display="block";
+  setTimeout(()=>{ popup.style.display="none"; }, 1500);
+}
+
+function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
+function randomColor(){ const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"]; return colors[Math.floor(Math.random()*colors.length)]; }
+function formatNumber(n){ return new Intl.NumberFormat('en-NG').format(n||0); }
+
+// ---------- Login ----------
+async function loginWhitelist(email, phone){
+  try{
+    const q = query(collection(db,"whitelist"), where("email","==",email), where("phone","==",phone));
+    const snap = await getDocs(q);
+    if(snap.empty){ showStarPopup("Not on whitelist"); return false; }
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db,"users",uidKey);
+    const docSnap = await getDoc(userRef);
+    if(!docSnap.exists()){ showStarPopup("User not found"); return false; }
+    const data = docSnap.data()||{};
+    currentUser = {
+      uid: uidKey,
+      email: data.email,
+      phone: data.phone,
+      chatId: data.chatId || "Guest",
+      stars: data.stars||0,
+      cash: data.cash||0,
+      usernameColor: data.usernameColor||randomColor(),
+      isAdmin: data.isAdmin||false
+    };
+    refs.authBox.style.display="none";
+    refs.sendAreaEl.style.display="flex";
+    refs.profileBoxEl.style.display="flex";
+    refs.profileNameEl.innerText=currentUser.chatId;
+    refs.profileNameEl.style.color=currentUser.usernameColor;
+    refs.starCountEl.innerText=formatNumber(currentUser.stars);
+    refs.cashCountEl.innerText=formatNumber(currentUser.cash);
+    if(currentUser.isAdmin) refs.adminScrambleBtn.style.display="inline-block";
+    return true;
+  }catch(e){ console.error(e); showStarPopup("Login failed"); return false; }
+}
+
+refs.whitelistLoginBtn?.addEventListener("click", async()=>{
+  const email = refs.emailInput?.value.trim().toLowerCase();
+  const phone = refs.phoneInput?.value.trim();
+  if(!email||!phone){ showStarPopup("Enter email and phone"); return; }
+  await loginWhitelist(email, phone);
+});
+
+// ---------- Messages ----------
+function renderMessages(msgs){
+  msgs.forEach(m=>{
+    if(document.getElementById(m.id)) return;
+    const div = document.createElement("div");
+    div.className="msg"; div.id=m.id;
+    const meta = document.createElement("span"); meta.className="meta"; meta.textContent=m.data.chatId+":";
+    meta.style.color=currentUser?.usernameColor||"#fff";
+    const content = document.createElement("span"); content.className=m.data.buzzColor?"buzz-content content":"content";
+    content.textContent=" "+(m.data.content||"");
+    if(m.data.buzzColor) content.style.background=m.data.buzzColor;
+    div.appendChild(meta); div.appendChild(content);
+    refs.messagesEl.appendChild(div);
+  });
+  refs.messagesEl.scrollTop=refs.messagesEl.scrollHeight;
+}
+
+function attachMessagesListener(){
+  const q = query(collection(db,CHAT_COLLECTION), orderBy("timestamp","asc"));
+  onSnapshot(q, snap=>{
+    snap.docChanges().forEach(c=>{
+      if(c.type==="added"){
+        lastMessagesArray.push({id:c.doc.id,data:c.doc.data()});
+        renderMessages([{id:c.doc.id,data:c.doc.data()}]);
+      }
+    });
+  });
+}
+attachMessagesListener();
+
+// ---------- Send & BUZZ ----------
+refs.sendBtn?.addEventListener("click", async()=>{
+  if(!currentUser){ showStarPopup("Login first"); return; }
+  const txt = refs.messageInputEl.value.trim(); if(!txt) return showStarPopup("Type message");
+  const userRef = doc(db,"users",currentUser.uid);
+  const snap = await getDoc(userRef);
+  if((snap.data()?.stars||0)<SEND_COST){ showStarPopup("Not enough stars"); return; }
+  await updateDoc(userRef,{stars:increment(-SEND_COST)});
+  currentUser.stars-=SEND_COST; refs.starCountEl.innerText=formatNumber(currentUser.stars);
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
+    content:txt, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), buzzColor:randomColor()
+  });
+  refs.messageInputEl.value=""; renderMessages([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,buzzColor:randomColor()}}]);
+});
+
+refs.buzzBtn?.addEventListener("click", async()=>{
+  if(!currentUser){ showStarPopup("Login first"); return; }
+  const txt = refs.messageInputEl.value.trim(); if(!txt) return showStarPopup("Type message to BUZZ");
+  const userRef = doc(db,"users",currentUser.uid);
+  const snap = await getDoc(userRef);
+  if((snap.data()?.stars||0)<BUZZ_COST){ showStarPopup("Not enough stars"); return; }
+  await updateDoc(userRef,{stars:increment(-BUZZ_COST)});
+  currentUser.stars-=BUZZ_COST; refs.starCountEl.innerText=formatNumber(currentUser.stars);
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
+    content:txt, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), buzzColor:randomColor()
+  });
+  refs.messageInputEl.value=""; showStarPopup("BUZZ sent!");
+  renderMessages([{id:docRef.id,data:{content:txt,uid:currentUser.uid,chatId:currentUser.chatId,buzzColor}}]);
+});
+
+// ---------- Scramble (admin only) ----------
+const DICTIONARY=["alert","later","slate","tails","stale","laser","rinse","aisle","inert","tales","lines","least","alter","slant","alien","resin","train","liner","snail","lairs","nails","sentinel"];
+let currentScramble={letters:"",validWords:[],submissions:{}};
+function shuffleArray(arr){return arr.sort(()=>Math.random()-0.5);}
+function generateScramble(){ 
+  const letters = shuffleArray("EARTLSIN".split("")).join(''); 
+  const validWords = DICTIONARY.filter(w=> w.split("").every(l=>letters.includes(l)) && w.length>=5); 
+  return {letters,validWords}; 
+}
+async function sendAdminScrambleBuzz(){
+  if(!currentUser?.isAdmin) return;
+  const {letters,validWords}=generateScramble();
+  currentScramble.letters=letters;
+  currentScramble.validWords=validWords;
+  currentScramble.submissions={};
+  refs.scrambleBannerEl.style.display="block";
+  refs.scrambleLettersEl.textContent=letters;
+  const docRef = await addDoc(collection(db,CHAT_COLLECTION),{
+    content:`🧩 Scramble Round! Letters: ${letters}`, uid:currentUser.uid, chatId:currentUser.chatId, timestamp:serverTimestamp(), highlight:true, buzzColor:"#FFD700"
+  });
+}
+refs.adminScrambleBtn?.addEventListener("click",sendAdminScrambleBuzz);
+
+</script>
 </body>
 </html>
