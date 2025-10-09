@@ -1,4 +1,3 @@
-This is my chatroom JS to integrate with, only BUZZ messages entry are accepted..
 
 // app.js
 
