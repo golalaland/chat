@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go Live</title>
+<style>
+  body { margin:0; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#111; color:#fff; }
+  #localVideo { width: 100%; max-width: 480px; height: auto; border-radius:12px; background:#000; }
+  #goLiveBtn { margin-top:12px; padding:12px 20px; border:none; border-radius:999px; font-weight:700; background:linear-gradient(135deg,#FF69B4,#FF1493); color:#000; cursor:pointer; }
+  #goLiveBtn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,20,147,0.4); }
+</style>
+</head>
+<body>
+
+<video id="localVideo" autoplay playsinline muted></video>
+<button id="goLiveBtn">Go Live</button>
+
+<script src="https://cdn.agora.io/sdk/release/AgoraRTC_N.js"></script>
+<script>
+const APP_ID = "YOUR_AGORA_APP_ID"; // replace with your Agora App ID
+const TOKEN = null; // optional for dev/testing
+const CHANNEL = "myChannel"; // same channel viewers join
+
+const client = AgoraRTC.createClient({mode:"live", codec:"vp8"});
+
+let localTracks;
+
+document.getElementById("goLiveBtn").onclick = async () => {
+  document.getElementById("goLiveBtn").disabled = true;
+  document.getElementById("goLiveBtn").innerText = "Streaming…";
+
+  // join channel
+  await client.join(APP_ID, CHANNEL, TOKEN, null);
+
+  // create microphone + camera tracks
+  localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+  // play video in this page (optional preview)
+  localTracks[1].play("localVideo");
+
+  // publish tracks
+  await client.publish(localTracks);
+
+  console.log("Live streaming started!");
+};
+
+// Optional: stop streaming
+async function stopStreaming() {
+  if(localTracks){
+    localTracks.forEach(track => track.stop());
+    localTracks.forEach(track => track.close());
+  }
+  await client.leave();
+  console.log("Stopped streaming");
+}
+</script>
+
+</body>
+</html>
