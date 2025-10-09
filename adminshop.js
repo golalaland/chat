@@ -318,7 +318,6 @@ async function loadPurchases() {
   showSpinner(true);
   ordersList.innerHTML = "";
   try {
-    // get all purchases ordered by timestamp descending
     const snap = await getDocs(query(collection(db, "purchases"), orderBy("timestamp", "desc")));
     if (snap.empty) {
       ordersList.innerHTML = `<div class="small muted">No purchases yet</div>`;
@@ -330,19 +329,15 @@ async function loadPurchases() {
       const id = docSnap.id;
       const status = p.status || 'pending';
 
-      // ---------------- Payment display fix ----------------
-      let paymentDesc = "";
-      if (p.paymentType === 'stars' && p.cost && Number(p.cost) > 0) {
-        // user paid stars
-        paymentDesc = `${Number(p.cost)} ⭐`;
-      } else if (p.paymentType === 'cash' && p.cashReward && Number(p.cashReward) > 0) {
-        // user paid cash
-        paymentDesc = `₦${Number(p.cashReward)}`;
-      } else {
-        paymentDesc = "—";
+      // Determine payment display
+      let paymentDesc = "—";
+      if (p.paymentType === "stars") {
+        paymentDesc = `${Number(p.cost || 0)} ⭐`;
+      } else if (p.paymentType === "cash") {
+        paymentDesc = `₦${Number(p.cost || 0)}`;
       }
 
-      // user info
+      // User info (cash reward remains separate)
       const userInfo = `
         <div class="user-details">
           <div><strong>${escapeHtml(p.email || p.userId || '—')}</strong></div>
@@ -351,7 +346,7 @@ async function loadPurchases() {
         </div>
       `;
 
-      // render row
+      // Render row
       ordersList.insertAdjacentHTML('beforeend', `
         <div class="order-item" data-id="${id}">
           <div class="order-row">
