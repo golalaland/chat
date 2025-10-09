@@ -157,10 +157,22 @@ async function showUserPopup(username) {
   const whatsappIcon = document.getElementById("whatsappIcon");
   const telegramIcon = document.getElementById("telegramIcon");
 
-  const safeEmailKey = username.replace(/\./g, ",");
-const userRef = doc(db, "users", safeEmailKey);
+  // 👇 Add this log so you can see what’s being passed and fetched
+  console.log("🔍 showUserPopup() called with:", username);
+
+  const safeEmailKey = username.includes("@")
+    ? username.replace(/\./g, ",")
+    : username; // only convert if it’s an email
+
+  console.log("🗝️  Firestore key used:", safeEmailKey);
+
+  const userRef = doc(db, "users", safeEmailKey);
   const snap = await getDoc(userRef);
-  if (!snap.exists()) return alert("User not found");
+  if (!snap.exists()) {
+    console.warn("⚠️  Firestore returned no doc for:", safeEmailKey);
+    alert("User not found");
+    return;
+  }
 
   const data = snap.data();
   popupUsername.textContent = data.chatId || username;
