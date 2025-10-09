@@ -148,7 +148,7 @@ document.addEventListener("click", e => {
 });
 
 // ---------- USER POPUP ----------
-async function showUserPopup(username) {
+async function showUserPopup(uidKey) {
   const popup = document.getElementById("userPopup");
   const popupUsername = document.getElementById("popupUsername");
   const popupGender = document.getElementById("popupGender");
@@ -157,65 +157,50 @@ async function showUserPopup(username) {
   const whatsappIcon = document.getElementById("whatsappIcon");
   const telegramIcon = document.getElementById("telegramIcon");
 
-  console.log("🔍 showUserPopup called with:", username);
-
-  // since username is already sanitized (like user.uid = email with commas)
-  const userRef = doc(db, "users", username);
+  // 🔐 1. Fetch Firestore user document
+  const userRef = doc(db, "users", uidKey);
   const snap = await getDoc(userRef);
 
   if (!snap.exists()) {
-    console.warn("⚠️ User not found in Firestore:", username);
     alert("User not found");
     return;
   }
 
+  // 2️⃣ Extract data
   const data = snap.data();
-  console.log("✅ Firestore data:", data);
 
-  popupUsername.textContent = data.chatId || username;
+  // 3️⃣ Populate popup (use random color for username)
+  popupUsername.textContent = data.chatId || "Unknown User";
+  popupUsername.style.color = randomColor(); // 💫 random new color every tap
   popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
 
-  const showMsg = msg => showStarPopup(`${data.chatId || username} hasn’t shared ${msg} yet.`);
+  // 4️⃣ Social logic
+  const showMsg = (msg) => showStarPopup(`${data.chatId || "User"} hasn’t shared ${msg} yet.`);
   const openLink = (url, msg) => {
     if (url) window.open(url, "_blank");
     else showMsg(msg);
   };
 
-  // Show WhatsApp & Telegram only if host
+  // WhatsApp & Telegram only for hosts
   whatsappIcon.style.display = data.isHost ? "inline-block" : "none";
   telegramIcon.style.display = data.isHost ? "inline-block" : "none";
 
-  // Click handlers
   instaIcon.onclick = () => openLink(data.instagram, "Instagram");
   tiktokIcon.onclick = () => openLink(data.tiktok, "TikTok");
   whatsappIcon.onclick = () => {
     if (data.whatsapp)
-      window.open(
-        `https://wa.me/${data.whatsapp}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`,
-        "_blank"
-      );
+      window.open(`https://wa.me/${data.whatsapp}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "_blank");
     else showMsg("WhatsApp");
   };
   telegramIcon.onclick = () => {
     if (data.telegram)
-      window.open(
-        `https://t.me/${data.telegram}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`,
-        "_blank"
-      );
+      window.open(`https://t.me/${data.telegram}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "_blank");
     else showMsg("Telegram");
   };
 
+  // 5️⃣ Show popup
   popup.style.display = "block";
 }
-
-document.getElementById("popupClose").onclick = () => {
-  document.getElementById("userPopup").style.display = "none";
-};
-
-window.addEventListener("click", e => {
-  const popup = document.getElementById("userPopup");
-  if (e.target === popup) popup.style.display = "none";
-});
 /* ---------- Messages listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
