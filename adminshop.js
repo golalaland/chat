@@ -313,39 +313,53 @@ window.__deleteProduct = async function(id) {
 };
 
 // ---------------- PURCHASES ----------------
-// ---------------- PURCHASES ----------------
+// ---------------- LOAD PURCHASES ----------------
 async function loadPurchases() {
   showSpinner(true);
   ordersList.innerHTML = "";
   try {
-    // Query your purchases collection ordered by 'timestamp'
-    const q = query(collection(db, "purchases"), orderBy("timestamp", "desc"));
-    const snap = await getDocs(q);
-
+    // get all purchases ordered by timestamp descending
+    const snap = await getDocs(query(collection(db, "purchases"), orderBy("timestamp", "desc")));
     if (snap.empty) {
       ordersList.innerHTML = `<div class="small muted">No purchases yet</div>`;
       return;
     }
 
-    // Loop through each purchase
     for (const docSnap of snap.docs) {
-      const o = docSnap.data();
+      const p = docSnap.data();
       const id = docSnap.id;
 
-      // Prepare basic user info
-      let userDetails = { email: o.email || '—', phone: o.phone || '—' };
+      const status = p.status || 'pending';
+      const userInfo = `
+        <div class="user-details">
+          <div><strong>${escapeHtml(p.email || p.userId || '—')}</strong></div>
+          <div class="small muted">Phone: ${escapeHtml(p.phone || '—')}</div>
+          <div class="small muted">Cash Reward: ₦${Number(p.cashReward || 0)} • Redeemed: ₦${Number(p.redeemedCash || 0)}</div>
+        </div>
+      `;
 
-      // Attempt to fetch user doc if userId exists
-      if (o.userId) {
-        try {
-          const udoc = await getDoc(doc(db, "users", o.userId));
-          if (udoc.exists()) userDetails = udoc.data();
-        } catch (e) {
-          console.warn("User lookup failed", e);
-        }
-      }
-
-      ordersList.insertAdjacentHTML('beforeend', purchaseRowHTML(id, o, userDetails));
+      ordersList.insertAdjacentHTML('beforeend', `
+        <div class="order-item" data-id="${id}">
+          <div class="order-row">
+            <div style="flex:1">
+              <div><strong>${escapeHtml(p.productName || p.productId || '—')}</strong> • <span class="small muted">${new Date(p.timestamp?.toDate ? p.timestamp.toDate() : p.timestamp || Date.now()).toLocaleString()}</span></div>
+              <div class="small muted">Buyer: ${escapeHtml(p.email || p.userId || '—')}</div>
+              <div class="small muted">Cost: ${Number(p.cost || 0)} ⭐</div>
+              <div class="small muted">Status: <span class="badge">${escapeHtml(status)}</span></div>
+              ${userInfo}
+            </div>
+            <div style="display:flex;flex-direction:column;justify-content:center">
+              <div>
+                <button class="fulfill-btn" onclick="window.__fulfillPurchase('${id}')">Fulfill</button>
+                <button class="refund-btn" onclick="window.__refundPurchase('${id}')">Refund</button>
+              </div>
+              <div style="margin-top:10px">
+                <button class="themed-btn ghost" onclick="window.__viewPurchase('${id}')">View Raw</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
     }
   } catch (err) {
     console.error(err);
@@ -353,44 +367,6 @@ async function loadPurchases() {
   } finally {
     showSpinner(false);
   }
-}
-
-function purchaseRowHTML(id, o, user) {
-  const status = o.status || 'pending';
-  const paymentDesc = o.cost ? `₦${o.cost}` : "—";
-  const timestamp = o.timestamp?.toDate ? o.timestamp.toDate() : o.timestamp || new Date();
-
-  const userInfo = `
-    <div class="user-details">
-      <div><strong>${escapeHtml(user.displayName || user.email || o.email || '—')}</strong></div>
-      <div class="small muted">Email: ${escapeHtml(user.email || o.email || '—')}</div>
-      <div class="small muted">Phone: ${escapeHtml(user.phone || o.phone || '—')}</div>
-      <div class="small muted">Cash Reward: ₦${Number(o.cashReward || 0)}</div>
-    </div>
-  `;
-
-  return `
-    <div class="order-item" data-id="${id}">
-      <div class="order-row">
-        <div style="flex:1">
-          <div><strong>${escapeHtml(o.productName || o.productId || '—')}</strong> • <span class="small muted">${new Date(timestamp).toLocaleString()}</span></div>
-          <div class="small muted">Buyer: ${escapeHtml(o.email || o.userEmail || '—')}</div>
-          <div class="small muted">Payment: ${escapeHtml(paymentDesc)}</div>
-          <div class="small muted">Status: <span class="badge">${escapeHtml(status)}</span></div>
-          ${userInfo}
-        </div>
-        <div style="display:flex;flex-direction:column;justify-content:center">
-          <div>
-            <button class="fulfill-btn" onclick="window.__fulfillPurchase('${id}')">Fulfill</button>
-            <button class="refund-btn" onclick="window.__refundPurchase('${id}')">Refund</button>
-          </div>
-          <div style="margin-top:10px">
-            <button class="themed-btn ghost" onclick="window.__viewPurchase('${id}')">View Raw</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
 }
 
 // expose view raw (simple alert)
@@ -414,49 +390,63 @@ window.__fulfillPurchase = async function(id) {
   } finally { showSpinner(false); }
 };
 
-// refund
+// ---------------- FULFILL PURCHASE ----------------
+window.__fulfillPurchase = async function(id) {
+  if (!confirm("Mark this purchase as fulfilled?")) return;
+  showSpinner(true);
+  try {
+    const psnap = await getDoc(doc(db, "purchases", id));
+    if (!psnap.exists()) throw new Error("Purchase not found");
+    const purchase = psnap.data();
+
+    // update status
+    await updateDoc(doc(db, "purchases", id), {
+      status: "fulfilled",
+      fulfilledAt: serverTimestamp()
+    });
+
+    showToast(`Purchase of "${purchase.productName}" by ${purchase.email} marked fulfilled`);
+    loadPurchases(); // reload list
+  } catch (err) {
+    console.error(err);
+    showToast("Fulfill failed: " + err.message);
+  } finally { showSpinner(false); }
+};
+
+// ---------------- REFUND PURCHASE ----------------
 window.__refundPurchase = async function(id) {
   if (!confirm("Issue refund for this purchase?")) return;
   showSpinner(true);
   try {
     const psnap = await getDoc(doc(db, "purchases", id));
     if (!psnap.exists()) throw new Error("Purchase not found");
-    const p = psnap.data();
+    const purchase = psnap.data();
 
-    // determine payment type (stars or cash)
-    const type = p.paymentType || (p.amount && p.currency === 'NGN' ? 'cash' : 'stars');
-    const amount = Number(p.amount || p.cost || 0);
-    const userId = p.userId || null;
-    const userEmail = p.userEmail || null;
+    const userId = purchase.userId || null;
+    const userEmail = purchase.email || null;
+    const refundAmount = Number(purchase.cost || 0); // amount to refund
 
-    if (type === 'stars') {
-      if (!userId) {
-        // try find user doc by email and get doc id
-        if (!userEmail) throw new Error("No user reference to refund stars");
-        const q = query(collection(db, "users"), where("email", "==", userEmail));
-        const res = await getDocs(q);
-        if (res.empty) throw new Error("User record not found for email");
-        // update first match
-        const udoc = res.docs[0];
-        await updateDoc(doc(db, "users", udoc.id), { stars: increment(amount) });
-      } else {
-        await updateDoc(doc(db, "users", userId), { stars: increment(amount) });
-      }
-    } else { // cash
-      // log cash refund in /refunds for manual processing
+    // If you refund stars, use `cashReward`; if cash, log in refunds collection
+    if (refundAmount > 0) {
       await addDoc(collection(db, "refunds"), {
         orderId: id,
-        userId: userId || null,
-        userEmail: userEmail || null,
-        amount,
+        userId,
+        userEmail,
+        amount: refundAmount,
         method: "cash",
         createdAt: serverTimestamp()
       });
     }
 
-    await updateDoc(doc(db, "purchases", id), { status: "refunded", refundedAt: serverTimestamp(), refundMethod: type });
-    showToast("Refund issued (stars returned or cash refund logged)");
-    loadPurchases();
+    // mark purchase as refunded
+    await updateDoc(doc(db, "purchases", id), {
+      status: "refunded",
+      refundedAt: serverTimestamp(),
+      refundMethod: "cash"
+    });
+
+    showToast(`Refund logged for "${purchase.productName}" by ${userEmail || 'unknown user'}`);
+    loadPurchases(); // reload list
   } catch (err) {
     console.error(err);
     showToast("Refund failed: " + err.message);
