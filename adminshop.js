@@ -23,7 +23,8 @@ import {
   orderBy,
   serverTimestamp,
   increment,
-  where
+  where,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ---------------- CONFIG - REPLACE WITH YOURS ----------------
