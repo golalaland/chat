@@ -1,13 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scramble Game</title>
 <link rel="icon" href="data:," />
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-:root {
+:root{
   --bg:#000;
   --card:#111;
   --muted:#aaa;
@@ -15,152 +14,119 @@
   --glass: rgba(255,255,255,0.03);
 }
 
-body, html {margin:0; padding:0; height:100%; font-family: 'Inter', sans-serif; background: var(--bg); color:#fff; display:flex; justify-content:center;}
-#appWrapper{width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; position:relative;}
-/* ---------- Header ---------- */
-#gameHeader {text-align:center; margin-top:10px;}
-#welcomeText{font-family:'Press Start 2P', cursive; font-size:14px; color:var(--accent);}
-#scrambleText{font-family:'Press Start 2P', cursive; font-size:22px; color:var(--accent); margin-top:2px;}
-/* ---------- Rules ---------- */
-#rulesBtn {display:block; margin:6px auto; padding:6px 12px; border-radius:12px; background:var(--card); border:1px solid rgba(255,20,147,0.2); color:var(--accent); font-weight:700; cursor:pointer;}
+/* ---------- Body / App ---------- */
+body,html{margin:0;padding:0;height:100%;font-family:'XiXi',Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg);}
+#appWrapper{width:100%;height:100%;display:flex;justify-content:center;}
+.app{display:flex;flex-direction:column;height:100%;gap:10px;padding:10px;box-sizing:border-box;width:100%;max-width:480px;}
 
-/* ---------- Scramble Board ---------- */
-.scramble-board {text-align:center; margin:8px 0;}
-#scrambleWord {font-family:'Press Start 2P', cursive; font-size:18px; letter-spacing:6px; color:#fff;}
+/* Brand / Welcome */
+.brand{font-weight:700;font-size:24px;color:var(--accent);text-align:center;}
+#welcomeText{font-family:'XiXi';font-weight:700;font-size:18px;text-align:center;margin:2px 0;color:#fff;}
+#scrambleTitle{font-family:'XiXi';font-weight:900;font-size:24px;text-align:center;margin:0;color:var(--accent);}
+#rulesBtn{display:block;margin:6px auto 0 auto;padding:6px 12px;border-radius:8px;border:1px solid rgba(255,20,147,0.2);background:var(--card);color:var(--accent);cursor:pointer;font-weight:700;font-size:13px;}
 
-/* ---------- Marquee ---------- */
-#wordMarquee {width:100%; overflow:hidden; white-space:nowrap; display:block; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1); padding:4px 0; margin-bottom:6px; color:var(--accent);}
-#wordMarquee span {margin-right:12px; display:inline-block;}
+/* Marquee */
+#marqueeWrapper{overflow:hidden;white-space:nowrap;border-top:1px solid rgba(255,20,147,0.2);border-bottom:1px solid rgba(255,20,147,0.2);margin:6px 0;padding:4px 0;}
+#marquee{text-decoration:none;font-weight:700;display:inline-block;animation:scrollWords 15s linear infinite;color:var(--accent);}
+@keyframes scrollWords{
+  0%{transform:translateX(100%);}
+  100%{transform:translateX(-100%);}
+}
 
-/* ---------- Messages ---------- */
-#messages {flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px;}
+/* Profile panel */
+#profilePanel{background:var(--glass);border-radius:12px;padding:10px;margin:6px 0;display:flex;flex-direction:column;gap:6px;}
+.profile-row{display:flex;justify-content:space-between;align-items:center;}
+.profile-label{font-size:12px;font-weight:700;color:var(--accent);}
+.profile-value{font-size:14px;font-weight:800;color:#fff;}
 
-/* ---------- Bottom Input ---------- */
-.send-area {position:fixed; bottom:0; left:0; width:100%; max-width:480px; display:flex; align-items:center; gap:8px; background:var(--card); padding:10px; border-radius:999px; box-sizing:border-box; z-index:100;}
-.send-area input {flex:1; padding:12px 16px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background-color:#0e0e0e; color:#fff; font-size:16px; outline:none;}
-.send-btn {padding:10px 14px; border-radius:999px; background-color:var(--accent); color:#000; cursor:pointer; font-weight:700; border:none; font-size:14px;}
-.send-btn:hover {background-color:#ff33a1; transform:scale(1.05);}
+/* Scramble letters */
+#scrambleLetters{font-family:'XiXi';font-weight:900;font-size:24px;text-align:center;margin:12px 0;letter-spacing:12px;}
 
-/* Buzz Button */
-.buzz-btn {padding:10px; border-radius:999px; background:#000; border:1px solid var(--accent); color:var(--accent); font-weight:700; font-size:16px; cursor:pointer; animation: flicker 2s infinite alternate;}
-@keyframes flicker {0%{opacity:1;}50%{opacity:0.6;}100%{opacity:1;}}
-
-/* ---------- Profile Panel ---------- */
-.profile {position:fixed; bottom:60px; width:100%; max-width:480px; left:0; display:flex; justify-content:center; z-index:99;}
-.profile-card {background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:6px; text-align:center;}
-.profile-name {font-weight:800; font-size:14px; color:var(--accent);}
-.profile-info {font-size:12px; color:#fff;}
+/* Buzz button at bottom */
+.send-area{position:fixed;bottom:0;left:0;width:100%;max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:center;padding:10px;gap:8px;background:var(--card);border-radius:999px;z-index:100;}
+.buzz-btn{padding:12px 16px;border-radius:999px;background:#000;color:var(--accent);border:1px solid rgba(255,20,147,0.18);font-weight:700;font-size:18px;cursor:pointer;transition:all 0.2s;}
+.buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
+@keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
 /* Star popup */
-.star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
+.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
 </style>
 </head>
 <body>
+
 <div id="appWrapper">
-  <!-- Header -->
-  <div id="gameHeader">
-    <div id="welcomeText">WELCOME TO</div>
-    <div id="scrambleText">SCRAMBLE 🧩</div>
-  </div>
+  <div class="app">
+    <div class="brand">乂丨乂丨</div>
+    <div id="welcomeText">Welcome to</div>
+    <div id="scrambleTitle">SCRAMBLE 🧩</div>
+    <button id="rulesBtn">Rules</button>
 
-  <!-- Rules -->
-  <button id="rulesBtn">Rules</button>
+    <div id="marqueeWrapper"><div id="marquee">🔥 WORDS FIRE UP! 🔥</div></div>
 
-  <!-- Marquee for past words -->
-  <div id="wordMarquee"></div>
-
-  <!-- Scramble letters -->
-  <div class="scramble-board">
-    <div id="scrambleWord">S K P K D K S</div>
-  </div>
-
-  <!-- Messages -->
-  <div id="messages"></div>
-
-  <!-- Bottom input -->
-  <div class="send-area">
-    <input type="text" id="bottomInput" placeholder="Type your word...">
-    <button id="buzzBtn" class="buzz-btn">🚨</button>
-    <button id="sendBottomBtn" class="send-btn">Send</button>
-  </div>
-
-  <!-- Profile panel -->
-  <div class="profile" id="profilePanel">
-    <div class="profile-card">
-      <div class="profile-name" id="profileName">GUEST 0000</div>
-      <div class="profile-info">STARS COLLECTED: <span id="starCount">0</span>⭐️</div>
-      <div class="profile-info">CASH EARNED: ₦<span id="cashCount">0</span></div>
+    <div id="profilePanel">
+      <div class="profile-row"><span class="profile-label">STARS COLLECTED:</span> <span class="profile-value" id="starCount">0</span>⭐</div>
+      <div class="profile-row"><span class="profile-label">CASH EARNED:</span> <span class="profile-value" id="cashCount">₦0</span></div>
     </div>
+
+    <div id="scrambleLetters">S K P K T S D</div>
   </div>
 </div>
 
-<!-- Star popup -->
-<div class="star-popup" id="starPopup">+1 ⭐</div>
+<div class="send-area">
+  <button id="buzzBtn" class="buzz-btn">🚨</button>
+</div>
 
-<script>
-/* ---------------- Sample User Data ---------------- */
-let currentUser = {
-  uid: 'guest001',
-  name: 'GUEST 0000',
-  stars: 0,
-  cash: 0
-};
-document.getElementById('profileName').textContent = currentUser.name;
-document.getElementById('starCount').textContent = currentUser.stars;
-document.getElementById('cashCount').textContent = currentUser.cash;
+<div class="star-popup" id="starPopup"><div id="starText">+1 star!</div></div>
 
-/* ---------------- Game Logic ---------------- */
-const SCRAMBLE_LETTERS = "S K P K D K S".split(" ");
-const submittedWords = new Set();
-const wordMarquee = document.getElementById("wordMarquee");
-const scrambleWordEl = document.getElementById("scrambleWord");
-const bottomInput = document.getElementById("bottomInput");
-const messagesEl = document.getElementById("messages");
-const starPopup = document.getElementById("starPopup");
+<script type="module">
+/* ---------- Dummy User / Stars --------- */
+let currentUser = {stars:0, cash:0};
 
-function showStarPopup(text) {
-  starPopup.textContent = text;
-  starPopup.style.display = "block";
-  setTimeout(()=>{starPopup.style.display="none";},1500);
+const starPopupEl = document.getElementById("starPopup");
+const starTextEl = document.getElementById("starText");
+const starCountEl = document.getElementById("starCount");
+const cashCountEl = document.getElementById("cashCount");
+const buzzBtn = document.getElementById("buzzBtn");
+
+/* ---------- Scramble Letters & Submission ---------- */
+let scrambleLetters = ['S','K','P','K','T','S','D'];
+let submittedWords = new Set();
+
+/* Show star popup */
+function showStarPopup(text){
+  starTextEl.innerText = text;
+  starPopupEl.style.display = 'block';
+  setTimeout(()=>{starPopupEl.style.display='none';},1500);
 }
 
-/* Simulate submission */
-document.getElementById('sendBottomBtn').addEventListener('click',()=>{
-  const word = bottomInput.value.trim().toUpperCase();
-  if(!word){showStarPopup("Type a word!"); return;}
-  if(submittedWords.has(word)){showStarPopup("Word already used!"); return;}
-  submittedWords.add(word);
-  const msg = document.createElement('div');
-  msg.className = 'msg';
-  msg.textContent = currentUser.name + ": " + word;
-  messagesEl.appendChild(msg);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-  bottomInput.value = "";
+/* Validate word */
+function validateWord(word){
+  let available = [...scrambleLetters];
+  word = word.toUpperCase();
+  for(let char of word){
+    const idx = available.indexOf(char);
+    if(idx===-1) return false;
+    available.splice(idx,1);
+  }
+  return true;
+}
 
-  // Update user stars/cash
-  currentUser.stars += 5;
-  currentUser.cash += 50;
-  document.getElementById('starCount').textContent = currentUser.stars;
-  document.getElementById('cashCount').textContent = currentUser.cash;
-
-  // Update marquee
-  const span = document.createElement('span');
-  span.textContent = word;
-  wordMarquee.appendChild(span);
-});
-
-/* Buzz button */
-document.getElementById('buzzBtn').addEventListener('click',()=>{
-  const msg = document.createElement('div');
-  msg.className = 'msg';
-  msg.textContent = '🚨 ' + currentUser.name + ' buzzed!';
-  messagesEl.appendChild(msg);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-});
-
-/* Rules button */
-document.getElementById('rulesBtn').addEventListener('click',()=>{
-  alert("🎮 Scramble Rules:\n- Form words using the letters above.\n- Each correct word gives you stars and cash.\n- Max 25 submissions per round.\n- First come, first served!");
+/* Buzz / submit */
+buzzBtn.addEventListener('click', ()=>{
+  let word = prompt("Type a word from the letters!");
+  if(!word) return;
+  if(submittedWords.has(word.toUpperCase())){
+    return showStarPopup("Word already submitted!");
+  }
+  if(!validateWord(word)){
+    return showStarPopup("Invalid word!");
+  }
+  submittedWords.add(word.toUpperCase());
+  currentUser.stars += 5; // example reward
+  currentUser.cash += 10;
+  starCountEl.innerText = currentUser.stars;
+  cashCountEl.innerText = currentUser.cash;
+  showStarPopup(`✅ "${word}" accepted! +5⭐`);
 });
 </script>
 </body>
