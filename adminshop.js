@@ -313,7 +313,7 @@ window.__deleteProduct = async function(id) {
 };
 
 
-// ---------------- LOAD PURCHASES (Admin) ----------------
+//// ---------------- LOAD PURCHASES (Admin) ----------------
 async function loadPurchases() {
   showSpinner(true);
   ordersList.innerHTML = "";
@@ -331,13 +331,11 @@ async function loadPurchases() {
 
       // Determine payment display
       let paymentDesc = "—";
-      if (p.paymentType === "stars") {
-        paymentDesc = `${Number(p.cost || 0)} ⭐`;
-      } else if (p.paymentType === "cash") {
-        paymentDesc = `₦${Number(p.cost || 0)}`;
+      if (Number(p.cost || 0) > 0) {
+        paymentDesc = `${Number(p.cost)} ⭐`; // stars used for purchase
       }
 
-      // User info (cash reward remains separate)
+      // User info display
       const userInfo = `
         <div class="user-details">
           <div><strong>${escapeHtml(p.email || p.userId || '—')}</strong></div>
@@ -346,12 +344,14 @@ async function loadPurchases() {
         </div>
       `;
 
-      // Render row
       ordersList.insertAdjacentHTML('beforeend', `
         <div class="order-item" data-id="${id}">
           <div class="order-row">
             <div style="flex:1">
-              <div><strong>${escapeHtml(p.productName || p.productId || '—')}</strong> • <span class="small muted">${new Date(p.timestamp?.toDate ? p.timestamp.toDate() : p.timestamp || Date.now()).toLocaleString()}</span></div>
+              <div>
+                <strong>${escapeHtml(p.productName || p.productId || '—')}</strong> • 
+                <span class="small muted">${new Date(p.timestamp?.toDate ? p.timestamp.toDate() : p.timestamp || Date.now()).toLocaleString()}</span>
+              </div>
               <div class="small muted">Buyer: ${escapeHtml(p.email || p.userId || '—')}</div>
               <div class="small muted">Payment: ${paymentDesc}</div>
               <div class="small muted">Status: <span class="badge">${escapeHtml(status)}</span></div>
