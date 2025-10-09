@@ -497,20 +497,21 @@ exportCsvBtn.onclick = async () => {
   showSpinner(true);
   try {
     const rows = [];
-    const snap = await getDocs(query(collection(db, "purchases"), orderBy("createdAt", "desc")));
+    // Use the actual field name 'timestamp'
+    const snap = await getDocs(query(collection(db, "purchases"), orderBy("timestamp", "desc")));
     if (snap.empty) return showToast("No purchases to export");
 
     // header
-    rows.push(["purchaseId","createdAt","userId","userEmail","productId","productName","amount","paymentType","status","fulfilledAt","refundedAt"].join(","));
+    rows.push(["purchaseId","timestamp","userId","userEmail","productId","productName","amount","paymentType","status","fulfilledAt","refundedAt"].join(","));
 
     for (const docSnap of snap.docs) {
       const o = docSnap.data();
-      const createdAt = o.createdAt?.toDate ? o.createdAt.toDate().toISOString() : (o.createdAt || "");
+      const timestamp = o.timestamp?.toDate ? o.timestamp.toDate().toISOString() : (o.timestamp || "");
       const fulfilledAt = o.fulfilledAt?.toDate ? o.fulfilledAt.toDate().toISOString() : "";
       const refundedAt = o.refundedAt?.toDate ? o.refundedAt.toDate().toISOString() : "";
       const row = [
         `"${docSnap.id}"`,
-        `"${createdAt}"`,
+        `"${timestamp}"`,
         `"${(o.userId||'')}"`,
         `"${(o.userEmail||'')}"`,
         `"${(o.productId||'')}"`,
@@ -540,7 +541,6 @@ exportCsvBtn.onclick = async () => {
     showToast("CSV export failed: " + err.message);
   } finally { showSpinner(false); }
 };
-
 const clearPurchasesBtn = document.getElementById('clearPurchasesBtn');
 
 clearPurchasesBtn.onclick = async () => {
