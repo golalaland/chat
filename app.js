@@ -100,7 +100,7 @@ setupUsersListener();
 
 /* ---------- Render messages ---------- */
 let scrollPending = false;
-function renderMessagesFromArray(arr) {
+function renderMessagesFromArray(arr){
   if (!refs.messagesEl) return;
 
   arr.forEach(item => {
@@ -113,20 +113,15 @@ function renderMessagesFromArray(arr) {
 
     const meta = document.createElement("span");
     meta.className = "meta";
-    meta.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
-    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) 
-      ? refs.userColors[m.uid] 
-      : "#ffffff";
+    meta.textContent = (m.chatId || "Guest") + ":";
+    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
     meta.style.marginRight = "4px";
 
     const content = document.createElement("span");
     content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
     content.textContent = " " + (m.content || "");
     if (m.buzzColor) content.style.background = m.buzzColor;
-    if (m.highlight) { 
-      content.style.color = "#000"; 
-      content.style.fontWeight = "700"; 
-    }
+    if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
 
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
@@ -145,90 +140,22 @@ function renderMessagesFromArray(arr) {
   }
 }
 
-/* ---------- Username click handler with tap feedback ---------- */
-document.addEventListener("click", async (e) => {
-  const el = e.target.closest(".chat-username");
-  if (!el) return;
-
-  const uid = el.dataset.username;
-  if (!uid || uid === currentUser?.uid) return;
-
-  // 💫 Soft tap fade feedback
-  el.classList.add("username-tapped");
-  setTimeout(() => el.classList.remove("username-tapped"), 250);
-
-  // 🪄 Open popup
-  await showUserPopup(uid);
-});
-
-/* ---------- USER POPUP ---------- */
-async function showUserPopup(uidKey) {
-  const popup = document.getElementById("userPopup");
-  const popupCard = popup?.querySelector(".user-popup-card"); // safer
-  const popupUsername = document.getElementById("popupUsername");
-  const popupGender = document.getElementById("popupGender");
-  const instaIcon = document.getElementById("instaIcon");
-  const tiktokIcon = document.getElementById("tiktokIcon");
-  const whatsappIcon = document.getElementById("whatsappIcon");
-  const telegramIcon = document.getElementById("telegramIcon");
-
-  if (!popup || !popupUsername) return;
-
-  try {
-    const userRef = doc(db, "users", uidKey);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return alert("User not found");
-
-    const data = snap.data();
-    const colors = ["#ff4fa1", "#4fc3ff", "#7dff4f", "#ffc24f", "#b94fff"];
-    const randColor = colors[Math.floor(Math.random() * colors.length)];
-
-    popupUsername.textContent = data.chatId || "Unknown User";
-    popupUsername.style.color = randColor;
-    popupUsername.style.textShadow = `0 0 10px ${randColor}`;
-    popupGender.textContent = `Gender: ${data.gender || "Unknown"}`;
-
-    const showMsg = (msg) => showStarPopup(`${data.chatId || "User"} hasn’t shared ${msg} yet.`);
-    const openLink = (url, msg) => url ? window.open(url, "_blank") : showMsg(msg);
-
-    whatsappIcon.style.display = data.isHost ? "inline-block" : "none";
-    telegramIcon.style.display = data.isHost ? "inline-block" : "none";
-
-    instaIcon.onclick = () => openLink(data.instagram, "Instagram");
-    tiktokIcon.onclick = () => openLink(data.tiktok, "TikTok");
-    whatsappIcon.onclick = () => openLink(data.whatsapp && `https://wa.me/${data.whatsapp}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "WhatsApp");
-    telegramIcon.onclick = () => openLink(data.telegram && `https://t.me/${data.telegram}?text=Hi%20${data.chatId}%20I'm%20${currentUser.chatId}%20from%20Xixi%20Live!`, "Telegram");
-
-    instaIcon.classList.toggle("inactive", !data.instagram);
-    tiktokIcon.classList.toggle("inactive", !data.tiktok);
-    whatsappIcon.classList.toggle("inactive", !data.whatsapp);
-    telegramIcon.classList.toggle("inactive", !data.telegram);
-
-    popup.style.display = "flex";
-    popup.style.opacity = "0";
-    popup.style.transition = "opacity 0.25s ease";
-    setTimeout(() => popup.style.opacity = "1", 30);
-  } catch (err) {
-    console.error("Popup error:", err);
-  }
+/* ---------- Messages listener ---------- */
+function attachMessagesListener() {
+  const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
+  onSnapshot(q, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        const msgData = change.doc.data();
+        lastMessagesArray.push({ id: change.doc.id, data: msgData });
+        renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
+        if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
+          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+        }
+      }
+    });
+  });
 }
-
-/* ---------- Popup close handlers ---------- */
-document.getElementById("popupClose")?.addEventListener("click", () => {
-  const popup = document.getElementById("userPopup");
-  if (!popup) return;
-  popup.style.opacity = "0";
-  setTimeout(() => popup.style.display = "none", 200);
-});
-
-window.addEventListener("click", (e) => {
-  const popup = document.getElementById("userPopup");
-  const card = popup?.querySelector(".user-popup-card");
-  if (popup?.style.display === "flex" && card && !card.contains(e.target)) {
-    popup.style.opacity = "0";
-    setTimeout(() => popup.style.display = "none", 200);
-  }
-});
 
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
