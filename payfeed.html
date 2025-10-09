@@ -3,35 +3,67 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Xixi Admin — Pay Feed</title>
+  <title>乂丨乂丨 Admin — Pay Feed</title>
+
+  <!-- Font / theme -->
   <style>
-    body { font-family: Arial, sans-serif; padding:20px; background:#f7f7fb; color:#111 }
-    .card { background:#fff; padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:14px; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap }
-    input, button, select, textarea { padding:8px 10px; border-radius:8px; border:1px solid #e6e6e9; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #f0f0f4; }
-    .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 10px; }
-    .btn-danger { background:#ff6b6b; color:#fff }
-    .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff }
-    .muted { color:#888; font-size:0.9rem }
-    .search { width:260px }
-    .small { font-size:0.9rem; padding:6px 8px; }
-    .pill { padding:6px 10px; border-radius:999px; background:#efefef; }
-    .flex-between { display:flex; justify-content:space-between; align-items:center }
-    .hidden { display:none }
-    .danger-outline { border:1px solid #ffb3b3 }
-    .toggle { cursor:pointer; padding:6px 8px; border-radius:8px }
-    .actions { display:flex; gap:6px }
-    .scroll-box { max-height:360px; overflow:auto; padding-right:8px }
-    #loaderOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.3); display:flex; justify-content:center; align-items:center; z-index:1000; display:none; }
-    #loaderOverlay .card { padding:20px; text-align:center; }
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    body {
+      font-family: '乂丨乂丨', 'Roboto', Arial, sans-serif;
+      padding:20px;
+      background:#f7f7fb;
+      color:#111;
+    }
+
+    h2, h3 { font-family:'乂丨乂丨', monospace; margin:0; }
+
+    .card {
+      background:#fff;
+      padding:16px;
+      border-radius:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.06);
+      margin-bottom:16px;
+    }
+
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+
+    input, button, select, textarea {
+      padding:8px 12px;
+      border-radius:8px;
+      border:1px solid #e6e6e9;
+      font-family:inherit;
+      font-size:0.95rem;
+    }
+
+    table { width:100%; border-collapse:collapse; font-family:inherit; }
+    th, td { padding:10px; text-align:left; border-bottom:1px solid #f0f0f4; font-size:0.9rem; }
+    
+    .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 12px; font-family:inherit; }
+    .btn-danger { background:#ff6b6b; color:#fff; }
+    .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff; }
+    .muted { color:#888; font-size:0.85rem; }
+    .search { width:260px; }
+    .small { font-size:0.85rem; padding:4px 8px; }
+    .pill { padding:4px 10px; border-radius:999px; background:#efefef; font-family:'乂丨乂丨', monospace; }
+    .flex-between { display:flex; justify-content:space-between; align-items:center; }
+    .hidden { display:none; }
+    .actions { display:flex; gap:6px; }
+
+    .scroll-box { max-height:360px; overflow:auto; padding-right:8px; }
+    #loaderOverlay {
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.35);
+      display:flex; justify-content:center; align-items:center;
+      z-index:1000; display:none;
+    }
+    #loaderOverlay .card { padding:24px; text-align:center; font-family:'乂丨乂丨', monospace; }
   </style>
 </head>
 <body>
-  <h2>Xixi Admin — Pay Feed</h2>
+  <h2>乂丨乂丨 Admin — Pay Feed</h2>
 
-  <!-- Admin gate -->
+  <!-- Admin Gate -->
   <div id="adminGate" class="card">
     <div class="row">
       <input id="adminEmail" placeholder="Admin email (use registered email)" />
@@ -40,9 +72,8 @@
     </div>
   </div>
 
-  <!-- Admin panel -->
+  <!-- Admin Panel -->
   <div id="adminPanel" class="hidden">
-
     <div class="card flex-between">
       <div>
         <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
@@ -54,9 +85,9 @@
       </div>
     </div>
 
-    <!-- Users table -->
+    <!-- Users Table -->
     <div class="card">
-      <h3 style="margin:0 0 8px 0">Users</h3>
+      <h3>Users</h3>
       <div class="muted" style="margin-bottom:8px">Edit stars, cash, toggles, or subscription info.</div>
       <div class="scroll-box">
         <table id="usersTable">
@@ -79,12 +110,12 @@
       </div>
     </div>
 
-    <!-- Whitelist injector -->
+    <!-- Whitelist Injector -->
     <div class="card">
-      <h3 style="margin:0 0 8px 0">Whitelist Injector</h3>
+      <h3>Whitelist Injector</h3>
       <div class="row" style="margin-bottom:8px">
-        <input id="wlEmail" placeholder="email" />
-        <input id="wlPhone" placeholder="phone" />
+        <input id="wlEmail" placeholder="Email" />
+        <input id="wlPhone" placeholder="Phone" />
         <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
         <input type="file" id="wlCsvUpload" />
       </div>
@@ -94,16 +125,20 @@
       <div class="scroll-box">
         <table id="whitelistTable">
           <thead>
-            <tr><th>Email</th><th>Phone</th><th>Subscription</th><th>Action</th></tr>
+            <tr>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Subscription</th>
+              <th>Action</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
-
   </div>
 
-  <!-- Loader / modal -->
+  <!-- Loader / Modal -->
   <div id="loaderOverlay">
     <div class="card">
       <div id="loaderText">Processing...</div>
