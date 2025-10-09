@@ -8,9 +8,14 @@ import {
 import { getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // ---------- Firebase config ----------
-const firebaseConfig = { 
-  apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...",
-  messagingSenderId: "...", appId: "...", databaseURL: "..."
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
 };
 
 const app = initializeApp(firebaseConfig);
