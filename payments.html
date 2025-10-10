@@ -186,8 +186,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
     if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
-    if(gender==='Male' && isHost){ messageEl.textContent='❌ Males can only be VIP.'; return; }
-
+   if(gender==='Male' && isHost){
+  messageEl.textContent='❌ Males can only be VIP.'; 
+  return; 
+}
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
     const uidKey=sanitizeKey(email); const userRef=doc(db,"users",uidKey);
 
@@ -197,14 +199,39 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
       let country='Unknown'; try{ const res=await fetch('https://ipapi.co/json/'); const data=await res.json(); country=data.country_name||'Unknown'; }catch(e){}
 
-      const userData={ chatId, chatIdLower:chatId.toLowerCase(), fullName, stars:50, starsToday:0, starsGifted:0, lastStarDate:new Date().toISOString().split("T")[0], cash:0,
-        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16), isAdmin:false, isVIP, isHost: (gender === 'Female') && !isVIP,   // Only females who are not VIP can be hosts
-
-hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,  
-// Only non-VIP females get a host referral link
-        invitedBy:referrer||null, email, phone, gender, dob, age, bankName:"", bankAccountNumber:"", country, subscriptionActive:false, subscriptionCount:0,
-        socialShare:!isVIP, instagram:"", tiktok:"", whatsapp:"", telegram:""
-      };
+     const userData = {
+  chatId,
+  chatIdLower: chatId.toLowerCase(),
+  fullName,
+  stars: 50,
+  starsToday: 0,
+  starsGifted: 0,
+  lastStarDate: new Date().toISOString().split("T")[0],
+  cash: 0,
+  usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
+  isAdmin: false,
+  isVIP,                             // Males can now be VIP
+  isHost: (gender === 'Female') && !isVIP,  // Only females who are not VIP can be hosts
+  hostLink: (!isVIP && gender === 'Female') 
+            ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` 
+            : null,                  // Only non-VIP females get a host link
+  invitedBy: referrer || null,
+  email,
+  phone,
+  gender,
+  dob,
+  age,
+  bankName: "",
+  bankAccountNumber: "",
+  country,
+  subscriptionActive: false,
+  subscriptionCount: 0,
+  socialShare: !isVIP,
+  instagram: "",
+  tiktok: "",
+  whatsapp: "",
+  telegram: ""
+};
 
       await setDoc(userRef,userData);
 
