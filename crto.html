@@ -381,51 +381,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   color: #fff;                  /* subtle hover effect */
 }
 
-.popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 9999;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.3);
+.user-popup-content.show {
+  transform: scale(1);
+  opacity:1;
 }
-.party-card {
-  background: #1a1a1a;
-  color: #fff;
-  border-radius: 12px;
-  padding: 18px;
-  min-width: 250px;
-  max-width: 300px;
-  text-align: center;
-  box-shadow: 0 0 15px rgba(0,0,0,0.6);
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-.party-card img.card-photo {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 8px;
-}
-.close-btn {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  cursor: pointer;
-  font-size: 20px;
-}
-.card-socials a {
-  margin: 0 6px;
-  display: inline-block;
-}
-.card-socials img {
-  width: 24px;
-  height: 24px;
+.user-popup-content img {
+  width:28px;
+  height:28px;
+  border-radius:6px;
+  object-fit:cover;
 }
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
@@ -559,14 +523,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<<!-- User Popup -->
-<div id="userPopup" class="popup">
-  <div class="party-card">
-    <span id="popupCloseBtn" class="close-btn">&times;</span>
-    <img id="popupPhoto" class="card-photo" src="" alt="User Photo">
-    <h3 id="popupUsername">Username</h3>
-    <p id="popupGenderAge"></p>
-    <div class="card-socials" id="popupSocials"></div>
+<!-- User Popup -->
+<div id="userPopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);justify-content:center;align-items:center;z-index:9999;">
+  <div class="user-popup-content" style="background:#111;color:#fff;padding:15px;border-radius:12px;width:260px;max-width:90%;text-align:center;position:relative;transition:transform 0.2s,opacity 0.2s;transform:scale(0.9);opacity:0;">
+    <span id="popupCloseBtn" style="position:absolute;top:8px;right:12px;cursor:pointer;font-size:18px;">✕</span>
+    <div class="popup-photo" style="width:80px;height:80px;margin:0 auto 10px;border-radius:50%;background:#333;"></div>
+    <div id="popupUsername" style="font-weight:700;font-size:16px;margin-bottom:4px;">Username</div>
+    <div id="popupGender" style="font-size:14px;margin-bottom:10px;">Gender / Age</div>
+    <div id="popupSocials" style="display:flex;justify-content:space-around;margin-top:10px;">
+      <!-- JS will inject 4 icons here -->
+    </div>
   </div>
 </div>
 <script type="module" src="app.js"></script>
