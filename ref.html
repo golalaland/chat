@@ -64,7 +64,14 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
+
+/* intl-tel-input override to match your style */
+.iti { width:100%; }
+.iti__flag { top:6px; }
 </style>
+
+<!-- intl-tel-input -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/css/intlTelInput.min.css"/>
 </head>
 <body>
 
@@ -77,7 +84,8 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
-<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
+<div class="form-group"><input id="dob" type="date" placeholder="Date of Birth" max="2025-10-10"></div>
+<div class="form-group"><input id="phone" type="tel" placeholder="Phone Number"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 
 <div class="gender-label">Select Your Gender</div>
@@ -96,6 +104,7 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 </button>
 <div class="message" id="message"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/js/intlTelInput.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -125,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const messageEl = document.getElementById('message');
   const nameInput = document.getElementById('name');
   const chatIdInput = document.getElementById('chatId');
+  const dobInput = document.getElementById('dob');
   const phoneInput = document.getElementById('phone');
   const emailInput = document.getElementById('email');
   const hostUsernameEl = document.getElementById('host-username');
@@ -144,7 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+  // Country code phone input
+  const iti = window.intlTelInput(phoneInput, {
+    initialCountry: "auto",
+    geoIpLookup: callback => {
+      fetch('https://ipinfo.io/json?token=<YOUR_TOKEN>')
+        .then(res => res.json())
+        .then(data => callback(data.country))
+        .catch(() => callback('US'));
+    },
+    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/js/utils.js"
+  });
 
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
@@ -156,6 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
+
+  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
 
   function triggerSprayConfetti() {
     const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
@@ -201,12 +223,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
     const chatId = cleanChatId(chatIdRaw);
-    const phone = phoneInput.value.trim();
+    const dob = dobInput.value;
+    const phone = iti.getNumber();
     const email = emailInput.value.trim().toLowerCase();
 
-    if(!fullName||!chatId||!phone||!email||!gender){ messageEl.textContent='Please fill in all fields.'; return; }
+    if(!fullName||!chatId||!dob||!phone||!email||!gender){ messageEl.textContent='Please fill in all fields.'; return; }
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
+    if(!phone || !iti.isValidNumber()){ messageEl.textContent='Please enter a valid phone number.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
     if(!isVIP && gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts buddy 🙂.'; return; }
 
@@ -224,33 +247,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-const userData = {
-  chatId,
-  chatIdLower:chatId.toLowerCase(),
-  fullName,
-  stars:50,
-  starsToday:0,
-  starsGifted:0,
-  lastStarDate:new Date().toISOString().split("T")[0],
-  cash:0,
-  usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
-  isAdmin:false,
-  isVIP,
-  isHost:!isVIP,
-  hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-  invitedBy:referrer||null,
-  email,
-  phone,
-  gender,
-  createdAt:serverTimestamp(),
-  subscriptionActive:false,
-  subscriptionCount:0,  // 👈 this comma was missing
-  socialShare:false,
-  instagram:"",
-  tiktok:"",
-  whatsapp:"",
-  telegram:"",
-};
+      const userData = {
+        chatId,
+        chatIdLower:chatId.toLowerCase(),
+        fullName,
+        dob,
+        phone,
+        stars:50,
+        starsToday:0,
+        starsGifted:0,
+        lastStarDate:new Date().toISOString().split("T")[0],
+        cash:0,
+        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+        isAdmin:false,
+        isVIP,
+        isHost:!isVIP,
+        hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+        invitedBy:referrer||null,
+        email,
+        gender,
+        createdAt:serverTimestamp(),
+        subscriptionActive:false,
+        subscriptionCount:0,
+        socialShare:false,
+        instagram:"",
+        tiktok:"",
+        whatsapp:"",
+        telegram:"",
+      };
 
       await setDoc(userRef,userData);
 
