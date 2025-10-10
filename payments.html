@@ -147,13 +147,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
   maleBtn.addEventListener('click', ()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
   vipToggle.addEventListener('click', ()=>{
-    if(gender==='Male'){ alert("Males cannot be VIP."); return; }
-    isVIP = !isVIP;
-    vipToggle.classList.toggle('on', isVIP);
-    vipLabel.classList.toggle('on', isVIP);
-    vipMessage.style.opacity = isVIP?'1':'0';
-    if(isVIP) triggerSprayConfetti();
-  });
+  // Males can now be VIP
+  isVIP = !isVIP;
+  vipToggle.classList.toggle('on', isVIP);
+  vipLabel.classList.toggle('on', isVIP);
+  vipMessage.style.opacity = isVIP ? '1' : '0';
+  if(isVIP) triggerSprayConfetti();
+});
 
   function triggerSprayConfetti(){
     const colors=['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32']; 
@@ -198,8 +198,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
       let country='Unknown'; try{ const res=await fetch('https://ipapi.co/json/'); const data=await res.json(); country=data.country_name||'Unknown'; }catch(e){}
 
       const userData={ chatId, chatIdLower:chatId.toLowerCase(), fullName, stars:50, starsToday:0, starsGifted:0, lastStarDate:new Date().toISOString().split("T")[0], cash:0,
-        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16), isAdmin:false, isVIP, isHost:(gender==='Female'&&!isVIP)?true:false,
-        hostLink:(!isVIP && gender==='Female')?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16), isAdmin:false, isVIP, isHost: (gender === 'Female') && !isVIP,   // Only females who are not VIP can be hosts
+
+hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,  
+// Only non-VIP females get a host referral link
         invitedBy:referrer||null, email, phone, gender, dob, age, bankName:"", bankAccountNumber:"", country, subscriptionActive:false, subscriptionCount:0,
         socialShare:!isVIP, instagram:"", tiktok:"", whatsapp:"", telegram:""
       };
