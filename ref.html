@@ -24,15 +24,16 @@ body {
   align-items:center;
   padding:1rem;
 }
-h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
+img.placeholder { width:100px; height:100px; border-radius:15px; margin-bottom:1rem; object-fit:cover; }
+h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
 .form-group { width:90%; max-width:400px; margin-bottom:0.7rem; display:flex; flex-direction:column; align-items:center; }
 .form-group input {
   width:100%; padding:0.65rem 1rem; border-radius:30px;
   border:1px solid var(--input-border); background:var(--input-bg);
-  color:var(--text-color); font-size:0.9rem; outline:none;
+  color:var(--text-color); font-size:0.88rem; outline:none;
 }
 .form-group input:focus { border-color: var(--primary-color); box-shadow:0 0 8px rgba(255,64,129,0.5); }
-.gender-label, .dob-label { font-size:0.8rem; text-align:center; font-weight:600; margin-bottom:0.3rem; }
+.gender-label, .dob-label { font-size:0.88rem; text-align:center; margin-bottom:0.3rem; }
 .gender-select { display:flex; justify-content:center; gap:15px; margin-bottom:1rem; }
 .gender-select button {
   width:50px; height:50px; border-radius:50%; border:none; background:#333;
@@ -42,8 +43,8 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .gender-select button:active { transform:translateY(3px); box-shadow:0 2px #000; }
 .gender-select button.selected { background:var(--primary-color); box-shadow:0 0 15px var(--primary-color); }
 .dob-container { display:flex; flex-direction:column; align-items:center; margin-bottom:0.7rem; }
-.dob-input { width:140px; padding:0.5rem 0.8rem; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.9rem; text-align:center; cursor:pointer; }
-.vip-label { text-align:center; font-weight:bold; font-size:0.8rem; margin-bottom:0.3rem; color:#aaa; transition:0.3s; }
+.dob-input { width:120px; padding:0.5rem 0.8rem; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.88rem; text-align:center; position:relative; cursor:pointer; }
+.vip-label { text-align:center; font-weight:bold; font-size:1rem; margin-bottom:0.3rem; color:#aaa; transition:0.3s; }
 .vip-toggle { width:80px; height:36px; border-radius:18px; background:#444; position:relative; cursor:pointer; margin:0 auto 0.5rem auto; transition:0.3s; }
 .vip-toggle .vip-circle { width:34px; height:34px; border-radius:50%; background:#555; position:absolute; left:1px; top:1px; transition:0.3s; }
 .vip-toggle.on .vip-circle { left:45px; background:gold; box-shadow:0 0 12px gold; }
@@ -51,16 +52,18 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .vip-label.on { color:gold; text-shadow:0 0 8px gold; }
 .submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; display:flex; justify-content:center; align-items:center; position:relative; }
 .submit-btn:hover { transform:scale(1.03); }
-.submit-btn .spinner { width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3); border-radius:50%; animation: spin 0.7s linear infinite; display:none; }
+.submit-btn .spinner {
+  width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3);
+  border-radius:50%; animation: spin 0.7s linear infinite; display:none;
+}
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-.fomo-popup { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--fomo-bg); color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; box-shadow:0 0 15px rgba(255,255,255,0.3); }
-.image-placeholder { width:100%; max-width:430px; height:240px; background:#333; border-radius:15px; margin-bottom:1rem; display:flex; justify-content:center; align-items:center; color:#aaa; font-size:1rem; }
+.fomo-popup { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--fomo-bg); color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; box-shadow:0 0 8px #fff; }
 </style>
 </head>
 <body>
 
-<div class="image-placeholder">Profile Picture</div>
+<img class="placeholder" src="https://via.placeholder.com/430x240.png?text=Your+Image" alt="Image Placeholder">
 
 <h2>VIP / Host Signup</h2>
 
@@ -90,7 +93,7 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 </button>
 <div class="message" id="message"></div>
 
-<div class="fomo-popup" id="fomoPopup">🎉 X just joined VIP!</div>
+<div class="fomo-popup" id="fomoPopup">🎉 Someone just joined!</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -134,13 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
-
-  function calculateAge(dobStr){
-    const dob = new Date(dobStr);
-    const diffMs = Date.now() - dob.getTime();
-    const ageDt = new Date(diffMs);
-    return Math.abs(ageDt.getUTCFullYear() - 1970);
-  }
+  function calculateAge(dobStr){ const dob = new Date(dobStr); const diffMs = Date.now() - dob.getTime(); const ageDt = new Date(diffMs); return Math.abs(ageDt.getUTCFullYear() - 1970); }
 
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
@@ -197,27 +194,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // FOMO from Firestore
-  async function showFomo() {
-    try {
-      const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(10));
-      const snapshot = await getDocs(q);
-      if(!snapshot.empty){
-        const users = snapshot.docs.map(d=>d.data());
-        const user = users[Math.floor(Math.random()*users.length)];
-        const type = user.isVIP ? "VIP" : "Host";
-        fomoPopup.textContent = `🎉 ${user.chatId} just joined as ${type}! 🎊`;
-        fomoPopup.style.opacity='1';
-        setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
-      }
-    } catch(e){ console.error(e); }
-  }
-  setInterval(showFomo, 10000);
+  // FOMO popup from Firestore
+  setInterval(async () => {
+    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(5));
+    const snapshot = await getDocs(q);
+    if(!snapshot.empty){
+      const users = snapshot.docs.map(d=>d.data());
+      const user = users[Math.floor(Math.random()*users.length)];
+      const type = user.isVIP?'VIP':'Host';
+      fomoPopup.textContent = `🎉 ${user.fullName} just joined as a ${type}! ${type==='VIP'?'✨':'🎈'}`;
+      fomoPopup.style.opacity='1';
+      setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
+    }
+  }, 10000);
 
-  // Max DOB 18+
+  // Set max DOB to today minus 18 years
   const today = new Date();
   const maxDate = new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
   dobInput.max = maxDate.toISOString().split('T')[0];
+
+  async function getIPLocation() {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      return data.country_name || '';
+    } catch { return ''; }
+  }
 
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
@@ -250,12 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const inviterRef = referrer ? doc(db, "users", sanitizeKey(referrer)) : null;
-      let inviterData = null;
-      if(inviterRef) {
-        const snap = await getDoc(inviterRef);
-        if(snap.exists()) inviterData = snap.data();
-      }
+      const country = await getIPLocation();
 
       const userData = {
         chatId,
@@ -287,31 +284,41 @@ document.addEventListener('DOMContentLoaded', () => {
         tiktok:"",
         whatsapp:"",
         telegram:"",
+        country
       };
 
       await setDoc(userRef,userData);
 
-      if(inviterData) {
-        const bonus = isVIP ? 100 : 50;
-        const hostFriendData = {
-          chatId,
-          chatIdLower:chatId.toLowerCase(),
-          email,
-          giftShown:true,
-          hostLink:userData.hostLink,
-          hostVIP: isVIP ? 1 : 0,
-          invitedAt: new Date().toISOString(),
-        };
-        await updateDoc(inviterRef,{
-          starsGifted: (inviterData.starsGifted||0) + bonus,
-          hostFriends: arrayUnion(hostFriendData)
-        });
+      // Handle inviter bonus
+      if(referrer){
+        const inviterRef = doc(db,"users",sanitizeKey(referrer));
+        const inviterSnap = await getDoc(inviterRef);
+        if(inviterSnap.exists()){
+          const inviterData = inviterSnap.data();
+          const bonus = isVIP?100:50;
+          const hostFriends = inviterData.hostFriends || [];
+          hostFriends.push({
+            chatId,
+            chatIdLower:chatId.toLowerCase(),
+            email,
+            giftShown:true,
+            hostLink:inviterData.hostLink || null,
+            hostVIP: isVIP?1:0,
+            invitedBy:referrer
+          });
+          await updateDoc(inviterRef,{
+            hostFriends,
+            stars: (inviterData.stars||0) + bonus,
+            starsGifted: (inviterData.starsGifted||0) + bonus
+          });
+        }
       }
 
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
-      // Redirect to shop
-      setTimeout(()=>{ window.location.href = "nushop.html"; }, 1500);
+
+      setTimeout(()=>{ window.location.href="https://your-shop-link.com"; }, 2000);
+
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
