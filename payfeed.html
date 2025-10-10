@@ -85,58 +85,73 @@
       </div>
     </div>
 
-    <!-- Users Table -->
-    <div class="card">
-      <h3>Users</h3>
-      <div class="muted" style="margin-bottom:8px">Edit stars, cash, toggles, or subscription info.</div>
-      <div class="scroll-box">
-        <table id="usersTable">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>ChatId</th>
-              <th>Stars</th>
-              <th>Cash</th>
-              <th>VIP</th>
-              <th>Admin</th>
-              <th>Host</th>
-              <th>Subscription</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Whitelist Injector -->
-    <div class="card">
-      <h3>Whitelist Injector</h3>
-      <div class="row" style="margin-bottom:8px">
-        <input id="wlEmail" placeholder="Email" />
-        <input id="wlPhone" placeholder="Phone" />
-        <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
-        <input type="file" id="wlCsvUpload" />
-      </div>
-      <div class="row" style="margin-bottom:8px">
-        <label><input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼</label>
-      </div>
-      <div class="scroll-box">
-        <table id="whitelistTable">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Subscription</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+  <!-- Users Table -->
+<div class="card">
+  <h3>Users</h3>
+  <div class="muted" style="margin-bottom:8px">
+    Edit stars, cash, toggles, or subscription info.
   </div>
+
+  <!-- Mass Remove Button -->
+  <div class="row" style="margin-bottom:8px">
+    <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected Users</button>
+  </div>
+
+  <div class="scroll-box">
+    <table id="usersTable">
+      <thead>
+        <tr>
+          <th>Select</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>ChatId</th>
+          <th>Stars</th>
+          <th>Cash</th>
+          <th>VIP</th>
+          <th>Admin</th>
+          <th>Host</th>
+          <th>Subscription</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Whitelist Injector -->
+<div class="card">
+  <h3>Whitelist Injector</h3>
+  <div class="row" style="margin-bottom:8px">
+    <input id="wlEmail" placeholder="Email" />
+    <input id="wlPhone" placeholder="Phone" />
+    <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
+    <input type="file" id="wlCsvUpload" />
+  </div>
+  <div class="row" style="margin-bottom:8px">
+    <label><input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼</label>
+  </div>
+
+  <!-- Mass Remove Button for Whitelist -->
+  <div class="row" style="margin-bottom:8px">
+    <button id="massRemoveWhitelistBtn" class="btn btn-danger">Remove Selected Whitelist</button>
+  </div>
+
+  <div class="scroll-box">
+    <table id="whitelistTable">
+      <thead>
+        <tr>
+          <th>Select</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Subscription</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
 
   <!-- Loader / Modal -->
   <div id="loaderOverlay">
