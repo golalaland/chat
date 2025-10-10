@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
 
-      setTimeout(()=>{ window.location.href="https://your-shop-link.com"; }, 2000);
+      setTimeout(()=>{ window.location.href="nushop.html"; }, 2000);
 
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
