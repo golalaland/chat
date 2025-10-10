@@ -339,9 +339,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Paystack payment
     const handler = PaystackPop.setup({
-      key: 'YOUR_PAYSTACK_PUBLIC_KEY', // replace with your key
+      key: 'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd', // replace with your key
       email: emailInput.value,
-      amount: 10000, // amount in kobo, e.g., 10000 = ₦100
+      amount: 299900, // amount in kobo, e.g., 10000 = ₦100
       currency: "NGN",
       ref: `VIP-${Date.now()}`,
       callback: async function(response){
