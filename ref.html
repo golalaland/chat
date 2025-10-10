@@ -27,12 +27,12 @@ body {
   width:100%;
   max-width:430px;
   height:240px;
-  background:#333 url('https://via.placeholder.com/430x240.png?text=Promo+Image') center/cover no-repeat;
+  background:#333 url('https://via.placeholder.com/430x240') center/cover no-repeat;
   border-radius:15px;
   margin-bottom:1rem;
 }
 h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:1rem; text-align:center; }
-.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; position:relative; }
+.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; }
 .form-group input {
   width:100%; padding:0.65rem 1rem; border-radius:30px;
   border:1px solid var(--input-border); background:var(--input-bg);
@@ -62,15 +62,12 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:1rem; text-alig
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-/* DOB and phone */
-.dob-input { cursor:pointer; text-align:center; }
-.phone-group { display:flex; align-items:center; gap:5px; }
-.flag-btn { width:36px; height:36px; border-radius:50%; border:1px solid #444; cursor:pointer; background-size:cover; background-position:center; }
-.flag-dropdown { display:none; position:absolute; top:42px; left:0; background:#222; border:1px solid #444; border-radius:10px; overflow:hidden; max-height:200px; overflow-y:auto; z-index:1000; }
-.flag-dropdown .flag-option { display:flex; align-items:center; gap:8px; padding:5px 8px; cursor:pointer; transition:0.2s; }
-.flag-dropdown .flag-option:hover { background:#333; }
-.fomo-modal { position:fixed; right:10px; bottom:50px; background:rgba(0,0,0,0.85); color:#fff; padding:0.5rem 1rem; border-radius:15px; font-size:0.85rem; display:none; align-items:center; gap:5px; z-index:9999; box-shadow:0 0 10px #000; }
-.fomo-modal span { margin-left:5px; font-weight:bold; color:var(--primary-color); }
+.fomo-modal {
+  display:none; position:relative; margin-top:1rem;
+  background:rgba(255,64,129,0.2); padding:10px 15px; border-radius:15px;
+  text-align:center; font-size:0.85rem; font-weight:bold;
+  color:#fff; width:80%; max-width:400px;
+}
 </style>
 </head>
 <body>
@@ -81,18 +78,9 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:1rem; text-alig
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
-
-<div class="form-group phone-group">
-  <div id="flagBtn" class="flag-btn" style="background-image:url('https://flagcdn.com/48x36/us.png')"></div>
-  <input id="phone" type="text" placeholder="Phone Number">
-  <div id="flagDropdown" class="flag-dropdown"></div>
-</div>
-
-<div class="form-group">
-  <input id="dob" class="dob-input" type="text" readonly placeholder="Select your date of birth">
-</div>
-
+<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
+<div class="form-group"><input id="dob" type="date" placeholder="Date of Birth"></div>
 
 <div class="gender-label">Select Your Gender</div>
 <div class="gender-select">
@@ -108,15 +96,14 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:1rem; text-alig
   <span class="btn-text">Sign Up</span>
   <span class="spinner" id="spinner"></span>
 </button>
-<div class="message" id="message"></div>
 
-<div id="fomoModal" class="fomo-modal">🎉 <span id="fomoName">Someone</span> just joined!</div>
+<div class="message" id="message"></div>
+<div class="fomo-modal" id="fomoModal"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -131,8 +118,7 @@ const db = getFirestore(app);
 document.addEventListener('DOMContentLoaded', () => {
   let isVIP = false;
   let gender = '';
-  let selectedFlag = {code:"+1", url:"https://flagcdn.com/48x36/us.png"};
-
+  let userCountry = '';
   const vipToggle = document.getElementById('vipToggle');
   const vipLabel = document.getElementById('vipLabel');
   const vipMessage = document.getElementById('vipMessage');
@@ -147,69 +133,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const phoneInput = document.getElementById('phone');
   const emailInput = document.getElementById('email');
   const dobInput = document.getElementById('dob');
-
-  const flagBtn = document.getElementById('flagBtn');
-  const flagDropdown = document.getElementById('flagDropdown');
-
   const fomoModal = document.getElementById('fomoModal');
-  const fomoName = document.getElementById('fomoName');
 
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
-  // ---------- UTILS ----------
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
-
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
     const snapshot = await getDocs(q);
     return !snapshot.empty;
   }
+  phoneInput.addEventListener('input', ()=>{ phoneInput.value=phoneInput.value.replace(/\D/g,''); });
 
-  function calculateAge(dob){
-    const diff = new Date() - new Date(dob);
-    return Math.floor(diff / (1000*60*60*24*365.25));
-  }
+  // Detect country via IP
+  fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => { userCountry = data.country_name || 'Unknown'; })
+    .catch(()=>{ userCountry='Unknown'; });
 
-  // ---------- FLAG SELECTION ----------
-  const countries = [
-    {name:"USA", code:"+1", url:"https://flagcdn.com/48x36/us.png"},
-    {name:"UK", code:"+44", url:"https://flagcdn.com/48x36/gb.png"},
-    {name:"Canada", code:"+1", url:"https://flagcdn.com/48x36/ca.png"},
-    {name:"Germany", code:"+49", url:"https://flagcdn.com/48x36/de.png"},
-    {name:"France", code:"+33", url:"https://flagcdn.com/48x36/fr.png"}
-  ];
-  countries.forEach(c=>{
-    const el = document.createElement('div');
-    el.className = 'flag-option';
-    el.innerHTML = `<img src="${c.url}" width="24" height="18"> <span>${c.name}</span>`;
-    el.addEventListener('click', ()=>{
-      selectedFlag = c;
-      flagBtn.style.backgroundImage=`url(${c.url})`;
-      flagDropdown.style.display='none';
-    });
-    flagDropdown.appendChild(el);
-  });
-  flagBtn.addEventListener('click', ()=>flagDropdown.style.display = flagDropdown.style.display==='block' ? 'none':'block');
-  document.addEventListener('click', e=>{ if(!flagBtn.contains(e.target)&&!flagDropdown.contains(e.target)) flagDropdown.style.display='none'; });
-
-  // ---------- DOB PICKER ----------
-  dobInput.addEventListener('click', ()=>{
-    const input = document.createElement('input');
-    input.type='date';
-    input.style.position='absolute';
-    input.style.opacity='0';
-    document.body.appendChild(input);
-    input.focus();
-    input.onchange = ()=>{ dobInput.value = input.value; document.body.removeChild(input); };
-    input.onblur = ()=>{ if(document.body.contains(input)) document.body.removeChild(input); };
-  });
-
-  // ---------- VIP TOGGLE ----------
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
@@ -221,16 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
-  // ---------- CONFETTI ----------
   function triggerSprayConfetti() {
-    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const numParticles = 50;
+    const colors=['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
     const toggle = document.getElementById('vipToggle');
     const rect = toggle.getBoundingClientRect();
     const startX = rect.left + rect.width/2;
     const startY = rect.bottom;
-    for (let i = 0; i < numParticles; i++) {
-      const particle = document.createElement('div');
+    for(let i=0;i<50;i++){
+      const particle=document.createElement('div');
       particle.style.position='fixed';
       particle.style.width='6px';
       particle.style.height='16px';
@@ -242,15 +186,15 @@ document.addEventListener('DOMContentLoaded', () => {
       particle.style.pointerEvents='none';
       particle.style.zIndex='9999';
       document.body.appendChild(particle);
-      const angle = (Math.random()*Math.PI/2) - Math.PI/4;
-      const speed = 300 + Math.random()*200;
-      const duration = 1500 + Math.random()*500;
-      const start = performance.now();
+      const angle=(Math.random()*Math.PI/2)-Math.PI/4;
+      const speed=300+Math.random()*200;
+      const duration=1500+Math.random()*500;
+      const start=performance.now();
       (function animate(time){
-        const t = (time-start)/duration;
+        const t=(time-start)/duration;
         if(t<1){
-          const dx = Math.sin(angle)*speed*t;
-          const dy = -Math.cos(angle)*speed*t;
+          const dx=Math.sin(angle)*speed*t;
+          const dy=-Math.cos(angle)*speed*t;
           particle.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`;
           particle.style.opacity=`${1-t}`;
           requestAnimationFrame(animate);
@@ -259,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ---------- SUBMIT ----------
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
@@ -270,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(phone.length<6||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
+    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
     if(!isVIP && gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts buddy 🙂.'; return; }
 
@@ -288,7 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const age = calculateAge(dob);
+      const birthDate = new Date(dob);
+      const age = new Date().getFullYear() - birthDate.getFullYear();
+
       const userData = {
         chatId,
         chatIdLower:chatId.toLowerCase(),
@@ -305,10 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
         hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
         invitedBy:referrer||null,
         email,
-        phone: selectedFlag.code + phone,
+        phone,
         gender,
         dob,
         age,
+        location:userCountry,
         createdAt:serverTimestamp(),
         subscriptionActive:false,
         subscriptionCount:0,
@@ -320,8 +266,27 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       await setDoc(userRef,userData);
+
+      // Host rewards
+      if(referrer){
+        const refDoc = doc(db,"users",sanitizeKey(referrer));
+        const refSnap = await getDoc(refDoc);
+        if(refSnap.exists()){
+          const refData = refSnap.data();
+          const alreadyReferred = Array.isArray(refData.hostFriends) &&
+            refData.hostFriends.some(f=>f.email===email || f.chatIdLower===chatId.toLowerCase());
+          if(!alreadyReferred){
+            await updateDoc(refDoc,{
+              stars:(refData.stars||0)+200,
+              starsGifted:(refData.starsGifted||0)+200,
+              hostFriends: arrayUnion({email,chatId,chatIdLower:chatId.toLowerCase()})
+            });
+          }
+        }
+      }
+
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
-      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ 🎉`;
+      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and your host got 200 ⭐️ 🎉`;
 
       setTimeout(()=>{ window.location.href="https://golalaland.github.io/chat/nushop.html#"; },800);
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
@@ -333,8 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(()=>{
     const randomName = fakeNames[Math.floor(Math.random()*fakeNames.length)];
     const randomVIP = Math.random()<0.5 ? 'VIP':'Host';
-    fomoName.textContent = `${randomName} just joined as ${randomVIP} 🎉`;
-    fomoModal.style.display='flex';
+    fomoModal.textContent = `${randomName} just joined as ${randomVIP} 🎉`;
+    fomoModal.style.display='block';
     setTimeout(()=>{ fomoModal.style.display='none'; },5000);
   },60000);
 
