@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
     if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
-    if(gender==='Male' && isVIP){ messageEl.textContent='❌ Males cannot be VIP.'; return; }
+    if(gender==='Male' && isHost){ messageEl.textContent='❌ Males can only be VIP.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
     const uidKey=sanitizeKey(email); const userRef=doc(db,"users",uidKey);
