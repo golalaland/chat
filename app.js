@@ -167,6 +167,7 @@ async function showUserPopup(uidKey) {
   const popupGender = document.getElementById("popupGender");
   const socialsEl = document.getElementById("popupSocials");
   const closeBtn = document.getElementById("popupCloseBtn");
+  const photoEl = popup.querySelector(".popup-photo");
 
   const userRef = doc(db, "users", uidKey);
   const snap = await getDoc(userRef);
@@ -174,13 +175,23 @@ async function showUserPopup(uidKey) {
 
   const data = snap.data();
 
+  // Username
   popupUsername.textContent = data.chatId || "Unknown";
   popupUsername.style.color = data.usernameColor || "#fff";
 
-  // Example age flow (you can customize logic if you store DOB)
+  // Gender / Age
   popupGender.textContent = `A ${data.gender || "Unknown"} in their 20’s`;
 
-  // Social icons mapping
+  // Profile photo
+  if (data.photoURL) {
+    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
+  } else {
+    const initials = (data.chatId || "U").slice(0,2).toUpperCase();
+    photoEl.textContent = initials;
+    photoEl.style.background = data.usernameColor || "#333";
+  }
+
+  // Social icons (only show if user has value)
   const socials = [
     { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
     { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
@@ -190,10 +201,12 @@ async function showUserPopup(uidKey) {
 
   socialsEl.innerHTML = "";
   socials.forEach(s => {
+    const val = data[s.field] || "";
+    if (!val) return; // skip empty
     const a = document.createElement("a");
-    a.href = data[s.field] ? data[s.field] : "#";
+    a.href = val.startsWith("http") ? val : "#";
     a.target = "_blank";
-    a.innerHTML = `<img src="${s.icon}" alt="${s.field}">`;
+    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
     socialsEl.appendChild(a);
   });
 
