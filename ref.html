@@ -12,7 +12,7 @@
   --input-bg: #222;
   --input-border: #333;
   --vip-color: gold;
-  --fomo-bg: #fff;
+  --fomo-bg: #000;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
 body {
@@ -24,16 +24,15 @@ body {
   align-items:center;
   padding:1rem;
 }
-img.placeholder { width:250px; height:250px; border-radius:15px; margin-bottom:1rem; object-fit:cover; }
 h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
 .form-group { width:90%; max-width:400px; margin-bottom:0.7rem; display:flex; flex-direction:column; align-items:center; }
 .form-group input {
   width:100%; padding:0.65rem 1rem; border-radius:30px;
   border:1px solid var(--input-border); background:var(--input-bg);
-  color:var(--text-color); font-size:0.88rem; outline:none;
+  color:var(--text-color); font-size:0.9rem; outline:none;
 }
 .form-group input:focus { border-color: var(--primary-color); box-shadow:0 0 8px rgba(255,64,129,0.5); }
-.gender-label, .dob-label { font-size:0.88rem; text-align:center; margin-bottom:0.3rem; }
+.gender-label { text-align:center; font-weight:600; font-size:0.85rem; margin-bottom:0.3rem; }
 .gender-select { display:flex; justify-content:center; gap:15px; margin-bottom:1rem; }
 .gender-select button {
   width:50px; height:50px; border-radius:50%; border:none; background:#333;
@@ -43,7 +42,8 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .gender-select button:active { transform:translateY(3px); box-shadow:0 2px #000; }
 .gender-select button.selected { background:var(--primary-color); box-shadow:0 0 15px var(--primary-color); }
 .dob-container { display:flex; flex-direction:column; align-items:center; margin-bottom:0.7rem; }
-.dob-input { width:120px; padding:0.5rem 0.8rem; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.88rem; text-align:center; position:relative; cursor:pointer; }
+.dob-label { margin-bottom:0.3rem; font-size:0.85rem; text-align:center; }
+.dob-input { width:140px; padding:0.5rem 0.8rem; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.9rem; text-align:center; cursor:pointer; }
 .vip-label { text-align:center; font-weight:bold; font-size:1rem; margin-bottom:0.3rem; color:#aaa; transition:0.3s; }
 .vip-toggle { width:80px; height:36px; border-radius:18px; background:#444; position:relative; cursor:pointer; margin:0 auto 0.5rem auto; transition:0.3s; }
 .vip-toggle .vip-circle { width:34px; height:34px; border-radius:50%; background:#555; position:absolute; left:1px; top:1px; transition:0.3s; }
@@ -58,14 +58,17 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-.fomo-popup { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--fomo-bg); color:#000; padding:0.6rem 1rem; border-radius:6px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+.fomo-popup { position:fixed; top:100px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; white-space:nowrap; }
+.image-placeholder { width:300px; height:300px; background:#333; border-radius:15px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#aaa; }
+footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color:#aaa; }
 </style>
 </head>
 <body>
 
-<img class="placeholder" src="https://via.placeholder.com/1080x1080.png?text=Your+Image" alt="Image Placeholder">
-
+<div class="image-placeholder">Image Placeholder</div>
 <h2>VIP / Host Signup</h2>
+
+<div class="fomo-popup" id="fomoPopup">🎉 Someone just joined VIP!</div>
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
@@ -93,7 +96,7 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 </button>
 <div class="message" id="message"></div>
 
-<div class="fomo-popup" id="fomoPopup">🎉 Someone just joined!</div>
+<footer id="footer">Footer placeholder</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -129,15 +132,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const dobInput = document.getElementById('dob');
   const fomoPopup = document.getElementById('fomoPopup');
 
-  // Max DOB for 18+
-  const today = new Date();
-  dobInput.max = new Date(today.getFullYear()-18, today.getMonth(), today.getDate()).toISOString().split('T')[0];
-
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
+  const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
+  function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
+  function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
 
   function calculateAge(dobStr){
     const dob = new Date(dobStr);
@@ -152,7 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  // VIP toggle with confetti
+  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
@@ -200,20 +203,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+  // Set max DOB to today minus 18 years
+  const today = new Date();
+  const maxDate = new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
+  dobInput.max = maxDate.toISOString().split('T')[0];
 
-  async function fetchRecentJoiner() {
-    const q = query(collection(db, "users"), orderBy("createdAt","desc"), limit(1));
-    const snap = await getDocs(q);
-    snap.forEach(doc => {
-      const data = doc.data();
-      fomoPopup.textContent = `🎉 ${data.fullName} just joined as ${data.isVIP?'VIP':'Host'} ${data.isVIP?'🥳':'🎉'}`;
-      fomoPopup.style.opacity='1';
-      setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
+  // FOMO popup from Firestore
+  async function fetchRecentUsers() {
+    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
+    const snapshot = await getDocs(q);
+    const users = [];
+    snapshot.forEach(docSnap=>{
+      const data = docSnap.data();
+      users.push({fullName:data.fullName, isVIP:data.isVIP});
     });
+    return users;
   }
 
-  setInterval(fetchRecentJoiner, 10000);
+  async function showFOMO() {
+    const users = await fetchRecentUsers();
+    if(users.length===0) return;
+    let index = 0;
+    setInterval(()=>{
+      const u = users[index % users.length];
+      const emoji = u.isVIP?'🎉':'🎈';
+      fomoPopup.textContent = `${u.fullName} just joined as a ${u.isVIP?'VIP':'Host'} ${emoji}`;
+      fomoPopup.style.opacity='1';
+      setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
+      index++;
+    }, 10000);
+  }
+  showFOMO();
 
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
@@ -222,12 +242,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const phone = phoneInput.value.trim();
     const email = emailInput.value.trim().toLowerCase();
     const dob = dobInput.value;
-    const age = calculateAge(dob);
+    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
 
-    if(!fullName || !chatId || !phone || !email || !gender || !dob){
-      messageEl.textContent='Please fill in all fields.'; return;
-    }
-    if(age<18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
+    const age = calculateAge(dob);
+    if(age < 18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
+
+    if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
+    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
+    if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
 
@@ -243,35 +265,69 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const socialShare = isVIP ? false : true;
+      // Determine country via IP (simple fetch)
+      let country = 'Unknown';
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        country = data.country_name || 'Unknown';
+      } catch(e){}
+
       const userData = {
-        fullName, chatId, chatIdLower:chatId.toLowerCase(), phone, email, gender, dob, age,
-        isVIP, isHost:!isVIP, vipStars: isVIP?100:50, socialShare,
-        stars:50, starsToday:0, starsGifted:0, createdAt:serverTimestamp(),
-        bankName:"", bankAccountNumber:"", subscriptionActive:false, subscriptionCount:0,
-        instagram:"", tiktok:"", whatsapp:"", telegram:"",
+        chatId,
+        chatIdLower:chatId.toLowerCase(),
+        fullName,
+        stars:50,
+        starsToday:0,
+        starsGifted:0,
+        lastStarDate:new Date().toISOString().split("T")[0],
+        cash:0,
+        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+        isAdmin:false,
+        isVIP,
+        isHost:!isVIP,
         hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-        invitedBy: referrer||null
+        invitedBy:referrer||null,
+        email,
+        phone,
+        gender,
+        dob,
+        age,
+        bankName:"",
+        bankAccountNumber:"",
+        country,
+        subscriptionActive:false,
+        subscriptionCount:0,
+        socialShare:!isVIP,
+        instagram:"",
+        tiktok:"",
+        whatsapp:"",
+        telegram:"",
       };
 
-      await setDoc(userRef, userData);
+      // Save user
+      await setDoc(userRef,userData);
 
-      // Referral logic
+      // Handle referral bonus
       if(referrer){
         const inviterRef = doc(db,"users",sanitizeKey(referrer));
         const inviterSnap = await getDoc(inviterRef);
         if(inviterSnap.exists()){
           const inviterData = inviterSnap.data();
-          const bonus = isVIP?100:50;
-          const newStars = (inviterData.stars||0) + bonus;
-          const newStarsGifted = (inviterData.starsGifted||0) + bonus;
+          const bonusStars = isVIP?100:50;
+          const updatedStars = (inviterData.stars || 0) + bonusStars;
+          const updatedStarsGifted = (inviterData.starsGifted || 0) + bonusStars;
           await updateDoc(inviterRef,{
-            stars: newStars,
-            starsGifted: newStarsGifted,
+            stars:updatedStars,
+            starsGifted:updatedStarsGifted,
             hostFriends: arrayUnion({
-              chatId, chatIdLower:chatId.toLowerCase(), email, hostVIP: isVIP?1:0,
-              hostLink: userData.hostLink,
-              invitedBy: referrer, giftShown:true
+              chatId,
+              chatIdLower:chatId.toLowerCase(),
+              email,
+              giftShown:true,
+              hostLink:inviterData.hostLink || null,
+              hostVIP:isVIP?1:0,
+              invitedBy:referrer
             })
           });
         }
@@ -280,12 +336,12 @@ document.addEventListener('DOMContentLoaded', () => {
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
 
-      setTimeout(()=>{ window.location.href="https://yourshopurl.com"; },1500);
+      // Redirect to shop after short delay
+      setTimeout(()=>{ window.location.href="https://golalaland.github.io/shop"; },1500);
 
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
-
 });
 </script>
 </body>
