@@ -162,44 +162,51 @@ function attachMessagesListener() {
 /* ---------- User Popup Logic ---------- */
 async function showUserPopup(uidKey) {
   const popup = document.getElementById("userPopup");
-  const usernameEl = document.getElementById("popupUsername");
-  const genderAgeEl = document.getElementById("popupGenderAge");
-  const photoEl = document.getElementById("popupPhoto");
+  const popupContent = popup.querySelector(".user-popup-content");
+  const popupUsername = document.getElementById("popupUsername");
+  const popupGender = document.getElementById("popupGender");
   const socialsEl = document.getElementById("popupSocials");
   const closeBtn = document.getElementById("popupCloseBtn");
 
-  // Fetch Firestore user
   const userRef = doc(db, "users", uidKey);
   const snap = await getDoc(userRef);
-  if (!snap.exists()) return showStarPopup("User not found");
+  if (!snap.exists()) return alert("User not found");
 
   const data = snap.data();
 
-  // Populate popup dynamically
-  usernameEl.textContent = data.chatId || "Unknown";
-  usernameEl.style.color = randomColor();
+  popupUsername.textContent = data.chatId || "Unknown";
+  popupUsername.style.color = data.usernameColor || "#fff";
 
-  // Optional: gender & age
-  genderAgeEl.textContent = `${data.gender || "Unknown"}`; // remove age if you don't track
+  // Example age flow (you can customize logic if you store DOB)
+  popupGender.textContent = `A ${data.gender || "Unknown"} in their 20’s`;
 
-  photoEl.src = data.photoURL || "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+  // Social icons mapping
+  const socials = [
+    { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
+    { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
+    { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
+    { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
+  ];
 
   socialsEl.innerHTML = "";
-  if(data.socials){
-    for(const key in data.socials){
-      const link = document.createElement("a");
-      link.href = data.socials[key];
-      link.target = "_blank";
-      link.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/${key === 'ig' ? '174/174855' : '733/733585'}.png" alt="${key}">`;
-      socialsEl.appendChild(link);
-    }
-  }
+  socials.forEach(s => {
+    const a = document.createElement("a");
+    a.href = data[s.field] ? data[s.field] : "#";
+    a.target = "_blank";
+    a.innerHTML = `<img src="${s.icon}" alt="${s.field}">`;
+    socialsEl.appendChild(a);
+  });
 
   popup.style.display = "flex";
+  setTimeout(() => popupContent.classList.add("show"), 10);
 
-  // Close popup
-  closeBtn.onclick = () => popup.style.display = "none";
-  popup.onclick = (e) => { if(e.target === popup) popup.style.display = "none"; };
+  const closePopup = () => {
+    popupContent.classList.remove("show");
+    setTimeout(() => { popup.style.display = "none"; }, 200);
+  };
+
+  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
+  closeBtn.onclick = closePopup;
 }
 
 /* ---------- Detect username tap ---------- */
