@@ -1,4 +1,4 @@
-// admin-payfeed.js (revamped & optimized with 乂丨乂丨 font)
+// admin-payfeed.js (revamped, optimized, mass-remove ready with 乂丨乂丨 font)
 
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -128,7 +128,7 @@ async function loadUsers() {
     const snap = await getDocs(collection(db,"users"));
     usersCache = snap.docs.map(d=>({id:d.id,...d.data()}));
     renderUsers(usersCache);
-  }catch(e){ console.error(e); usersTableBody.innerHTML=`<tr><td colspan="10" class="muted">Failed to load users.</td></tr>`; }
+  }catch(e){ console.error(e); usersTableBody.innerHTML=`<tr><td colspan="11" class="muted">Failed to load users.</td></tr>`; }
 }
 
 function renderUsers(users){
@@ -137,6 +137,7 @@ function renderUsers(users){
     const tr = document.createElement("tr");
     tr.style.fontFamily="'乂丨乂丨', monospace";
     tr.innerHTML=`
+      <td><input type="checkbox" class="user-select"/></td>
       <td>${u.email||""}</td>
       <td>${u.phone||""}</td>
       <td>${u.chatId||""}</td>
@@ -150,40 +151,39 @@ function renderUsers(users){
     const isHost=createToggleCheckbox(u.isHost);
     const subscriptionActive=createToggleCheckbox(u.subscriptionActive);
 
-    tr.children[5].appendChild(isVIP);
-    tr.children[6].appendChild(isAdminToggle);
-    tr.children[7].appendChild(isHost);
-    tr.children[8].appendChild(subscriptionActive);
+    tr.children[6].appendChild(isVIP);
+    tr.children[7].appendChild(isAdminToggle);
+    tr.children[8].appendChild(isHost);
+    tr.children[9].appendChild(subscriptionActive);
 
-    const actionsTd=tr.children[9];
-    const actionsDiv=document.createElement("div"); actionsDiv.className="actions";
-    const enterBtn=document.createElement("button"); enterBtn.className="btn btn-primary"; enterBtn.textContent="Enter";
-    const removeBtn=document.createElement("button"); removeBtn.className="btn btn-danger"; removeBtn.textContent="Remove";
+    const actionsTd = tr.children[10];
+    const actionsDiv = document.createElement("div"); actionsDiv.className = "actions";
+    const enterBtn = document.createElement("button"); enterBtn.className = "btn btn-primary"; enterBtn.textContent = "Enter";
+    const removeBtn = document.createElement("button"); removeBtn.className = "btn btn-danger"; removeBtn.textContent = "Remove";
     actionsDiv.appendChild(enterBtn); actionsDiv.appendChild(removeBtn); actionsTd.appendChild(actionsDiv);
 
-    // ---------- Enter button ----------
+    // Enter button logic
     enterBtn.addEventListener("click", async ()=>{
       const confirmed = await showConfirmModal("Update user", `Apply changes for ${u.email || "(no email)"}?`);
       if(!confirmed) return;
       showLoader("Updating user...");
       try{
-        const stars=Number(tr.children[3].querySelector("input").value||0);
-        const cash=Number(tr.children[4].querySelector("input").value||0);
+        const stars=Number(tr.children[4].querySelector("input").value||0);
+        const cash=Number(tr.children[5].querySelector("input").value||0);
         const updates={stars,cash,isVIP:isVIP.checked,isAdmin:isAdminToggle.checked,isHost:isHost.checked,subscriptionActive:subscriptionActive.checked};
         if(updates.subscriptionActive){ updates.subscriptionStartTime=Date.now(); updates.subscriptionCount=(u.subscriptionCount||0)+1; }
         await updateDoc(doc(db,"users",u.id),updates);
 
-        // whitelist sync
         const wlRef=doc(db,"whitelist",(u.email||"").toLowerCase());
         if(updates.subscriptionActive) await setDoc(wlRef,{email:(u.email||"").toLowerCase(),phone:u.phone||"",chatId:u.chatId||"",subscriptionActive:true,subscriptionStartTime:updates.subscriptionStartTime},{merge:true});
         else await updateDoc(wlRef,{subscriptionActive:false}).catch(()=>{});
 
         hideLoader(); await loadUsers(); await loadWhitelist();
         alert("User updated successfully.");
-      }catch(err){ hideLoader(); console.error("Enter update error:",err); alert("Failed to update user. See console."); }
+      }catch(err){ hideLoader(); console.error(err); alert("Failed to update user. See console."); }
     });
 
-    // ---------- Remove button ----------
+    // Remove button logic
     removeBtn.addEventListener("click", async ()=>{
       const confirmed=await showConfirmModal("Remove user",`Delete ${u.email||"(no email)"} from database?`);
       if(!confirmed) return;
@@ -201,13 +201,13 @@ function renderUsers(users){
 }
 
 // ---------- Search ----------
-let searchTimeout = null;
-userSearch.addEventListener("input", ()=>{
+let searchTimeout=null;
+userSearch.addEventListener("input",()=>{
   clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(()=>{
+  searchTimeout=setTimeout(()=>{
     const q=(userSearch.value||"").toLowerCase();
     renderUsers(usersCache.filter(u=>(u.email||"").toLowerCase().includes(q)||(u.chatId||"").toLowerCase().includes(q)));
-  }, 200);
+  },200);
 });
 
 // ---------- Export CSV ----------
@@ -300,7 +300,14 @@ async function loadWhitelist(){
       const data=d.data()||{};
       const tr=document.createElement("tr");
       tr.style.fontFamily="'乂丨乂丨', monospace";
-      tr.innerHTML=`<td>${data.email||""}</td><td>${data.phone||""}</td><td>${!!data.subscriptionActive}</td><td></td>`;
+      tr.innerHTML=`
+        <td><input type="checkbox" class="wl-select"/></td>
+        <td>${data.email||""}</td>
+        <td>${data.phone||""}</td>
+        <td>${!!data.subscriptionActive}</td>
+        <td></td>
+      `;
+
       const removeBtn=document.createElement("button");
       removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
       removeBtn.addEventListener("click",async ()=>{
@@ -312,10 +319,53 @@ async function loadWhitelist(){
           hideLoader(); await loadWhitelist(); alert(`${data.email||"(no email)"} removed from whitelist.`);
         }catch(err){ hideLoader(); console.error(err); alert("Failed to remove whitelist."); }
       });
-      tr.children[3].appendChild(removeBtn);
+
+      tr.children[4].appendChild(removeBtn);
       whitelistTableBody.appendChild(tr);
     }
-  }catch(err){ console.error(err); whitelistTableBody.innerHTML=`<tr><td colspan="4" class="muted">Failed to load whitelist.</td></tr>`; }
+  }catch(err){ console.error(err); whitelistTableBody.innerHTML=`<tr><td colspan="5" class="muted">Failed to load whitelist.</td></tr>`; }
 }
 
-// ---------- End of file ----------
+// ---------- Mass Remove ----------
+async function massRemove(collectionName, selectedIds, selectedEmails=[]){
+  if(!selectedIds.length) return alert("No items selected.");
+  const confirmed = await showConfirmModal(`Remove ${collectionName}`,`Are you sure you want to remove ${selectedIds.length} ${collectionName}?`);
+  if(!confirmed) return;
+
+  showLoader(`Removing ${selectedIds.length} ${collectionName}...`);
+  try{
+    for(let i=0;i<selectedIds.length;i++){
+      const id=selectedIds[i];
+      await deleteDoc(doc(db,collectionName,id)).catch(()=>{});
+      if(collectionName==="users" && selectedEmails[i]){
+        await deleteDoc(doc(db,"whitelist",selectedEmails[i].toLowerCase())).catch(()=>{});
+      }
+    }
+    hideLoader();
+    if(collectionName==="users") await loadUsers();
+    else if(collectionName==="whitelist") await loadWhitelist();
+    alert(`${selectedIds.length} ${collectionName} removed successfully.`);
+  }catch(err){ hideLoader(); console.error(`Mass remove ${collectionName} error:`,err); alert("Failed to remove some items. See console."); }
+}
+
+// ---------- Mass Remove Buttons ----------
+const massRemoveUsersBtn=document.createElement("button");
+massRemoveUsersBtn.className="btn btn-danger"; massRemoveUsersBtn.textContent="Remove Selected Users";
+usersTableBody.parentElement.parentElement.insertBefore(massRemoveUsersBtn, usersTableBody.parentElement);
+
+const massRemoveWhitelistBtn=document.createElement("button");
+massRemoveWhitelistBtn.className="btn btn-danger"; massRemoveWhitelistBtn.textContent="Remove Selected Whitelist";
+whitelistTableBody.parentElement.parentElement.insertBefore(massRemoveWhitelistBtn, whitelistTableBody.parentElement);
+
+massRemoveUsersBtn.addEventListener("click", async ()=>{
+  const selectedRows=[...usersTableBody.querySelectorAll("input.user-select:checked")].map(cb=>cb.closest("tr"));
+  const ids=selectedRows.map(tr=>usersCache.find(u=>u.email===tr.children[1].textContent)?.id).filter(Boolean);
+  const emails=selectedRows.map(tr=>tr.children[1].textContent);
+  await massRemove("users", ids, emails);
+});
+
+massRemoveWhitelistBtn.addEventListener("click", async ()=>{
+  const selectedRows=[...whitelistTableBody.querySelectorAll("input.wl-select:checked")].map(cb=>cb.closest("tr"));
+  const ids=selectedRows.map(tr=>tr.children[1].textContent.toLowerCase());
+  await massRemove("whitelist", ids);
+});
