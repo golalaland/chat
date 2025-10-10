@@ -12,7 +12,7 @@
   --input-bg: #222;
   --input-border: #333;
   --vip-color: gold;
-  --fomo-bg: #000;
+  --fomo-bg: #fff;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
 body {
@@ -24,7 +24,7 @@ body {
   align-items:center;
   padding:1rem;
 }
-img.placeholder { width:100px; height:100px; border-radius:15px; margin-bottom:1rem; object-fit:cover; }
+img.placeholder { width:250px; height:250px; border-radius:15px; margin-bottom:1rem; object-fit:cover; }
 h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
 .form-group { width:90%; max-width:400px; margin-bottom:0.7rem; display:flex; flex-direction:column; align-items:center; }
 .form-group input {
@@ -58,12 +58,12 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-.fomo-popup { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--fomo-bg); color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; box-shadow:0 0 8px #fff; }
+.fomo-popup { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--fomo-bg); color:#000; padding:0.6rem 1rem; border-radius:6px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
 </style>
 </head>
 <body>
 
-<img class="placeholder" src="https://res.cloudinary.com/dekxhwh6l/image/upload/v1759080044/IMG_5078_xe9mpb.png" alt="Image Placeholder">
+<img class="placeholder" src="https://via.placeholder.com/1080x1080.png?text=Your+Image" alt="Image Placeholder">
 
 <h2>VIP / Host Signup</h2>
 
@@ -129,15 +129,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const dobInput = document.getElementById('dob');
   const fomoPopup = document.getElementById('fomoPopup');
 
+  // Max DOB for 18+
+  const today = new Date();
+  dobInput.max = new Date(today.getFullYear()-18, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
-  const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
-  function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
-  function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
-  function calculateAge(dobStr){ const dob = new Date(dobStr); const diffMs = Date.now() - dob.getTime(); const ageDt = new Date(diffMs); return Math.abs(ageDt.getUTCFullYear() - 1970); }
+
+  function calculateAge(dobStr){
+    const dob = new Date(dobStr);
+    const diffMs = Date.now() - dob.getTime();
+    const ageDt = new Date(diffMs);
+    return Math.abs(ageDt.getUTCFullYear() - 1970);
+  }
 
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
@@ -145,8 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
-
+  // VIP toggle with confetti
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
@@ -194,32 +200,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // FOMO popup from Firestore
-  setInterval(async () => {
-    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(5));
-    const snapshot = await getDocs(q);
-    if(!snapshot.empty){
-      const users = snapshot.docs.map(d=>d.data());
-      const user = users[Math.floor(Math.random()*users.length)];
-      const type = user.isVIP?'VIP':'Host';
-      fomoPopup.textContent = `🎉 ${user.fullName} just joined as a ${type}! ${type==='VIP'?'✨':'🎈'}`;
+  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+
+  async function fetchRecentJoiner() {
+    const q = query(collection(db, "users"), orderBy("createdAt","desc"), limit(1));
+    const snap = await getDocs(q);
+    snap.forEach(doc => {
+      const data = doc.data();
+      fomoPopup.textContent = `🎉 ${data.fullName} just joined as ${data.isVIP?'VIP':'Host'} ${data.isVIP?'🥳':'🎉'}`;
       fomoPopup.style.opacity='1';
       setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
-    }
-  }, 10000);
-
-  // Set max DOB to today minus 18 years
-  const today = new Date();
-  const maxDate = new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
-  dobInput.max = maxDate.toISOString().split('T')[0];
-
-  async function getIPLocation() {
-    try {
-      const res = await fetch('https://ipapi.co/json/');
-      const data = await res.json();
-      return data.country_name || '';
-    } catch { return ''; }
+    });
   }
+
+  setInterval(fetchRecentJoiner, 10000);
 
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
@@ -228,15 +222,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const phone = phoneInput.value.trim();
     const email = emailInput.value.trim().toLowerCase();
     const dob = dobInput.value;
-    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
-
     const age = calculateAge(dob);
-    if(age < 18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
 
-    if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
-    if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
-    if(!isVIP && gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts buddy 🙂.'; return; }
+    if(!fullName || !chatId || !phone || !email || !gender || !dob){
+      messageEl.textContent='Please fill in all fields.'; return;
+    }
+    if(age<18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
 
@@ -252,64 +243,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const country = await getIPLocation();
-
+      const socialShare = isVIP ? false : true;
       const userData = {
-        chatId,
-        chatIdLower:chatId.toLowerCase(),
-        fullName,
-        stars:50,
-        starsToday:0,
-        starsGifted:0,
-        lastStarDate:new Date().toISOString().split("T")[0],
-        cash:0,
-        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
-        isAdmin:false,
-        isVIP,
-        isHost:!isVIP,
+        fullName, chatId, chatIdLower:chatId.toLowerCase(), phone, email, gender, dob, age,
+        isVIP, isHost:!isVIP, vipStars: isVIP?100:50, socialShare,
+        stars:50, starsToday:0, starsGifted:0, createdAt:serverTimestamp(),
+        bankName:"", bankAccountNumber:"", subscriptionActive:false, subscriptionCount:0,
+        instagram:"", tiktok:"", whatsapp:"", telegram:"",
         hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-        invitedBy:referrer||null,
-        email,
-        phone,
-        gender,
-        dob,
-        age,
-        bankName:"",
-        bankAccountNumber:"",
-        createdAt:serverTimestamp(),
-        subscriptionActive:false,
-        subscriptionCount:0,
-        socialShare:false,
-        instagram:"",
-        tiktok:"",
-        whatsapp:"",
-        telegram:"",
-        country
+        invitedBy: referrer||null
       };
 
-      await setDoc(userRef,userData);
+      await setDoc(userRef, userData);
 
-      // Handle inviter bonus
+      // Referral logic
       if(referrer){
         const inviterRef = doc(db,"users",sanitizeKey(referrer));
         const inviterSnap = await getDoc(inviterRef);
         if(inviterSnap.exists()){
           const inviterData = inviterSnap.data();
-          const bonus = isVIP?200:200;
-          const hostFriends = inviterData.hostFriends || [];
-          hostFriends.push({
-            chatId,
-            chatIdLower:chatId.toLowerCase(),
-            email,
-            giftShown:true,
-            hostLink:inviterData.hostLink || null,
-            hostVIP: isVIP?1:0,
-            invitedBy:referrer
-          });
+          const bonus = isVIP?100:50;
+          const newStars = (inviterData.stars||0) + bonus;
+          const newStarsGifted = (inviterData.starsGifted||0) + bonus;
           await updateDoc(inviterRef,{
-            hostFriends,
-            stars: (inviterData.stars||0) + bonus,
-            starsGifted: (inviterData.starsGifted||0) + bonus
+            stars: newStars,
+            starsGifted: newStarsGifted,
+            hostFriends: arrayUnion({
+              chatId, chatIdLower:chatId.toLowerCase(), email, hostVIP: isVIP?1:0,
+              hostLink: userData.hostLink,
+              invitedBy: referrer, giftShown:true
+            })
           });
         }
       }
@@ -317,11 +280,12 @@ document.addEventListener('DOMContentLoaded', () => {
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
 
-      setTimeout(()=>{ window.location.href="nushop.html"; }, 2000);
+      setTimeout(()=>{ window.location.href="https://yourshopurl.com"; },1500);
 
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
+
 });
 </script>
 </body>
