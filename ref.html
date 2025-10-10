@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>VIP / Host Signup</title>
 <style>
 :root {
@@ -24,15 +24,15 @@ body {
   align-items:center;
   padding:1rem;
 }
-h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
+h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
 .form-group { width:90%; max-width:400px; margin-bottom:0.7rem; display:flex; flex-direction:column; align-items:center; }
 .form-group input {
   width:100%; padding:0.65rem 1rem; border-radius:30px;
   border:1px solid var(--input-border); background:var(--input-bg);
-  color:var(--text-color); font-size:0.9rem; outline:none;
+  color:var(--text-color); font-size:0.85rem; outline:none;
 }
 .form-group input:focus { border-color: var(--primary-color); box-shadow:0 0 8px rgba(255,64,129,0.5); }
-.gender-label, .dob-label { text-align:center; font-weight:600; margin-bottom:0.3rem; font-size:0.85rem; }
+.gender-label { text-align:center; font-weight:600; margin-bottom:0.3rem; font-size:0.85rem; }
 .gender-select { display:flex; justify-content:center; gap:15px; margin-bottom:1rem; }
 .gender-select button {
   width:50px; height:50px; border-radius:50%; border:none; background:#333;
@@ -42,14 +42,15 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .gender-select button:active { transform:translateY(3px); box-shadow:0 2px #000; }
 .gender-select button.selected { background:var(--primary-color); box-shadow:0 0 15px var(--primary-color); }
 .dob-container { display:flex; flex-direction:column; align-items:center; margin-bottom:0.7rem; }
-.dob-input { width:120px; padding:0.5rem 0.8rem; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.9rem; text-align:center; position:relative; cursor:pointer; }
-.vip-label { text-align:center; font-weight:bold; font-size:1rem; margin-bottom:0.3rem; color:#aaa; transition:0.3s; }
+.dob-label { margin-bottom:0.3rem; font-size:0.85rem; text-align:center; }
+.dob-input { width:120px; padding:0.5rem 0.8rem; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.85rem; text-align:center; position:relative; cursor:pointer; }
+.vip-label { text-align:center; font-weight:bold; font-size:0.85rem; margin-bottom:0.3rem; color:#aaa; transition:0.3s; }
 .vip-toggle { width:80px; height:36px; border-radius:18px; background:#444; position:relative; cursor:pointer; margin:0 auto 0.5rem auto; transition:0.3s; }
 .vip-toggle .vip-circle { width:34px; height:34px; border-radius:50%; background:#555; position:absolute; left:1px; top:1px; transition:0.3s; }
 .vip-toggle.on .vip-circle { left:45px; background:gold; box-shadow:0 0 12px gold; }
 .vip-message { text-align:center; font-size:0.8rem; color:gold; opacity:0; transition:0.3s; margin-bottom:1rem; }
 .vip-label.on { color:gold; text-shadow:0 0 8px gold; }
-.submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; display:flex; justify-content:center; align-items:center; position:relative; }
+.submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.85rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; display:flex; justify-content:center; align-items:center; position:relative; }
 .submit-btn:hover { transform:scale(1.03); }
 .submit-btn .spinner {
   width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3);
@@ -57,11 +58,13 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-.fomo-popup { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--fomo-bg); color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; box-shadow:0 0 12px rgba(255,255,255,0.3); }
+.fomo-popup { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--fomo-bg); color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; }
+.image-placeholder { width:100%; max-width:430px; height:240px; background:#333; border-radius:15px; margin-bottom:1rem; display:flex; justify-content:center; align-items:center; font-size:2rem; color:#777; }
 </style>
 </head>
 <body>
 
+<div class="image-placeholder">📷</div>
 <h2>VIP / Host Signup</h2>
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
@@ -90,11 +93,11 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 </button>
 <div class="message" id="message"></div>
 
-<div class="fomo-popup" id="fomoPopup">🎉 Someone just joined!</div>
+<div class="fomo-popup" id="fomoPopup">🎉 X just joined VIP!</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -126,18 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const dobInput = document.getElementById('dob');
   const fomoPopup = document.getElementById('fomoPopup');
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
+  function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
-
-  function calculateAge(dobStr){
-    const dob = new Date(dobStr);
-    const diffMs = Date.now() - dob.getTime();
-    const ageDt = new Date(diffMs);
-    return Math.abs(ageDt.getUTCFullYear() - 1970);
-  }
+  function calculateAge(dobStr){ const dob = new Date(dobStr); const diffMs = Date.now()-dob.getTime(); const ageDt = new Date(diffMs); return Math.abs(ageDt.getUTCFullYear()-1970); }
 
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
@@ -194,26 +194,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Set max DOB to today minus 18 years
+  // FOMO from Firestore
+  async function showRandomFomo(){
+    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(20));
+    const snapshot = await getDocs(q);
+    const users = snapshot.docs.map(d=>d.data());
+    if(users.length===0) return;
+    const randomUser = users[Math.floor(Math.random()*users.length)];
+    const type = randomUser.isVIP?'VIP':'Host';
+    fomoPopup.textContent = `🎉 ${randomUser.chatId} just joined as ${type}! 🎊`;
+    fomoPopup.style.opacity='1';
+    setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
+  }
+  setInterval(showRandomFomo,10000);
+
   const today = new Date();
   const maxDate = new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
   dobInput.max = maxDate.toISOString().split('T')[0];
-
-  // FOMO from Firestore
-  async function showFomo() {
-    const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(10));
-    const snapshot = await getDocs(q);
-    if(!snapshot.empty){
-      const users = snapshot.docs.map(doc=>doc.data());
-      const randomUser = users[Math.floor(Math.random()*users.length)];
-      const type = randomUser.isVIP ? 'VIP' : 'Host';
-      const emoji = randomUser.isVIP ? '✨' : '🎉';
-      fomoPopup.textContent = `🎈 ${randomUser.fullName} just joined as ${type}! ${emoji}`;
-      fomoPopup.style.opacity='1';
-      setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 4000);
-    }
-  }
-  setInterval(showFomo, 10000); // every 10 sec
 
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
@@ -246,14 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Get IP-based country
-      let userCountry = "";
-      try{
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        userCountry = data.country_name || "";
-      } catch(e){ console.log("IP fetch failed", e); }
-
       const userData = {
         chatId,
         chatIdLower:chatId.toLowerCase(),
@@ -267,8 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isAdmin:false,
         isVIP,
         isHost:!isVIP,
-        hostLink:!isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
-        invitedBy:null,
+        hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+        invitedBy:referrer||null,
         email,
         phone,
         gender,
@@ -284,12 +273,27 @@ document.addEventListener('DOMContentLoaded', () => {
         tiktok:"",
         whatsapp:"",
         telegram:"",
-        country: userCountry
       };
 
       await setDoc(userRef,userData);
+
+      // Referrer bonus
+      if(referrer && referrer.toLowerCase()!==chatId.toLowerCase()){
+        const refQ = query(collection(db,"users"), where("chatIdLower","==",referrer.toLowerCase()));
+        const refSnap = await getDocs(refQ);
+        if(!refSnap.empty){
+          const refDoc = refSnap.docs[0];
+          const refRef = doc(db,"users",refDoc.id);
+          await updateDoc(refRef,{ stars: (refDoc.data().stars||0) + 20 });
+        }
+      }
+
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
+
+      // Redirect to shop after short delay
+      setTimeout(()=>{ window.location.href="https://your-shop.com"; }, 1500);
+
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
