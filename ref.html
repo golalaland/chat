@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
 
       // Redirect to shop after short delay
-      setTimeout(()=>{ window.location.href="https://golalaland.github.io/shop"; },1500);
+      setTimeout(()=>{ window.location.href="nushop.html"; },1500);
 
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
