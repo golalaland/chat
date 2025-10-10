@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VIP / 乂 I 乂 I</title>
+<title>VIP / CUBE</title>
 <style>
 :root {
   --primary-color: #ff4081;
@@ -116,12 +116,11 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 </div>
 
 <div class="message" id="message"></div>
-
 <footer id="footer">Footer placeholder</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -153,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const dobInput = document.getElementById('dob');
   const fomoPopup = document.getElementById('fomoPopup');
 
-  // Paystack Elements
+  // Paystack
   const paystackContainer = document.getElementById('paystackContainer');
   const paystackBtn = document.getElementById('paystackBtn');
   const paystackSpinner = document.getElementById('paystackSpinner');
@@ -175,32 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
     vipToggle.classList.toggle('on',isVIP);
     vipLabel.classList.toggle('on',isVIP);
     vipMessage.style.opacity=isVIP?'1':'0';
-    if(isVIP) triggerSprayConfetti();
   });
 
   femaleBtn.addEventListener('click', ()=>{ gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', ()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
-
-  function triggerSprayConfetti() {
-    const colors=['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const numParticles=50; const rect=vipToggle.getBoundingClientRect();
-    const startX=rect.left+rect.width/2; const startY=rect.bottom;
-    for(let i=0;i<numParticles;i++){
-      const p=document.createElement('div'); p.style.position='fixed'; p.style.width='6px'; p.style.height='16px';
-      p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)]; p.style.left=`${startX}px`;
-      p.style.top=`${startY}px`; p.style.opacity='0.9'; p.style.borderRadius='2px'; p.style.pointerEvents='none';
-      p.style.zIndex='9999'; document.body.appendChild(p);
-      const angle=(Math.random()*Math.PI/2)-Math.PI/4; const speed=300+Math.random()*200; const duration=1500+Math.random()*500;
-      const start=performance.now();
-      (function animate(time){
-        const t=(time-start)/duration; if(t<1){
-          const dx=Math.sin(angle)*speed*t; const dy=-Math.cos(angle)*speed*t;
-          p.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`; p.style.opacity=`${1-t}`;
-          requestAnimationFrame(animate);
-        } else { p.remove(); }
-      })(start);
-    }
-  }
 
   const today=new Date(); const maxDate=new Date(today.getFullYear()-18,today.getMonth(),today.getDate()); dobInput.max=maxDate.toISOString().split('T')[0];
 
@@ -226,9 +203,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  async function handleReferral(userData){
+    if(!referrer) return;
+    const inviterRef = doc(db,"users",sanitizeKey(referrer));
+    const inviterSnap = await getDoc(inviterRef);
+    if(!inviterSnap.exists()) return;
+    const inviterData = inviterSnap.data();
+    const bonusStars = userData.isVIP?200:50;
+    const updatedStars = (inviterData.stars||0)+bonusStars;
+    const updatedStarsGifted = (inviterData.starsGifted||0)+bonusStars;
+
+    await updateDoc(inviterRef,{
+      stars: updatedStars,
+      starsGifted: updatedStarsGifted,
+      hostFriends: arrayUnion({
+        chatId: userData.chatId,
+        chatIdLower: userData.chatIdLower,
+        email: userData.email,
+        giftShown:true,
+        hostLink: inviterData.hostLink||null,
+        hostVIP: userData.isVIP?1:0,
+        invitedBy: referrer
+      })
+    });
+  }
+
   submitBtn.addEventListener('click', async ()=>{
-    const fullName=nameInput.value.trim(); const chatIdRaw=chatIdInput.value.trim(); const chatId=cleanChatId(chatIdRaw);
-    const phone=phoneInput.value.trim(); const email=emailInput.value.trim().toLowerCase(); const dob=dobInput.value;
+    const fullName=nameInput.value.trim();
+    const chatIdRaw=chatIdInput.value.trim();
+    const chatId=cleanChatId(chatIdRaw);
+    const phone=phoneInput.value.trim();
+    const email=emailInput.value.trim().toLowerCase();
+    const dob=dobInput.value;
+
     if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
 
     const age=calculateAge(dob); if(age<18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
@@ -237,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
-
     const uidKey=sanitizeKey(email); const userRef=doc(db,"users",uidKey);
 
     try{
@@ -246,58 +252,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let country='Unknown'; try{ const res=await fetch('https://ipapi.co/json/'); const data=await res.json(); country=data.country_name||'Unknown'; }catch(e){}
 
-      const userData={ chatId, chatIdLower:chatId.toLowerCase(), fullName, stars:50, starsToday:0, starsGifted:0, lastStarDate:new Date().toISOString().split("T")[0], cash:0,
-        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16), isAdmin:false, isVIP, isHost:!isVIP,
-        hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-        invitedBy:referrer||null, email, phone, gender, dob, age, bankName:"", bankAccountNumber:"", country, subscriptionActive:false, subscriptionCount:0,
+      const userData={
+        chatId, chatIdLower:chatId.toLowerCase(), fullName,
+        stars:50, starsToday:0, starsGifted:0, lastStarDate:new Date().toISOString().split("T")[0],
+        cash:0, usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+        isAdmin:false,
+        isVIP, isHost: (!isVIP && gender==='Female'),
+        hostLink: (!isVIP && gender==='Female')?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+        invitedBy: referrer||null, email, phone, gender, dob, age,
+        bankName:"", bankAccountNumber:"", country, subscriptionActive:false, subscriptionCount:0,
         socialShare:!isVIP, instagram:"", tiktok:"", whatsapp:"", telegram:""
       };
 
-      // Save user first for Paystack flow
       await setDoc(userRef,userData);
 
-      if(referrer){
-        const inviterRef=doc(db,"users",sanitizeKey(referrer)); const inviterSnap=await getDoc(inviterRef);
-        if(inviterSnap.exists()){
-          const inviterData=inviterSnap.data(); const bonusStars=isVIP?100:50; const updatedStars=(inviterData.stars||0)+bonusStars;
-          const updatedStarsGifted=(inviterData.starsGifted||0)+bonusStars;
-          await updateDoc(inviterRef,{ stars:updatedStars, starsGifted:updatedStarsGifted,
-            hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), email, giftShown:true, hostLink:inviterData.hostLink||null, hostVIP:isVIP?1:0, invitedBy:referrer })
-          });
-        }
-      }
-
       if(isVIP){
-        // Show Paystack VIP button instead of immediate redirect
         submitBtn.style.display='none'; paystackContainer.style.display='flex';
       } else {
+        await handleReferral(userData);
         messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
         localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
         setTimeout(()=>{ window.location.href="nushop.html"; },1500);
       }
 
-    }catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
+    } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
 
-  // Paystack payment flow
+  // Paystack flow
   paystackBtn.addEventListener('click', async ()=>{
     paystackSpinner.style.display='inline-block';
     paystackBtn.querySelector('.btn-text').style.display='none';
-
     await loadPaystackScript();
-
     const email=emailInput.value.trim().toLowerCase();
+    const chatId=chatIdInput.value.trim();
+
     const handler = PaystackPop.setup({
-      key: 'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd', // replace with your test key
+      key: 'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd',
       email: email,
-      amount: 1000*100, // 1000 Naira
+      amount: 1000*100,
       currency: 'NGN',
-      callback: function(response){
+      callback: async function(response){
         paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline';
-        alert('Payment successful. Reference: ' + response.reference);
-        localStorage.setItem("vipUser",JSON.stringify({email,chatId:chatIdInput.value.trim()}));
-        window.location.href="nushop.html";
+        const uidKey=sanitizeKey(email); const userRef=doc(db,"users",uidKey);
+        const userSnap=await getDoc(userRef);
+        if(userSnap.exists()){
+          const userData = userSnap.data();
+          await handleReferral(userData);
+          localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
+          window.location.href="nushop.html";
+        }
       },
       onClose: function(){
         paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline';
