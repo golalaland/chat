@@ -34,7 +34,7 @@ body {
 iframe { width:100%; height:100%; object-fit:cover; border-radius:15px; border:none; }
 h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
 #host-info { font-size:0.85rem; color:#aaa; text-align:center; margin-bottom:1rem; }
-.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; }
+.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; position:relative; }
 .form-group input {
   width:100%; padding:0.65rem 1rem; border-radius:30px;
   border:1px solid var(--input-border); background:var(--input-bg);
@@ -64,14 +64,13 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-
-/* intl-tel-input override to match your style */
-.iti { width:100%; }
-.iti__flag { top:6px; }
+.country-flag-select {
+  position:absolute; left:0; top:0; bottom:0; width:60px; border:none; border-radius:30px 0 0 30px;
+  background:#333; color:#eee; font-size:0.8rem; padding-left:8px; cursor:pointer; outline:none;
+}
+.phone-input-wrapper { position:relative; }
+.phone-input-wrapper input { padding-left:70px; }
 </style>
-
-<!-- intl-tel-input -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/css/intlTelInput.min.css"/>
 </head>
 <body>
 
@@ -84,8 +83,13 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
-<div class="form-group"><input id="dob" type="date" placeholder="Date of Birth" max="2025-10-10"></div>
-<div class="form-group"><input id="phone" type="tel" placeholder="Phone Number"></div>
+
+<div class="form-group phone-input-wrapper">
+  <select id="countryCode" class="country-flag-select"></select>
+  <input id="phone" type="text" placeholder="Phone Number">
+</div>
+
+<div class="form-group"><input id="dob" type="text" placeholder="Date of Birth (DD/MM/YYYY)"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 
 <div class="gender-label">Select Your Gender</div>
@@ -104,7 +108,6 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 </button>
 <div class="message" id="message"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/js/intlTelInput.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -134,9 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const messageEl = document.getElementById('message');
   const nameInput = document.getElementById('name');
   const chatIdInput = document.getElementById('chatId');
-  const dobInput = document.getElementById('dob');
   const phoneInput = document.getElementById('phone');
   const emailInput = document.getElementById('email');
+  const dobInput = document.getElementById('dob');
+  const countryCodeSelect = document.getElementById('countryCode');
   const hostUsernameEl = document.getElementById('host-username');
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -154,18 +158,22 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  // Country code phone input
-  const iti = window.intlTelInput(phoneInput, {
-    initialCountry: "auto",
-    geoIpLookup: callback => {
-      fetch('https://ipinfo.io/json?token=<YOUR_TOKEN>')
-        .then(res => res.json())
-        .then(data => callback(data.country))
-        .catch(() => callback('US'));
-    },
-    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/js/utils.js"
+  // Phone input: numbers only
+  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+
+  // Auto-format DOB as DD/MM/YYYY
+  dobInput.addEventListener('input', () => {
+    let val = dobInput.value.replace(/\D/g,'');
+    if(val.length > 8) val = val.slice(0,8);
+    if(val.length > 4){
+      val = val.slice(0,2)+'/'+val.slice(2,4)+'/'+val.slice(4);
+    } else if(val.length > 2){
+      val = val.slice(0,2)+'/'+val.slice(2);
+    }
+    dobInput.value = val;
   });
 
+  // VIP toggle
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
@@ -176,8 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
-
-  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
 
   function triggerSprayConfetti() {
     const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
@@ -219,18 +225,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Populate country code select dynamically
+  const countries = [
+    {code:'+1', flag:'🇺🇸'}, {code:'+44', flag:'🇬🇧'}, {code:'+234', flag:'🇳🇬'}, {code:'+91', flag:'🇮🇳'},
+    {code:'+61', flag:'🇦🇺'}, {code:'+49', flag:'🇩🇪'}, {code:'+81', flag:'🇯🇵'}, {code:'+33', flag:'🇫🇷'}
+  ];
+  countries.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.code;
+    opt.textContent = `${c.flag} ${c.code}`;
+    countryCodeSelect.appendChild(opt);
+  });
+
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
     const chatId = cleanChatId(chatIdRaw);
-    const dob = dobInput.value;
-    const phone = iti.getNumber();
+    const phone = countryCodeSelect.value + phoneInput.value.trim();
     const email = emailInput.value.trim().toLowerCase();
+    const dob = dobInput.value.trim();
 
-    if(!fullName||!chatId||!dob||!phone||!email||!gender){ messageEl.textContent='Please fill in all fields.'; return; }
+    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(!phone || !iti.isValidNumber()){ messageEl.textContent='Please enter a valid phone number.'; return; }
+    if(phoneInput.value.length<6){ messageEl.textContent='Phone number not valid.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
+    if(!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)){ messageEl.textContent='Date of Birth format invalid.'; return; }
     if(!isVIP && gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts buddy 🙂.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
@@ -252,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatIdLower:chatId.toLowerCase(),
         fullName,
         dob,
-        phone,
         stars:50,
         starsToday:0,
         starsGifted:0,
@@ -265,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
         invitedBy:referrer||null,
         email,
+        phone,
         gender,
         createdAt:serverTimestamp(),
         subscriptionActive:false,
@@ -278,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       await setDoc(userRef,userData);
 
-      // Host rewards
       if(referrer){
         const refDoc = doc(db,"users",sanitizeKey(referrer));
         const refSnap = await getDoc(refDoc);
