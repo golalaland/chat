@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const inviterSnap = await getDoc(inviterRef);
         if(inviterSnap.exists()){
           const inviterData = inviterSnap.data();
-          const bonus = isVIP?100:50;
+          const bonus = isVIP?200:200;
           const hostFriends = inviterData.hostFriends || [];
           hostFriends.push({
             chatId,
