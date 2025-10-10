@@ -60,6 +60,7 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .fomo-popup { position:fixed; top:100px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; white-space:nowrap; }
 .image-placeholder { width:300px; height:300px; background:#333; border-radius:15px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#aaa; }
 footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color:#aaa; }
+#paystackContainer { display:flex; flex-direction:column; align-items:center; justify-content:center; }
 </style>
 </head>
 <body>
@@ -94,13 +95,13 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
   <span class="spinner" id="spinner"></span>
 </button>
 
-<!-- VIP Paystack container -->
-<div id="paystackButtonContainer" style="display:none; width:50%; margin:auto;">
+<!-- Paystack VIP button container -->
+<div id="paystackContainer" style="display:none; width:50%; margin:0 auto;">
   <button class="submit-btn" id="paystackBtn">
     <span class="btn-text">Complete VIP Payment</span>
     <span class="spinner" id="paystackSpinner"></span>
   </button>
-  <div class="message" id="vipPendingMsg" style="margin-top:0.5rem; color:gold;">
+  <div class="message" id="vipPaymentMsg" style="color:gold; text-align:center; margin-top:0.5rem;">
     🎉 VIP signup pending. Complete payment to activate VIP access.
   </div>
 </div>
@@ -143,63 +144,61 @@ document.addEventListener('DOMContentLoaded', () => {
   const dobInput = document.getElementById('dob');
   const fomoPopup = document.getElementById('fomoPopup');
 
-  const paystackContainer = document.getElementById('paystackButtonContainer');
-  const paystackBtn = document.getElementById('paystackBtn');
-  const paystackSpinner = document.getElementById('paystackSpinner');
-  const vipPendingMsg = document.getElementById('vipPendingMsg');
+  const paystackContainer = document.getElementById('paystackContainer');
+const paystackBtn = document.getElementById('paystackBtn');
+const paystackSpinner = document.getElementById('paystackSpinner');
+const vipPendingMsg = document.getElementById('vipPendingMsg');
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const referrer = urlParams.get('ref') || null;
-  const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
+function showPaystackButton() {
+  submitBtn.style.display = 'none';       // hide signup button
+  paystackContainer.style.display = 'flex'; // show Paystack button
+  messageEl.textContent = '';             // clear any messages
+}
 
-  function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
-  function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
-  function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
-  function calculateAge(dobStr){ const dob=new Date(dobStr); return Math.abs(new Date(Date.now()-dob.getTime()).getUTCFullYear()-1970); }
-  async function isChatIdTaken(chatId) { const q=query(collection(db,"users"),where("chatIdLower","==",chatId.toLowerCase())); const snap=await getDocs(q); return !snap.empty; }
+// Call this after VIP signup succeeds
+if (isVIP) showPaystackButton();
 
-  phoneInput.addEventListener('input',()=>{ phoneInput.value=phoneInput.value.replace(/\D/g,''); });
+paystackBtn.addEventListener('click', () => {
+  const email = emailInput.value.trim();
+  if(!email){ 
+    console.error("Paystack initiation failed: email empty"); 
+    alert("Email missing, cannot initiate payment."); 
+    return; 
+  }
 
-  vipToggle.addEventListener('click', ()=>{
-    isVIP=!isVIP;
-    vipToggle.classList.toggle('on',isVIP);
-    vipLabel.classList.toggle('on',isVIP);
-    vipMessage.style.opacity=isVIP?'1':'0';
-    if(isVIP) triggerSprayConfetti();
+  paystackSpinner.style.display = 'inline-block';
+  paystackBtn.querySelector('.btn-text').style.display = 'none';
+
+  const handler = PaystackPop.setup({
+    key: 'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd', // replace with your key
+    email: email,
+    amount: 299900, // amount in kobo, e.g., ₦2,999 → 299900
+    currency: "NGN",
+    ref: `VIP-${Date.now()}`,
+    onClose: function() {
+      console.log("Payment closed by user.");
+      paystackSpinner.style.display='none';
+      paystackBtn.querySelector('.btn-text').style.display='inline';
+    },
+    callback: async function(response){
+      console.log("Payment successful:", response);
+
+      try {
+        const uidKey = sanitizeKey(email);
+        const userRef = doc(db, "users", uidKey);
+        await updateDoc(userRef, { subscriptionActive: true });
+
+        // Redirect to shop after payment
+        window.location.href = "https://golalaland.github.io/shop";
+      } catch(e) {
+        console.error("Error updating subscription:", e);
+        alert("Payment successful but failed to update subscription. Contact support.");
+      }
+    }
   });
 
-  femaleBtn.addEventListener('click', ()=>{ gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
-  maleBtn.addEventListener('click', ()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
-
-  function triggerSprayConfetti() {
-    const colors=['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const numParticles=50; const rect=vipToggle.getBoundingClientRect();
-    const startX=rect.left+rect.width/2; const startY=rect.bottom;
-    for(let i=0;i<numParticles;i++){
-      const p=document.createElement('div'); p.style.position='fixed'; p.style.width='6px'; p.style.height='16px';
-      p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)]; p.style.left=`${startX}px`;
-      p.style.top=`${startY}px`; p.style.opacity='0.9'; p.style.borderRadius='2px'; p.style.pointerEvents='none';
-      p.style.zIndex='9999'; document.body.appendChild(p);
-      const angle=(Math.random()*Math.PI/2)-Math.PI/4; const speed=300+Math.random()*200; const duration=1500+Math.random()*500;
-      const start=performance.now();
-      (function animate(time){
-        const t=(time-start)/duration; if(t<1){
-          const dx=Math.sin(angle)*speed*t; const dy=-Math.cos(angle)*speed*t;
-          p.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`; p.style.opacity=`${1-t}`;
-          requestAnimationFrame(animate);
-        } else { p.remove(); }
-      })(start);
-    }
-  }
-
-  const today=new Date(); const maxDate=new Date(today.getFullYear()-18,today.getMonth(),today.getDate()); dobInput.max=maxDate.toISOString().split('T')[0];
-
-  async function fetchRecentUsers(){
-    const q=query(collection(db,"users"),orderBy("createdAt","desc"),limit(10));
-    const snap=await getDocs(q); const users=[];
-    snap.forEach(d=>{ const data=d.data(); users.push({fullName:data.fullName,isVIP:data.isVIP}); });
-    return users;
-  }
+  handler.openIframe();
+});
 
   async function showFOMO(){
     const users=await fetchRecentUsers(); if(users.length===0) return;
