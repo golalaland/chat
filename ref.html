@@ -23,18 +23,16 @@ body {
   align-items:center;
   padding:1rem;
 }
-.video-container {
+.placeholder-img {
   width:100%;
   max-width:430px;
+  height:240px;
   border-radius:15px;
-  overflow:hidden;
+  background:#333 url('https://via.placeholder.com/430x240?text=VIP+Signup') center/cover no-repeat;
   margin-bottom:1rem;
-  aspect-ratio:16/9;
 }
-iframe { width:100%; height:100%; object-fit:cover; border-radius:15px; border:none; }
 h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
-#host-info { font-size:0.85rem; color:#aaa; text-align:center; margin-bottom:1rem; }
-.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; position:relative; }
+.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; }
 .form-group input {
   width:100%; padding:0.65rem 1rem; border-radius:30px;
   border:1px solid var(--input-border); background:var(--input-bg);
@@ -64,33 +62,34 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-.country-flag-select {
-  position:absolute; left:0; top:0; bottom:0; width:60px; border:none; border-radius:30px 0 0 30px;
-  background:#333; color:#eee; font-size:0.8rem; padding-left:8px; cursor:pointer; outline:none;
+.fomo-popup {
+  position:fixed; right:20px; bottom:20px; background:#111; padding:0.7rem 1rem; border-radius:10px;
+  box-shadow:0 0 12px rgba(0,0,0,0.7); opacity:0; transition:0.5s; color:#fff; font-size:0.9rem;
 }
-.phone-input-wrapper { position:relative; }
-.phone-input-wrapper input { padding-left:70px; }
+.phone-container { position:relative; }
+.phone-flag {
+  position:absolute; left:0; top:0; bottom:0; width:40px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+}
+.phone-input { padding-left:45px !important; }
 </style>
 </head>
 <body>
 
-<div class="video-container">
-  <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Promo Video" allowfullscreen></iframe>
-</div>
+<div class="placeholder-img"></div>
 
 <h2>VIP / Host Signup</h2>
-<p id="host-info">You're in <span id="host-username">Main</span>'s VIP Tab</p>
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
 
-<div class="form-group phone-input-wrapper">
-  <select id="countryCode" class="country-flag-select"></select>
-  <input id="phone" type="text" placeholder="Phone Number">
+<div class="form-group phone-container">
+  <div class="phone-flag" id="phoneFlag">🇺🇸</div>
+  <input id="phone" class="phone-input" type="text" placeholder="Phone Number">
 </div>
 
-<div class="form-group"><input id="dob" type="text" placeholder="Date of Birth (DD/MM/YYYY)"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
+<div class="form-group"><input id="dob" type="date" placeholder="Date of Birth"></div>
 
 <div class="gender-label">Select Your Gender</div>
 <div class="gender-select">
@@ -108,9 +107,11 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 </button>
 <div class="message" id="message"></div>
 
+<div class="fomo-popup" id="fomoPopup"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -140,8 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const phoneInput = document.getElementById('phone');
   const emailInput = document.getElementById('email');
   const dobInput = document.getElementById('dob');
-  const countryCodeSelect = document.getElementById('countryCode');
-  const hostUsernameEl = document.getElementById('host-username');
+  const fomoPopup = document.getElementById('fomoPopup');
 
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
@@ -158,98 +158,40 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  // Phone input: numbers only
+  function calculateAge(dob) {
+    if(!dob) return null;
+    const birth = new Date(dob);
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    if(now.getMonth()<birth.getMonth() || (now.getMonth()===birth.getMonth() && now.getDate()<birth.getDate())) age--;
+    return age;
+  }
+
   phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
 
-  // Auto-format DOB as DD/MM/YYYY
-  dobInput.addEventListener('input', () => {
-    let val = dobInput.value.replace(/\D/g,'');
-    if(val.length > 8) val = val.slice(0,8);
-    if(val.length > 4){
-      val = val.slice(0,2)+'/'+val.slice(2,4)+'/'+val.slice(4);
-    } else if(val.length > 2){
-      val = val.slice(0,2)+'/'+val.slice(2);
-    }
-    dobInput.value = val;
-  });
-
-  // VIP toggle
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
     vipLabel.classList.toggle('on', isVIP);
     vipMessage.style.opacity = isVIP ? '1' : '0';
-    if(isVIP) triggerSprayConfetti();
   });
 
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
-  function triggerSprayConfetti() {
-    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const numParticles = 50;
-    const toggle = document.getElementById('vipToggle');
-    const rect = toggle.getBoundingClientRect();
-    const startX = rect.left + rect.width/2;
-    const startY = rect.bottom;
-
-    for (let i = 0; i < numParticles; i++) {
-      const particle = document.createElement('div');
-      particle.style.position='fixed';
-      particle.style.width='6px';
-      particle.style.height='16px';
-      particle.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
-      particle.style.left=`${startX}px`;
-      particle.style.top=`${startY}px`;
-      particle.style.opacity='0.9';
-      particle.style.borderRadius='2px';
-      particle.style.pointerEvents='none';
-      particle.style.zIndex='9999';
-      document.body.appendChild(particle);
-
-      const angle = (Math.random()*Math.PI/2) - Math.PI/4;
-      const speed = 300 + Math.random()*200;
-      const duration = 1500 + Math.random()*500;
-
-      const start = performance.now();
-      (function animate(time){
-        const t = (time-start)/duration;
-        if(t<1){
-          const dx = Math.sin(angle)*speed*t;
-          const dy = -Math.cos(angle)*speed*t;
-          particle.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`;
-          particle.style.opacity=`${1-t}`;
-          requestAnimationFrame(animate);
-        } else { particle.remove(); }
-      })(start);
-    }
-  }
-
-  // Populate country code select dynamically
-  const countries = [
-    {code:'+1', flag:'🇺🇸'}, {code:'+44', flag:'🇬🇧'}, {code:'+234', flag:'🇳🇬'}, {code:'+91', flag:'🇮🇳'},
-    {code:'+61', flag:'🇦🇺'}, {code:'+49', flag:'🇩🇪'}, {code:'+81', flag:'🇯🇵'}, {code:'+33', flag:'🇫🇷'}
-  ];
-  countries.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.code;
-    opt.textContent = `${c.flag} ${c.code}`;
-    countryCodeSelect.appendChild(opt);
-  });
-
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
     const chatId = cleanChatId(chatIdRaw);
-    const phone = countryCodeSelect.value + phoneInput.value.trim();
+    const phone = phoneInput.value.trim();
     const email = emailInput.value.trim().toLowerCase();
-    const dob = dobInput.value.trim();
+    const dob = dobInput.value;
+    const age = calculateAge(dob);
 
     if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(phoneInput.value.length<6){ messageEl.textContent='Phone number not valid.'; return; }
+    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
-    if(!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)){ messageEl.textContent='Date of Birth format invalid.'; return; }
     if(!isVIP && gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts buddy 🙂.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
@@ -270,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatId,
         chatIdLower:chatId.toLowerCase(),
         fullName,
-        dob,
+        age, // hidden field
         stars:50,
         starsToday:0,
         starsGifted:0,
@@ -284,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         invitedBy:referrer||null,
         email,
         phone,
+        dob,
         gender,
         createdAt:serverTimestamp(),
         subscriptionActive:false,
@@ -297,38 +240,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
       await setDoc(userRef,userData);
 
-      if(referrer){
-        const refDoc = doc(db,"users",sanitizeKey(referrer));
-        const refSnap = await getDoc(refDoc);
-        if(refSnap.exists()){
-          const refData = refSnap.data();
-          const alreadyReferred = Array.isArray(refData.hostFriends) &&
-            refData.hostFriends.some(f=>f.email===email || f.chatIdLower===chatId.toLowerCase());
-          if(!alreadyReferred){
-            await updateDoc(refDoc,{
-              stars:(refData.stars||0)+200,
-              starsGifted:(refData.starsGifted||0)+200,
-              hostFriends: arrayUnion({email,chatId,chatIdLower:chatId.toLowerCase()})
-            });
-          }
-        }
-      }
-
-      if(referrer){
-        const refDoc = doc(db,"users",sanitizeKey(referrer));
-        const refSnap = await getDoc(refDoc);
-        let displayName=sanitizeEmailPrefix(referrer);
-        if(refSnap.exists()){ const refData=refSnap.data(); if(refData.chatId) displayName=refData.chatId; }
-        hostUsernameEl.textContent=displayName;
-      }
-
-      localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and your host got 200 ⭐️ 🎉`;
 
       setTimeout(()=>{ window.location.href="https://golalaland.github.io/chat/nushop.html#"; },800);
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
+
+  // --- FOMO POPUP ---
+  let fomoUsers = [];
+  async function fetchFomoUsers() {
+    const snapshot = await getDocs(query(collection(db,'users'), orderBy('createdAt','desc'), limit(100)));
+    fomoUsers = snapshot.docs.map(doc => doc.data());
+  }
+  fetchFomoUsers();
+  setInterval(fetchFomoUsers,300000); // refresh every 5 minutes
+
+  function showFomoPopup(text){
+    fomoPopup.textContent=text;
+    fomoPopup.style.opacity='1';
+    setTimeout(()=>{ fomoPopup.style.opacity='0'; },5000);
+  }
+
+  setInterval(()=>{
+    if(fomoUsers.length===0) return;
+    const user=fomoUsers[Math.floor(Math.random()*fomoUsers.length)];
+    showFomoPopup(`${user.fullName} just joined as ${user.isVIP?'VIP':'Host'}`);
+  },60000);
 });
 </script>
 </body>
