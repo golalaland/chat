@@ -1,4 +1,4 @@
-// admin-payfeed.js (revamped, optimized, mass-remove ready with 乂丨乂丨 font)
+// admin-payfeed.js (revamped, optimized, mass-select & mass-remove ready with 乂丨乂丨 font)
 
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -135,9 +135,10 @@ function renderUsers(users){
   usersTableBody.innerHTML="";
   users.forEach(u=>{
     const tr = document.createElement("tr");
+    tr.dataset.id = u.id;
     tr.style.fontFamily="'乂丨乂丨', monospace";
     tr.innerHTML=`
-      <td><input type="checkbox" class="user-select"/></td>
+      <td><input type="checkbox" class="row-select user-select"/></td>
       <td>${u.email||""}</td>
       <td>${u.phone||""}</td>
       <td>${u.chatId||""}</td>
@@ -200,172 +201,65 @@ function renderUsers(users){
   });
 }
 
-// ---------- Search ----------
-let searchTimeout=null;
-userSearch.addEventListener("input",()=>{
-  clearTimeout(searchTimeout);
-  searchTimeout=setTimeout(()=>{
-    const q=(userSearch.value||"").toLowerCase();
-    renderUsers(usersCache.filter(u=>(u.email||"").toLowerCase().includes(q)||(u.chatId||"").toLowerCase().includes(q)));
-  },200);
+// ---------- Mass Select ----------
+const selectAllUsers = document.createElement("input");
+selectAllUsers.type="checkbox"; selectAllUsers.id="selectAllUsers";
+document.querySelector("#usersTable thead tr").insertBefore(selectAllUsers, document.querySelector("#usersTable thead tr").firstChild);
+
+const selectAllWhitelist = document.createElement("input");
+selectAllWhitelist.type="checkbox"; selectAllWhitelist.id="selectAllWhitelist";
+document.querySelector("#whitelistTable thead tr").insertBefore(selectAllWhitelist, document.querySelector("#whitelistTable thead tr").firstChild);
+
+// Users select-all logic
+selectAllUsers.addEventListener("change", ()=> {
+  const checked = selectAllUsers.checked;
+  document.querySelectorAll("#usersTable tbody input.row-select").forEach(cb => cb.checked = checked);
+});
+// Whitelist select-all logic
+selectAllWhitelist.addEventListener("change", ()=> {
+  const checked = selectAllWhitelist.checked;
+  document.querySelectorAll("#whitelistTable tbody input.row-select").forEach(cb => cb.checked = checked);
 });
 
-// ---------- Export CSV ----------
-exportCsvBtn.addEventListener("click", ()=>{
-  const rows=[["email","phone","chatId","stars","cash","isVIP","isAdmin","isHost","subscriptionActive","subscriptionStartTime","subscriptionCount"]];
-  usersCache.forEach(u=>rows.push([u.email||"",u.phone||"",u.chatId||"",u.stars||0,u.cash||0,!!u.isVIP,!!u.isAdmin,!!u.isHost,!!u.subscriptionActive,u.subscriptionStartTime||"",u.subscriptionCount||0]));
-  downloadCSV("users_export.csv",rows);
-});
-
-// ---------- Whitelist + CSV injection ----------
-async function findUserByEmail(email){
-  if(!email) return null;
-  const snap=query(collection(db,"users"),where("email","==",email));
-  const docsSnap=await getDocs(snap);
-  if(!docsSnap.empty) return docsSnap.docs[0];
-  return null;
-}
-
-// Manual whitelist add
-addWhitelistBtn.addEventListener("click", async ()=>{
-  const emailRaw=(wlEmailInput.value||"").trim();
-  const phone=(wlPhoneInput.value||"").trim();
-  if(!emailRaw||!phone) return alert("Enter email & phone");
-  const email=emailRaw.toLowerCase();
-  const confirmed=await showConfirmModal("Add to whitelist", `Add ${email} to whitelist?`);
-  if(!confirmed) return;
-  showLoader("Adding to whitelist...");
-  try{
-    const existingUser=await findUserByEmail(email);
-    if(!existingUser){
-      await setDoc(doc(db,"users",email),{email,phone,chatId:"",subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:1});
-    } else {
-      const data=existingUser.data()||{};
-      await updateDoc(existingUser.ref,{phone,subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:(data.subscriptionCount||0)+1});
-    }
-    await setDoc(doc(db,"whitelist",email),{email,phone,subscriptionActive:true,subscriptionStartTime:Date.now()},{merge:true});
-    hideLoader(); await loadWhitelist(); await loadUsers(); alert(`${email} added/updated on whitelist.`);
-  }catch(err){ hideLoader(); console.error(err); alert("Failed to add to whitelist."); }
-});
-
-// CSV batch injection
-wlCsvUpload.addEventListener("change", async e=>{
-  const file=e.target.files?.[0]; if(!file) return;
-  const confirmed=await showConfirmModal("CSV Batch","Inject CSV batch to whitelist?");
-  if(!confirmed) return;
-  showLoader("Processing CSV...");
-  try{
-    const text=await file.text();
-    const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
-    const batchEmails=[];
-    for(const line of lines){
-      const parts=line.split(",").map(stripQuotes);
-      const emailRaw=parts[0]||""; const phone=parts[1]||""; const chatId=parts[2]||"";
-      if(!emailRaw||!phone||!chatId) continue;
-      const email=emailRaw.toLowerCase(); batchEmails.push(email);
-
-      const existingUser=await findUserByEmail(email);
-      if(!existingUser){
-        await setDoc(doc(db,"users",email),{email,phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:1});
-      } else {
-        const data=existingUser.data()||{};
-        await updateDoc(existingUser.ref,{phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now(),subscriptionCount:(data.subscriptionCount||0)+1});
-      }
-
-      await setDoc(doc(db,"whitelist",email),{email,phone,chatId,subscriptionActive:true,subscriptionStartTime:Date.now()},{merge:true});
-    }
-
-    if(cleanUpLadyToggle.checked){
-      const wlSnap=await getDocs(collection(db,"whitelist"));
-      for(const wlDoc of wlSnap.docs){
-        const key=(wlDoc.id||"").toLowerCase();
-        if(!batchEmails.includes(key)){
-          await updateDoc(doc(db,"users",key),{subscriptionActive:false}).catch(()=>{});
-          await deleteDoc(doc(db,"whitelist",key)).catch(()=>{});
-        }
-      }
-    }
-
-    hideLoader(); await loadWhitelist(); await loadUsers(); alert("CSV batch processed.");
-  }catch(err){ hideLoader(); console.error(err); alert("CSV processing failed."); }
-  finally{ wlCsvUpload.value=""; }
-});
-
-// ---------- Load whitelist ----------
-async function loadWhitelist(){
-  try{
-    whitelistTableBody.innerHTML="";
-    const snap = await getDocs(collection(db,"whitelist"));
-    for(const d of snap.docs){
-      const data=d.data()||{};
-      const tr=document.createElement("tr");
-      tr.style.fontFamily="'乂丨乂丨', monospace";
-      tr.innerHTML=`
-        <td><input type="checkbox" class="wl-select"/></td>
-        <td>${data.email||""}</td>
-        <td>${data.phone||""}</td>
-        <td>${!!data.subscriptionActive}</td>
-        <td></td>
-      `;
-
-      const removeBtn=document.createElement("button");
-      removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
-      removeBtn.addEventListener("click",async ()=>{
-        const confirmed=await showConfirmModal("Remove whitelist",`Delete ${data.email||"(no email)"} from whitelist?`);
-        if(!confirmed) return;
-        showLoader("Removing whitelist...");
-        try{
-          await deleteDoc(doc(db,"whitelist",data.email.toLowerCase())).catch(()=>{});
-          hideLoader(); await loadWhitelist(); alert(`${data.email||"(no email)"} removed from whitelist.`);
-        }catch(err){ hideLoader(); console.error(err); alert("Failed to remove whitelist."); }
-      });
-
-      tr.children[4].appendChild(removeBtn);
-      whitelistTableBody.appendChild(tr);
-    }
-  }catch(err){ console.error(err); whitelistTableBody.innerHTML=`<tr><td colspan="5" class="muted">Failed to load whitelist.</td></tr>`; }
+// Helper: collect checked row IDs
+function getCheckedRowIds(tableBody){
+  return Array.from(tableBody.querySelectorAll("tr"))
+    .filter(r => r.querySelector("input.row-select")?.checked)
+    .map(r => r.dataset.id);
 }
 
 // ---------- Mass Remove ----------
-async function massRemove(collectionName, selectedIds, selectedEmails=[]){
-  if(!selectedIds.length) return alert("No items selected.");
-  const confirmed = await showConfirmModal(`Remove ${collectionName}`,`Are you sure you want to remove ${selectedIds.length} ${collectionName}?`);
-  if(!confirmed) return;
+const massRemoveUsersBtn = document.getElementById("massRemoveUsersBtn");
+const massRemoveWhitelistBtn = document.getElementById("massRemoveWhitelistBtn");
 
-  showLoader(`Removing ${selectedIds.length} ${collectionName}...`);
+massRemoveUsersBtn.addEventListener("click", async () => {
+  const ids = getCheckedRowIds(usersTableBody);
+  if (!ids.length) return alert("No users selected.");
+  const selectedEmails = ids.map(id => usersCache.find(u=>u.id===id)?.email);
+  const confirmed = await showConfirmModal("Remove Users", `Delete ${ids.length} user(s)?`);
+  if (!confirmed) return;
+  showLoader("Removing users...");
   try{
-    for(let i=0;i<selectedIds.length;i++){
-      const id=selectedIds[i];
-      await deleteDoc(doc(db,collectionName,id)).catch(()=>{});
-      if(collectionName==="users" && selectedEmails[i]){
-        await deleteDoc(doc(db,"whitelist",selectedEmails[i].toLowerCase())).catch(()=>{});
-      }
+    for(let i=0;i<ids.length;i++){
+      await deleteDoc(doc(db,"users",ids[i])).catch(()=>{});
+      if(selectedEmails[i]) await deleteDoc(doc(db,"whitelist",selectedEmails[i].toLowerCase())).catch(()=>{});
     }
-    hideLoader();
-    if(collectionName==="users") await loadUsers();
-    else if(collectionName==="whitelist") await loadWhitelist();
-    alert(`${selectedIds.length} ${collectionName} removed successfully.`);
-  }catch(err){ hideLoader(); console.error(`Mass remove ${collectionName} error:`,err); alert("Failed to remove some items. See console."); }
-}
-
-// ---------- Mass Remove Buttons ----------
-const massRemoveUsersBtn=document.createElement("button");
-massRemoveUsersBtn.className="btn btn-danger"; massRemoveUsersBtn.textContent="Remove Selected Users";
-usersTableBody.parentElement.parentElement.insertBefore(massRemoveUsersBtn, usersTableBody.parentElement);
-
-const massRemoveWhitelistBtn=document.createElement("button");
-massRemoveWhitelistBtn.className="btn btn-danger"; massRemoveWhitelistBtn.textContent="Remove Selected Whitelist";
-whitelistTableBody.parentElement.parentElement.insertBefore(massRemoveWhitelistBtn, whitelistTableBody.parentElement);
-
-massRemoveUsersBtn.addEventListener("click", async ()=>{
-  const selectedRows=[...usersTableBody.querySelectorAll("input.user-select:checked")].map(cb=>cb.closest("tr"));
-  const ids=selectedRows.map(tr=>usersCache.find(u=>u.email===tr.children[1].textContent)?.id).filter(Boolean);
-  const emails=selectedRows.map(tr=>tr.children[1].textContent);
-  await massRemove("users", ids, emails);
+    hideLoader(); await loadUsers(); await loadWhitelist(); selectAllUsers.checked=false;
+    alert(`${ids.length} user(s) removed.`);
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to remove selected users."); }
 });
 
-massRemoveWhitelistBtn.addEventListener("click", async ()=>{
-  const selectedRows=[...whitelistTableBody.querySelectorAll("input.wl-select:checked")].map(cb=>cb.closest("tr"));
-  const ids=selectedRows.map(tr=>tr.children[1].textContent.toLowerCase());
-  await massRemove("whitelist", ids);
+massRemoveWhitelistBtn.addEventListener("click", async () => {
+  const ids = getCheckedRowIds(whitelistTableBody);
+  if (!ids.length) return alert("No whitelist entries selected.");
+  const confirmed = await showConfirmModal("Remove Whitelist", `Delete ${ids.length} entry(s)?`);
+  if (!confirmed) return;
+  showLoader("Removing whitelist...");
+  try{
+    for(const email of ids){
+      await deleteDoc(doc(db,"whitelist",email)).catch(()=>{});
+    }
+    hideLoader(); await loadWhitelist(); selectAllWhitelist.checked=false;
+    alert(`${ids.length} whitelist entry(s) removed.`);
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to remove selected whitelist entries."); }
 });
