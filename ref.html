@@ -23,16 +23,16 @@ body {
   align-items:center;
   padding:1rem;
 }
-.placeholder-img {
+.image-placeholder {
   width:100%;
   max-width:430px;
   height:240px;
+  background:#333 url('https://via.placeholder.com/430x240.png?text=Promo+Image') center/cover no-repeat;
   border-radius:15px;
-  background:#333 url('https://via.placeholder.com/430x240?text=VIP+Signup') center/cover no-repeat;
   margin-bottom:1rem;
 }
-h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
-.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; }
+h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:1rem; text-align:center; }
+.form-group { width:90%; max-width:400px; margin-bottom:0.7rem; position:relative; }
 .form-group input {
   width:100%; padding:0.65rem 1rem; border-radius:30px;
   border:1px solid var(--input-border); background:var(--input-bg);
@@ -62,34 +62,37 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
-.fomo-popup {
-  position:fixed; right:20px; bottom:20px; background:#111; padding:0.7rem 1rem; border-radius:10px;
-  box-shadow:0 0 12px rgba(0,0,0,0.7); opacity:0; transition:0.5s; color:#fff; font-size:0.9rem;
-}
-.phone-container { position:relative; }
-.phone-flag {
-  position:absolute; left:0; top:0; bottom:0; width:40px; display:flex; align-items:center; justify-content:center;
-  cursor:pointer;
-}
-.phone-input { padding-left:45px !important; }
+/* DOB and phone */
+.dob-input { cursor:pointer; text-align:center; }
+.phone-group { display:flex; align-items:center; gap:5px; }
+.flag-btn { width:36px; height:36px; border-radius:50%; border:1px solid #444; cursor:pointer; background-size:cover; background-position:center; }
+.flag-dropdown { display:none; position:absolute; top:42px; left:0; background:#222; border:1px solid #444; border-radius:10px; overflow:hidden; max-height:200px; overflow-y:auto; z-index:1000; }
+.flag-dropdown .flag-option { display:flex; align-items:center; gap:8px; padding:5px 8px; cursor:pointer; transition:0.2s; }
+.flag-dropdown .flag-option:hover { background:#333; }
+.fomo-modal { position:fixed; right:10px; bottom:50px; background:rgba(0,0,0,0.85); color:#fff; padding:0.5rem 1rem; border-radius:15px; font-size:0.85rem; display:none; align-items:center; gap:5px; z-index:9999; box-shadow:0 0 10px #000; }
+.fomo-modal span { margin-left:5px; font-weight:bold; color:var(--primary-color); }
 </style>
 </head>
 <body>
 
-<div class="placeholder-img"></div>
+<div class="image-placeholder"></div>
 
 <h2>VIP / Host Signup</h2>
 
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
 
-<div class="form-group phone-container">
-  <div class="phone-flag" id="phoneFlag">🇺🇸</div>
-  <input id="phone" class="phone-input" type="text" placeholder="Phone Number">
+<div class="form-group phone-group">
+  <div id="flagBtn" class="flag-btn" style="background-image:url('https://flagcdn.com/48x36/us.png')"></div>
+  <input id="phone" type="text" placeholder="Phone Number">
+  <div id="flagDropdown" class="flag-dropdown"></div>
+</div>
+
+<div class="form-group">
+  <input id="dob" class="dob-input" type="text" readonly placeholder="Select your date of birth">
 </div>
 
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
-<div class="form-group"><input id="dob" type="date" placeholder="Date of Birth"></div>
 
 <div class="gender-label">Select Your Gender</div>
 <div class="gender-select">
@@ -107,12 +110,13 @@ h2 { font-size:1.4rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 </button>
 <div class="message" id="message"></div>
 
-<div class="fomo-popup" id="fomoPopup"></div>
+<div id="fomoModal" class="fomo-modal">🎉 <span id="fomoName">Someone</span> just joined!</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -127,6 +131,8 @@ const db = getFirestore(app);
 document.addEventListener('DOMContentLoaded', () => {
   let isVIP = false;
   let gender = '';
+  let selectedFlag = {code:"+1", url:"https://flagcdn.com/48x36/us.png"};
+
   const vipToggle = document.getElementById('vipToggle');
   const vipLabel = document.getElementById('vipLabel');
   const vipMessage = document.getElementById('vipMessage');
@@ -141,12 +147,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const phoneInput = document.getElementById('phone');
   const emailInput = document.getElementById('email');
   const dobInput = document.getElementById('dob');
-  const fomoPopup = document.getElementById('fomoPopup');
+
+  const flagBtn = document.getElementById('flagBtn');
+  const flagDropdown = document.getElementById('flagDropdown');
+
+  const fomoModal = document.getElementById('fomoModal');
+  const fomoName = document.getElementById('fomoName');
 
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
+  // ---------- UTILS ----------
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
@@ -158,27 +170,96 @@ document.addEventListener('DOMContentLoaded', () => {
     return !snapshot.empty;
   }
 
-  function calculateAge(dob) {
-    if(!dob) return null;
-    const birth = new Date(dob);
-    const now = new Date();
-    let age = now.getFullYear() - birth.getFullYear();
-    if(now.getMonth()<birth.getMonth() || (now.getMonth()===birth.getMonth() && now.getDate()<birth.getDate())) age--;
-    return age;
+  function calculateAge(dob){
+    const diff = new Date() - new Date(dob);
+    return Math.floor(diff / (1000*60*60*24*365.25));
   }
 
-  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+  // ---------- FLAG SELECTION ----------
+  const countries = [
+    {name:"USA", code:"+1", url:"https://flagcdn.com/48x36/us.png"},
+    {name:"UK", code:"+44", url:"https://flagcdn.com/48x36/gb.png"},
+    {name:"Canada", code:"+1", url:"https://flagcdn.com/48x36/ca.png"},
+    {name:"Germany", code:"+49", url:"https://flagcdn.com/48x36/de.png"},
+    {name:"France", code:"+33", url:"https://flagcdn.com/48x36/fr.png"}
+  ];
+  countries.forEach(c=>{
+    const el = document.createElement('div');
+    el.className = 'flag-option';
+    el.innerHTML = `<img src="${c.url}" width="24" height="18"> <span>${c.name}</span>`;
+    el.addEventListener('click', ()=>{
+      selectedFlag = c;
+      flagBtn.style.backgroundImage=`url(${c.url})`;
+      flagDropdown.style.display='none';
+    });
+    flagDropdown.appendChild(el);
+  });
+  flagBtn.addEventListener('click', ()=>flagDropdown.style.display = flagDropdown.style.display==='block' ? 'none':'block');
+  document.addEventListener('click', e=>{ if(!flagBtn.contains(e.target)&&!flagDropdown.contains(e.target)) flagDropdown.style.display='none'; });
 
+  // ---------- DOB PICKER ----------
+  dobInput.addEventListener('click', ()=>{
+    const input = document.createElement('input');
+    input.type='date';
+    input.style.position='absolute';
+    input.style.opacity='0';
+    document.body.appendChild(input);
+    input.focus();
+    input.onchange = ()=>{ dobInput.value = input.value; document.body.removeChild(input); };
+    input.onblur = ()=>{ if(document.body.contains(input)) document.body.removeChild(input); };
+  });
+
+  // ---------- VIP TOGGLE ----------
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
     vipLabel.classList.toggle('on', isVIP);
     vipMessage.style.opacity = isVIP ? '1' : '0';
+    if(isVIP) triggerSprayConfetti();
   });
 
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
+  // ---------- CONFETTI ----------
+  function triggerSprayConfetti() {
+    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
+    const numParticles = 50;
+    const toggle = document.getElementById('vipToggle');
+    const rect = toggle.getBoundingClientRect();
+    const startX = rect.left + rect.width/2;
+    const startY = rect.bottom;
+    for (let i = 0; i < numParticles; i++) {
+      const particle = document.createElement('div');
+      particle.style.position='fixed';
+      particle.style.width='6px';
+      particle.style.height='16px';
+      particle.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+      particle.style.left=`${startX}px`;
+      particle.style.top=`${startY}px`;
+      particle.style.opacity='0.9';
+      particle.style.borderRadius='2px';
+      particle.style.pointerEvents='none';
+      particle.style.zIndex='9999';
+      document.body.appendChild(particle);
+      const angle = (Math.random()*Math.PI/2) - Math.PI/4;
+      const speed = 300 + Math.random()*200;
+      const duration = 1500 + Math.random()*500;
+      const start = performance.now();
+      (function animate(time){
+        const t = (time-start)/duration;
+        if(t<1){
+          const dx = Math.sin(angle)*speed*t;
+          const dy = -Math.cos(angle)*speed*t;
+          particle.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`;
+          particle.style.opacity=`${1-t}`;
+          requestAnimationFrame(animate);
+        } else { particle.remove(); }
+      })(start);
+    }
+  }
+
+  // ---------- SUBMIT ----------
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
@@ -186,11 +267,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const phone = phoneInput.value.trim();
     const email = emailInput.value.trim().toLowerCase();
     const dob = dobInput.value;
-    const age = calculateAge(dob);
 
     if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
+    if(phone.length<6||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
     if(!isVIP && gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts buddy 🙂.'; return; }
 
@@ -208,11 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const age = calculateAge(dob);
       const userData = {
         chatId,
         chatIdLower:chatId.toLowerCase(),
         fullName,
-        age, // hidden field
         stars:50,
         starsToday:0,
         starsGifted:0,
@@ -225,9 +305,10 @@ document.addEventListener('DOMContentLoaded', () => {
         hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
         invitedBy:referrer||null,
         email,
-        phone,
-        dob,
+        phone: selectedFlag.code + phone,
         gender,
+        dob,
+        age,
         createdAt:serverTimestamp(),
         subscriptionActive:false,
         subscriptionCount:0,
@@ -239,34 +320,24 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       await setDoc(userRef,userData);
-
-      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ and your host got 200 ⭐️ 🎉`;
+      localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
+      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️ 🎉`;
 
       setTimeout(()=>{ window.location.href="https://golalaland.github.io/chat/nushop.html#"; },800);
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
 
-  // --- FOMO POPUP ---
-  let fomoUsers = [];
-  async function fetchFomoUsers() {
-    const snapshot = await getDocs(query(collection(db,'users'), orderBy('createdAt','desc'), limit(100)));
-    fomoUsers = snapshot.docs.map(doc => doc.data());
-  }
-  fetchFomoUsers();
-  setInterval(fetchFomoUsers,300000); // refresh every 5 minutes
-
-  function showFomoPopup(text){
-    fomoPopup.textContent=text;
-    fomoPopup.style.opacity='1';
-    setTimeout(()=>{ fomoPopup.style.opacity='0'; },5000);
-  }
-
+  // ---------- FOMO SIMULATION ----------
+  const fakeNames = ["Alice","Bob","Charlie","Diana","Eve","Frank","Grace","Hannah","Ivan","Jade"];
   setInterval(()=>{
-    if(fomoUsers.length===0) return;
-    const user=fomoUsers[Math.floor(Math.random()*fomoUsers.length)];
-    showFomoPopup(`${user.fullName} just joined as ${user.isVIP?'VIP':'Host'}`);
+    const randomName = fakeNames[Math.floor(Math.random()*fakeNames.length)];
+    const randomVIP = Math.random()<0.5 ? 'VIP':'Host';
+    fomoName.textContent = `${randomName} just joined as ${randomVIP} 🎉`;
+    fomoModal.style.display='flex';
+    setTimeout(()=>{ fomoModal.style.display='none'; },5000);
   },60000);
+
 });
 </script>
 </body>
