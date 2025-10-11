@@ -673,37 +673,22 @@ header {
   </div>
 </div>
 
-<div class="friend-card">
-  <div class="friend-name">
-    Alice
-    <span class="friend-icon">
-      <img src="path/to/vip-icon.svg" alt="VIP">
-    </span>
-  </div>
-  <div class="friend-subtext">VIP Member</div>
-</div>
 
-<div class="friend-card">
-  <div class="friend-name">
-    Bob
-    <span class="friend-icon">
-      <img src="path/to/friend-icon.svg" alt="Friend">
-    </span>
-  </div>
-  <div class="friend-subtext">Host</div>
-</div>
 
+<!-- Host Tabs -->
 <div class="host-tabs" id="hostTabs" style="display:none;">
   <button class="tab-btn active" data-tab="vip">VIP</button>
   <button class="tab-btn" data-tab="friends">Friends</button>
   <button class="tab-btn" data-tab="badges">Badges</button>
 </div>
 
+<!-- User Tabs -->
 <div class="host-tabs" id="userTabs">
   <button class="tab-btn active" data-tab="shop">Shop</button>
   <button class="tab-btn" data-tab="orders">My Orders</button>
 </div>
 
+<!-- Stats -->
 <div id="tab-content" class="tab-content" style="display:none;">
   <div class="stat-block">
     <div class="stat-value" id="vip-stat">0</div>
@@ -716,6 +701,35 @@ header {
   <div class="stat-block">
     <div class="stat-value" id="badges-stat">0</div>
     <div class="stat-label">Badges Collected</div>
+  </div>
+</div>
+
+<!-- Scrollable Friends List -->
+<div class="tab-content" id="friends-content" style="display:none;">
+  <div class="friends-list">
+    <!-- VIP Friend -->
+    <div class="friend-card">
+      <div class="friend-name">
+        Alice
+        <span class="friend-icon">
+          <img src="path/to/vip-icon.svg" alt="VIP">
+        </span>
+      </div>
+      <div class="friend-subtext">VIP Member</div>
+    </div>
+
+    <!-- Regular Friend -->
+    <div class="friend-card">
+      <div class="friend-name">
+        Bob
+        <span class="friend-icon">
+          <img src="path/to/friend-icon.svg" alt="Friend">
+        </span>
+      </div>
+      <div class="friend-subtext">Regular Member</div>
+    </div>
+
+    <!-- Add more friends here dynamically -->
   </div>
 </div>
 
