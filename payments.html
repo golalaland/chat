@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VIP / Host Signup</title>
 <style>
 :root {
@@ -55,6 +55,7 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .submit-btn .spinner {
   width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3);
   border-radius:50%; animation: spin 0.7s linear infinite; display:none;
+  margin-left:8px;
 }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
@@ -63,41 +64,11 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color:#aaa; }
 #paystackContainer {
   display: none;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   width: 100%;
   margin-bottom: 1rem;
-}
-
-#paystackBtn {
-  width: 50%;
-  max-width: 250px;
-  padding: 0.65rem;
-  border: none;
-  border-radius: 30px;
-  font-weight: bold;
-  font-size: 0.9rem;
-  color: #fff;
-  background: var(--primary-color);
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  transition: 0.2s;
-  z-index: 10;
-}
-
-#paystackBtn:hover { transform: scale(1.03); }
-
-#paystackSpinner {
-  width: 18px;
-  height: 18px;
-  border: 3px solid #fff;
-  border-top: 3px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: none;
-  margin-left: 8px;
 }
 </style>
 </head>
@@ -144,6 +115,7 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 
 <footer id="footer">Footer placeholder</footer>
 
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -205,11 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
   phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
 
   vipToggle.addEventListener('click', () => {
+    if(vipToggle.classList.contains('animating')) return;
+    vipToggle.classList.add('animating');
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
     vipLabel.classList.toggle('on', isVIP);
     vipMessage.style.opacity = isVIP ? '1' : '0';
     if(isVIP) triggerSprayConfetti();
+    setTimeout(()=>{ vipToggle.classList.remove('animating'); }, 500);
   });
 
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
@@ -367,63 +342,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     await setDoc(doc(db, "users", uidKey), userData);
 
-    // Referral bonus
-    if(referrer){
-      const inviterRef = doc(db,"users",sanitizeKey(referrer));
-      const inviterSnap = await getDoc(inviterRef);
-      if(inviterSnap.exists()){
-        const inviterData = inviterSnap.data();
-        const bonusStars = isVIP?100:50;
-        const updatedStars = (inviterData.stars || 0) + bonusStars;
-        const updatedStarsGifted = (inviterData.starsGifted || 0) + bonusStars;
-        await updateDoc(inviterRef,{
-          stars:updatedStars,
-          starsGifted:updatedStarsGifted,
-          hostFriends: arrayUnion({
-            chatId,
-            chatIdLower:chatId.toLowerCase(),
-            email,
-            giftShown:true,
-            hostLink:inviterData.hostLink || null,
-            hostVIP:isVIP?1:0,
-            invitedBy:referrer
-          })
-        });
-      }
-    }
-
-    messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
-    localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
-
-    setTimeout(()=>{ window.location.href="nushop.html"; },1500);
+    // redirect
+    messageEl.textContent = isVIP ? "VIP signup successful! Please continue payment." : "Signup successful! Redirecting...";
+    if(!isVIP) setTimeout(()=>{ window.location.href="./home.html"; }, 1200);
   }
 
-  submitBtn.addEventListener('click', handleSignup);
+  submitBtn.addEventListener('click', () => {
+    btnText.style.display='none'; spinner.style.display='inline-flex';
+    handleSignup().finally(()=>{ btnText.style.display='inline'; spinner.style.display='none'; });
+  });
 
-  // Paystack integration
- paystackBtn.addEventListener('click', () => {
-    const email = emailInput.value.trim();
+  // Paystack
+  paystackBtn.addEventListener('click', async () => {
+    paystackBtn.querySelector('.btn-text').style.display='none';
+    paystackSpinner.style.display='inline-flex';
+
     const handler = PaystackPop.setup({
-      key: 'pk_test_xxxxxxxxxxxxxxxxxxxxx',
-      email: email,
+      key: 'pk_test_xxxxx', // replace with your public key
+      email: emailInput.value,
       amount: 299900,
-      currency: "NGN",
-      ref: 'PLN_grrpmsot7duff3v',
-      onClose: function(){
+      currency: 'NGN',
+      ref: 'VIP-'+Math.floor(Math.random()*1000000000),
+      callback: async function(response){
+        await saveUser(true);
         paystackSpinner.style.display='none';
         paystackBtn.querySelector('.btn-text').style.display='inline';
       },
-      callback: async function(response){
-        paystackSpinner.style.display='none';
-        paystackBtn.querySelector('.btn-text').style.display='inline';
-        await saveUser(true);
-      }
+      onClose: function(){ paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline'; alert('Payment cancelled'); }
     });
-    paystackSpinner.style.display='inline-block';
-    paystackBtn.querySelector('.btn-text').style.display='none';
     handler.openIframe();
+  });
 });
 </script>
-<script src="https://js.paystack.co/v1/inline.js"></script>
+
 </body>
 </html>
