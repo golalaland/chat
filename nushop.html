@@ -129,28 +129,25 @@ header {
 .copy-btn:hover {
   filter: brightness(1.1);
 }
-/* ---------- ORDERS LIST STYLING ---------- */
-#orders-list .stat-block {
-  margin-bottom: 0.6rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+/* ---------- ORDERS LIST SCROLL (same as friends) ---------- */
+#orders-list {
+  max-height: 300px;  /* adjust as needed */
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
-#orders-list .stat-value {
-  font-size: 0.95rem; /* smaller than default */
-  font-weight: bold;
-  color: #111;
+#orders-list::-webkit-scrollbar {
+  width: 6px;
 }
 
-#orders-list .stat-label {
-  font-size: 0.8rem; /* smaller than default */
-  color: #555;
+#orders-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #ff6a00, #ee0979, #9d00ff);
+  border-radius: 3px;
 }
 
-#orders-list .muted {
-  font-size: 0.75rem; /* smaller timestamp */
-  color: #999;
-  margin-top: 2px;
+#orders-list::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
 }
 
 /* ---------- SHOP GRID ---------- */
@@ -377,30 +374,58 @@ header {
   border-radius: 6px;
 }
 
+./* ---------- FRIENDS LIST (scrollable like orders) ---------- */
 .friends-list {
   display: flex;
-  flex-wrap: wrap; /* or flex-wrap: nowrap for horizontal scrolling */
-  gap: 12px;
-  overflow-x: auto; /* horizontal scroll if nowrap */
-  padding-bottom: 10px;
+  flex-direction: column; /* list vertically like orders */
+  gap: 0.5rem;            /* space between friend items */
+  max-height: 300px;      /* adjust as needed */
+  overflow-y: auto;        /* vertical scroll */
+  padding-right: 0.25rem;  /* avoid hiding behind scrollbar */
 }
 
+/* Friend item styled like orders */
 .friend-card {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  background: #1a1a1a;
-  border-radius: 12px;
-  padding: 10px;
-  min-width: 160px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  gap: 2px;
 }
 
-.friend-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+.friend-card .friend-name {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #111;
 }
+
+.friend-card .friend-subtext {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.friend-card .muted {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* Scrollbar style for Friends */
+.friends-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.friends-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #ff6a00, #ee0979, #9d00ff);
+  border-radius: 3px;
+}
+
+.friends-list::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+
 
 /* ---------- MODAL ---------- */
 #confirmModal {
