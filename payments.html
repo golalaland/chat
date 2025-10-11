@@ -61,10 +61,44 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .fomo-popup { position:fixed; top:100px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; white-space:nowrap; }
 .image-placeholder { width:300px; height:300px; background:#333; border-radius:15px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#aaa; }
 footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color:#aaa; }
-#paystackContainer { display:none; flex-direction:column; align-items:center; margin-bottom:1rem; }
-#paystackBtn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; display:flex; justify-content:center; align-items:center; position:relative; transition:0.2s; margin:0.5rem auto; }
-#paystackBtn:hover { transform:scale(1.03); }
-#paystackSpinner { width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3); border-radius:50%; animation:spin 0.7s linear infinite; display:none; }
+#paystackContainer {
+  display: none;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+#paystackBtn {
+  width: 50%;
+  max-width: 250px;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #fff;
+  background: var(--primary-color);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  transition: 0.2s;
+  z-index: 10;
+}
+
+#paystackBtn:hover { transform: scale(1.03); }
+
+#paystackSpinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-top: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+  margin-left: 8px;
+}
 </style>
 </head>
 <body>
@@ -367,15 +401,18 @@ document.addEventListener('DOMContentLoaded', () => {
   submitBtn.addEventListener('click', handleSignup);
 
   // Paystack integration
-  paystackBtn.addEventListener('click', () => {
+ paystackBtn.addEventListener('click', () => {
     const email = emailInput.value.trim();
     const handler = PaystackPop.setup({
-      key: 'pk_test_xxxxxxxxxxxxxxxxxxxxx', // Replace with your test key
+      key: 'pk_test_xxxxxxxxxxxxxxxxxxxxx',
       email: email,
-      amount: 299900, // ₦2,999 in kobo
+      amount: 299900,
       currency: "NGN",
       ref: 'PLN_grrpmsot7duff3v',
-      onClose: function(){ paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline'; },
+      onClose: function(){
+        paystackSpinner.style.display='none';
+        paystackBtn.querySelector('.btn-text').style.display='inline';
+      },
       callback: async function(response){
         paystackSpinner.style.display='none';
         paystackBtn.querySelector('.btn-text').style.display='inline';
@@ -385,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
     paystackSpinner.style.display='inline-block';
     paystackBtn.querySelector('.btn-text').style.display='none';
     handler.openIframe();
-  });
 });
 </script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
