@@ -112,7 +112,7 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -135,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const maleBtn = document.getElementById('maleBtn');
   const submitBtn = document.getElementById('submitBtn');
   const spinner = document.getElementById('spinner');
-  const btnText = submitBtn.querySelector('.btn-text');
   const messageEl = document.getElementById('message');
   const nameInput = document.getElementById('name');
   const chatIdInput = document.getElementById('chatId');
@@ -154,14 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
-
   function calculateAge(dobStr){
     const dob = new Date(dobStr);
     const diffMs = Date.now() - dob.getTime();
     const ageDt = new Date(diffMs);
     return Math.abs(ageDt.getUTCFullYear() - 1970);
   }
-
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
     const snapshot = await getDocs(q);
@@ -247,43 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   showFOMO();
 
-  async function handleSignup() {
-    const fullName = nameInput.value.trim();
-    const chatIdRaw = chatIdInput.value.trim();
-    const chatId = cleanChatId(chatIdRaw);
-    const phone = phoneInput.value.trim();
-    const email = emailInput.value.trim().toLowerCase();
-    const dob = dobInput.value;
-
-    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
-
-    const age = calculateAge(dob);
-    if(age < 18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
-    if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
-    if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
-
-    const uidKey = sanitizeKey(email);
-    const userRef = doc(db, "users", uidKey);
-
-    try {
-      const existingSnap = await getDoc(userRef);
-      const chatTaken = await isChatIdTaken(chatId);
-      if(existingSnap.exists() || chatTaken){
-        messageEl.textContent = "❌ User already signed up with this email or username.";
-        return;
-      }
-
-      if(isVIP){
-        submitBtn.style.display='none';
-        paystackContainer.style.display='flex';
-      } else {
-        await saveUser(false);
-      }
-
-    } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
-  }
-
   async function saveUser(isVipPaid) {
     const fullName = nameInput.value.trim();
     const chatId = cleanChatId(chatIdInput.value.trim());
@@ -325,8 +285,51 @@ document.addEventListener('DOMContentLoaded', () => {
       messageEl.textContent="✅ Signup successful!";
       submitBtn.style.display='none';
       paystackContainer.style.display='none';
-      // reset form or redirect
+
+      if(!isVipPaid){
+        window.location.href = 'nushop.html';
+      }
     } catch(e){ console.error(e); messageEl.textContent="❌ Saving failed.";}
+  }
+
+  async function handleSignup() {
+    const fullName = nameInput.value.trim();
+    const chatIdRaw = chatIdInput.value.trim();
+    const chatId = cleanChatId(chatIdRaw);
+    const phone = phoneInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const dob = dobInput.value;
+
+    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
+
+    const age = calculateAge(dob);
+    if(age < 18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
+    if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
+    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
+    if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
+
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
+
+    try {
+      const existingSnap = await getDoc(userRef);
+      const chatTaken = await isChatIdTaken(chatId);
+      if(existingSnap.exists() || chatTaken){
+        messageEl.textContent =        messageEl.textContent = "❌ User already signed up with this email or username.";
+        return;
+      }
+
+      if(isVIP){
+        submitBtn.style.display='none';
+        paystackContainer.style.display='flex';
+      } else {
+        await saveUser(false);
+      }
+
+    } catch(e){ 
+      console.error(e); 
+      messageEl.textContent="❌ Signup failed. Please try again."; 
+    }
   }
 
   submitBtn.addEventListener('click', handleSignup);
@@ -339,8 +342,8 @@ document.addEventListener('DOMContentLoaded', () => {
     paystackSpinner.style.display='inline-block';
     paystackBtn.querySelector('.btn-text').style.display='none';
 
-    const handler = PaystackPop.setup({
-      key: 'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd', // replace with your Paystack key
+    const handler = window.PaystackPop.setup({
+      key: 'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd', // your Paystack public key
       email: email,
       plan: 'PLN_grrpmsot7duff3v', // VIP plan code
       onClose: function(){
