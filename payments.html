@@ -50,9 +50,9 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .vip-toggle.on .vip-circle { left:45px; background:gold; box-shadow:0 0 12px gold; }
 .vip-message { text-align:center; font-size:0.8rem; color:gold; opacity:0; transition:0.3s; margin-bottom:1rem; }
 .vip-label.on { color:gold; text-shadow:0 0 8px gold; }
-.submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; display:flex; justify-content:center; align-items:center; position:relative; }
-.submit-btn:hover { transform:scale(1.03); }
-.submit-btn .spinner {
+.submit-btn, .paystack-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; display:flex; justify-content:center; align-items:center; position:relative; }
+.submit-btn:hover, .paystack-btn:hover { transform:scale(1.03); }
+.spinner {
   width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3);
   border-radius:50%; animation: spin 0.7s linear infinite; display:none;
 }
@@ -62,6 +62,9 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .image-placeholder { width:300px; height:300px; background:#333; border-radius:15px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#aaa; }
 footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color:#aaa; }
 </style>
+
+<!-- Load Paystack -->
+<script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 <body>
 
@@ -95,12 +98,10 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
   <span class="spinner" id="spinner"></span>
 </button>
 
-<div id="paystackContainer" style="display:none; width:100%; justify-content:center; margin-bottom:1rem;">
-  <button class="submit-btn" id="paystackBtn">
-    <span class="btn-text">VIP ACCESS</span>
-    <span class="spinner" id="paystackSpinner"></span>
-  </button>
-</div>
+<button class="paystack-btn" id="paystackBtn">
+  <span class="btn-text">Subscribe for VIP</span>
+  <span class="spinner" id="paystackSpinner"></span>
+</button>
 
 <div class="message" id="message"></div>
 
@@ -108,7 +109,7 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, serverTimestamp, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -139,7 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const emailInput = document.getElementById('email');
   const dobInput = document.getElementById('dob');
   const fomoPopup = document.getElementById('fomoPopup');
-  const paystackContainer = document.getElementById('paystackContainer');
   const paystackBtn = document.getElementById('paystackBtn');
   const paystackSpinner = document.getElementById('paystackSpinner');
 
@@ -149,44 +149,81 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
+  function sanitizeEmailPrefix(email){ return (email || '').split('@')[0]; }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
-  function calculateAge(dobStr){ const dob = new Date(dobStr); const diffMs = Date.now() - dob.getTime(); return Math.abs(new Date(diffMs).getUTCFullYear() - 1970); }
-  async function isChatIdTaken(chatId){ const q=query(collection(db,"users"),where("chatIdLower","==",chatId.toLowerCase())); const snap=await getDocs(q); return !snap.empty; }
+  function calculateAge(dobStr){ const dob = new Date(dobStr); const diffMs = Date.now() - dob.getTime(); const ageDt = new Date(diffMs); return Math.abs(ageDt.getUTCFullYear() - 1970); }
+  async function isChatIdTaken(chatId) { const q=query(collection(db, "users"), where("chatIdLower","==",chatId.toLowerCase())); const snapshot=await getDocs(q); return !snapshot.empty; }
 
-  phoneInput.addEventListener('input', ()=>{ phoneInput.value = phoneInput.value.replace(/\D/g,''); });
-  femaleBtn.addEventListener('click', ()=>{ gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
-  maleBtn.addEventListener('click', ()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
+  phoneInput.addEventListener('input', ()=>{ phoneInput.value=phoneInput.value.replace(/\D/g,''); });
 
   vipToggle.addEventListener('click', ()=>{
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
     vipLabel.classList.toggle('on', isVIP);
     vipMessage.style.opacity = isVIP ? '1' : '0';
+    if(isVIP) triggerSprayConfetti();
   });
 
-  const today = new Date();
-  const maxDate = new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
-  dobInput.max = maxDate.toISOString().split('T')[0];
+  femaleBtn.addEventListener('click', ()=>{ gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
+  maleBtn.addEventListener('click', ()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
-  async function fetchRecentUsers() {
-    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
-    const snapshot = await getDocs(q);
-    const users = [];
-    snapshot.forEach(docSnap=>{
-      const data = docSnap.data();
-      users.push({fullName:data.fullName, isVIP:data.isVIP});
-    });
+  function triggerSprayConfetti(){
+    const colors=['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
+    const numParticles=50;
+    const rect=vipToggle.getBoundingClientRect();
+    const startX=rect.left+rect.width/2;
+    const startY=rect.bottom;
+    for(let i=0;i<numParticles;i++){
+      const particle=document.createElement('div');
+      particle.style.position='fixed';
+      particle.style.width='6px';
+      particle.style.height='16px';
+      particle.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+      particle.style.left=`${startX}px`;
+      particle.style.top=`${startY}px`;
+      particle.style.opacity='0.9';
+      particle.style.borderRadius='2px';
+      particle.style.pointerEvents='none';
+      particle.style.zIndex='9999';
+      document.body.appendChild(particle);
+      const angle=(Math.random()*Math.PI/2)-Math.PI/4;
+      const speed=300+Math.random()*200;
+      const duration=1500+Math.random()*500;
+      const start=performance.now();
+      (function animate(time){
+        const t=(time-start)/duration;
+        if(t<1){
+          const dx=Math.sin(angle)*speed*t;
+          const dy=-Math.cos(angle)*speed*t;
+          particle.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`;
+          particle.style.opacity=`${1-t}`;
+          requestAnimationFrame(animate);
+        }else{ particle.remove(); }
+      })(start);
+    }
+  }
+
+  // Set max DOB to today minus 18 years
+  const today=new Date();
+  const maxDate=new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
+  dobInput.max=maxDate.toISOString().split('T')[0];
+
+  async function fetchRecentUsers(){
+    const q=query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
+    const snapshot=await getDocs(q);
+    const users=[];
+    snapshot.forEach(docSnap=>{ const data=docSnap.data(); users.push({fullName:data.fullName, isVIP:data.isVIP}); });
     return users;
   }
 
-  async function showFOMO() {
-    const users = await fetchRecentUsers();
+  async function showFOMO(){
+    const users=await fetchRecentUsers();
     if(users.length===0) return;
-    let index = 0;
+    let index=0;
     setInterval(()=>{
-      const u = users[index % users.length];
-      const emoji = u.isVIP?'🎉':'🎈';
-      fomoPopup.textContent = `${u.fullName} just joined as a ${u.isVIP?'VIP':'Host'} ${emoji}`;
+      const u=users[index % users.length];
+      const emoji=u.isVIP?'🎉':'🎈';
+      fomoPopup.textContent=`${u.fullName} just joined as a ${u.isVIP?'VIP':'Host'} ${emoji}`;
       fomoPopup.style.opacity='1';
       setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
       index++;
@@ -195,29 +232,45 @@ document.addEventListener('DOMContentLoaded', () => {
   showFOMO();
 
   submitBtn.addEventListener('click', async ()=>{
-    const fullName=nameInput.value.trim(), chatIdRaw=chatIdInput.value.trim(), chatId=cleanChatId(chatIdRaw), phone=phoneInput.value.trim(), email=emailInput.value.trim().toLowerCase(), dob=dobInput.value;
+    const fullName=nameInput.value.trim();
+    const chatIdRaw=chatIdInput.value.trim();
+    const chatId=cleanChatId(chatIdRaw);
+    const phone=phoneInput.value.trim();
+    const email=emailInput.value.trim().toLowerCase();
+    const dob=dobInput.value;
     if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
-    if(calculateAge(dob)<18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
+
+    const age=calculateAge(dob);
+    if(age<18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
     if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
     if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
-    const uidKey=sanitizeKey(email), userRef=doc(db,"users",uidKey);
+
+    const uidKey=sanitizeKey(email);
+    const userRef=doc(db,"users",uidKey);
 
     try{
-      const existingSnap=await getDoc(userRef), chatTaken=await isChatIdTaken(chatId);
-      if(existingSnap.exists()||chatTaken){ messageEl.textContent="❌ User already signed up with this email or username."; spinner.style.display='none'; btnText.style.display='inline'; return; }
+      const existingSnap=await getDoc(userRef);
+      const chatTaken=await isChatIdTaken(chatId);
+      if(existingSnap.exists() || chatTaken){
+        messageEl.textContent="❌ User already signed up with this email or username.";
+        spinner.style.display='none'; btnText.style.display='inline';
+        return;
+      }
 
       let country='Unknown';
-      try{ const res=await fetch('https://ipapi.co/json/'); const data=await res.json(); country=data.country_name||'Unknown'; }catch(e){}
+      try{ const res=await fetch('https://ipapi.co/json/'); const data=await res.json(); country=data.country_name||'Unknown'; } catch(e){}
 
       const userData={
         chatId, chatIdLower:chatId.toLowerCase(), fullName, stars:50, starsToday:0, starsGifted:0,
         lastStarDate:new Date().toISOString().split("T")[0], cash:0, usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
         isAdmin:false, isVIP, isHost:!isVIP, hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-        invitedBy:referrer||null, email, phone, gender, dob, age:calculateAge(dob), bankName:"", bankAccountNumber:"", country,
-        subscriptionActive:false, subscriptionCount:0, socialShare:!isVIP, instagram:"", tiktok:"", whatsapp:"", telegram:""
+        invitedBy:referrer||null, email, phone, gender, dob, age,
+        bankName:"", bankAccountNumber:"", country, subscriptionActive:false, subscriptionCount:0,
+        socialShare:!isVIP, instagram:"", tiktok:"", whatsapp:"", telegram:"",
+        createdAt: serverTimestamp()
       };
 
       await setDoc(userRef,userData);
@@ -226,53 +279,80 @@ document.addEventListener('DOMContentLoaded', () => {
         const inviterRef=doc(db,"users",sanitizeKey(referrer));
         const inviterSnap=await getDoc(inviterRef);
         if(inviterSnap.exists()){
-          const inviterData=inviterSnap.data(), bonusStars=isVIP?100:50;
-          await updateDoc(inviterRef,{ 
-            stars:(inviterData.stars||0)+bonusStars,
-            starsGifted:(inviterData.starsGifted||0)+bonusStars,
-            hostFriends: arrayUnion({chatId, chatIdLower:chatId.toLowerCase(), email, giftShown:true, hostLink:inviterData.hostLink||null, hostVIP:isVIP?1:0, invitedBy:referrer})
+          const inviterData=inviterSnap.data();
+          const bonusStars=isVIP?100:50;
+          const updatedStars=(inviterData.stars||0)+bonusStars;
+          const updatedStarsGifted=(inviterData.starsGifted||0)+bonusStars;
+          await updateDoc(inviterRef,{
+            stars:updatedStars,
+            starsGifted:updatedStarsGifted,
+            hostFriends: arrayUnion({
+              chatId, chatIdLower:chatId.toLowerCase(), email, giftShown:true,
+              hostLink:inviterData.hostLink||null, hostVIP:isVIP?1:0, invitedBy:referrer
+            })
           });
         }
       }
 
-      if(isVIP){
-        submitBtn.style.display='none';
-        paystackContainer.style.display='flex';
-      } else {
-        messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
-        localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
-        setTimeout(()=>{ window.location.href="nushop.html"; },1500);
-      }
+      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
+      localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
 
-    }catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
+      setTimeout(()=>{ window.location.href="nushop.html"; },1500);
+
+    } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
     finally{ spinner.style.display='none'; btnText.style.display='inline'; }
   });
 
-  paystackBtn.addEventListener('click', async ()=>{
-    paystackSpinner.style.display='inline-block'; paystackBtn.querySelector('.btn-text').style.display='none';
-    if(!window.PaystackPop){
-      const s=document.createElement('script'); s.src='https://js.paystack.co/v1/inline.js'; document.body.appendChild(s);
-      await new Promise(r=>s.onload=r);
+  paystackBtn.addEventListener('click', async () => {
+    const storedUser = JSON.parse(localStorage.getItem('vipUser'));
+    if(!storedUser){
+      messageEl.textContent = "❌ Please sign up first before subscribing.";
+      return;
     }
-    const email=emailInput.value.trim().toLowerCase(), chatId=chatIdInput.value.trim();
-    const handler=PaystackPop.setup({
+
+    paystackSpinner.style.display = 'inline-block';
+    paystackBtn.querySelector('.btn-text').style.display = 'none';
+
+    const email = storedUser.email;
+    const chatId = storedUser.chatId;
+    const handler = PaystackPop.setup({
       key: 'PLN_grrpmsot7duff3v', // Test key
-      email, amount:1000*100, currency:'NGN',
-      callback: async function(response){
-        paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline';
-        alert('Payment successful. Ref: '+response.reference);
-        const uidKey = sanitizeKey(email), userRef = doc(db,"users",uidKey);
-        await updateDoc(userRef,{ subscriptionActive:true });
-        localStorage.setItem("vipUser",JSON.stringify({email,chatId,subscriptionActive:true}));
-        window.location.href="nushop.html";
+      email: email,
+      amount: 10000, // e.g., 100 NGN; adjust as needed
+      currency: 'NGN',
+      ref: '' + Math.floor((Math.random() * 1000000000) + 1),
+      onClose: function(){
+        paystackSpinner.style.display = 'none';
+        paystackBtn.querySelector('.btn-text').style.display = 'inline';
+        messageEl.textContent = "Payment cancelled.";
       },
-      onClose: function(){ paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline'; alert('Payment cancelled.'); }
+      callback: async function(response){
+        try{
+          const userRef = doc(db, "users", sanitizeKey(email));
+          await updateDoc(userRef, { subscriptionActive: true });
+          messageEl.textContent = `✅ Subscription successful! VIP unlocked.`;
+          paystackSpinner.style.display = 'none';
+          paystackBtn.querySelector('.btn-text').style.display = 'inline';
+          // Automatically toggle VIP if not already
+          if(!isVIP){
+            isVIP = true;
+            vipToggle.classList.add('on');
+            vipLabel.classList.add('on');
+            vipMessage.style.opacity = '1';
+            triggerSprayConfetti();
+          }
+        } catch(e){
+          console.error(e);
+          messageEl.textContent = "❌ Payment succeeded but updating subscription failed.";
+          paystackSpinner.style.display = 'none';
+          paystackBtn.querySelector('.btn-text').style.display = 'inline';
+        }
+      }
     });
     handler.openIframe();
   });
 
 });
 </script>
-
 </body>
 </html>
