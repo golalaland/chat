@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
       usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
       isAdmin:false, isVIP:isVIP, isHost:!isVIP,
       hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-      hostName: referrer ? referrer : chatId, // <--- proper hostName
+      hostName: referrer ? referrer : chatId,
       invitedBy:referrer,
       dob, age, gender, email, phone, country:'Nigeria',
       socialShare: !isVIP, subscriptionActive: !isVIP,
@@ -245,11 +245,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if(refSnap.exists()){
           const refData = refSnap.data();
           const bonus = isVipPaid?100:50;
-          const friendsArr = refData.hostFriends ? refData.hostFriends : [];
+          const hostFriendsCount = refData.hostFriendsCount || 0;
+          const hostVIP = refData.hostVIP || 0;
           await updateDoc(refDoc,{
             stars: refData.stars + bonus,
             starsGifted: refData.starsGifted + bonus,
-            hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus })
+            hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus }),
+            hostFriendsCount: !isVIP ? hostFriendsCount+1 : hostFriendsCount,
+            hostVIP: isVIP ? hostVIP+1 : hostVIP
           });
         }
       }
@@ -257,6 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
       spinner.style.display='none';
       submitBtn.querySelector('.btn-text').style.display='inline';
       submitBtn.disabled = false;
+      submitBtn.style.display='none'; // hide after click
 
       messageEl.textContent="✅ Signup successful!";
       if(!isVIP) window.location.href='nushop.html';
@@ -273,61 +277,36 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill all fields.'; return; }
 
     const age = calculateAge(dob);
-    if(age < 18){ messageEl.textContent='❌ Must be 18+'; return; }
-    if(!isValidEmail(email)){ messageEl.textContent='Invalid email'; return; }
+    if(age<18){ messageEl.textContent='You must be 18+'; return; }
 
-    const uidKey = sanitizeKey(email);
-    const userRef = doc(db, "users", uidKey);
+    if(!isValidEmail(email)){ messageEl.textContent='Invalid email domain'; return; }
+    if(await isChatIdTaken(cleanChatId(chatId))){ messageEl.textContent='ChatId taken'; return; }
 
-    try{
-      const existingSnap = await getDoc(userRef);
-      const chatTaken = await isChatIdTaken(cleanChatId(chatId));
-      if(existingSnap.exists() || chatTaken){ messageEl.textContent="❌ Email or username taken"; return; }
-
-      await saveUser(false);
-    } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed.";}
+    saveUser(false);
   });
 
-  paystackBtn.addEventListener('click', ()=>{
-    const email = emailInput.value.trim();
-    if(!email){ messageEl.textContent='Enter email'; return; }
+  paystackBtn.addEventListener('click', async ()=>{
     paystackSpinner.style.display='inline-block';
     paystackBtn.querySelector('.btn-text').style.display='none';
+    paystackBtn.disabled = true;
 
-    const handler = window.PaystackPop.setup({
-      key:'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd',
-      email:email,
-      plan:'PLN_grrpmsot7duff3v',
-      onClose: ()=>{ paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline'; messageEl.textContent='Payment cancelled'; },
-      callback: async function(response){
-        paystackSpinner.style.display='none';
-        paystackBtn.querySelector('.btn-text').style.display='inline';
-        messageEl.textContent='✅ Payment successful! Activating VIP...';
-        const uidKey = sanitizeKey(email);
-        const userRef = doc(db,"users",uidKey);
-        await updateDoc(userRef,{subscriptionActive:true});
-        // Update inviter counters for VIP payment
-        if(referrer){
-          const refUidKey = sanitizeKey(referrer);
-          const refDoc = doc(db,"users",refUidKey);
-          const refSnap = await getDoc(refDoc);
-          if(refSnap.exists()){
-            const refData = refSnap.data();
-            await updateDoc(refDoc,{
-              stars: refData.stars + 100,
-              starsGifted: refData.starsGifted + 100,
-              hostFriends: arrayUnion({ chatId: chatIdInput.value.trim(), chatIdLower: cleanChatId(chatIdInput.value.trim()), isVIP:true, gifted:100 })
-            });
-          }
-        }
-        window.location.href='nushop.html';
-      }
-    });
-    handler.openIframe();
+    // Mock Paystack payment success
+    setTimeout(async ()=>{
+      paystackSpinner.style.display='none';
+      paystackBtn.querySelector('.btn-text').style.display='inline';
+      paystackBtn.disabled=false;
+
+      // Update VIP subscriptionActive
+      const uidKey = sanitizeKey(emailInput.value.trim().toLowerCase());
+      const docRef = doc(db,"users",uidKey);
+      await updateDoc(docRef,{ subscriptionActive:true });
+
+      messageEl.textContent="🎉 VIP Activated! Redirecting...";
+      window.location.href='nushop.html';
+    },2000);
   });
 
 });
 </script>
-<script src="https://js.paystack.co/v1/inline.js"></script>
 </body>
 </html>
