@@ -181,50 +181,97 @@ document.addEventListener('DOMContentLoaded', () => {
   showFOMO();
 
   async function saveUser(isVipPaid=false){
-    spinner.style.display='inline-block'; submitBtn.querySelector('.btn-text').style.display='none'; submitBtn.disabled=true;
+  spinner.style.display='inline-block';
+  submitBtn.querySelector('.btn-text').style.display='none';
+  submitBtn.disabled = true;
 
-    const fullName=nameInput.value.trim(); const chatId=cleanChatId(chatIdInput.value.trim());
-    const phone=phoneInput.value.trim(); const email=emailInput.value.trim().toLowerCase();
-    const dob=dobInput.value; const age=calculateAge(dob); const uidKey=sanitizeKey(email);
+  const fullName = nameInput.value.trim();
+  const chatId = cleanChatId(chatIdInput.value.trim());
+  const phone = phoneInput.value.trim();
+  const email = emailInput.value.trim().toLowerCase();
+  const dob = dobInput.value;
+  const age = calculateAge(dob);
+  const uidKey = sanitizeKey(email);
 
-    const userData={
-      chatId, chatIdLower:chatId.toLowerCase(), fullName,
-      stars:50, starsToday:0, starsGifted:0, lastStarDate:new Date().toISOString().split("T")[0],
-      cash:0, usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
-      isAdmin:false, isVIP:isVIP, isHost:!isVIP,
-      hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-      hostName: referrer?referrer:chatId,
-      invitedBy:referrer,
-      dob, age, gender, email, phone, country:'Nigeria',
-      socialShare:!isVIP, subscriptionActive:!isVIP,
-      createdAt:new Date().toISOString()
-    };
-
-    try{
-      await setDoc(doc(db,"users",uidKey),userData);
-
-      // Update referrer
-      if(referrer){
-        const refUidKey = sanitizeKey(referrer); const refDoc = doc(db,"users",refUidKey); const refSnap=await getDoc(refDoc);
-        if(refSnap.exists()){ const refData=refSnap.data(); const bonus=isVipPaid?100:50;
-          await updateDoc(refDoc,{
-            stars:refData.stars+bonus, starsGifted:refData.starsGifted+bonus,
-            hostFriends:arrayUnion({chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus}),
-            hostFriendsCount:!isVIP?(refData.hostFriendsCount||0)+1:(refData.hostFriendsCount||0),
-            hostVIP:isVIP?(refData.hostVIP||0)+1:(refData.hostVIP||0)
-          });
-        }
-      }
-
-      // Auto-login
-      localStorage.setItem('user', JSON.stringify(userData));
-
-      spinner.style.display='none'; submitBtn.querySelector('.btn-text').style.display='inline'; submitBtn.disabled=false; submitBtn.style.display='none';
-      messageEl.textContent="✅ Signup successful!";
-      if(!isVIP) window.location.href='nushop.html';
-      else paystackContainer.style.display='flex';
-    }catch(e){ console.error(e); spinner.style.display='none'; submitBtn.querySelector('.btn-text').style.display='inline'; submitBtn.disabled=false; messageEl.textContent="❌ Signup failed.";}
+  // Determine hostName correctly
+  let hostNameValue = chatId; // default to own chatId
+  if(referrer){
+    const refDocKey = sanitizeKey(referrer);
+    const refSnap = await getDoc(doc(db,"users",refDocKey));
+    if(refSnap.exists()){
+      const refData = refSnap.data();
+      hostNameValue = refData.chatId || chatId; // use ref chatId if exists
+    }
   }
+
+  const userData = {
+    chatId,
+    chatIdLower: chatId.toLowerCase(),
+    fullName,
+    stars:50,
+    starsToday:0,
+    starsGifted:0,
+    lastStarDate:new Date().toISOString().split("T")[0],
+    cash:0,
+    usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+    isAdmin:false,
+    isVIP:isVIP,
+    isHost:!isVIP,
+    hostLink:!isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
+    hostName: hostNameValue,
+    invitedBy: referrer,
+    dob,
+    age,
+    gender,
+    email,
+    phone,
+    country:'Nigeria',
+    socialShare: !isVIP,
+    subscriptionActive: !isVIP,
+    createdAt:new Date().toISOString()
+  };
+
+  try{
+    await setDoc(doc(db,"users",uidKey), userData);
+
+    // Update referrer counters
+    if(referrer){
+      const refDocKey = sanitizeKey(referrer);
+      const refDocRef = doc(db,"users",refDocKey);
+      const refSnap = await getDoc(refDocRef);
+      if(refSnap.exists()){
+        const refData = refSnap.data();
+        const bonus = isVipPaid ? 100 : 50;
+        const hostFriendsCount = refData.hostFriendsCount || 0;
+        const hostVIP = refData.hostVIP || 0;
+
+        await updateDoc(refDocRef,{
+          stars: refData.stars + bonus,
+          starsGifted: refData.starsGifted + bonus,
+          hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus }),
+          hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
+          hostVIP: isVIP ? hostVIP + 1 : hostVIP
+        });
+      }
+    }
+
+    spinner.style.display='none';
+    submitBtn.querySelector('.btn-text').style.display='inline';
+    submitBtn.disabled = false;
+    submitBtn.style.display='none'; // hide after click
+
+    messageEl.textContent="✅ Signup successful!";
+    if(!isVIP) window.location.href='nushop.html';
+    else paystackContainer.style.display='flex';
+
+  } catch(e){
+    console.error(e);
+    spinner.style.display='none';
+    submitBtn.querySelector('.btn-text').style.display='inline';
+    submitBtn.disabled=false;
+    messageEl.textContent="❌ Signup failed.";
+  }
+}
 
   submitBtn.addEventListener('click', async ()=>{
     const fullName=nameInput.value.trim(), chatId=chatIdInput.value.trim(), phone=phoneInput.value.trim();
