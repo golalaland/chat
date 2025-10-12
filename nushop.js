@@ -364,7 +364,7 @@ const renderTabContent = (type) => {
     btn.addEventListener('click', () => {
       // Custom message + referral link
       const message = `Hey! i'm hosting on xixi live, join my tab and lets win some together,  Sign up using my link: `;
-      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
+      const link = `https://golalaland.github.io/chat/payments.html?ref=${encodeURIComponent(currentUser.uid)}`;
       const fullText = message + link;
 
       navigator.clipboard.writeText(fullText)
