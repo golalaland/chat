@@ -15,30 +15,14 @@
   --fomo-bg: #000;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
-body {
-  background: var(--background-gradient);
-  color: var(--text-color);
-  font-family: 'Inter', sans-serif;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:1rem;
-}
+body { background: var(--background-gradient); color: var(--text-color); font-family: 'Inter', sans-serif; display:flex; flex-direction:column; align-items:center; padding:1rem; }
 h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-align:center; }
 .form-group { width:90%; max-width:400px; margin-bottom:0.7rem; display:flex; flex-direction:column; align-items:center; }
-.form-group input {
-  width:100%; padding:0.65rem 1rem; border-radius:30px;
-  border:1px solid var(--input-border); background:var(--input-bg);
-  color:var(--text-color); font-size:0.9rem; outline:none;
-}
+.form-group input { width:100%; padding:0.65rem 1rem; border-radius:30px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:0.9rem; outline:none; }
 .form-group input:focus { border-color: var(--primary-color); box-shadow:0 0 8px rgba(255,64,129,0.5); }
 .gender-label { text-align:center; font-weight:600; font-size:0.75rem; margin-bottom:0.3rem; }
 .gender-select { display:flex; justify-content:center; gap:15px; margin-bottom:1rem; }
-.gender-select button {
-  width:50px; height:50px; border-radius:50%; border:none; background:#333;
-  color:#eee; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 6px #000;
-  transition:0.2s;
-}
+.gender-select button { width:50px; height:50px; border-radius:50%; border:none; background:#333; color:#eee; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 6px #000; transition:0.2s; }
 .gender-select button:active { transform:translateY(3px); box-shadow:0 2px #000; }
 .gender-select button.selected { background:var(--primary-color); box-shadow:0 0 15px var(--primary-color); }
 .dob-container { display:flex; flex-direction:column; align-items:center; margin-bottom:0.7rem; }
@@ -52,10 +36,7 @@ h2 { font-size:1.2rem; color:var(--primary-color); margin-bottom:0.25rem; text-a
 .vip-label.on { color:gold; text-shadow:0 0 8px gold; }
 .submit-btn { width:50%; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#fff; background:var(--primary-color); cursor:pointer; margin-bottom:1rem; transition:0.2s; display:flex; justify-content:center; align-items:center; position:relative; }
 .submit-btn:hover { transform:scale(1.03); }
-.submit-btn .spinner {
-  width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3);
-  border-radius:50%; animation: spin 0.7s linear infinite; display:none;
-}
+.submit-btn .spinner { width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3); border-radius:50%; animation: spin 0.7s linear infinite; display:none; }
 @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
 .message { text-align:center; font-size:0.85rem; min-height:20px; margin-top:0.5rem; }
 .fomo-popup { position:fixed; top:100px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:0.6rem 1rem; border-radius:8px; opacity:0; transition:opacity 0.5s; pointer-events:none; font-size:0.85rem; z-index:10000; display:flex; align-items:center; gap:0.4rem; white-space:nowrap; }
@@ -226,8 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   showFOMO();
 
-  async function saveUser(isVipPaid){
+  async function saveUser(isVipPaid=false){
     spinner.style.display='inline-block';
+    submitBtn.querySelector('.btn-text').style.display='none';
+    submitBtn.disabled = true;
+
     const fullName = nameInput.value.trim();
     const chatId = cleanChatId(chatIdInput.value.trim());
     const phone = phoneInput.value.trim();
@@ -237,59 +221,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const uidKey = sanitizeKey(email);
 
     const userData = {
-      chatId,
-      chatIdLower:chatId.toLowerCase(),
-      fullName,
-      stars:isVIP?50:50, // initial stars
-      starsToday:0,
-      starsGifted:0,
-      lastStarDate:new Date().toISOString().split("T")[0],
-      cash:0,
+      chatId, chatIdLower:chatId.toLowerCase(), fullName,
+      stars:50, starsToday:0, starsGifted:0,
+      lastStarDate:new Date().toISOString().split("T")[0], cash:0,
       usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
-      isAdmin:false,
-      isVIP:isVIP,
-      isHost:!isVIP,
+      isAdmin:false, isVIP:isVIP, isHost:!isVIP,
       hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+      hostName: referrer ? referrer : chatId, // <--- proper hostName
       invitedBy:referrer,
-      hostName: referrer ? referrer : null,
-      dob,
-      age,
-      gender,
-      email,
-      phone,
-      country:'Nigeria',
-      socialShare: !isVIP, // true for host, false for VIP
-      subscriptionActive: !isVIP, // hosts true, VIPs false
+      dob, age, gender, email, phone, country:'Nigeria',
+      socialShare: !isVIP, subscriptionActive: !isVIP,
       createdAt:new Date().toISOString()
     };
 
     try{
       await setDoc(doc(db,"users",uidKey), userData);
 
+      // Update referrer counters
       if(referrer){
         const refUidKey = sanitizeKey(referrer);
         const refDoc = doc(db,"users",refUidKey);
         const refSnap = await getDoc(refDoc);
         if(refSnap.exists()){
           const refData = refSnap.data();
-          const bonus = isVIP?100:50;
+          const bonus = isVipPaid?100:50;
+          const friendsArr = refData.hostFriends ? refData.hostFriends : [];
           await updateDoc(refDoc,{
             stars: refData.stars + bonus,
             starsGifted: refData.starsGifted + bonus,
-            hostFriends: arrayUnion({
-              chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus
-            })
+            hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus })
           });
         }
       }
 
       spinner.style.display='none';
+      submitBtn.querySelector('.btn-text').style.display='inline';
+      submitBtn.disabled = false;
+
       messageEl.textContent="✅ Signup successful!";
-      submitBtn.style.display='none';
       if(!isVIP) window.location.href='nushop.html';
       else paystackContainer.style.display='flex';
-
-    } catch(e){ console.error(e); spinner.style.display='none'; messageEl.textContent="❌ Signup failed.";}
+    } catch(e){ console.error(e); spinner.style.display='none'; submitBtn.querySelector('.btn-text').style.display='inline'; submitBtn.disabled=false; messageEl.textContent="❌ Signup failed.";}
   }
 
   submitBtn.addEventListener('click', async ()=>{
@@ -312,7 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const chatTaken = await isChatIdTaken(cleanChatId(chatId));
       if(existingSnap.exists() || chatTaken){ messageEl.textContent="❌ Email or username taken"; return; }
 
-      spinner.style.display='inline-block';
       await saveUser(false);
     } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed.";}
   });
@@ -335,6 +306,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const uidKey = sanitizeKey(email);
         const userRef = doc(db,"users",uidKey);
         await updateDoc(userRef,{subscriptionActive:true});
+        // Update inviter counters for VIP payment
+        if(referrer){
+          const refUidKey = sanitizeKey(referrer);
+          const refDoc = doc(db,"users",refUidKey);
+          const refSnap = await getDoc(refDoc);
+          if(refSnap.exists()){
+            const refData = refSnap.data();
+            await updateDoc(refDoc,{
+              stars: refData.stars + 100,
+              starsGifted: refData.starsGifted + 100,
+              hostFriends: arrayUnion({ chatId: chatIdInput.value.trim(), chatIdLower: cleanChatId(chatIdInput.value.trim()), isVIP:true, gifted:100 })
+            });
+          }
+        }
         window.location.href='nushop.html';
       }
     });
