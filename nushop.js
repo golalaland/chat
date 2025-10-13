@@ -1,3 +1,16 @@
+/**
+ * shop.js — Rewritten, modular, defensive version of your shop + host/VIP code
+ * Usage: <script type="module" src="/assets/shop.js"></script>
+ *
+ * Notes:
+ * - Uses Firebase v10 modular imports (same as you used).
+ * - All DOM accesses are guarded so missing elements won't crash the script.
+ * - Keeps same storage keys: 'vipUser' and 'hostUser'.
+ * - Confetti is lazy-loaded.
+ * - Uses runTransaction for atomic updates.
+ */
+
+/* ------------------ Firebase imports ------------------ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -8,10 +21,11 @@ import {
   getDocs,
   runTransaction,
   serverTimestamp,
-  updateDoc
+  updateDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ------------------ Firebase ------------------ */
+/* ------------------ Config ------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -22,208 +36,172 @@ const firebaseConfig = {
   measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------------- Spinner Helpers (Code 1 style) ----------------
-   Uses the .shop-spinner element already present in your HTML.
-   Toggling the 'active' class will smoothly fade spinner in/out
-   because your CSS (.shop-spinner/.shop-spinner.active) controls
-   visibility & opacity transitions.
-------------------------------------------------------------------*/
-function showSpinner() {
-  const spinner = document.querySelector('.shop-spinner') || document.getElementById('shopSpinner');
-  if (spinner) spinner.classList.add('active');
-}
+/* ------------------ DOM helpers & references ------------------ */
+const $ = (id) => document.getElementById(id);
+const qs = (sel) => document.querySelector(sel);
 
-function hideSpinner() {
-  const spinner = document.querySelector('.shop-spinner') || document.getElementById('shopSpinner');
-  if (spinner) spinner.classList.remove('active');
-}
-
-/* ------------------ DOM references ------------------ */
+/* DOM map (guarded) */
 const DOM = {
-  username: document.getElementById('username'),
-  stars: document.getElementById('stars-count'),
-  cash: document.getElementById('cash-count'),
-  shopItems: document.getElementById('shop-items'),
-  hostTabs: document.getElementById('hostTabs'),
-  vipStat: document.getElementById('vip-stat'),
-  friendsStat: document.getElementById('friends-stat'),
-  badgesStat: document.getElementById('badges-stat'),
-  tabContent: document.getElementById('tab-content'),
-  ordersContent: document.getElementById('orders-content'),
-  ordersList: document.getElementById('orders-list'),
-  confirmModal: document.getElementById('confirmModal'),
-  confirmTitle: document.getElementById('confirmTitle'),
-  confirmText: document.getElementById('confirmText'),
-  confirmYes: document.getElementById('confirmYes'),
-  confirmNo: document.getElementById('confirmNo'),
-  imagePreview: document.getElementById('imagePreview'),
-  previewImg: document.getElementById('previewImg'),
-  rewardModal: document.getElementById('rewardModal'),
-  rewardTitle: document.getElementById('rewardTitle'),
-  rewardMessage: document.getElementById('rewardMessage')
+  username: $('username'),
+  stars: $('stars-count'),
+  cash: $('cash-count'),
+  shopItems: $('shop-items'),
+  hostTabs: $('hostTabs'),
+  vipStat: $('vip-stat'),
+  friendsStat: $('friends-stat'),
+  badgesStat: $('badges-stat'),
+  tabContent: $('tab-content'),
+  ordersContent: $('orders-content'),
+  ordersList: $('orders-list'),
+  confirmModal: $('confirmModal'),
+  confirmTitle: $('confirmTitle'),
+  confirmText: $('confirmText'),
+  confirmYes: $('confirmYes'),
+  confirmNo: $('confirmNo'),
+  imagePreview: $('imagePreview'),
+  previewImg: $('previewImg'),
+  rewardModal: $('rewardModal'),
+  rewardTitle: $('rewardTitle'),
+  rewardMessage: $('rewardMessage'),
+  productModal: $('productModal'),
+  productModalTitle: $('productModalTitle'),
+  productModalDesc: $('productModalDesc'),
+  closeProductModal: $('closeProductModal'),
+  themeToggle: $('themeToggle'),
+  shopSpinner: document.querySelector('.shop-spinner') || $('shopSpinner')
 };
 
-/* ------------------ Utilities ------------------ */
-const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) : '0';
-const parseNumberFromText = text => Number((text || '').replace(/[^\d\-]/g, '')) || 0;
+/* ------------------ Small utilities ------------------ */
+const formatNumber = (n) => (n === undefined || n === null) ? '0' : new Intl.NumberFormat('en-NG').format(Number(n));
+const parseNumberFromText = (text) => Number((text || '').replace(/[^\d\-]/g, '')) || 0;
 
+/* Animate numeric text (stars/cash) */
 const animateNumber = (el, from, to, duration = 600) => {
+  if (!el) return;
   const start = performance.now();
   const step = (ts) => {
     const progress = Math.min((ts - start) / duration, 1);
     const value = Math.floor(from + (to - from) * progress);
     if (el === DOM.stars) el.textContent = `${formatNumber(value)} ⭐️`;
     else if (el === DOM.cash) el.textContent = `₦${formatNumber(value)}`;
+    else el.textContent = formatNumber(value);
     if (progress < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
 };
 
+/* ------------------ Spinner helpers ------------------ */
+function showSpinner() {
+  if (DOM.shopSpinner) DOM.shopSpinner.classList.add('active');
+}
+function hideSpinner() {
+  if (DOM.shopSpinner) DOM.shopSpinner.classList.remove('active');
+}
+
 /* ------------------ Confetti (lazy load) ------------------ */
 const triggerConfetti = () => {
-  if (window.__confettiLoaded) return confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
+  if (typeof window !== 'undefined' && window.__confettiLoaded) {
+    try { window.confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } }); } catch (e) {}
+    return;
+  }
+  if (typeof window === 'undefined') return;
   const s = document.createElement('script');
   s.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
-  s.onload = () => { window.__confettiLoaded = true; triggerConfetti(); };
+  s.onload = () => { window.__confettiLoaded = true; try { window.confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } }); } catch (e) {} };
+  s.onerror = () => { /* fail silently */ };
   document.body.appendChild(s);
 };
 
-/* ------------------ Product modal helper ------------------ */
-// Open modal with product info
-function openProductModal(product) {
-  const modal = document.getElementById("productModal");
-  const title = document.getElementById("productModalTitle");
-  const desc = document.getElementById("productModalDesc");
-
-  if (!modal || !title || !desc) return;
-
-  title.textContent = product?.name || 'Unnamed';
-  desc.textContent = product?.description || product?.desc || 'No description available.';
-
-  modal.classList.add('show');
+/* ------------------ Product modal helpers ------------------ */
+function openProductModal(product = {}) {
+  if (!DOM.productModal || !DOM.productModalTitle || !DOM.productModalDesc) return;
+  DOM.productModalTitle.textContent = product.name || 'Product';
+  DOM.productModalDesc.textContent = product.description || product.desc || 'No description.';
+  DOM.productModal.classList.remove('hidden');
 }
-
-// Close modal by clicking outside content
-document.getElementById('productModal').addEventListener('click', (e) => {
-  const content = e.currentTarget.querySelector('.product-modal-content');
-  if (!content.contains(e.target)) {
-    e.currentTarget.classList.remove('show');
-  }
+function closeProductModal() {
+  if (!DOM.productModal) return;
+  DOM.productModal.classList.add('hidden');
+}
+/* close product modal handlers */
+DOM.closeProductModal?.addEventListener('click', closeProductModal);
+DOM.productModal?.addEventListener('click', (e) => {
+  if (e.target === DOM.productModal) closeProductModal();
 });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductModal(); });
 
-// Example: attach click event to product names dynamically
-document.querySelectorAll('.product-card h3').forEach(nameEl => {
-  nameEl.addEventListener('click', () => {
-    const card = nameEl.closest('.product-card');
-    const product = {
-      name: card.querySelector('h3').textContent,
-      description: card.dataset.desc || 'No description available.'
-    };
-    openProductModal(product);
-  });
-});
-
-/* ------------------ Modal helpers ------------------ */
+/* ------------------ Generic modal helpers ------------------ */
 let _themedTimeout = null;
 const closeModal = () => {
   if (DOM.confirmModal) DOM.confirmModal.style.display = 'none';
-  if (DOM.confirmYes) DOM.confirmYes.onclick = null;
-  if (DOM.confirmNo) DOM.confirmNo.onclick = null;
+  if (DOM.confirmYes) { DOM.confirmYes.onclick = null; DOM.confirmYes.style.display = ''; }
+  if (DOM.confirmNo) { DOM.confirmNo.onclick = null; DOM.confirmNo.style.display = ''; }
+  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
+};
+
+const showConfirmModal = (title = '', text = '', onYes) => {
+  if (!DOM.confirmModal) return;
+  if (DOM.confirmTitle) DOM.confirmTitle.textContent = title;
+  if (DOM.confirmText) DOM.confirmText.textContent = text;
   if (DOM.confirmYes) DOM.confirmYes.style.display = '';
   if (DOM.confirmNo) DOM.confirmNo.style.display = '';
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
-};
-
-const showConfirmModal = (title, text, onYes) => {
-  if (!DOM.confirmModal) return;
-  if (_themedTimeout) { clearTimeout(_themedTimeout); _themedTimeout = null; }
-  DOM.confirmTitle.textContent = title;
-  DOM.confirmText.textContent = text;
-  DOM.confirmYes.style.display = '';
-  DOM.confirmNo.style.display = '';
   DOM.confirmModal.style.display = 'flex';
   const cleanup = () => closeModal();
-  DOM.confirmYes.onclick = async () => { cleanup(); if (onYes) await onYes(); };
-  DOM.confirmNo.onclick = cleanup;
+  if (DOM.confirmYes) DOM.confirmYes.onclick = async () => { cleanup(); if (onYes) await onYes(); };
+  if (DOM.confirmNo) DOM.confirmNo.onclick = cleanup;
 };
 
-const showThemedMessage = (title, message, duration = 2000) => {
+const showThemedMessage = (title = '', message = '', duration = 2000) => {
   if (!DOM.confirmModal) return;
-  DOM.confirmTitle.textContent = title;
-  DOM.confirmText.textContent = message;
-  DOM.confirmYes.style.display = 'none';
-  DOM.confirmNo.style.display = 'none';
+  if (DOM.confirmTitle) DOM.confirmTitle.textContent = title;
+  if (DOM.confirmText) DOM.confirmText.textContent = message;
+  if (DOM.confirmYes) DOM.confirmYes.style.display = 'none';
+  if (DOM.confirmNo) DOM.confirmNo.style.display = 'none';
   DOM.confirmModal.style.display = 'flex';
   if (_themedTimeout) clearTimeout(_themedTimeout);
-  _themedTimeout = setTimeout(() => closeModal(), duration);
+  _themedTimeout = setTimeout(closeModal, duration);
 };
 
-/* ------------------ Reward modal (invitee + inviter / gifted items) ------------------ */
-function showReward(message, title = "🎉 Reward Unlocked!") {
+/* ------------------ Reward modal ------------------ */
+function showReward(message = '', title = '🎉 Reward Unlocked!') {
   if (!DOM.rewardModal) return;
-
-  // Set title
-  DOM.rewardTitle.textContent = title;
-
-  // Use innerHTML so <b> tags work for hostName / vipName
-  DOM.rewardMessage.innerHTML = message;
-
-  // Show modal
+  if (DOM.rewardTitle) DOM.rewardTitle.textContent = title;
+  if (DOM.rewardMessage) DOM.rewardMessage.innerHTML = message;
   DOM.rewardModal.classList.remove('hidden');
-
-  // Auto-hide after 4.5s
   setTimeout(() => {
     DOM.rewardModal.classList.add('hidden');
   }, 4500);
 }
 
-// ------------------ Gift modal for VIPs (only gifting their host) ------------------
-async function openGiftModal(product) {
-  if (!currentUser || !currentUser.isVIP) 
-    return showThemedMessage('Not a VIP', 'Only VIPs can gift hosts.');
-
-  // Only gift the host that invited this VIP
-  const hostId = currentUser.invitedBy || currentUser.hostId;
-  if (!hostId) return showThemedMessage('No host found', 'You cannot gift because no host invited you.');
-
-  const hostSnap = await getDoc(doc(db, 'users', hostId));
-  if (!hostSnap.exists()) return showThemedMessage('Host not found', 'Try again later.');
-
-  const hostData = hostSnap.data();
-  // Directly redeem the gift for this host
-  redeemGift(product, { uid: hostId, ...hostData });
-}
-
 /* ------------------ Image preview ------------------ */
 const previewImage = (src) => {
-  if (!DOM.imagePreview) return;
-  DOM.previewImg.src = src;
+  if (!DOM.imagePreview || !DOM.previewImg) return;
+  DOM.previewImg.src = src || '';
   DOM.imagePreview.style.display = 'flex';
 };
-document.getElementById('closePreview')?.addEventListener('click', () => {
-  DOM.previewImg.src = '';
-  DOM.imagePreview.style.display = 'none';
+$('closePreview')?.addEventListener('click', () => {
+  if (DOM.previewImg) DOM.previewImg.src = '';
+  if (DOM.imagePreview) DOM.imagePreview.style.display = 'none';
 });
 
-/* ------------------ Host stats updater ------------------ */
-const updateHostStats = async (newUser) => {
-  const referrerId = newUser.invitedBy;
-  if (!referrerId) return;
-  const sanitizedId = String(referrerId).replace(/[.#$[\]]/g, ',');
-  const hostRef = doc(db, 'users', sanitizedId);
+/* ------------------ Current user state ------------------ */
+let currentUser = null;
 
+/* ------------------ Host stats update helper ------------------ */
+const updateHostStats = async (newUser) => {
+  if (!newUser || !newUser.invitedBy) return;
+  const sanitizedId = String(newUser.invitedBy).replace(/[.#$[\]]/g, ',');
+  const hostRef = doc(db, 'users', sanitizedId);
   try {
     await runTransaction(db, async (t) => {
       const hostSnap = await t.get(hostRef);
       if (!hostSnap.exists()) return;
-
       const hostData = hostSnap.data() || {};
-      const friends = Array.isArray(hostData.hostFriends)
-        ? hostData.hostFriends.slice()
-        : [];
+      const friends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends.slice() : [];
 
       if (!friends.find(f => f.email === newUser.email)) {
         friends.push({
@@ -232,34 +210,28 @@ const updateHostStats = async (newUser) => {
           chatIdLower: (newUser.chatId || '').toLowerCase(),
           isVIP: !!newUser.isVIP,
           isHost: !!newUser.isHost,
-          giftShown: false
+          giftShown: false,
+          vipName: newUser.vipName || ''
         });
       }
-
-      const hostVIP = hostData.hostVIP || 0;
+      const hostVIP = Number(hostData.hostVIP || 0);
       const newVIP = newUser.isVIP ? hostVIP + 1 : hostVIP;
-
       t.update(hostRef, { hostFriends: friends, hostVIP: newVIP });
     });
   } catch (err) {
-    console.error('Failed to update host stats:', err);
+    console.warn('updateHostStats error', err);
   }
 };
 
-/* ------------------ Current user state ------------------ */
-let currentUser = null;
-
-/* ------------------ Load current user from localStorage and Firestore ------------------ */
+/* ------------------ Load current user ------------------ */
 const loadCurrentUser = async () => {
   showSpinner();
-
   try {
-    // --- Load user from localStorage ---
     const vipRaw = localStorage.getItem('vipUser');
     const hostRaw = localStorage.getItem('hostUser');
     const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
 
-    // --- Reset UI ---
+    // reset UI
     if (DOM.username) DOM.username.textContent = '******';
     if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
     if (DOM.cash) DOM.cash.textContent = `₦0`;
@@ -271,75 +243,68 @@ const loadCurrentUser = async () => {
       return;
     }
 
-    // --- Get Firestore data ---
     const uid = String(storedUser.email).replace(/[.#$[\]]/g, ',');
     const userRef = doc(db, 'users', uid);
     const snap = await getDoc(userRef);
 
-    // --- Fallback user if not in Firestore ---
     if (!snap.exists()) {
+      // fallback minimal user
       currentUser = {
         uid,
         stars: 0,
         cash: 0,
         isHost: false,
-        chatId: storedUser.displayName || storedUser.email.split('@')[0],
-        vipName: storedUser.vipName || storedUser.displayName || ''
+        chatId: storedUser.displayName || storedUser.email.split('@')[0] || 'Guest',
+        email: storedUser.email || ''
       };
       if (DOM.username) DOM.username.textContent = currentUser.chatId;
       return;
     }
 
-    // --- Merge Firestore + local VIP name ---
-    const data = snap.data();
+    const data = snap.data() || {};
     currentUser = {
       uid,
       ...data,
-      vipName: storedUser.vipName || data.vipName || data.chatId
+      vipName: storedUser.vipName || data.vipName || data.chatId || ''
     };
 
-    // --- Update UI ---
     if (DOM.username) DOM.username.textContent = currentUser.chatId || 'Guest';
     if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
     if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
 
-    updateHostPanels();
-
-    // --- Update host stats if invited ---
+    // If invited, update host stats
     if (currentUser?.invitedBy) {
       await updateHostStats({
         email: currentUser.email || '',
         chatId: currentUser.chatId || '',
-        vipName: currentUser.chatId || '',
-        isVIP: currentUser.isVIP || false,
-        isHost: currentUser.isHost || false,
+        vipName: currentUser.vipName || currentUser.chatId || '',
+        isVIP: !!currentUser.isVIP,
+        isHost: !!currentUser.isHost,
         invitedBy: currentUser.invitedBy
       });
     }
 
-    // --- Setup VIP/Host features ---
+    // setup VIP/Host features (safely)
     try {
-      if (currentUser.isVIP) setupVIPButton();
-      else if (currentUser.isHost) setupHostGiftListener();
-    } catch (e) {
-      console.error('Failed to initialize VIP/Host features:', e);
-    }
+      if (currentUser.isVIP) setupVIPButton?.();
+      else if (currentUser.isHost) setupHostGiftListener?.();
+    } catch (e) { console.warn('VIP/Host init failed', e); }
 
-    // --- Persist VIP name locally ---
+    // persist vipName locally
     if (currentUser.isVIP) {
       const storedVIP = JSON.parse(localStorage.getItem('vipUser') || '{}');
       storedVIP.vipName = currentUser.vipName;
       localStorage.setItem('vipUser', JSON.stringify(storedVIP));
     }
 
-    // --- Subscribe to realtime updates ---
+    // subscribe to realtime updates
     onSnapshot(userRef, async (docSnap) => {
       if (!docSnap.exists()) return;
-      const data = docSnap.data();
+      const data = docSnap.data() || {};
       currentUser = { uid, ...data };
 
-      // Update UI live
+      // update UI live
       if (DOM.username) DOM.username.textContent = currentUser.chatId || 'Guest';
       if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
       if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
@@ -347,9 +312,9 @@ const loadCurrentUser = async () => {
       updateHostPanels();
       await renderShop();
 
-      /* ------------------ Invitee + Inviter + VIP gifting flow ------------------ */
+      // reward flows (invitee, inviter, gifted)
       try {
-        // --- Invitee reward ---
+        // invitee reward
         if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
           let inviterName = data.hostName || data.invitedBy;
           try {
@@ -359,15 +324,13 @@ const loadCurrentUser = async () => {
               const invData = invSnap.data();
               inviterName = invData.chatId || invData.hostName || (invData.email ? invData.email.split('@')[0] : inviterName);
             }
-          } catch (err) {
-            console.warn('Could not fetch inviter details:', err);
-          }
+          } catch (err) { console.warn('Could not fetch inviter details:', err); }
           const inviteeStars = data.inviteeGiftStars || 50;
           showReward(`You’ve been gifted +${inviteeStars}⭐️ for joining <b>${inviterName}</b>’s VIP Tab.`, '⭐ Congratulations! ⭐️');
-          await updateDoc(userRef, { inviteeGiftShown: true });
+          try { await updateDoc(doc(db, 'users', currentUser.uid), { inviteeGiftShown: true }); } catch (e) {}
         }
 
-        // --- Inviter reward ---
+        // inviter reward
         const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
         const pending = friendsArr.find(f => !f.giftShown && f.email);
         if (pending) {
@@ -375,22 +338,21 @@ const loadCurrentUser = async () => {
           const inviterStars = pending.giftStars || 200;
           showReward(`You’ve been gifted +${inviterStars}⭐️, <b>${friendName}</b> just joined your Tab.`, '⭐ Congratulations! ⭐️');
           const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
-          await updateDoc(userRef, { hostFriends: updated });
+          try { await updateDoc(doc(db, 'users', currentUser.uid), { hostFriends: updated }); } catch (e) {}
         }
 
-        // --- VIP gifting a host ---
+        // gifted by VIP
         if (data.giftedByVIP && !data.giftReceivedShown) {
           const vipName = data.giftedByVIP;
           const productName = data.giftedProduct || 'Gifted Item';
           showReward(`You’ve received <b>${productName}</b> from <b>${vipName}</b>!`, '🎁 Gift Received!');
-          await updateDoc(userRef, { giftReceivedShown: true });
+          try { await updateDoc(doc(db, 'users', currentUser.uid), { giftReceivedShown: true }); } catch (e) {}
         }
-      } catch (e) {
-        console.error('Reward flow error', e);
-      }
+      } catch (e) { console.error('Reward flow error', e); }
     });
+
   } catch (err) {
-    console.error('Load currentUser error:', err);
+    console.error('loadCurrentUser error', err);
   } finally {
     hideSpinner();
   }
@@ -434,7 +396,6 @@ const renderTabContent = (type) => {
       const message = `Hey! I'm hosting on xixi live, join my tab and let’s win together 🎉 Sign up using my link: `;
       const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
       const fullText = message + link;
-
       navigator.clipboard.writeText(fullText)
         .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
         .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
@@ -450,7 +411,8 @@ const renderTabContent = (type) => {
     `;
   }
 };
-/* ------------------ Friends rendering ------------------ */
+
+/* ------------------ Friends list render ------------------ */
 function renderFriendsList(container, friends) {
   container.innerHTML = '';
   if (!friends || friends.length === 0) {
@@ -493,8 +455,8 @@ function renderFriendsList(container, friends) {
   container.appendChild(list);
 }
 
-/* ------------------ Host tabs click ------------------ */
-DOM.hostTabs?.addEventListener('click', e => {
+/* ------------------ Host tab click handlers ------------------ */
+DOM.hostTabs?.addEventListener('click', (e) => {
   const btn = e.target.closest('.tab-btn');
   if (!btn) return;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -503,42 +465,41 @@ DOM.hostTabs?.addEventListener('click', e => {
   renderTabContent(type);
 });
 
-/* ------------------ User tabs (Shop/Orders) ------------------ */
-const userTabs = document.getElementById('userTabs');
-userTabs?.addEventListener('click', e => {
+/* ------------------ User tabs (Shop / Orders) ------------------ */
+const userTabs = $('userTabs');
+userTabs?.addEventListener('click', (e) => {
   const btn = e.target.closest('.tab-btn');
   if (!btn) return;
   userTabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (btn.dataset.tab === 'shop') {
-    DOM.shopItems.style.display = 'grid';
-    DOM.ordersContent.style.display = 'none';
+    if (DOM.shopItems) DOM.shopItems.style.display = 'grid';
+    if (DOM.ordersContent) DOM.ordersContent.style.display = 'none';
   } else {
-    DOM.shopItems.style.display = 'none';
-    DOM.ordersContent.style.display = 'block';
+    if (DOM.shopItems) DOM.shopItems.style.display = 'none';
+    if (DOM.ordersContent) DOM.ordersContent.style.display = 'block';
     renderMyOrders();
   }
 });
 
 /* ------------------ Orders rendering ------------------ */
 const renderMyOrders = async () => {
-  const ordersList = DOM.ordersList;
-  if (!ordersList) return;
+  if (!DOM.ordersList) return;
   showSpinner();
-  ordersList.innerHTML = '<div style="text-align:center;color:#555;">Loading orders...</div>';
-  if (!currentUser) { ordersList.innerHTML = '<div style="text-align:center;color:#555;">Not logged in.</div>'; hideSpinner(); return; }
+  DOM.ordersList.innerHTML = '<div style="text-align:center;color:#555;">Loading orders...</div>';
+  if (!currentUser) { DOM.ordersList.innerHTML = '<div style="text-align:center;color:#555;">Not logged in.</div>'; hideSpinner(); return; }
 
   try {
     const purchasesRef = collection(db, 'purchases');
     const snap = await getDocs(purchasesRef);
     const orders = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.userId === currentUser.uid);
-    if (orders.length === 0) { ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet..hmmmmm! 🤔</div>'; return; }
+    if (orders.length === 0) { DOM.ordersList.innerHTML = '<div style="text-align:center;color:#555;">No orders yet..hmmmmm! 🤔</div>'; return; }
     orders.sort((a, b) => {
       const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
       const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
       return tb - ta;
     });
-    ordersList.innerHTML = '';
+    DOM.ordersList.innerHTML = '';
     orders.forEach(order => {
       const block = document.createElement('div'); block.className = 'stat-block';
       const dateText = order.timestamp?.toDate ? order.timestamp.toDate().toLocaleString() : '';
@@ -547,62 +508,66 @@ const renderMyOrders = async () => {
         <div class="stat-label">${order.cost || 0} ⭐${order.cashReward ? ' - ₦' + Number(order.cashReward).toLocaleString() : ''}</div>
         ${dateText ? `<div class="muted">${dateText}</div>` : ''}
       `;
-      ordersList.appendChild(block);
+      DOM.ordersList.appendChild(block);
     });
   } catch (e) {
-    console.error(e);
-    ordersList.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load orders.</div>';
+    console.error('renderMyOrders error', e);
+    DOM.ordersList.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load orders.</div>';
   } finally {
     hideSpinner();
   }
 };
 
-/* ------------------ Shop rendering + card creation ------------------ */
+/* ------------------ Shop rendering + product card creation ------------------ */
 const createProductCard = (product) => {
-  // --- Skip host-only items for non-hosts ---
+  // product expected fields: id, name, img, cost, available, hostOnly, cashReward, description
+  if (!product) return null;
   if (product.hostOnly && !currentUser?.isHost) return null;
+
+  const avail = Number(product.available || 0);
 
   const card = document.createElement('div');
   card.className = 'product-card';
 
-  // --- Image (preview) ---
+  // availability badge
+  const badge = document.createElement('span');
+  badge.className = 'availability-badge';
+  badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
+  if (avail <= 0) badge.style.background = '#666';
+
+  // image
   const img = document.createElement('img');
   img.src = product.img || 'https://via.placeholder.com/300';
   img.alt = product.name || 'Item';
   img.addEventListener('click', () => previewImage(img.src));
 
-  // --- Availability badge ---
-  const badge = document.createElement('span');
-  badge.className = 'availability-badge';
-  const avail = Number(product.available) || 0;
-  badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
-  if (avail <= 0) badge.style.background = '#666';
-
-  // --- Title ---
+  // title
   const title = document.createElement('h3');
   title.textContent = product.name || 'Unnamed';
   title.className = 'product-title';
   title.style.cursor = 'pointer';
   title.addEventListener('click', () => openProductModal(product));
 
-  // --- Price ---
+  // price
   const price = document.createElement('div');
   price.className = 'price';
   price.textContent = `${Number(product.cost) || 0} ⭐`;
 
-  // --- Redeem button ---
+  // redeem button
   const btn = document.createElement('button');
   btn.className = 'buy-btn';
   btn.textContent = 'Redeem';
-  btn.disabled =
-    avail <= 0 ||
-    (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser?.cash || 0) <= 0);
+  btn.disabled = avail <= 0 || (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser?.cash || 0) <= 0);
 
   btn.addEventListener('click', () => {
     if (currentUser?.isVIP && product.hostOnly) {
-      redeemGift(product, { uid: currentUser.hostUid, chatId: currentUser.hostName });
+      // gift to host flow (only gift their host)
+      if (!currentUser.invitedBy && !currentUser.hostId) return showThemedMessage('No host', 'No host found to gift.', 1800);
+      const hostId = currentUser.invitedBy || currentUser.hostId;
+      // attempt redeem as gift
+      redeemGiftToHost(product, hostId).catch(err => showThemedMessage('Error', err.message || 'Gift failed'));
     } else {
-      redeemProduct(product);
+      redeemProduct(product).catch(err => showThemedMessage('Error', err.message || 'Redeem failed'));
     }
   });
 
@@ -610,130 +575,6 @@ const createProductCard = (product) => {
   return card;
 };
 
-// ------------------ Redeem a product ------------------
-const redeemProduct = async (product) => {
-  if (!currentUser) return showThemedMessage('Error', 'User not loaded');
-
-  showConfirmModal(
-    `Redeem "${product.name}" for ${product.cost} ⭐?`,
-    `Are you sure you want to redeem "${product.name}"?`,
-    async () => {
-      showSpinner();
-      try {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const productRef = doc(db, 'shopItems', String(product.id));
-        let newStars = 0, newCash = 0, redeemedCash = 0;
-
-        await runTransaction(db, async (t) => {
-          const [uSnap, pSnap] = await Promise.all([t.get(userRef), t.get(productRef)]);
-          if (!uSnap.exists()) throw new Error('User not found');
-          if (!pSnap.exists()) throw new Error('Product not found');
-
-          const uData = uSnap.data();
-          const pData = pSnap.data();
-          const cost = Number(pData.cost || 0);
-          const available = Number(pData.available || 0);
-
-          if (Number(uData.stars) < cost) throw new Error('Not enough stars');
-          if (available <= 0) throw new Error('Out of stock');
-
-          newStars = Number(uData.stars) - cost;
-          if (pData.name?.toLowerCase() === 'redeem cash balance') {
-            redeemedCash = Number(uData.cash || 0);
-            newCash = 0;
-          } else {
-            newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
-          }
-
-          t.update(userRef, { stars: newStars, cash: newCash });
-          t.update(productRef, { available: available - 1 });
-
-          t.set(doc(collection(db, 'purchases')), {
-            userId: currentUser.uid,
-            email: uData.email || '',
-            productId: String(pData.id),
-            productName: pData.name,
-            cost,
-            cashReward: Number(pData.cashReward || 0),
-            redeemedCash,
-            timestamp: serverTimestamp()
-          });
-        });
-
-        const prevStars = parseNumberFromText(DOM.stars.textContent);
-        const prevCash = parseNumberFromText(DOM.cash.textContent);
-        currentUser.stars = newStars;
-        currentUser.cash = newCash;
-        animateNumber(DOM.stars, prevStars, newStars);
-        animateNumber(DOM.cash, prevCash, newCash);
-
-        await renderShop();
-        triggerConfetti();
-
-        if (redeemedCash > 0)
-          showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
-        else if (Number(product.cashReward) > 0)
-          showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
-        else
-          showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
-
-      } catch (err) {
-        console.error(err);
-        showThemedMessage('Redemption Failed', err.message || 'Try again');
-      } finally {
-        hideSpinner();
-      }
-    }
-  );
-};
-
-// ------------------ Redeem a gift ------------------
-const redeemGift = async (gift) => {
-  if (!currentUser) return showThemedMessage('Error', 'User not loaded');
-
-  showConfirmModal(
-    `Claim gift "${gift.name}"?`,
-    `Are you sure you want to claim this gift?`,
-    async () => {
-      showSpinner();
-      try {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const giftRef = doc(db, 'gifts', String(gift.id));
-
-        await runTransaction(db, async (t) => {
-          const [uSnap, gSnap] = await Promise.all([t.get(userRef), t.get(giftRef)]);
-          if (!uSnap.exists()) throw new Error('User not found');
-          if (!gSnap.exists()) throw new Error('Gift not found');
-
-          const uData = uSnap.data();
-          const gData = gSnap.data();
-          const available = Number(gData.available || 0);
-          if (available <= 0) throw new Error('Gift out of stock');
-
-          t.update(giftRef, { available: available - 1 });
-          t.set(doc(collection(db, 'giftClaims')), {
-            userId: currentUser.uid,
-            email: uData.email || '',
-            giftId: String(gData.id),
-            giftName: gData.name,
-            timestamp: serverTimestamp()
-          });
-        });
-
-        await renderGifts();
-        triggerConfetti();
-        showThemedMessage('Gift Claimed', `"${gift.name}" successfully claimed!`, 2500);
-
-      } catch (err) {
-        console.error(err);
-        showThemedMessage('Gift Claim Failed', err.message || 'Try again');
-      } finally {
-        hideSpinner();
-      }
-    }
-  );
-};
-/* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
   showSpinner();
@@ -747,7 +588,7 @@ const renderShop = async () => {
     }
 
     let delay = 0;
-    DOM.shopItems.innerHTML = ''; // clear container
+    DOM.shopItems.innerHTML = '';
 
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
@@ -759,55 +600,199 @@ const renderShop = async () => {
         available: data.available || 0,
         hostOnly: data.hostOnly || false,
         cashReward: data.cashReward || 0,
-        description: data.description || data.desc || '' // support both fields
+        description: data.description || data.desc || ''
       };
 
-      // --- Create card; skip if null (non-hosts cannot see host-only items) ---
       const card = createProductCard(product);
       if (!card) return;
 
-      // --- Fade-in animation ---
       card.style.opacity = '0';
       card.style.animation = `fadeInUp 0.35s forwards`;
       card.style.animationDelay = `${delay}s`;
       delay += 0.05;
-
       DOM.shopItems.appendChild(card);
     });
 
-    // If no cards were added (all host-only hidden), show message
     if (!DOM.shopItems.hasChildNodes()) {
       DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items available</div>';
     }
 
   } catch (err) {
-    console.error(err);
+    console.error('renderShop error', err);
     DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
   } finally {
     hideSpinner();
   }
 };
-/* -------------------------------
-   🌗 Theme Toggle Script
---------------------------------- */
-(function () {
-  const btn = document.getElementById('themeToggle');
+
+/* ------------------ Redeem product flow ------------------ */
+const redeemProduct = async (product) => {
+  if (!currentUser) return showThemedMessage('Error', 'User not loaded');
+  if (!product) return showThemedMessage('Error', 'Invalid product');
+
+  showConfirmModal(`Redeem "${product.name}" for ${product.cost} ⭐?`, `Are you sure you want to redeem "${product.name}"?`, async () => {
+    showSpinner();
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const productRef = doc(db, 'shopItems', String(product.id));
+      let newStars = 0, newCash = 0, redeemedCash = 0;
+
+      await runTransaction(db, async (t) => {
+        const [uSnap, pSnap] = await Promise.all([t.get(userRef), t.get(productRef)]);
+        if (!uSnap.exists()) throw new Error('User not found');
+        if (!pSnap.exists()) throw new Error('Product not found');
+
+        const uData = uSnap.data() || {};
+        const pData = pSnap.data() || {};
+        const cost = Number(pData.cost || 0);
+        const available = Number(pData.available || 0);
+
+        if (Number(uData.stars) < cost) throw new Error('Not enough stars');
+        if (available <= 0) throw new Error('Out of stock');
+
+        newStars = Number(uData.stars) - cost;
+        if (pData.name?.toLowerCase() === 'redeem cash balance') {
+          redeemedCash = Number(uData.cash || 0);
+          newCash = 0;
+        } else {
+          newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
+        }
+
+        t.update(userRef, { stars: newStars, cash: newCash });
+        t.update(productRef, { available: available - 1 });
+        t.set(doc(collection(db, 'purchases')), {
+          userId: currentUser.uid,
+          email: uData.email || '',
+          productId: String(pData.id),
+          productName: pData.name,
+          cost,
+          cashReward: Number(pData.cashReward || 0),
+          redeemedCash,
+          timestamp: serverTimestamp()
+        });
+      });
+
+      const prevStars = parseNumberFromText(DOM.stars?.textContent);
+      const prevCash = parseNumberFromText(DOM.cash?.textContent);
+      currentUser.stars = newStars;
+      currentUser.cash = newCash;
+      animateNumber(DOM.stars, prevStars, newStars);
+      animateNumber(DOM.cash, prevCash, newCash);
+
+      await renderShop();
+      triggerConfetti();
+
+      if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
+      else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
+      else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
+
+    } catch (err) {
+      console.error('redeemProduct error', err);
+      showThemedMessage('Redemption Failed', err.message || 'Try again');
+    } finally {
+      hideSpinner();
+    }
+  });
+};
+
+/* ------------------ Redeem gift (claim for yourself) ------------------ */
+const redeemGift = async (gift) => {
+  if (!currentUser) return showThemedMessage('Error', 'User not loaded');
+  if (!gift) return showThemedMessage('Error', 'Invalid gift');
+
+  showConfirmModal(`Claim gift "${gift.name}"?`, `Are you sure you want to claim this gift?`, async () => {
+    showSpinner();
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const giftRef = doc(db, 'gifts', String(gift.id));
+
+      await runTransaction(db, async (t) => {
+        const [uSnap, gSnap] = await Promise.all([t.get(userRef), t.get(giftRef)]);
+        if (!uSnap.exists()) throw new Error('User not found');
+        if (!gSnap.exists()) throw new Error('Gift not found');
+
+        const uData = uSnap.data() || {};
+        const gData = gSnap.data() || {};
+        const available = Number(gData.available || 0);
+        if (available <= 0) throw new Error('Gift out of stock');
+
+        t.update(giftRef, { available: available - 1 });
+        t.set(doc(collection(db, 'giftClaims')), {
+          userId: currentUser.uid,
+          email: uData.email || '',
+          giftId: String(gData.id),
+          giftName: gData.name,
+          timestamp: serverTimestamp()
+        });
+      });
+
+      await renderGifts?.();
+      triggerConfetti();
+      showThemedMessage('Gift Claimed', `"${gift.name}" successfully claimed!`, 2500);
+    } catch (err) {
+      console.error('redeemGift error', err);
+      showThemedMessage('Gift Claim Failed', err.message || 'Try again');
+    } finally {
+      hideSpinner();
+    }
+  });
+};
+
+/* ------------------ Redeem gift to host (VIP gift flow) ------------------ */
+const redeemGiftToHost = async (product, hostId) => {
+  if (!currentUser) return showThemedMessage('Error', 'User not loaded');
+  if (!product) return showThemedMessage('Error', 'Invalid gift');
+
+  showConfirmModal(`Send "${product.name}" to your host?`, `This will gift "${product.name}" to the host that invited you. Continue?`, async () => {
+    showSpinner();
+    try {
+      const hostRef = doc(db, 'users', String(hostId).replace(/[.#$[\]]/g, ','));
+      const productRef = doc(db, 'shopItems', String(product.id));
+      await runTransaction(db, async (t) => {
+        const [hSnap, pSnap] = await Promise.all([t.get(hostRef), t.get(productRef)]);
+        if (!hSnap.exists()) throw new Error('Host not found');
+        if (!pSnap.exists()) throw new Error('Product not found');
+        const pData = pSnap.data() || {};
+        const available = Number(pData.available || 0);
+        if (available <= 0) throw new Error('Out of stock');
+        // reduce availability and record gift
+        t.update(productRef, { available: available - 1 });
+        t.set(doc(collection(db, 'hostGifts')), {
+          fromVIP: currentUser.uid,
+          toHost: hostRef.id,
+          productId: product.id,
+          productName: product.name,
+          timestamp: serverTimestamp()
+        });
+      });
+
+      await renderShop();
+      triggerConfetti();
+      showThemedMessage('Gift Sent', `"${product.name}" sent to host!`, 2200);
+    } catch (err) {
+      console.error('redeemGiftToHost error', err);
+      showThemedMessage('Gift Failed', err.message || 'Try again');
+    } finally {
+      hideSpinner();
+    }
+  });
+};
+
+/* ------------------ Optional renderGifts placeholder ------------------ */
+async function renderGifts() {
+  // placeholder: implement if you have a gifts UI like shopItems
+  return;
+}
+
+/* ------------------ Theme toggle — safe init ------------------ */
+(function initThemeToggle() {
+  const btn = DOM.themeToggle;
   if (!btn) return;
-
-  // Load saved theme
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') {
-    document.body.classList.add('dark');
-  } else if (savedTheme === 'light') {
-    document.body.classList.add('light-mode-forced');
-  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    document.body.classList.add('dark');
-  }
-
-  // Set correct icon
+  if (savedTheme === 'dark') document.body.classList.add('dark');
+  else if (savedTheme === 'light') document.body.classList.add('light-mode-forced');
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('dark');
   btn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
-
-  // Toggle on click
   btn.addEventListener('click', () => {
     const isDark = document.body.classList.toggle('dark');
     document.body.classList.toggle('light-mode-forced', !isDark);
@@ -816,30 +801,30 @@ const renderShop = async () => {
   });
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
-  const modal = document.getElementById("productModal");
-  const modalClose = document.getElementById("closeProductModal");
-
-  // Close button
-  modalClose?.addEventListener("click", () => {
-    modal?.classList.add("hidden");
+/* ------------------ Product name click binding (legacy support) ------------------ */
+document.querySelectorAll('.product-card h3').forEach(nameEl => {
+  nameEl.addEventListener('click', () => {
+    const card = nameEl.closest('.product-card');
+    if (!card) return;
+    const product = {
+      name: card.querySelector('h3')?.textContent || '',
+      description: card.dataset?.desc || 'No description available.'
+    };
+    openProductModal(product);
   });
+});
 
-  // Close when clicking outside content (modal overlay)
-  modal?.addEventListener("click", (e) => {
-    if (e.target === modal) modal.classList.add("hidden");
-  });
-
-  // Optional: ESC key to close modal
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') modal?.classList.add('hidden');
-  });
+/* ------------------ DOM ready initializers ------------------ */
+document.addEventListener('DOMContentLoaded', () => {
+  // product modal close via overlay handled above.
+  // optionally safe-init other UI bits here
+  if (DOM.hostTabs) updateHostPanels();
 });
 
 /* ------------------ SAFE INIT ------------------ */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    await loadCurrentUser(); // 👈🏽 this alone handles everything
+    await loadCurrentUser();
     console.log('✅ User data + listeners initialized');
   } catch (err) {
     console.error('Init error:', err);
