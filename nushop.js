@@ -165,7 +165,7 @@ const showThemedMessage = (title, message, duration = 2000) => {
 function showReward(message, title = "🎉 Reward Unlocked!") {
   if (!DOM.rewardModal) return;
   DOM.rewardTitle.textContent = title;
-  DOM.rewardMessage.innerHTML = message; // <-- use innerHTML to allow <strong>
+  DOM.rewardMessage.textContent = message;
   DOM.rewardModal.classList.remove('hidden');
   // Auto-hide after 4.5s
   setTimeout(() => { DOM.rewardModal.classList.add('hidden'); }, 4500);
@@ -277,49 +277,53 @@ const loadCurrentUser = async () => {
       updateHostPanels();
       renderShop().catch(err => console.error(err));
 
- // --- Invitee reward: show once to invitee if flagged false
-try {
-  if (data.invitedBy && data.inviteeGiftShown !== true) {
-    let inviterName = data.invitedBy;
-
-    try {
-      const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
-      const invSnap = await getDoc(invRef);
-      if (invSnap.exists()) {
-        const invData = invSnap.data();
-        inviterName = invData.chatId || (invData.email ? invData.email.split('@')[0] : inviterName);
+      // --- Invitee reward: show once to invitee if flagged false
+      try {
+        if (data.invitedBy && data.inviteeGiftShown !== true) {
+          // data.invitedBy may be uid (sanitized) — display friendly name if possible
+          let inviterName = data.invitedBy;
+          // try to fetch inviter display chatId if exists
+          try {
+            const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
+            const invSnap = await getDoc(invRef);
+            if (invSnap.exists()) {
+              const invData = invSnap.data();
+              if (invData.chatId) inviterName = invData.chatId;
+              else if (invData.email) inviterName = invData.email.split('@')[0];
+            }
+          } catch (e) {
+            // ignore safe failure
+          }
+          showReward(`You’ve been gifted +50 stars ⭐️ for joining ${inviterName}’s Tab.`, '⭐ Congratulations!⭐️');
+          // mark as shown
+          try { await updateDoc(userRef, { inviteeGiftShown: true }); } catch (e) { console.error('Failed to set inviteeGiftShown', e); }
+        }
+      } catch (e) {
+        console.error('Invitee reward flow error', e);
       }
-    } catch (e) {
-      // ignore safe failure
-    }
 
-    const inviteeGiftAmount = 50; // stars given to invitee
-    showReward(`You’ve been gifted <strong>+${inviteeGiftAmount} stars ⭐️</strong> for joining <strong>${inviterName}</strong>’s Tab.`, '⭐ Congratulations!⭐️');
+      // --- Inviter reward: if hostFriends contains friend entries with giftShown false, show and mark
+      try {
+        const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
+        const pending = friendsArr.find(f => !f.giftShown && f.email);
+        if (pending) {
+          const friendName = pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
+          showReward(`You’ve been gifted +200 stars ⭐️, ${friendName} just joined your Tab.`, '⭐ Congratulations!⭐️');
+          // update the host doc to mark giftShown for that friend
+          const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
+          try { await updateDoc(userRef, { hostFriends: updated }); } catch (e) { console.error('Failed to mark host friend giftShown', e); }
+        }
+      } catch (e) {
+        console.error('Inviter reward flow error', e);
+      }
+    });
 
-    try {
-      await updateDoc(userRef, { inviteeGiftShown: true });
-    } catch (e) { console.error('Failed to set inviteeGiftShown', e); }
+  } catch (e) {
+    console.error('loadCurrentUser error', e);
+  } finally {
+    hideSpinner(); // fade spinner out after initial load
   }
-} catch (e) {
-  console.error('Invitee reward flow error', e);
-}
-
-// --- Inviter reward: if hostFriends contains friend entries with giftShown false, show and mark
-try {
-  const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-  const pending = friendsArr.find(f => !f.giftShown && f.email);
-  if (pending) {
-    const friendName = pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
-
-    const inviterGiftAmount = currentUser?.isVIP ? 200 : 100; // dynamic based on VIP status
-    showReward(`You’ve been gifted <strong>+${inviterGiftAmount} stars ⭐️</strong>, <strong>${friendName}</strong> just joined your Tab.`, '⭐ Congratulations!⭐️');
-
-    const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
-    try { await updateDoc(userRef, { hostFriends: updated }); } catch (e) { console.error('Failed to mark host friend giftShown', e); }
-  }
-} catch (e) {
-  console.error('Inviter reward flow error', e);
-}
+};
 
 /* ------------------ Host panels ------------------ */
 const updateHostPanels = () => {
@@ -360,7 +364,7 @@ const renderTabContent = (type) => {
     btn.addEventListener('click', () => {
       // Custom message + referral link
       const message = `Hey! i'm hosting on xixi live, join my tab and lets win some together,  Sign up using my link: `;
-      const link = `https://golalaland.github.io/chat/payments.html?ref=${encodeURIComponent(currentUser.uid)}`;
+      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
       const fullText = message + link;
 
       navigator.clipboard.writeText(fullText)
