@@ -1,419 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>VIP / Host Signup</title>
 <style>
-:root{--primary-color:#ff4081;--background-gradient:linear-gradient(135deg,#111,#000,#222);--text-color:#eee;--input-bg:#222;--input-border:#333;--vip-color:gold}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--background-gradient);color:var(--text-color);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;display:flex;flex-direction:column;align-items:center;padding:1rem}
-h2{font-size:1.2rem;color:var(--primary-color);margin-bottom:.25rem;text-align:center}
-.form-group{width:90%;max-width:400px;margin-bottom:.7rem;display:flex;flex-direction:column;align-items:center}
-.form-group input{width:100%;padding:.65rem 1rem;border-radius:30px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-color);font-size:16px;outline:none}
-.form-group input:focus{border-color:var(--primary-color);box-shadow:0 0 8px rgba(255,64,129,.5)}
-.gender-label{text-align:center;font-weight:600;font-size:.75rem;margin-bottom:.3rem}
-.gender-select{display:flex;justify-content:center;gap:15px;margin-bottom:1rem}
-.gender-select button{width:50px;height:50px;border-radius:50%;border:none;background:#333;color:#eee;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 6px #000;transition:.2s}
-.gender-select button:active{transform:translateY(3px);box-shadow:0 2px #000}
-.gender-select button.selected{background:var(--primary-color);box-shadow:0 0 15px var(--primary-color)}
-.dob-container{display:flex;flex-direction:column;align-items:center;margin-bottom:.7rem}
-.dob-label{margin-bottom:.3rem;font-size:.75rem;text-align:center}
-.dob-input{width:140px;padding:.5rem .8rem;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-color);font-size:16px;text-align:center;cursor:pointer}
-.vip-label{text-align:center;font-weight:700;font-size:.85rem;margin-bottom:.3rem;color:#aaa;transition:.3s}
-.vip-toggle{width:80px;height:36px;border-radius:18px;background:#444;position:relative;cursor:pointer;margin:0 auto .5rem auto;transition:.3s}
-.vip-toggle .vip-circle{width:34px;height:34px;border-radius:50%;background:#555;position:absolute;left:1px;top:1px;transition:.3s}
-.vip-toggle.on .vip-circle{left:45px;background:gold;box-shadow:0 0 12px gold}
-.vip-message{text-align:center;font-size:.8rem;color:gold;opacity:0;transition:.3s;margin-bottom:1rem}
-.vip-label.on{color:gold;text-shadow:0 0 8px gold}
-.submit-btn{width:50%;padding:.65rem;border:none;border-radius:30px;font-weight:700;font-size:.9rem;color:#fff;background:var(--primary-color);cursor:pointer;margin-bottom:1rem;transition:.2s;display:flex;justify-content:center;align-items:center;position:relative}
-.submit-btn:hover{transform:scale(1.03)}
-.submit-btn .spinner{width:18px;height:18px;border:3px solid #fff;border-top:3px solid rgba(255,255,255,.3);border-radius:50%;animation:spin .7s linear infinite;display:none}
-@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-.message{text-align:center;font-size:.85rem;min-height:20px;margin-top:.5rem}
-.fomo-popup{position:fixed;top:100px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:.6rem 1rem;border-radius:8px;opacity:0;transition:opacity .5s;pointer-events:none;font-size:.85rem;z-index:10000;display:flex;align-items:center;gap:.4rem;white-space:nowrap}
-.image-placeholder{width:300px;height:300px;background:#333;border-radius:15px;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#aaa}
-footer{width:100%;text-align:center;margin-top:2rem;font-size:.8rem;color:#aaa}
-#paystackContainer{display:none;justify-content:center;width:100%;margin-bottom:1rem}
-#paystackBtn{width:50%;max-width:250px;padding:.65rem;border:none;border-radius:30px;font-weight:700;font-size:.9rem;color:#000;background:linear-gradient(45deg,gold,#ffd700);cursor:pointer;display:flex;justify-content:center;align-items:center;position:relative;transition:.2s;z-index:10}
-#paystackBtn:hover{transform:scale(1.03)}
-#paystackSpinner{width:18px;height:18px;border:3px solid #fff;border-top:3px solid rgba(255,255,255,.3);border-radius:50%;animation:spin .7s linear infinite;display:none;margin-left:8px}
+:root {
+  --primary-color: #ff4081;
+  --background-gradient: linear-gradient(135deg,#111,#000,#222);
+  --text-color: #eee;
+  --input-bg: #222;
+  --input-border: #333;
+  --vip-color: gold;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--background-gradient);color:var(--text-color);font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;padding:1rem;}
+h2{font-size:1.2rem;color:var(--primary-color);margin-bottom:0.25rem;text-align:center;}
+.form-group{width:90%;max-width:400px;margin-bottom:0.7rem;display:flex;flex-direction:column;align-items:center;}
+.form-group input{width:100%;padding:0.65rem 1rem;border-radius:30px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-color);font-size:16px;outline:none;}
+.form-group input:focus{border-color: var(--primary-color);box-shadow:0 0 8px rgba(255,64,129,0.5);}
+.gender-label{text-align:center;font-weight:600;font-size:0.75rem;margin-bottom:0.3rem;}
+.gender-select{display:flex;justify-content:center;gap:15px;margin-bottom:1rem;}
+.gender-select button{width:50px;height:50px;border-radius:50%;border:none;background:#333;color:#eee;font-weight:bold;font-size:1rem;cursor:pointer;box-shadow:0 6px #000;transition:0.2s;}
+.gender-select button:active{transform:translateY(3px);box-shadow:0 2px #000;}
+.gender-select button.selected{background:var(--primary-color);box-shadow:0 0 15px var(--primary-color);}
+.dob-container{display:flex;flex-direction:column;align-items:center;margin-bottom:0.7rem;}
+.dob-label{margin-bottom:0.3rem;font-size:0.75rem;text-align:center;}
+.dob-input{width:140px;padding:0.5rem 0.8rem;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-color);font-size:16px;text-align:center;cursor:pointer;}
+.vip-label{text-align:center;font-weight:bold;font-size:0.85rem;margin-bottom:0.3rem;color:#aaa;transition:0.3s;}
+.vip-toggle{width:80px;height:36px;border-radius:18px;background:#444;position:relative;cursor:pointer;margin:0 auto 0.5rem auto;transition:0.3s;}
+.vip-toggle .vip-circle{width:34px;height:34px;border-radius:50%;background:#555;position:absolute;left:1px;top:1px;transition:0.3s;}
+.vip-toggle.on .vip-circle{left:45px;background:gold;box-shadow:0 0 12px gold;}
+.vip-message{text-align:center;font-size:0.8rem;color:gold;opacity:0;transition:0.3s;margin-bottom:1rem;}
+.vip-label.on{color:gold;text-shadow:0 0 8px gold;}
+.submit-btn{width:50%;padding:0.65rem;border:none;border-radius:30px;font-weight:bold;font-size:0.9rem;color:#fff;background:var(--primary-color);cursor:pointer;margin-bottom:1rem;transition:0.2s;display:flex;justify-content:center;align-items:center;position:relative;}
+.submit-btn:hover{transform:scale(1.03);}
+.submit-btn .spinner{width:18px;height:18px;border:3px solid #fff;border-top:3px solid rgba(255,255,255,0.3);border-radius:50%;animation:spin 0.7s linear infinite;display:none;margin-left:8px;}
+@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+.message{text-align:center;font-size:0.85rem;min-height:20px;margin-top:0.5rem;}
+.fomo-popup{position:fixed;top:100px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:0.6rem 1rem;border-radius:8px;opacity:0;transition:opacity 0.5s;pointer-events:none;font-size:0.85rem;z-index:10000;display:flex;align-items:center;gap:0.4rem;white-space:nowrap;}
+.image-placeholder{width:300px;height:300px;background:#333;border-radius:15px;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#aaa;}
+footer{width:100%;text-align:center;margin-top:2rem;font-size:0.8rem;color:#aaa;}
 </style>
 </head>
 <body>
-  <div class="image-placeholder">Image Placeholder</div>
-  <h2>VIP / Host Signup</h2>
-  <div class="fomo-popup" id="fomoPopup"></div>
 
-  <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
-  <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
-  <div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
-  <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
+<div class="image-placeholder">Image Placeholder</div>
+<h2>VIP / Host Signup</h2>
+<div class="fomo-popup" id="fomoPopup"></div>
 
-  <div class="gender-label">Select Your Gender</div>
-  <div class="gender-select">
-    <button id="femaleBtn">F</button>
-    <button id="maleBtn">M</button>
-  </div>
+<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
+<div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
+<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
+<div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 
-  <div class="dob-container">
-    <div class="dob-label">Select Your Birth Date</div>
-    <input id="dob" type="date" class="dob-input" max="">
-  </div>
+<div class="gender-label">Select Your Gender</div>
+<div class="gender-select">
+  <button id="femaleBtn">F</button>
+  <button id="maleBtn">M</button>
+</div>
 
-  <div class="vip-label" id="vipLabel">VIP</div>
-  <div class="vip-toggle" id="vipToggle"><span class="vip-circle"></span></div>
-  <div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
+<div class="dob-container">
+  <div class="dob-label">Select Your Birth Date</div>
+  <input id="dob" type="date" class="dob-input" max="">
+</div>
 
-  <button class="submit-btn" id="submitBtn">
-    <span class="btn-text">Sign Up</span>
-    <span class="spinner" id="spinner"></span>
-  </button>
+<div class="vip-label" id="vipLabel">VIP</div>
+<div class="vip-toggle" id="vipToggle"><span class="vip-circle"></span></div>
+<div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
 
-  <div id="paystackContainer">
-    <button class="submit-btn" id="paystackBtn">
-      <span class="btn-text">VIP ACCESS</span>
-      <span class="spinner" id="paystackSpinner"></span>
-    </button>
-  </div>
+<button class="submit-btn" id="submitBtn">
+  <span class="btn-text">Sign Up</span>
+  <span class="spinner" id="spinner"></span>
+</button>
 
-  <div class="message" id="message"></div>
+<div class="message" id="message"></div>
 
-  <footer id="footer">
-    <div>©5786 <span>Own Your Vibe</span></div>
-    <div>自分の雰囲気を楽しもう</div>
-    <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
-    <div style="margin-top:4px;">
-      <a href="#">Privacy Policy</a> |
-      <a href="#">Terms of Service</a>
-    </div>
-  </footer>
+<footer id="footer">
+  <div>©5786 <span>Own Your Vibe</span></div>
+</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, updateDoc, arrayUnion, orderBy, limit
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, updateDoc, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com",
   projectId: "metaverse-1010",
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-XYZMEASURE"
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* DOM */
-const nameInput = document.getElementById('name');
-const chatIdInput = document.getElementById('chatId');
-const phoneInput = document.getElementById('phone');
-const emailInput = document.getElementById('email');
-const dobInput = document.getElementById('dob');
-const femaleBtn = document.getElementById('femaleBtn');
-const maleBtn = document.getElementById('maleBtn');
-const vipToggle = document.getElementById('vipToggle');
-const vipLabel = document.getElementById('vipLabel');
-const vipMessage = document.getElementById('vipMessage');
-const submitBtn = document.getElementById('submitBtn');
-const spinner = document.getElementById('spinner');
-const messageEl = document.getElementById('message');
-const paystackContainer = document.getElementById('paystackContainer');
-const paystackBtn = document.getElementById('paystackBtn');
-const paystackSpinner = document.getElementById('paystackSpinner');
-const fomoPopup = document.getElementById('fomoPopup');
+document.addEventListener('DOMContentLoaded', () => {
+  let isVIP = false, gender='';
+  const vipToggle = document.getElementById('vipToggle');
+  const vipLabel = document.getElementById('vipLabel');
+  const vipMessage = document.getElementById('vipMessage');
+  const femaleBtn = document.getElementById('femaleBtn');
+  const maleBtn = document.getElementById('maleBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  const messageEl = document.getElementById('message');
+  const nameInput = document.getElementById('name');
+  const chatIdInput = document.getElementById('chatId');
+  const phoneInput = document.getElementById('phone');
+  const emailInput = document.getElementById('email');
+  const dobInput = document.getElementById('dob');
+  const fomoPopup = document.getElementById('fomoPopup');
 
-let isVIP = false;
-let gender = '';
+  const urlParams = new URLSearchParams(window.location.search);
+  const referrer = urlParams.get('ref') || null;
+  const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
-const urlParams = new URLSearchParams(window.location.search);
-const referrer = urlParams.get('ref') || null;
+  const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
+  const cleanChatId = input => input.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const isValidEmail = email => validEmailSuffixes.some(s => email.endsWith(s));
+  const calculateAge = dobStr => { const dob=new Date(dobStr); return Math.abs(new Date(Date.now()-dob.getTime()).getUTCFullYear()-1970); };
+  const isChatIdTaken = async chatId => { const q = query(collection(db,"users"), where("chatIdLower","==",chatId.toLowerCase())); const snap=await getDocs(q); return !snap.empty; };
 
-/* Helpers */
-function sanitizeKey(key){ return String(key||'').replace(/[.#$[\]]/g, ','); }
-function cleanChatId(input){ return String(input||'').toLowerCase().replace(/[^a-z0-9_]/g,''); }
-const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
-function isValidEmail(email){ return validEmailSuffixes.some(s => String(email||'').endsWith(s)); }
-function calculateAge(dobStr){ const d = new Date(dobStr); const diff = Date.now() - d.getTime(); return Math.abs(new Date(diff).getUTCFullYear() - 1970); }
-async function isChatIdTaken(chatId){ const q = query(collection(db,"users"), where("chatIdLower","==", chatId.toLowerCase())); const snap = await getDocs(q); return !snap.empty; }
+  phoneInput.addEventListener('input',()=>{ phoneInput.value=phoneInput.value.replace(/\D/g,''); });
 
-/* UI events */
-phoneInput.addEventListener('input', ()=> { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+  femaleBtn.addEventListener('click',()=>{ gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
+  maleBtn.addEventListener('click',()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
-femaleBtn.addEventListener('click', ()=> { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
-maleBtn.addEventListener('click', ()=> { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
+  const today = new Date();
+  dobInput.max = new Date(today.getFullYear()-18,today.getMonth(),today.getDate()).toISOString().split('T')[0];
 
-vipToggle.addEventListener('click', ()=> {
-  isVIP = !isVIP;
-  vipToggle.classList.toggle('on', isVIP);
-  vipLabel.classList.toggle('on', isVIP);
-  vipMessage.style.opacity = isVIP ? '1' : '0';
-  if(isVIP) triggerSprayConfetti();
-});
+  vipToggle.addEventListener('click',()=>{
+    isVIP = !isVIP;
+    vipToggle.classList.toggle('on', isVIP);
+    vipLabel.classList.toggle('on', isVIP);
+       vipMessage.style.opacity = isVIP ? '1' : '0';
+  });
 
-const today = new Date(); dobInput.max = new Date(today.getFullYear()-18, today.getMonth(), today.getDate()).toISOString().split('T')[0];
-
-/* Confetti (same) */
-function triggerSprayConfetti(){
-  const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-  const num = 50; const rect = vipToggle.getBoundingClientRect();
-  const startX = rect.left + rect.width/2, startY = rect.bottom;
-  for(let i=0;i<num;i++){
-    const p = document.createElement('div');
-    p.style.position='fixed'; p.style.width='6px'; p.style.height='16px';
-    p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
-    p.style.left = `${startX}px`; p.style.top = `${startY}px`; p.style.opacity = '0.9';
-    p.style.borderRadius = '2px'; p.style.pointerEvents='none'; p.style.zIndex='9999';
-    document.body.appendChild(p);
-    const angle = (Math.random()*Math.PI/2) - Math.PI/4;
-    const speed = 300 + Math.random()*200;
-    const dur = 1500 + Math.random()*500;
-    const start = performance.now();
-    (function anim(time){ const t = (time-start)/dur; if(t<1){ const dx=Math.sin(angle)*speed*t; const dy=-Math.cos(angle)*speed*t; p.style.transform = `translate(${dx}px,${dy}px) rotate(${t*720}deg)`; p.style.opacity = `${1-t}`; requestAnimationFrame(anim);} else { p.remove(); } })(start);
-  }
-}
-
-/* FOMO (exact) */
-async function fetchRecentUsers(){
-  try{
-    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
+  async function fetchRecentUsers() {
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(10));
     const snap = await getDocs(q);
     const users = [];
     snap.forEach(d => {
       const data = d.data();
-      users.push({
-        fullName: data.fullName,
-        isVIP: data.isVIP,
-        chatId: data.chatId,
-        usernameColor: data.usernameColor || '#fff'
-      });
+      users.push({ fullName: data.fullName, isVIP: data.isVIP, chatId: data.chatId, usernameColor: data.usernameColor });
     });
     return users;
-  }catch(e){ console.warn('FOMO fetch failed', e); return []; }
-}
+  }
 
-async function showFOMO(){
-  const users = await fetchRecentUsers();
-  if(users.length === 0) return;
-  let index = 0;
-  setInterval(()=>{
-    const u = users[index % users.length];
-    fomoPopup.innerHTML = `<span style="font-weight:bold;color:${u.usernameColor}">${u.chatId}</span> just joined as a ${u.isVIP ? 'VIP' : 'Host'} ${u.isVIP ? '🎉' : '🎈'}`;
-    fomoPopup.style.opacity = '1';
-    setTimeout(()=>{ fomoPopup.style.opacity = '0'; }, 3000);
-    index++;
-  }, 10000);
-}
-showFOMO();
+  async function showFOMO() {
+    const users = await fetchRecentUsers();
+    if(users.length === 0) return;
+    let index = 0;
+    setInterval(() => {
+      const u = users[index % users.length];
+      fomoPopup.innerHTML = `<span style="font-weight:bold;color:${u.usernameColor}">${u.chatId}</span> just joined as a ${u.isVIP?'VIP':'Host'} ${u.isVIP?'🎉':'🎈'}`;
+      fomoPopup.style.opacity = '1';
+      setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
+      index++;
+    }, 10000);
+  }
+  showFOMO();
 
-/* Save user (main) */
-async function saveUser(isVipPaid = false){
-  spinner.style.display = 'inline-block';
-  submitBtn.querySelector('.btn-text').style.display = 'none';
-  submitBtn.disabled = true;
+  async function saveUser(isVipPaid=false) {
+    spinner.style.display='inline-block';
+    submitBtn.querySelector('.btn-text').style.display='none';
+    submitBtn.disabled = true;
 
-  const fullName = nameInput.value.trim();
-  const chatId = cleanChatId(chatIdInput.value.trim());
-  const phone = phoneInput.value.trim();
-  const email = emailInput.value.trim().toLowerCase();
-  const dob = dobInput.value;
-  const age = calculateAge(dob);
-  const uidKey = sanitizeKey(email);
+    const fullName = nameInput.value.trim();
+    const chatId = cleanChatId(chatIdInput.value.trim());
+    const phone = phoneInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const dob = dobInput.value;
+    const age = calculateAge(dob);
+    const uidKey = sanitizeKey(email);
 
-  // default hostName = own chatId, will use inviter chatId if found
-  let hostNameValue = chatId;
+    if(gender !== 'Female' && !isVIP) {
+      messageEl.textContent = '❌ Only females can be hosts';
+      spinner.style.display='none';
+      submitBtn.querySelector('.btn-text').style.display='inline';
+      submitBtn.disabled = false;
+      return;
+    }
 
-  // attempt to read inviter doc to set inviter chatId for hostName BEFORE write (keeps original pattern)
-  if(referrer){
-    try {
-      const refSnap = await getDoc(doc(db,"users", sanitizeKey(referrer)));
+    // Determine hostName correctly
+    let hostNameValue = chatId; // default to own chatId
+    if(referrer){
+      const refDocKey = sanitizeKey(referrer);
+      const refSnap = await getDoc(doc(db,"users",refDocKey));
       if(refSnap.exists()){
         const refData = refSnap.data();
-        hostNameValue = refData.chatId || chatId;
+        hostNameValue = refData.chatId || chatId; // use ref chatId if exists
       }
-    } catch(e){
-      console.warn('Referrer read failed (non-fatal):', e);
-    }
-  }
-
-  // location placeholder; try to fetch but don't block; if it returns later we patch the doc
-  let locationString = 'Unknown';
-  fetch('https://ipapi.co/json/').then(res => res.json()).then(data => {
-    const parts = [];
-    if(data.city) parts.push(data.city);
-    if(data.region) parts.push(data.region);
-    if(data.country_name) parts.push(data.country_name);
-    const loc = parts.join(', ');
-    if(loc) locationString = loc;
-    // attempt to patch user doc later if created
-    const userDocRef = doc(db,"users", uidKey);
-    getDoc(userDocRef).then(snap => {
-      if(snap.exists()){
-        updateDoc(userDocRef, { location: loc }).catch(()=>{});
-      }
-    }).catch(()=>{});
-  }).catch(err => { console.warn('Location fetch failed:', err); });
-
-  /* full user payload (all requested fields) */
-  const userData = {
-    chatId,
-    chatIdLower: chatId.toLowerCase(),
-    fullName,
-    vipName: isVIP ? fullName : null,
-    hostName: hostNameValue,
-    stars: 50,
-    starsToday: 0,
-    starsGifted: 0,
-    lastStarDate: new Date().toISOString().split('T')[0],
-    cash: 0,
-    usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
-    isAdmin: false,
-    isVIP: isVIP,
-    isHost: (gender === 'Female' && !isVIP), // keep female-only host if you prefer; your original used !isVIP, update if needed
-    hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
-    invitedBy: referrer ? sanitizeKey(referrer) : null, // sanitized referrer email as asked
-    dob,
-    age,
-    gender,
-    email,
-    phone,
-    bankName: "",
-    bankAccountNumber: "",
-    location: locationString,
-    country: 'Nigeria', // left as default as in your original
-    socialShare: !isVIP,
-    subscriptionActive: !isVIP,
-    subscriptionCount: 0,
-    instagram: "",
-    tiktok: "",
-    whatsapp: "",
-    telegram: "",
-    createdAt: new Date().toISOString()
-  };
-
-  try {
-    // write user doc
-    await setDoc(doc(db,"users", uidKey), userData);
-
-    // post-write: update inviter counters (non-blocking IIFE)
-    if(referrer){
-      (async ()=>{
-        try {
-          const refDocKey = sanitizeKey(referrer);
-          const refDocRef = doc(db,"users", refDocKey);
-          const refSnap = await getDoc(refDocRef);
-          if(refSnap.exists()){
-            const refData = refSnap.data();
-            const bonus = isVipPaid ? 100 : 50;
-            const hostFriendsCount = refData.hostFriendsCount || 0;
-            const hostVIP = refData.hostVIP || 0;
-
-            await updateDoc(refDocRef, {
-              stars: (refData.stars || 0) + bonus,
-              starsGifted: (refData.starsGifted || 0) + bonus,
-              hostFriends: arrayUnion({ chatId, chatIdLower: chatId.toLowerCase(), isVIP: isVIP, gifted: bonus }),
-              hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
-              hostVIP: isVIP ? hostVIP + 1 : hostVIP
-            });
-
-            // ensure new user's hostName = inviter chatId
-            const inviterChat = refData.chatId || null;
-            if(inviterChat){
-              await updateDoc(doc(db,"users", uidKey), { hostName: inviterChat }).catch(()=>{});
-            }
-          }
-        } catch(e){
-          console.warn('Referrer update failed (non-blocking):', e);
-        }
-      })();
     }
 
-    // store to localStorage for autofill/autologin in nushop.html
-    const storageUser = {
-      chatId: userData.chatId,
-      email: userData.email,
-      isVIP: userData.isVIP,
-      fullName: userData.fullName,
-      usernameColor: userData.usernameColor,
-      hostName: userData.hostName,
-      invitedBy: userData.invitedBy
+    const userData = {
+      chatId,
+      chatIdLower: chatId.toLowerCase(),
+      fullName,
+      stars: 50,
+      starsToday: 0,
+      starsGifted: 0,
+      lastStarDate: new Date().toISOString().split("T")[0],
+      cash: 0,
+      usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+      isAdmin:false,
+      isVIP:isVIP,
+      isHost: !isVIP,
+      hostLink: !isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
+      hostName: hostNameValue,
+      invitedBy: referrer,
+      dob,
+      age,
+      gender,
+      email,
+      phone,
+      country: 'Nigeria',
+      socialShare: !isVIP,
+      subscriptionActive: !isVIP,
+      createdAt: new Date().toISOString()
     };
 
-    if(userData.isVIP){
-      localStorage.setItem('vipUser', JSON.stringify(storageUser));
-      // show paystack UI for activation
-      spinner.style.display = 'none';
-      submitBtn.querySelector('.btn-text').style.display = 'inline';
-      submitBtn.disabled = false;
-      submitBtn.style.display = 'none';
-      messageEl.textContent = '✅ Signup successful! Complete VIP activation below.';
-      paystackContainer.style.display = 'flex';
-    } else {
-      // host -> auto-login and redirect
-      localStorage.setItem('hostUser', JSON.stringify(storageUser));
-      spinner.style.display = 'none';
-      submitBtn.querySelector('.btn-text').style.display = 'inline';
-      submitBtn.disabled = false;
-      submitBtn.style.display = 'none';
-      messageEl.textContent = '✅ Signup successful! Redirecting...';
-      setTimeout(()=>{ window.location.href = 'nushop.html'; }, 800);
-    }
+    try{
+      await setDoc(doc(db,"users",uidKey), userData);
 
-  } catch(e){
-    console.error(e);
-    spinner.style.display = 'none';
-    submitBtn.querySelector('.btn-text').style.display = 'inline';
-    submitBtn.disabled = false;
-    messageEl.textContent = '❌ Signup failed.';
+      // Store in localStorage for auto-login
+      localStorage.setItem('vipUser', JSON.stringify(userData));
+
+      // Update referrer counters
+      if(referrer){
+        const refDocKey = sanitizeKey(referrer);
+        const refDocRef = doc(db,"users",refDocKey);
+        const refSnap = await getDoc(refDocRef);
+        if(refSnap.exists()){
+          const refData = refSnap.data();
+          const bonus = isVipPaid ? 100 : 50;
+          const hostFriendsCount = refData.hostFriendsCount || 0;
+          const hostVIP = refData.hostVIP || 0;
+
+          await updateDoc(refDocRef, {
+            stars: refData.stars + bonus,
+            starsGifted: refData.starsGifted + bonus,
+            hostFriends: arrayUnion({ chatId, chatIdLower: chatId.toLowerCase(), isVIP:isVIP, gifted:bonus }),
+            hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
+            hostVIP: isVIP ? hostVIP + 1 : hostVIP
+          });
+        }
+      }
+
+      spinner.style.display='none';
+      submitBtn.querySelector('.btn-text').style.display='inline';
+      submitBtn.disabled = false;
+
+      messageEl.textContent="✅ Signup successful!";
+      if(!isVIP) window.location.href='nushop.html';
+      else messageEl.textContent="🎉 VIP ready!";
+
+    } catch(e) {
+      console.error(e);
+      spinner.style.display='none';
+      submitBtn.querySelector('.btn-text').style.display='inline';
+      submitBtn.disabled=false;
+      messageEl.textContent="❌ Signup failed.";
+    }
   }
-}
 
-/* submit handler (validations same as your original) */
-submitBtn.addEventListener('click', async ()=>{
-  const fullName = nameInput.value.trim(), chatIdRaw = chatIdInput.value.trim(), phone = phoneInput.value.trim();
-  const email = emailInput.value.trim(), dob = dobInput.value;
-  if(!fullName||!chatIdRaw||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill all fields.'; return; }
-  if(calculateAge(dob) < 18){ messageEl.textContent='You must be 18+'; return; }
-  if(!isValidEmail(email)){ messageEl.textContent='Invalid email domain'; return; }
-  if(await isChatIdTaken(cleanChatId(chatIdRaw))){ messageEl.textContent='ChatId taken'; return; }
-  // proceed
-  saveUser(false);
+  submitBtn.addEventListener('click', async ()=>{
+    const fullName=nameInput.value.trim(), chatId=chatIdInput.value.trim(), phone=phoneInput.value.trim();
+    const email=emailInput.value.trim(), dob=dobInput.value;
+    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill all fields.'; return; }
+    if(calculateAge(dob)<18){ messageEl.textContent='You must be 18+'; return; }
+    if(!isValidEmail(email)){ messageEl.textContent='Invalid email domain'; return; }
+    if(await isChatIdTaken(cleanChatId(chatId))){ messageEl.textContent='ChatId taken'; return; }
+    saveUser(false);
+  });
+
 });
-
-/* Paystack simulated activation flow - updates subscriptionActive, sets localStorage and redirects */
-paystackBtn.addEventListener('click', async ()=>{
-  paystackSpinner.style.display = 'inline-block';
-  paystackBtn.querySelector('.btn-text').style.display = 'none';
-  paystackBtn.disabled = true;
-  setTimeout(async ()=>{
-    paystackSpinner.style.display = 'none';
-    paystackBtn.querySelector('.btn-text').style.display = 'inline';
-    paystackBtn.disabled = false;
-
-    const uidKey = sanitizeKey(emailInput.value.trim().toLowerCase());
-    try {
-      await updateDoc(doc(db,"users", uidKey), { subscriptionActive: true }).catch(()=>{});
-      // update localStorage vipUser and redirect
-      const stored = JSON.parse(localStorage.getItem('vipUser') || '{}');
-      stored.subscriptionActive = true;
-      localStorage.setItem('vipUser', JSON.stringify(stored));
-      messageEl.textContent = '🎉 VIP Activated! Redirecting...';
-      setTimeout(()=>{ window.location.href = 'nushop.html'; }, 800);
-    } catch(e){
-      console.warn('Paystack activation failed:', e);
-      messageEl.textContent = 'VIP activation error.';
-    }
-  }, 2000);
-});
-
-/* small helper duplication to avoid hoisting bugs */
-function sanitizeKey(key){ return String(key||'').replace(/[.#$[\]]/g, ','); }
-
 </script>
 </body>
 </html>
