@@ -740,9 +740,10 @@ function renderFriendsList(container, friends) {
 DOM.hostTabs?.addEventListener('click', e => {
   const btn = e.target.closest('.tab-btn');
   if (!btn) return;
-  DOM.hostTabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderTabContent(btn.dataset.tab);
+  const type = btn.dataset.tab;
+  renderTabContent(type);
 });
 
 /* ------------------ User tabs (Shop/Orders) ------------------ */
