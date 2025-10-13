@@ -630,7 +630,7 @@ const redeemProduct = async (product) => {
   if (!currentUser) return showThemedMessage('Error', 'User not loaded');
   if (!product) return showThemedMessage('Error', 'Invalid product');
 
-  showConfirmModal(`Redeem "${product.name}" for ${product.cost} ⭐?`, `Are you sure you want to redeem "${product.name}"?`, async () => {
+  showConfirmModal(`"${product.name}" costs ${product.cost} ⭐`, `Are you sure you want to redeem "${product.name}"?`, async () => {
     showSpinner();
     try {
       const userRef = doc(db, 'users', currentUser.uid);
