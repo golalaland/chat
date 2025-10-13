@@ -222,49 +222,54 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: new Date().toISOString()
     };
 
-    try{
-      await setDoc(doc(db,"users",uidKey), userData);
+   try {
+  await setDoc(doc(db,"users",uidKey), userData);
 
-      // Store in localStorage for auto-login
-      localStorage.setItem('vipUser', JSON.stringify(userData));
+  // Store in localStorage for auto-login
+  localStorage.setItem('vipUser', JSON.stringify(userData));
 
-      // Update referrer counters
-      if(referrer){
-        const refDocKey = sanitizeKey(referrer);
-        const refDocRef = doc(db,"users",refDocKey);
-        const refSnap = await getDoc(refDocRef);
-        if(refSnap.exists()){
-          const refData = refSnap.data();
-          const bonus = isVipPaid ? 100 : 50;
-          const hostFriendsCount = refData.hostFriendsCount || 0;
-          const hostVIP = refData.hostVIP || 0;
+  // Update referrer counters
+  if(referrer){
+    const refDocKey = sanitizeKey(referrer);
+    const refDocRef = doc(db,"users",refDocKey);
+    const refSnap = await getDoc(refDocRef);
+    if(refSnap.exists()){
+      const refData = refSnap.data();
+      const bonus = isVipPaid ? 100 : 50;
+      const hostFriendsCount = refData.hostFriendsCount || 0;
+      const hostVIP = refData.hostVIP || 0;
 
-          await updateDoc(refDocRef, {
-            stars: refData.stars + bonus,
-            starsGifted: refData.starsGifted + bonus,
-            hostFriends: arrayUnion({ chatId, chatIdLower: chatId.toLowerCase(), isVIP:isVIP, gifted:bonus }),
-            hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
-            hostVIP: isVIP ? hostVIP + 1 : hostVIP
-          });
-        }
-      }
-
-      spinner.style.display='none';
-      submitBtn.querySelector('.btn-text').style.display='inline';
-      submitBtn.disabled = false;
-
-      messageEl.textContent="✅ Signup successful!";
-      if(!isVIP) window.location.href='nushop.html';
-      else messageEl.textContent="🎉 VIP ready!";
-
-    } catch(e) {
-      console.error(e);
-      spinner.style.display='none';
-      submitBtn.querySelector('.btn-text').style.display='inline';
-      submitBtn.disabled=false;
-      messageEl.textContent="❌ Signup failed.";
+      await updateDoc(refDocRef, {
+        stars: refData.stars + bonus,
+        starsGifted: refData.starsGifted + bonus,
+        hostFriends: arrayUnion({ chatId, chatIdLower: chatId.toLowerCase(), isVIP:isVIP, gifted:bonus }),
+        hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
+        hostVIP: isVIP ? hostVIP + 1 : hostVIP
+      });
     }
   }
+
+  spinner.style.display='none';
+  submitBtn.querySelector('.btn-text').style.display='inline';
+  submitBtn.disabled = false;
+
+  if(!isVIP) {
+    submitBtn.style.display='none';  // hide after host signup
+    messageEl.textContent="✅ Signup successful!";
+    window.location.href='nushop.html';
+  } else {
+    submitBtn.style.display='none';  // hide signup
+    paystackContainer.style.display='flex';  // show VIP Access button
+    messageEl.textContent="🎉 VIP ready! Click VIP Access below";
+  }
+
+} catch(e) {
+  console.error(e);
+  spinner.style.display='none';
+  submitBtn.querySelector('.btn-text').style.display='inline';
+  submitBtn.disabled=false;
+  messageEl.textContent="❌ Signup failed.";
+}
 
   submitBtn.addEventListener('click', async ()=>{
     const fullName=nameInput.value.trim(), chatId=chatIdInput.value.trim(), phone=phoneInput.value.trim();
