@@ -266,16 +266,27 @@ const loadCurrentUser = async () => {
     if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
     updateHostPanels();
 
-    // Update host stats if invited
-    if (currentUser?.invitedBy) {
-      await updateHostStats({
-        email: currentUser.email || '',
-        chatId: currentUser.chatId || '',
-        isVIP: currentUser.isVIP || false,
-        isHost: currentUser.isHost || false,
-        invitedBy: currentUser.invitedBy
-      });
-    }
+  // Update host stats if invited
+if (currentUser?.invitedBy) {
+  await updateHostStats({
+    email: currentUser.email || '',
+    chatId: currentUser.chatId || '',
+    isVIP: currentUser.isVIP || false,
+    isHost: currentUser.isHost || false,
+    invitedBy: currentUser.invitedBy
+  });
+}
+
+/* ------------------ Setup VIP or Host Features ------------------ */
+try {
+  if (currentUser.isVIP) {
+    setupVIPButton();              // 🎁 show VIP floating button
+  } else if (currentUser.isHost) {
+    setupHostGiftListener();       // 🎉 listen for live gift popups
+  }
+} catch (e) {
+  console.error('Failed to initialize VIP/Host features:', e);
+}
 
     // Subscribe to realtime updates
     onSnapshot(userRef, async docSnap => {
