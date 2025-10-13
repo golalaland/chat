@@ -290,6 +290,10 @@ const loadCurrentUser = async () => {
       if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
       updateHostPanels();
       renderShop().catch(console.error);
+      
+            // Re-setup VIP / Host features dynamically once user is loaded
+      setupVIPButton();
+      setupHostGiftListener();
 
       // --- Invitee reward: dynamic gift count ---
       try {
@@ -331,101 +335,144 @@ const loadCurrentUser = async () => {
   }
 };
 
-/* ------------------ VIP Floating Button with Redeem ------------------ */
-const setupVIPButton = () => {
+/* ------------------ VIP Floating Button with Dynamic Host ------------------ */
+const setupVIPButton = async () => {
   // Remove existing button if any
-  let existingBtn = document.getElementById('vipFloatingBtn');
+  const existingBtn = document.getElementById('vipFloatingBtn');
   if (existingBtn) existingBtn.remove();
 
   // Only VIPs see the button
   if (!currentUser?.isVIP) return;
 
-  // Create button
+  // Get host info dynamically (chatID)
+  const hostID = currentUser.currentHost;
+  if (!hostID) return; // No host = no tab
+
+  const hostRef = doc(db, 'users', hostID);
+  let hostName = 'Host';
+
+  try {
+    const snap = await getDoc(hostRef);
+    if (snap.exists()) {
+      hostName = snap.data().chatId || snap.data().name || 'Host';
+    }
+  } catch (err) {
+    console.error('Error fetching host name:', err);
+  }
+
+  // Create floating button
   const btn = document.createElement('button');
   btn.id = 'vipFloatingBtn';
   btn.textContent = '⭐ VIP Actions';
-  btn.style.position = 'fixed';
-  btn.style.bottom = '20px';
-  btn.style.right = '20px';
-  btn.style.zIndex = '9999';
-  btn.style.padding = '12px 16px';
-  btn.style.backgroundColor = '#ffcc00';
-  btn.style.border = 'none';
-  btn.style.borderRadius = '8px';
-  btn.style.cursor = 'pointer';
-  btn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+  Object.assign(btn.style, {
+    position: 'fixed',
+    bottom: '20px',
+    right: '20px',
+    zIndex: '9999',
+    padding: '12px 16px',
+    backgroundColor: '#ffcc00',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+    fontWeight: '600'
+  });
   document.body.appendChild(btn);
 
-  // Dropdown options container
+  // Dropdown menu container
   const menu = document.createElement('div');
   menu.id = 'vipMenu';
-  menu.style.position = 'absolute';
-  menu.style.bottom = '50px';
-  menu.style.right = '0';
-  menu.style.backgroundColor = '#fff';
-  menu.style.border = '1px solid #ccc';
-  menu.style.borderRadius = '6px';
-  menu.style.padding = '8px 0';
-  menu.style.display = 'none';
-  menu.style.minWidth = '180px';
-  menu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+  Object.assign(menu.style, {
+    position: 'absolute',
+    bottom: '50px',
+    right: '0',
+    backgroundColor: '#fff',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    padding: '8px 0',
+    display: 'none',
+    minWidth: '200px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+  });
   btn.appendChild(menu);
 
-  // Helper: show confetti & reward
+  // Mini header showing host name
+  const header = document.createElement('div');
+  header.style.padding = '8px 12px';
+  header.style.fontWeight = 'bold';
+  header.style.borderBottom = '1px solid #eee';
+  header.textContent = `You’re on ${hostName}’s VIP Tab`;
+  menu.appendChild(header);
+
+  // Helper: celebration popup + confetti
   const celebrate = (message) => {
-    // Use your existing showReward or confetti logic
     showReward(message, '🎉 Congrats! 🎉');
-    // Optionally trigger confetti animation here
     if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70 });
   };
 
-  // Option: Leave Host Tab
+  /* --- Leave Host Tab --- */
   const leaveTab = document.createElement('div');
-  leaveTab.textContent = 'Leave Host Tab (Cost: 50⭐️)';
-  leaveTab.style.padding = '8px 12px';
-  leaveTab.style.cursor = 'pointer';
+  leaveTab.textContent = `Leave ${hostName}’s Tab (Cost: 50⭐️)`;
+  Object.assign(leaveTab.style, { padding: '8px 12px', cursor: 'pointer' });
   leaveTab.addEventListener('click', async () => {
     const cost = 50;
     if (currentUser.stars < cost) return alert('Not enough stars!');
-    if (!confirm(`Are you sure you want to leave the host's tab for ${cost} stars?`)) return;
+    if (!confirm(`Are you sure you want to leave ${hostName}’s tab for ${cost} stars?`)) return;
 
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       await updateDoc(userRef, { stars: currentUser.stars - cost, currentHost: null });
       currentUser.stars -= cost;
+      currentUser.currentHost = null;
       if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-      celebrate(`You left the host's tab and spent ${cost} stars!`);
-    } catch (e) { console.error(e); }
+      celebrate(`You left ${hostName}’s tab and spent ${cost} stars!`);
+      header.textContent = `You’re not on any VIP Tab`;
+    } catch (e) {
+      console.error('Error leaving tab:', e);
+    }
   });
   menu.appendChild(leaveTab);
 
-  // Option: Gift Host
+  /* --- Gift Host --- */
   const giftHost = document.createElement('div');
-  giftHost.textContent = 'Gift Host (Cost: 30⭐️)';
-  giftHost.style.padding = '8px 12px';
-  giftHost.style.cursor = 'pointer';
+  giftHost.textContent = `Gift ${hostName} (Cost: 30⭐️)`;
+  Object.assign(giftHost.style, { padding: '8px 12px', cursor: 'pointer' });
   giftHost.addEventListener('click', async () => {
     const cost = 30;
     if (currentUser.stars < cost) return alert('Not enough stars!');
-    if (!currentUser.currentHost) return alert('No host to gift!');
-    if (!confirm(`Send a gift to your host for ${cost} stars?`)) return;
+    if (!confirm(`Send a gift to ${hostName} for ${cost} stars?`)) return;
 
     try {
       const userRef = doc(db, 'users', currentUser.uid);
-      const hostRef = doc(db, 'users', String(currentUser.currentHost).replace(/[.#$[\]]/g, ','));
+      const hostSnap = await getDoc(hostRef);
+      const hostStars = hostSnap.exists() && hostSnap.data().stars ? hostSnap.data().stars : 0;
+      const hostGifts = hostSnap.exists() && Array.isArray(hostSnap.data().giftsReceived)
+        ? hostSnap.data().giftsReceived
+        : [];
 
-      // Deduct VIP stars
+      // Deduct stars from VIP
       await updateDoc(userRef, { stars: currentUser.stars - cost });
       currentUser.stars -= cost;
       if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
 
-      // Add stars to host
-      const hostSnap = await getDoc(hostRef);
-      let hostStars = hostSnap.exists() && hostSnap.data().stars ? hostSnap.data().stars : 0;
-      await updateDoc(hostRef, { stars: hostStars + cost });
+      // Add stars & log to host
+      await updateDoc(hostRef, {
+        stars: hostStars + cost,
+        giftsReceived: [
+          ...hostGifts,
+          {
+            fromUID: currentUser.uid,
+            fromName: currentUser.chatId || currentUser.name || 'VIP',
+            stars: cost,
+            timestamp: Date.now()
+          }
+        ]
+      });
 
-      celebrate(`You gifted your host ${cost} stars!`);
-    } catch (e) { console.error(e); }
+      celebrate(`You gifted ${hostName} ${cost}⭐️!`);
+    } catch (e) {
+      console.error('Gift error:', e);
+    }
   });
   menu.appendChild(giftHost);
 
@@ -435,8 +482,159 @@ const setupVIPButton = () => {
   });
 };
 
-// Call after user loaded
+/* ------------------ Host Gift Notifications ------------------ */
+const setupHostGiftListener = () => {
+  if (!currentUser?.isHost) return;
+
+  const hostRef = doc(db, 'users', currentUser.uid);
+
+  // Create notification container
+  let container = document.getElementById('giftNotificationContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'giftNotificationContainer';
+    Object.assign(container.style, {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      width: '260px',
+      zIndex: '9999',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
+    });
+    document.body.appendChild(container);
+  }
+
+  let shownGifts = new Set();
+
+  onSnapshot(hostRef, async (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const gifts = data.giftsReceived || [];
+
+    for (const gift of gifts) {
+      if (shownGifts.has(gift.timestamp)) continue;
+      shownGifts.add(gift.timestamp);
+
+      const notif = document.createElement('div');
+      notif.textContent = `🎁 ${gift.fromName || 'VIP'} gifted you ${gift.stars}⭐️!`;
+      Object.assign(notif.style, {
+        backgroundColor: '#fffae6',
+        border: '1px solid #ffd700',
+        borderRadius: '8px',
+        padding: '10px',
+        fontWeight: 'bold',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        opacity: '0',
+        transform: 'translateX(100%)',
+        transition: 'all 0.5s ease',
+        cursor: 'pointer'
+      });
+
+      container.appendChild(notif);
+
+      // Animate in
+      requestAnimationFrame(() => {
+        notif.style.opacity = '1';
+        notif.style.transform = 'translateX(0)';
+      });
+
+      // Remove after 6s with animation
+      setTimeout(() => {
+        notif.style.opacity = '0';
+        notif.style.transform = 'translateX(100%)';
+        setTimeout(() => notif.remove(), 500);
+      }, 6000);
+
+      // Optional confetti on click
+      notif.addEventListener('click', () => {
+        if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60 });
+        notif.remove();
+      });
+    }
+  });
+};
+
+/* ------------------ Init after user load ------------------ */
 setupVIPButton();
+setupHostGiftListener();
+
+/* ------------------ Host Gift Notification Panel ------------------ */
+const setupHostGiftListener = () => {
+  if (!currentUser?.isHost) return;
+
+  const hostRef = doc(db, 'users', currentUser.uid);
+
+  // Create gift notification container
+  let container = document.getElementById('giftNotificationContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'giftNotificationContainer';
+    Object.assign(container.style, {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      width: '260px',
+      zIndex: '9999',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+    });
+    document.body.appendChild(container);
+  }
+
+  let shownGifts = new Set();
+
+  onSnapshot(hostRef, async (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const gifts = data.giftsReceived || [];
+
+    for (const gift of gifts) {
+      if (shownGifts.has(gift.timestamp)) continue;
+      shownGifts.add(gift.timestamp);
+
+      const vipRef = doc(db, 'users', gift.fromUID);
+      const vipSnap = await getDoc(vipRef);
+      const vipName = vipSnap.exists() ? vipSnap.data().name : 'VIP';
+
+      const notif = document.createElement('div');
+      notif.textContent = `🎁 ${vipName} gifted you ${gift.stars}⭐!`;
+      Object.assign(notif.style, {
+        backgroundColor: '#fffae6',
+        border: '1px solid #ffd700',
+        borderRadius: '8px',
+        padding: '10px',
+        fontWeight: 'bold',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        opacity: '0',
+        transform: 'translateX(100%)',
+        transition: 'all 0.5s ease',
+        cursor: 'pointer'
+      });
+
+      container.appendChild(notif);
+
+      requestAnimationFrame(() => {
+        notif.style.opacity = '1';
+        notif.style.transform = 'translateX(0)';
+      });
+
+      setTimeout(() => {
+        notif.style.opacity = '0';
+        notif.style.transform = 'translateX(100%)';
+        setTimeout(() => notif.remove(), 500);
+      }, 6000);
+
+      notif.addEventListener('click', () => {
+        if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60 });
+        notif.remove();
+      });
+    }
+  });
+};
+
 /* ------------------ Host panels ------------------ */
 const updateHostPanels = () => {
   if (!currentUser?.isHost) {
