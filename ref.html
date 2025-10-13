@@ -239,95 +239,117 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = emailInput.value.trim().toLowerCase();
     const dob = dobInput.value;
 
-    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
+    if (!fullName || !chatId || !phone || !email || !gender || !dob) {
+        messageEl.textContent = 'Please fill in all fields.';
+        return;
+    }
 
     const age = calculateAge(dob);
-    if(age < 18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
+    if (age < 18) { messageEl.textContent = '❌ You must be 18+ to sign up.'; return; }
+    if (chatId.length < 5 || chatId.length > 15) { messageEl.textContent = 'Username must be 5-15 characters.'; return; }
+    if (phone.length < 11 || phone.length > 15) { messageEl.textContent = 'Phone number not valid.'; return; }
+    if (!isValidEmail(email)) { messageEl.textContent = 'Email Address not valid.'; return; }
 
-    if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
-    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
-    if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
-
-    spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
+    spinner.style.display = 'inline-block'; btnText.style.display = 'none'; messageEl.textContent = 'Signing up...';
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
 
     try {
-      const existingSnap = await getDoc(userRef);
-      const chatTaken = await isChatIdTaken(chatId);
-      if(existingSnap.exists() || chatTaken){
-        messageEl.textContent = "❌ User already signed up with this email or username.";
-        spinner.style.display='none'; btnText.style.display='inline';
-        return;
-      }
-
-      let country = 'Unknown';
-      try { const res = await fetch('https://ipapi.co/json/'); const data = await res.json(); country = data.country_name || 'Unknown'; } catch(e){}
-
-      const userData = {
-        chatId,
-        chatIdLower:chatId.toLowerCase(),
-        fullName,
-        stars:50,
-        starsToday:0,
-        starsGifted:0,
-        lastStarDate:new Date().toISOString().split("T")[0],
-        cash:0,
-        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
-        isAdmin:false,
-        isVIP,
-        isHost:(gender==='Female' && !isVIP), // Only non-VIP females can be Hosts
-        hostLink: (!isVIP && gender==='Female')?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
-        invitedBy: referrer||null,
-        email,
-        phone,
-        gender,
-        dob,
-        age,
-        bankName:"",
-        bankAccountNumber:"",
-        country,
-        subscriptionActive:false,
-        subscriptionCount:0,
-        socialShare:!isVIP,
-        instagram:"",
-        tiktok:"",
-        whatsapp:"",
-        telegram:"",
-      };
-
-      await setDoc(userRef,userData);
-
-      if(referrer){
-        const inviterRef = doc(db,"users",sanitizeKey(referrer));
-        const inviterSnap = await getDoc(inviterRef);
-        if(inviterSnap.exists()){
-          const inviterData = inviterSnap.data();
-          const bonusStars = isVIP?100:50;
-          await updateDoc(inviterRef,{
-            stars:(inviterData.stars||0)+bonusStars,
-            starsGifted:(inviterData.starsGifted||0)+bonusStars,
-            hostFriends: arrayUnion({
-              chatId,
-              chatIdLower:chatId.toLowerCase(),
-              email,
-              giftShown:true,
-              hostLink:inviterData.hostLink || null,
-              hostVIP:isVIP?1:0,
-              invitedBy:referrer
-            })
-          });
+        const existingSnap = await getDoc(userRef);
+        const chatTaken = await isChatIdTaken(chatId);
+        if (existingSnap.exists() || chatTaken) {
+            messageEl.textContent = "❌ User already signed up with this email or username.";
+            spinner.style.display = 'none'; btnText.style.display = 'inline';
+            return;
         }
-      }
 
-      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
-      localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
-      setTimeout(()=>{ window.location.href="nushop.html"; },1500);
+        let country = 'Unknown';
+        try { 
+            const res = await fetch('https://ipapi.co/json/'); 
+            const data = await res.json(); 
+            country = data.country_name || 'Unknown'; 
+        } catch(e){}
 
-    } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
-    finally{ spinner.style.display='none'; btnText.style.display='inline'; }
-  });
+        // --- Prepare user data with vipName and hostName ---
+        const userData = {
+            chatId,
+            chatIdLower: chatId.toLowerCase(),
+            fullName,
+            vipName: isVIP ? fullName : null,   // For shop VIP display
+            hostName: null,                     // Will update if referrer exists
+            stars: 50,
+            starsToday: 0,
+            starsGifted: 0,
+            lastStarDate: new Date().toISOString().split("T")[0],
+            cash: 0,
+            usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+            isAdmin: false,
+            isVIP,
+            isHost: (gender === 'Female' && !isVIP),
+            hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
+            invitedBy: referrer || null,
+            email,
+            phone,
+            gender,
+            dob,
+            age,
+            bankName: "",
+            bankAccountNumber: "",
+            country,
+            subscriptionActive: false,
+            subscriptionCount: 0,
+            socialShare: !isVIP,
+            instagram: "",
+            tiktok: "",
+            whatsapp: "",
+            telegram: "",
+        };
+
+        // --- Save new user ---
+        await setDoc(userRef, userData);
+
+        // --- Handle referrer / inviter logic ---
+        if (referrer) {
+            const inviterRef = doc(db, "users", sanitizeKey(referrer));
+            const inviterSnap = await getDoc(inviterRef);
+            if (inviterSnap.exists()) {
+                const inviterData = inviterSnap.data();
+                const inviterFullName = inviterData.fullName || referrer;
+
+                // Update new user's hostName for shop
+                await updateDoc(userRef, { hostName: inviterFullName });
+
+                // Update inviter stats and hostFriends
+                const bonusStars = isVIP ? 100 : 50;
+                await updateDoc(inviterRef, {
+                    stars: (inviterData.stars || 0) + bonusStars,
+                    starsGifted: (inviterData.starsGifted || 0) + bonusStars,
+                    hostFriends: arrayUnion({
+                        chatId,
+                        chatIdLower: chatId.toLowerCase(),
+                        email,
+                        giftShown: true,
+                        hostLink: inviterData.hostLink || null,
+                        hostVIP: isVIP ? 1 : 0,
+                        invitedBy: referrer
+                    })
+                });
+            }
+        }
+
+        // --- Finish signup UI ---
+        messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
+        localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
+        setTimeout(() => { window.location.href = "nushop.html"; }, 1500);
+
+    } catch(e) { 
+        console.error(e); 
+        messageEl.textContent = "❌ Signup failed. Please try again."; 
+    } finally { 
+        spinner.style.display = 'none'; 
+        btnText.style.display = 'inline'; 
+    }
 });
 </script>
 </body>
