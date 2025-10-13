@@ -56,18 +56,15 @@ footer{width:100%;text-align:center;margin-top:2rem;font-size:0.8rem;color:#aaa;
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose a Chat Name"></div>
 <div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
-<div class="form-group"><input id="bankName" type="text" placeholder="Bank Name"></div>
-<div class="form-group"><input id="bankAccount" type="text" placeholder="Bank Account Number"></div>
-
+<div class="form-group"><input id="dob" type="date" class="dob-input" max=""></div>
 <div class="gender-label">Select Your Gender</div>
 <div class="gender-select">
   <button id="femaleBtn">F</button>
+  <button id="maleBtn">M</button>
 </div>
 
-<div class="dob-container">
-  <div class="dob-label">Select Your Birth Date</div>
-  <input id="dob" type="date" class="dob-input" max="">
-</div>
+<div class="form-group"><input id="bankName" type="text" placeholder="Bank Name"></div>
+<div class="form-group"><input id="bankAccount" type="text" placeholder="Bank Account Number"></div>
 
 <div class="vip-label" id="vipLabel">VIP</div>
 <div class="vip-toggle" id="vipToggle"><span class="vip-circle"></span></div>
@@ -98,7 +95,7 @@ footer{width:100%;text-align:center;margin-top:2rem;font-size:0.8rem;color:#aaa;
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, updateDoc, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, updateDoc, arrayUnion, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -115,14 +112,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 document.addEventListener('DOMContentLoaded', () => {
-  let isVIP = false, gender='Female'; // female-only hosts
+  let isVIP = false, gender='';
   const vipToggle=document.getElementById('vipToggle'), vipLabel=document.getElementById('vipLabel'), vipMessage=document.getElementById('vipMessage');
-  const femaleBtn=document.getElementById('femaleBtn');
+  const femaleBtn=document.getElementById('femaleBtn'), maleBtn=document.getElementById('maleBtn');
   const submitBtn=document.getElementById('submitBtn'), spinner=document.getElementById('spinner'), messageEl=document.getElementById('message');
   const nameInput=document.getElementById('name'), chatIdInput=document.getElementById('chatId');
-  const phoneInput=document.getElementById('phone'), emailInput=document.getElementById('email');
-  const dobInput=document.getElementById('dob'), fomoPopup=document.getElementById('fomoPopup');
+  const phoneInput=document.getElementById('phone'), emailInput=document.getElementById('email'), dobInput=document.getElementById('dob');
   const bankNameInput=document.getElementById('bankName'), bankAccountInput=document.getElementById('bankAccount');
+  const fomoPopup=document.getElementById('fomoPopup');
   const paystackContainer=document.getElementById('paystackContainer');
   const paystackBtn=document.getElementById('paystackBtn'), paystackSpinner=document.getElementById('paystackSpinner');
 
@@ -133,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function isValidEmail(email){ return validEmailSuffixes.some(s => email.endsWith(s)); }
-  function calculateAge(dobStr){ const dob=new Date(dobStr); const diff=Date.now()-new Date(dobStr).getTime(); return Math.abs(new Date(diff).getUTCFullYear()-1970); }
+  function calculateAge(dobStr){ const dob=new Date(dobStr); const diff=Date.now()-dob.getTime(); return Math.abs(new Date(diff).getUTCFullYear()-1970); }
   async function isChatIdTaken(chatId){ const q=query(collection(db,"users"),where("chatIdLower","==",chatId.toLowerCase())); const snap=await getDocs(q); return !snap.empty; }
 
   phoneInput.addEventListener('input',()=>{ phoneInput.value=phoneInput.value.replace(/\D/g,''); });
@@ -145,6 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
     vipMessage.style.opacity=isVIP?'1':'0';
     if(isVIP) triggerSprayConfetti();
   });
+
+  femaleBtn.addEventListener('click',()=>{ gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
+  maleBtn.addEventListener('click',()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
   const today=new Date(); dobInput.max=new Date(today.getFullYear()-18,today.getMonth(),today.getDate()).toISOString().split('T')[0];
 
@@ -178,27 +178,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   showFOMO();
 
-  function generateRefCode(length=6){ return Math.random().toString(36).substring(2,2+length).toUpperCase(); }
-
   async function saveUser(isVipPaid=false){
     spinner.style.display='inline-block';
     submitBtn.querySelector('.btn-text').style.display='none';
-    submitBtn.disabled=true;
+    submitBtn.disabled = true;
 
-    const fullName=nameInput.value.trim();
-    const chatId=cleanChatId(chatIdInput.value.trim());
-    const phone=phoneInput.value.trim();
-    const email=emailInput.value.trim().toLowerCase();
-    const dob=dobInput.value;
-    const age=calculateAge(dob);
-    const uidKey=sanitizeKey(email);
+    const fullName = nameInput.value.trim();
+    const chatId = cleanChatId(chatIdInput.value.trim());
+    const phone = phoneInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const dob = dobInput.value;
+    const age = calculateAge(dob);
+    const uidKey = sanitizeKey(email);
+    const bankName = bankNameInput.value.trim();
+    const bankAccount = bankAccountInput.value.trim();
 
-    // hostName = inviter's chatId
     let hostNameValue = chatId;
     if(referrer){
       const refDocKey = sanitizeKey(referrer);
       const refSnap = await getDoc(doc(db,"users",refDocKey));
-      if(refSnap.exists()){ hostNameValue = refSnap.data().chatId || chatId; }
+      if(refSnap.exists()){ const refData = refSnap.data(); hostNameValue = refData.chatId || chatId; }
     }
 
     const userData = {
@@ -214,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isAdmin:false,
       isVIP:isVIP,
       isHost:!isVIP,
-      vipName:isVIP ? chatId : null,
       hostLink:!isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
       hostName: hostNameValue,
       invitedBy: referrer,
@@ -223,46 +221,41 @@ document.addEventListener('DOMContentLoaded', () => {
       gender,
       email,
       phone,
-      bankName: bankNameInput.value.trim(),
-      bankAccountNumber: bankAccountInput.value.trim(),
-      country:'',
+      bankName,
+      bankAccount,
+      vipName: isVIP ? chatId : null,
+      country: '', // can set from location if needed
       socialShare: !isVIP,
-      subscriptionActive: isVIP,
-      subscriptionEnd: isVIP ? new Date(Date.now() + 169*60*60*1000).toISOString() : null,
-      createdAt:new Date().toISOString(),
-      refCode: generateRefCode(),
-      profilePic:'',
-      displayName:'',
-      bio:'',
-      socialLinks:[],
-      emailVerified:false,
-      phoneVerified:false
+      subscriptionActive: !isVIP,
+      subscriptionEnd: !isVIP ? null : Date.now()+169*60*60*1000, // 169 hours
+      createdAt:new Date().toISOString()
     };
 
     try{
-      await setDoc(doc(db,"users",uidKey),userData);
+      await setDoc(doc(db,"users",uidKey), userData);
 
       if(referrer){
         const refDocKey = sanitizeKey(referrer);
         const refDocRef = doc(db,"users",refDocKey);
         const refSnap = await getDoc(refDocRef);
         if(refSnap.exists()){
-          const refData=refSnap.data();
-          const bonus=isVipPaid ? 100 : 50;
+          const refData = refSnap.data();
+          const bonus = isVipPaid ? 100 : 50;
+          const hostFriendsCount = refData.hostFriendsCount || 0;
+          const hostVIP = refData.hostVIP || 0;
+
           await updateDoc(refDocRef,{
             stars: refData.stars + bonus,
             starsGifted: refData.starsGifted + bonus,
             hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus }),
-            hostFriendsCount: !isVIP ? (refData.hostFriendsCount||0)+1 : (refData.hostFriendsCount||0),
-            hostVIP: isVIP ? (refData.hostVIP||0)+1 : (refData.hostVIP||0)
+            hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
+            hostVIP: isVIP ? hostVIP + 1 : hostVIP
           });
         }
       }
 
       spinner.style.display='none';
-      submitBtn.querySelector('.btn-text').style.display='inline';
-      submitBtn.disabled=false;
-      submitBtn.style.display='none'; // hide after click
+      submitBtn.style.display='none'; // hide signup button
       messageEl.textContent="✅ Signup successful!";
       if(!isVIP) window.location.href='nushop.html';
       else paystackContainer.style.display='flex';
@@ -272,37 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
       spinner.style.display='none';
       submitBtn.querySelector('.btn-text').style.display='inline';
       submitBtn.disabled=false;
-      messageEl.textContent="❌ Error saving user. Try again.";
+      messageEl.textContent="❌ Signup failed.";
     }
   }
 
-  submitBtn.addEventListener('click',()=>saveUser(false));
-
-  paystackBtn.addEventListener('click',async()=>{
-    paystackSpinner.style.display='inline-block';
-    paystackBtn.querySelector('.btn-text').style.display='none';
-    // call your external paystack inline JS here
-    setTimeout(async()=>{
-      paystackSpinner.style.display='none';
-      paystackBtn.querySelector('.btn-text').style.display='inline';
-      // after successful payment, mark subscriptionActive & start 169h timer
-      await saveUser(true);
-      messageEl.textContent="🎉 VIP payment successful!";
-    },2000);
-  });
-
-  // Auto-disable subscription if expired
-  async function checkSubscription(uidKey){
-    const snap=await getDoc(doc(db,"users",uidKey));
-    if(snap.exists()){
-      const data=snap.data();
-      if(data.subscriptionActive && data.subscriptionEnd && new Date(data.subscriptionEnd)<new Date()){
-        await updateDoc(doc(db,"users",uidKey),{ subscriptionActive:false, subscriptionEnd:null });
-      }
-    }
-  }
-
-});
-</script>
-</body>
-</html>
+  submitBtn.addEventListener
