@@ -99,7 +99,9 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -129,24 +131,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const phoneInput = document.getElementById('phone');
   const emailInput = document.getElementById('email');
   const dobInput = document.getElementById('dob');
-  const fomoPopup = document.getElementById('fomoPopup');
 
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
-  function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
-  function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
-  function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
+  const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
+  const cleanChatId = input => input.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const isValidEmail = email => validEmailSuffixes.some(s => email.endsWith(s));
 
-  function calculateAge(dobStr){
+  const calculateAge = dobStr => {
     const dob = new Date(dobStr);
     const diffMs = Date.now() - dob.getTime();
-    const ageDt = new Date(diffMs);
-    return Math.abs(ageDt.getUTCFullYear() - 1970);
+    return Math.abs(new Date(diffMs).getUTCFullYear() - 1970);
   }
 
-  async function isChatIdTaken(chatId) {
+  const isChatIdTaken = async chatId => {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
     const snapshot = await getDocs(q);
     return !snapshot.empty;
@@ -165,71 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(isVIP) triggerSprayConfetti();
   });
 
-  function triggerSprayConfetti() {
-    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const numParticles = 50;
-    const rect = vipToggle.getBoundingClientRect();
-    const startX = rect.left + rect.width/2;
-    const startY = rect.bottom;
-    for (let i = 0; i < numParticles; i++) {
-      const p = document.createElement('div');
-      p.style.position='fixed';
-      p.style.width='6px';
-      p.style.height='16px';
-      p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
-      p.style.left=`${startX}px`;
-      p.style.top=`${startY}px`;
-      p.style.opacity='0.9';
-      p.style.borderRadius='2px';
-      p.style.pointerEvents='none';
-      p.style.zIndex='9999';
-      document.body.appendChild(p);
-      const angle = (Math.random()*Math.PI/2) - Math.PI/4;
-      const speed = 300 + Math.random()*200;
-      const duration = 1500 + Math.random()*500;
-      const start = performance.now();
-      (function animate(time){
-        const t = (time-start)/duration;
-        if(t<1){
-          const dx = Math.sin(angle)*speed*t;
-          const dy = -Math.cos(angle)*speed*t;
-          p.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`;
-          p.style.opacity=`${1-t}`;
-          requestAnimationFrame(animate);
-        } else { p.remove(); }
-      })(start);
-    }
-  }
-
   const today = new Date();
-  const maxDate = new Date(today.getFullYear()-18,today.getMonth(),today.getDate());
-  dobInput.max = maxDate.toISOString().split('T')[0];
-
-  async function fetchRecentUsers() {
-    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
-    const snapshot = await getDocs(q);
-    const users = [];
-    snapshot.forEach(docSnap=>{
-      const data = docSnap.data();
-      users.push({fullName:data.fullName, isVIP:data.isVIP});
-    });
-    return users;
-  }
-
-  async function showFOMO() {
-    const users = await fetchRecentUsers();
-    if(users.length===0) return;
-    let index = 0;
-    setInterval(()=>{
-      const u = users[index % users.length];
-      const emoji = u.isVIP?'🎉':'🎈';
-      fomoPopup.textContent = `${u.fullName} just joined as a ${u.isVIP?'VIP':'Host'} ${emoji}`;
-      fomoPopup.style.opacity='1';
-      setTimeout(()=>{ fomoPopup.style.opacity='0'; }, 3000);
-      index++;
-    }, 10000);
-  }
-  showFOMO();
+  dobInput.max = new Date(today.getFullYear()-18,today.getMonth(),today.getDate()).toISOString().split('T')[0];
 
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
@@ -239,117 +176,115 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = emailInput.value.trim().toLowerCase();
     const dob = dobInput.value;
 
-    if (!fullName || !chatId || !phone || !email || !gender || !dob) {
-        messageEl.textContent = 'Please fill in all fields.';
-        return;
-    }
+    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill in all fields.'; return; }
 
     const age = calculateAge(dob);
-    if (age < 18) { messageEl.textContent = '❌ You must be 18+ to sign up.'; return; }
-    if (chatId.length < 5 || chatId.length > 15) { messageEl.textContent = 'Username must be 5-15 characters.'; return; }
-    if (phone.length < 11 || phone.length > 15) { messageEl.textContent = 'Phone number not valid.'; return; }
-    if (!isValidEmail(email)) { messageEl.textContent = 'Email Address not valid.'; return; }
+    if(age < 18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
 
-    spinner.style.display = 'inline-block'; btnText.style.display = 'none'; messageEl.textContent = 'Signing up...';
+    if(chatId.length<5||chatId.length>15){ messageEl.textContent='Username must be 5-15 characters.'; return; }
+    if(phone.length<11||phone.length>15){ messageEl.textContent='Phone number not valid.'; return; }
+    if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
+
+    spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
 
     try {
-        const existingSnap = await getDoc(userRef);
-        const chatTaken = await isChatIdTaken(chatId);
-        if (existingSnap.exists() || chatTaken) {
-            messageEl.textContent = "❌ User already signed up with this email or username.";
-            spinner.style.display = 'none'; btnText.style.display = 'inline';
-            return;
-        }
+      const existingSnap = await getDoc(userRef);
+      const chatTaken = await isChatIdTaken(chatId);
 
-        let country = 'Unknown';
-        try { 
-            const res = await fetch('https://ipapi.co/json/'); 
-            const data = await res.json(); 
-            country = data.country_name || 'Unknown'; 
-        } catch(e){}
+      if(existingSnap.exists() || chatTaken){
+        messageEl.textContent = "❌ User already signed up with this email or username.";
+        spinner.style.display='none'; btnText.style.display='inline';
+        return;
+      }
 
-        // --- Prepare user data with vipName and hostName ---
-        const userData = {
-            chatId,
-            chatIdLower: chatId.toLowerCase(),
-            fullName,
-            vipName: isVIP ? fullName : null,   // For shop VIP display
-            hostName: null,                     // Will update if referrer exists
-            stars: 50,
-            starsToday: 0,
-            starsGifted: 0,
-            lastStarDate: new Date().toISOString().split("T")[0],
-            cash: 0,
-            usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
-            isAdmin: false,
-            isVIP,
-            isHost: (gender === 'Female' && !isVIP),
-            hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
-            invitedBy: referrer || null,
-            email,
-            phone,
-            gender,
-            dob,
-            age,
-            bankName: "",
-            bankAccountNumber: "",
-            country,
-            subscriptionActive: false,
-            subscriptionCount: 0,
-            socialShare: !isVIP,
-            instagram: "",
-            tiktok: "",
-            whatsapp: "",
-            telegram: "",
-        };
+      // Fetch country safely but do not block signup if slow
+      let country = 'Unknown';
+      fetch('https://ipapi.co/json/').then(res => res.json()).then(data => {
+        country = data.country_name || 'Unknown';
+      }).catch(()=>{});
 
-        // --- Save new user ---
-        await setDoc(userRef, userData);
+      const userData = {
+        chatId,
+        chatIdLower: chatId.toLowerCase(),
+        fullName,
+        vipName: isVIP?fullName:null,
+        hostName: null,
+        stars:50,
+        starsToday:0,
+        starsGifted:0,
+        lastStarDate:new Date().toISOString().split("T")[0],
+        cash:0,
+        usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+        isAdmin:false,
+        isVIP,
+        isHost: (gender==='Female' && !isVIP),
+        hostLink: (!isVIP && gender==='Female')?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+        invitedBy: referrer||null,
+        email,
+        phone,
+        gender,
+        dob,
+        age,
+        bankName:"",
+        bankAccountNumber:"",
+        country,
+        subscriptionActive:false,
+        subscriptionCount:0,
+        socialShare:!isVIP,
+        instagram:"",
+        tiktok:"",
+        whatsapp:"",
+        telegram:"",
+      };
 
-        // --- Handle referrer / inviter logic ---
-        if (referrer) {
-            const inviterRef = doc(db, "users", sanitizeKey(referrer));
+      await setDoc(userRef,userData);
+
+      // Non-blocking referrer bonus update
+      if(referrer){
+        (async()=>{
+          try {
+            const inviterRef = doc(db,"users",sanitizeKey(referrer));
             const inviterSnap = await getDoc(inviterRef);
-            if (inviterSnap.exists()) {
-                const inviterData = inviterSnap.data();
-                const inviterFullName = inviterData.fullName || referrer;
+            if(inviterSnap.exists()){
+              const inviterData = inviterSnap.data();
+              const bonusStars = isVIP?100:50;
 
-                // Update new user's hostName for shop
-                await updateDoc(userRef, { hostName: inviterFullName });
+              await updateDoc(inviterRef,{
+                stars:(inviterData.stars||0)+bonusStars,
+                starsGifted:(inviterData.starsGifted||0)+bonusStars,
+                hostFriends: arrayUnion({
+                  chatId,
+                  chatIdLower:chatId.toLowerCase(),
+                  email,
+                  giftShown:true,
+                  hostLink:inviterData.hostLink||null,
+                  hostVIP:isVIP?1:0,
+                  invitedBy:referrer
+                })
+              });
 
-                // Update inviter stats and hostFriends
-                const bonusStars = isVIP ? 100 : 50;
-                await updateDoc(inviterRef, {
-                    stars: (inviterData.stars || 0) + bonusStars,
-                    starsGifted: (inviterData.starsGifted || 0) + bonusStars,
-                    hostFriends: arrayUnion({
-                        chatId,
-                        chatIdLower: chatId.toLowerCase(),
-                        email,
-                        giftShown: true,
-                        hostLink: inviterData.hostLink || null,
-                        hostVIP: isVIP ? 1 : 0,
-                        invitedBy: referrer
-                    })
-                });
+              // Update new user's hostName but do it independently
+              await updateDoc(userRef,{hostName: inviterData.fullName||referrer});
             }
-        }
+          } catch(e){ console.warn('Referrer update failed', e); }
+        })();
+      }
 
-        // --- Finish signup UI ---
-        messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
-        localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
-        setTimeout(() => { window.location.href = "nushop.html"; }, 1500);
+      messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
+      localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
+      setTimeout(()=>{ window.location.href="nushop.html"; },1500);
 
-    } catch(e) { 
-        console.error(e); 
-        messageEl.textContent = "❌ Signup failed. Please try again."; 
-    } finally { 
-        spinner.style.display = 'none'; 
-        btnText.style.display = 'inline'; 
+    } catch(e){ 
+      console.error(e); 
+      messageEl.textContent="❌ Signup failed. Please try again."; 
+    } finally{ 
+      spinner.style.display='none'; 
+      btnText.style.display='inline'; 
     }
+  });
 });
 </script>
 </body>
