@@ -478,84 +478,6 @@ const setupVIPButton = async () => {
   });
 };
 
-/* ------------------ Host Gift Notifications ------------------ */
-const setupHostGiftListener = () => {
-  if (!currentUser?.isHost) return;
-
-  const hostRef = doc(db, 'users', currentUser.uid);
-
-  // Create notification container
-  let container = document.getElementById('giftNotificationContainer');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'giftNotificationContainer';
-    Object.assign(container.style, {
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      width: '260px',
-      zIndex: '9999',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '10px'
-    });
-    document.body.appendChild(container);
-  }
-
-  let shownGifts = new Set();
-
-  onSnapshot(hostRef, async (snap) => {
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const gifts = data.giftsReceived || [];
-
-    for (const gift of gifts) {
-      if (shownGifts.has(gift.timestamp)) continue;
-      shownGifts.add(gift.timestamp);
-
-      const notif = document.createElement('div');
-      notif.textContent = `🎁 ${gift.fromName || 'VIP'} gifted you ${gift.stars}⭐️!`;
-      Object.assign(notif.style, {
-        backgroundColor: '#fffae6',
-        border: '1px solid #ffd700',
-        borderRadius: '8px',
-        padding: '10px',
-        fontWeight: 'bold',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-        opacity: '0',
-        transform: 'translateX(100%)',
-        transition: 'all 0.5s ease',
-        cursor: 'pointer'
-      });
-
-      container.appendChild(notif);
-
-      // Animate in
-      requestAnimationFrame(() => {
-        notif.style.opacity = '1';
-        notif.style.transform = 'translateX(0)';
-      });
-
-      // Remove after 6s with animation
-      setTimeout(() => {
-        notif.style.opacity = '0';
-        notif.style.transform = 'translateX(100%)';
-        setTimeout(() => notif.remove(), 500);
-      }, 6000);
-
-      // Optional confetti on click
-      notif.addEventListener('click', () => {
-        if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60 });
-        notif.remove();
-      });
-    }
-  });
-};
-
-/* ------------------ Init after user load ------------------ */
-setupVIPButton();
-setupHostGiftListener();
-
 /* ------------------ Host Gift Notification Panel ------------------ */
 const setupHostGiftListener = () => {
   if (!currentUser?.isHost) return;
@@ -1007,7 +929,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === 'Escape') modal?.classList.add('hidden');
   });
 });
-/* ------------------ Init ------------------ */
-window.addEventListener('DOMContentLoaded', () => {
-  loadCurrentUser().catch(err => console.error(err));
+
+/* ------------------ SAFE INIT ------------------ */
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await loadCurrentUser();      // 1️⃣ Fetch Firestore user
+    await setupVIPButton();       // 2️⃣ Set up VIP button (depends on currentUser)
+    await setupHostGiftListener(); // 3️⃣ Host gift alerts (depends on currentUser)
+    console.log('✅ User data + listeners initialized');
+  } catch (err) {
+    console.error('Init error:', err);
+  }
 });
