@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>VIP / Host Signup</title>
 <style>
@@ -97,11 +97,9 @@ footer{width:100%;text-align:center;margin-top:2rem;font-size:0.8rem;color:#aaa;
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-  getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, updateDoc, arrayUnion, orderBy, limit 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, updateDoc, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// FULL Firebase config
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -109,254 +107,162 @@ const firebaseConfig = {
   projectId: "metaverse-1010",
   storageBucket: "metaverse-1010.appspot.com",
   messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-XYZMEASURE"
+  appId: "1:1044064233:web:2fbdfb811cb0a3ba349608"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 document.addEventListener('DOMContentLoaded', () => {
-  let isVIP = false, gender = '';
-  const vipToggle = document.getElementById('vipToggle'), vipLabel = document.getElementById('vipLabel'), vipMessage = document.getElementById('vipMessage');
-  const femaleBtn = document.getElementById('femaleBtn'), maleBtn = document.getElementById('maleBtn');
-  const submitBtn = document.getElementById('submitBtn'), spinner = document.getElementById('spinner'), messageEl = document.getElementById('message');
-  const nameInput = document.getElementById('name'), chatIdInput = document.getElementById('chatId');
-  const phoneInput = document.getElementById('phone'), emailInput = document.getElementById('email');
-  const dobInput = document.getElementById('dob'), fomoPopup = document.getElementById('fomoPopup');
-  const paystackContainer = document.getElementById('paystackContainer');
-  const paystackBtn = document.getElementById('paystackBtn'), paystackSpinner = document.getElementById('paystackSpinner');
+  let isVIP=false, gender='';
+  const vipToggle=document.getElementById('vipToggle'), vipLabel=document.getElementById('vipLabel'), vipMessage=document.getElementById('vipMessage');
+  const femaleBtn=document.getElementById('femaleBtn'), maleBtn=document.getElementById('maleBtn');
+  const submitBtn=document.getElementById('submitBtn'), spinner=document.getElementById('spinner'), messageEl=document.getElementById('message');
+  const nameInput=document.getElementById('name'), chatIdInput=document.getElementById('chatId');
+  const phoneInput=document.getElementById('phone'), emailInput=document.getElementById('email');
+  const dobInput=document.getElementById('dob'), fomoPopup=document.getElementById('fomoPopup');
+  const paystackContainer=document.getElementById('paystackContainer');
+  const paystackBtn=document.getElementById('paystackBtn'), paystackSpinner=document.getElementById('paystackSpinner');
 
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
-  const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
+  const validEmailSuffixes=['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
-  function isValidEmail(email){ return validEmailSuffixes.some(s => email.endsWith(s)); }
-  function calculateAge(dobStr){ const dob = new Date(dobStr); const diff = Date.now() - dob.getTime(); return Math.abs(new Date(diff).getUTCFullYear() - 1970); }
-  async function isChatIdTaken(chatId){ const q = query(collection(db,"users"), where("chatIdLower","==",chatId.toLowerCase())); const snap = await getDocs(q); return !snap.empty; }
+  function isValidEmail(email){ return validEmailSuffixes.some(s=>email.endsWith(s)); }
+  function calculateAge(dobStr){ const dob=new Date(dobStr); const diff=Date.now()-dob.getTime(); return Math.abs(new Date(diff).getUTCFullYear()-1970); }
+  async function isChatIdTaken(chatId){ const q=query(collection(db,"users"),where("chatIdLower","==",chatId.toLowerCase())); const snap=await getDocs(q); return !snap.empty; }
 
-  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g, ''); });
+  phoneInput.addEventListener('input',()=>{ phoneInput.value=phoneInput.value.replace(/\D/g,''); });
 
-  vipToggle.addEventListener('click', () => {
-    isVIP = !isVIP;
-    vipToggle.classList.toggle('on', isVIP);
-    vipLabel.classList.toggle('on', isVIP);
-    vipMessage.style.opacity = isVIP ? '1' : '0';
-    if (isVIP) triggerSprayConfetti();
+  vipToggle.addEventListener('click',()=>{
+    isVIP=!isVIP;
+    vipToggle.classList.toggle('on',isVIP);
+    vipLabel.classList.toggle('on',isVIP);
+    vipMessage.style.opacity=isVIP?'1':'0';
   });
 
-  femaleBtn.addEventListener('click', ()=>{ gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
-  maleBtn.addEventListener('click', ()=>{ gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
+  femaleBtn.addEventListener('click',()=>{ gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
+  maleBtn.addEventListener('click',()=>{ gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
-  const today = new Date(); dobInput.max = new Date(today.getFullYear()-18,today.getMonth(),today.getDate()).toISOString().split('T')[0];
+  const today=new Date(); dobInput.max=new Date(today.getFullYear()-18,today.getMonth(),today.getDate()).toISOString().split('T')[0];
 
-  function triggerSprayConfetti(){
-    const colors=['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const num=50; const rect=vipToggle.getBoundingClientRect();
-    const startX=rect.left+rect.width/2, startY=rect.bottom;
-    for(let i=0;i<num;i++){
-      const p=document.createElement('div');
-      p.style.position='fixed'; p.style.width='6px'; p.style.height='16px'; p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
-      p.style.left=`${startX}px`; p.style.top=`${startY}px`; p.style.opacity='0.9'; p.style.borderRadius='2px'; p.style.pointerEvents='none'; p.style.zIndex='9999';
-      document.body.appendChild(p);
-      const angle=(Math.random()*Math.PI/2)-Math.PI/4;
-      const speed=300+Math.random()*200;
-      const dur=1500+Math.random()*500;
-      const start=performance.now();
-      (function anim(time){const t=(time-start)/dur;if(t<1){const dx=Math.sin(angle)*speed*t; const dy=-Math.cos(angle)*speed*t; p.style.transform=`translate(${dx}px,${dy}px) rotate(${t*720}deg)`; p.style.opacity=`${1-t}`; requestAnimationFrame(anim);} else{p.remove();}})(start);
-    }
-  }
-
-  // --- FOMO (exact behavior restored) ---
   async function fetchRecentUsers(){
-    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
-    const snap = await getDocs(q);
-    const users = [];
-    snap.forEach(d => {
-      const data = d.data();
-      users.push({
-        fullName: data.fullName,
-        isVIP: data.isVIP,
-        chatId: data.chatId,
-        usernameColor: data.usernameColor || '#fff'
-      });
-    });
+    const q=query(collection(db,"users"),orderBy("createdAt","desc"),limit(10));
+    const snap=await getDocs(q);
+    const users=[];
+    snap.forEach(d=>{ const data=d.data(); users.push({fullName:data.fullName,isVIP:data.isVIP,chatId:data.chatId,usernameColor:data.usernameColor}); });
     return users;
   }
 
   async function showFOMO(){
-    const users = await fetchRecentUsers();
-    if(users.length === 0) return;
-    let index = 0;
+    const users=await fetchRecentUsers(); if(users.length===0) return;
+    let index=0;
     setInterval(()=>{
-      const u = users[index % users.length];
-      fomoPopup.innerHTML = `<span style="font-weight:bold;color:${u.usernameColor}">${u.chatId}</span> just joined as a ${u.isVIP ? 'VIP' : 'Host'} ${u.isVIP ? '🎉' : '🎈'}`;
-      fomoPopup.style.opacity = '1';
-      setTimeout(()=>{ fomoPopup.style.opacity = '0'; }, 3000);
+      const u=users[index%users.length];
+      fomoPopup.innerHTML=`<span style="font-weight:bold;color:${u.usernameColor}">${u.chatId}</span> just joined as a ${u.isVIP?'VIP':'Host'} ${u.isVIP?'🎉':'🎈'}`;
+      fomoPopup.style.opacity='1';
+      setTimeout(()=>{ fomoPopup.style.opacity='0'; },3000);
       index++;
-    }, 10000);
+    },10000);
   }
   showFOMO();
 
-  // --- Save user (keeps no-jam pattern) ---
-  async function saveUser(isVipPaid = false){
-    spinner.style.display = 'inline-block';
-    submitBtn.querySelector('.btn-text').style.display = 'none';
-    submitBtn.disabled = true;
+  async function saveUser(isVipPaid=false){
+    spinner.style.display='inline-block';
+    submitBtn.querySelector('.btn-text').style.display='none';
+    submitBtn.disabled=true;
 
-    const fullName = nameInput.value.trim();
-    const chatId = cleanChatId(chatIdInput.value.trim());
-    const phone = phoneInput.value.trim();
-    const email = emailInput.value.trim().toLowerCase();
-    const dob = dobInput.value;
-    const age = calculateAge(dob);
-    const uidKey = sanitizeKey(email);
+    const fullName=nameInput.value.trim();
+    const chatId=cleanChatId(chatIdInput.value.trim());
+    const phone=phoneInput.value.trim();
+    const email=emailInput.value.trim().toLowerCase();
+    const dob=dobInput.value;
+    const age=calculateAge(dob);
+    const uidKey=sanitizeKey(email);
 
-    // Build default hostName: will be overwritten by referrer chatId if exists
     let hostNameValue = chatId;
-
-    // Try read referrer doc quickly (this is awaited here — as in your original — to set hostName before write)
     if(referrer){
-      try {
-        const refSnap = await getDoc(doc(db, "users", sanitizeKey(referrer)));
-        if(refSnap.exists()){
-          const refData = refSnap.data();
-          hostNameValue = refData.chatId || chatId;
-        }
-      } catch(e){
-        console.warn('Referrer read failed (non-fatal):', e);
-      }
+      const refDocKey = sanitizeKey(referrer);
+      const refSnap = await getDoc(doc(db,"users",refDocKey));
+      if(refSnap.exists()){ hostNameValue = refSnap.data().chatId || chatId; }
     }
 
-    // Location: fetch but do not block signup; create a placeholder, will be overwritten if fetch returns quickly.
-    let locationString = 'Unknown';
-    fetch('https://ipapi.co/json/').then(res => res.json()).then(data => {
-      const parts = [];
-      if(data.city) parts.push(data.city);
-      if(data.region) parts.push(data.region);
-      if(data.country_name) parts.push(data.country_name);
-      const loc = parts.join(', ');
-      if(loc) {
-        locationString = loc;
-        // Try to patch user doc later if already created
-        const userDocRef = doc(db, "users", uidKey);
-        getDoc(userDocRef).then(snap => {
-          if(snap.exists()){
-            updateDoc(userDocRef, { location: loc }).catch(()=>{});
-          }
-        }).catch(()=>{});
-      }
-    }).catch(err => { console.warn('Location fetch failed:', err); });
+    // dynamic country (example placeholder, can use real API later)
+    const country = 'Nigeria'; // replace with IP lookup if needed
 
-    const userData = {
-      chatId,
-      chatIdLower: chatId.toLowerCase(),
-      fullName,
-      stars: 50,
-      starsToday: 0,
-      starsGifted: 0,
-      lastStarDate: new Date().toISOString().split("T")[0],
-      cash: 0,
-      usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
-      isAdmin: false,
-      isVIP: isVIP,
-      isHost: !isVIP,
-      hostLink: !isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
-      hostName: hostNameValue,
-      invitedBy: referrer ? sanitizeKey(referrer) : null,
-      dob,
-      age,
-      gender,
-      email,
-      phone,
-      country: 'Nigeria', // default, kept as in your code
-      socialShare: !isVIP,
-      subscriptionActive: !isVIP,
-      createdAt: new Date().toISOString(),
-      location: locationString
+    const userData={
+      chatId, chatIdLower:chatId.toLowerCase(), fullName, stars:50, starsToday:0, starsGifted:0,
+      lastStarDate:new Date().toISOString().split("T")[0], cash:0,
+      usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+      isAdmin:false, isVIP:isVIP, isHost:!isVIP,
+      hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+      hostName:hostNameValue, invitedBy:referrer, dob, age, gender, email, phone,
+      country, socialShare:!isVIP, subscriptionActive:!isVIP, createdAt:new Date().toISOString()
     };
 
-    try {
-      await setDoc(doc(db, "users", uidKey), userData);
+    try{
+      await setDoc(doc(db,"users",uidKey), userData);
 
-      // Update referrer counters non-blocking but following your original pattern
       if(referrer){
-        (async () => {
-          try {
-            const refDocKey = sanitizeKey(referrer);
-            const refDocRef = doc(db, "users", refDocKey);
-            const refSnap = await getDoc(refDocRef);
-            if(refSnap.exists()){
-              const refData = refSnap.data();
-              const bonus = isVipPaid ? 100 : 50;
-              const hostFriendsCount = refData.hostFriendsCount || 0;
-              const hostVIP = refData.hostVIP || 0;
-
-              await updateDoc(refDocRef, {
-                stars: (refData.stars || 0) + bonus,
-                starsGifted: (refData.starsGifted || 0) + bonus,
-                hostFriends: arrayUnion({ chatId, chatIdLower: chatId.toLowerCase(), isVIP: isVIP, gifted: bonus }),
-                hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
-                hostVIP: isVIP ? hostVIP + 1 : hostVIP
-              });
-
-              // Ensure new user's hostName = inviter chatId
-              const inviterChat = refData.chatId || null;
-              if(inviterChat){
-                await updateDoc(doc(db, "users", uidKey), { hostName: inviterChat }).catch(()=>{});
-              }
-            }
-          } catch(e){
-            console.warn('Referrer update failed (non-blocking):', e);
-          }
-        })();
+        const refDocKey = sanitizeKey(referrer);
+        const refDocRef = doc(db,"users",refDocKey);
+        const refSnap = await getDoc(refDocRef);
+        if(refSnap.exists()){
+          const refData = refSnap.data();
+          const bonus = isVipPaid ? 100 : 50;
+          const hostFriendsCount = refData.hostFriendsCount || 0;
+          const hostVIP = refData.hostVIP || 0;
+          await updateDoc(refDocRef,{
+            stars: refData.stars + bonus,
+            starsGifted: refData.starsGifted + bonus,
+            hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus }),
+            hostFriendsCount: !isVIP ? hostFriendsCount + 1 : hostFriendsCount,
+            hostVIP: isVIP ? hostVIP + 1 : hostVIP
+          });
+        }
       }
 
-      // UI success flow (same as your original)
-      spinner.style.display = 'none';
-      submitBtn.querySelector('.btn-text').style.display = 'inline';
-      submitBtn.disabled = false;
-      submitBtn.style.display = 'none'; // hide submit as before
-      messageEl.textContent = "✅ Signup successful!";
-      if(!isVIP) window.location.href = 'nushop.html';
-      else paystackContainer.style.display = 'flex';
+      spinner.style.display='none';
+      submitBtn.querySelector('.btn-text').style.display='inline';
+      submitBtn.disabled=false;
+      submitBtn.style.display='none'; // disappear after signup
+      messageEl.textContent="✅ Signup successful!";
+
+      if(!isVIP) window.location.href='nushop.html';
+      else paystackContainer.style.display='flex';
 
     } catch(e){
       console.error(e);
-      spinner.style.display = 'none';
-      submitBtn.querySelector('.btn-text').style.display = 'inline';
-      submitBtn.disabled = false;
-      messageEl.textContent = "❌ Signup failed.";
+      spinner.style.display='none';
+      submitBtn.querySelector('.btn-text').style.display='inline';
+      submitBtn.disabled=false;
+      messageEl.textContent="❌ Signup failed.";
     }
   }
 
-  // Main submit handler (validations kept identical)
-  submitBtn.addEventListener('click', async () => {
-    const fullName = nameInput.value.trim(), chatIdRaw = chatIdInput.value.trim(), phone = phoneInput.value.trim();
-    const email = emailInput.value.trim(), dob = dobInput.value;
-    if(!fullName || !chatIdRaw || !phone || !email || !gender || !dob){ messageEl.textContent = 'Please fill all fields.'; return; }
-    if(calculateAge(dob) < 18){ messageEl.textContent = 'You must be 18+'; return; }
-    if(!isValidEmail(email)){ messageEl.textContent = 'Invalid email domain'; return; }
-    if(await isChatIdTaken(cleanChatId(chatIdRaw))){ messageEl.textContent = 'ChatId taken'; return; }
+  submitBtn.addEventListener('click', async ()=>{
+    const fullName=nameInput.value.trim(), chatId=chatIdInput.value.trim(), phone=phoneInput.value.trim();
+    const email=emailInput.value.trim(), dob=dobInput.value;
+    if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill all fields.'; return; }
+    if(calculateAge(dob)<18){ messageEl.textContent='You must be 18+'; return; }
+    if(!isValidEmail(email)){ messageEl.textContent='Invalid email domain'; return; }
+    if(gender!=='Female'){ messageEl.textContent='Only females can sign up as hosts'; return; }
+    if(await isChatIdTaken(cleanChatId(chatId))){ messageEl.textContent='ChatId taken'; return; }
     saveUser(false);
   });
 
-  // Paystack (simulated) — same flow as original
   paystackBtn.addEventListener('click', async ()=>{
     paystackSpinner.style.display='inline-block'; paystackBtn.querySelector('.btn-text').style.display='none'; paystackBtn.disabled=true;
     setTimeout(async ()=>{
       paystackSpinner.style.display='none'; paystackBtn.querySelector('.btn-text').style.display='inline'; paystackBtn.disabled=false;
-      const uidKey = sanitizeKey(emailInput.value.trim().toLowerCase());
-      await updateDoc(doc(db,"users", uidKey), { subscriptionActive: true }).catch(()=>{});
-      messageEl.textContent = "🎉 VIP Activated! Redirecting...";
+      const uidKey=sanitizeKey(emailInput.value.trim().toLowerCase());
+      await updateDoc(doc(db,"users",uidKey),{ subscriptionActive:true });
+      messageEl.textContent="🎉 VIP Activated! Redirecting...";
       window.location.href='nushop.html';
-    }, 2000);
+    },2000);
   });
-
-  // small helper: sanitizeKey (redeclared inside to avoid hoisting issues)
-  function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
 
 });
 </script>
