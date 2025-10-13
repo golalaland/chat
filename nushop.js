@@ -250,6 +250,7 @@ const loadCurrentUser = async () => {
     const userRef = doc(db, 'users', uid);
     const snap = await getDoc(userRef);
 
+    // --- Fallback user if not in Firestore ---
     if (!snap.exists()) {
       currentUser = {
         uid,
@@ -271,12 +272,14 @@ const loadCurrentUser = async () => {
         storedUser.displayName ||
         storedUser.email.split('@')[0] ||
         'Guest';
+
     if (DOM.stars)
       DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     if (DOM.cash)
       DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
     if (DOM.hostTabs)
       DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+
     updateHostPanels();
 
     // --- Update host stats if invited ---
@@ -284,6 +287,7 @@ const loadCurrentUser = async () => {
       await updateHostStats({
         email: currentUser.email || '',
         chatId: currentUser.chatId || '',
+        vipName: currentUser.chatId || '',
         isVIP: currentUser.isVIP || false,
         isHost: currentUser.isHost || false,
         invitedBy: currentUser.invitedBy
@@ -307,6 +311,7 @@ const loadCurrentUser = async () => {
       if (!data) return;
       currentUser = { uid, ...data };
 
+      // Update UI live
       if (DOM.username)
         DOM.username.textContent =
           currentUser.chatId ||
@@ -326,11 +331,9 @@ const loadCurrentUser = async () => {
       /* --- Invitee reward flow --- */
       try {
         if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
-          // Use hostName for display if available, otherwise fallback to invitedBy
           let inviterName = data.hostName || data.invitedBy;
 
           try {
-            // Use invitedBy (sanitized email) to look up inviter’s Firestore doc
             const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
             const invSnap = await getDoc(invRef);
             if (invSnap.exists()) {
@@ -344,14 +347,12 @@ const loadCurrentUser = async () => {
             console.warn('Could not fetch inviter details:', err);
           }
 
-          // Reward invitee for joining
           const inviteeStars = data.inviteeGiftStars || 50;
           showReward(
             `You’ve been gifted +${inviteeStars}⭐️ for joining ${inviterName}’s VIP Tab.`,
             '⭐ Congratulations! ⭐️'
           );
 
-          // Mark as shown
           await updateDoc(userRef, { inviteeGiftShown: true });
         }
       } catch (e) {
@@ -363,7 +364,7 @@ const loadCurrentUser = async () => {
         const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
         const pending = friendsArr.find(f => !f.giftShown && f.email);
         if (pending) {
-          const friendName = pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
+          const friendName = pending.vipName || pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
           const inviterStars = pending.giftStars || 200;
           showReward(
             `You’ve been gifted +${inviterStars}⭐️, ${friendName} just joined your Tab.`,
@@ -408,11 +409,9 @@ const renderTabContent = (type) => {
         <div class="stat-label">VIPs Signed Up</div>
       </div>
     `;
-    // Removed Copy VIP Link from VIP tab
   } else if (type === 'friends') {
     renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
 
-    // Add Invite Friends button
     const btn = document.createElement('button');
     btn.id = 'inviteFriendsBtn';
     btn.className = 'themed-btn';
@@ -420,8 +419,7 @@ const renderTabContent = (type) => {
     DOM.tabContent.appendChild(btn);
 
     btn.addEventListener('click', () => {
-      // Custom message + referral link
-      const message = `Hey! i'm hosting on xixi live, join my tab and lets win some together,  Sign up using my link: `;
+      const message = `Hey! I'm hosting on xixi live, join my tab and let’s win together 🎉 Sign up using my link: `;
       const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
       const fullText = message + link;
 
@@ -440,7 +438,6 @@ const renderTabContent = (type) => {
     `;
   }
 };
-
 /* ------------------ Friends rendering ------------------ */
 function renderFriendsList(container, friends) {
   container.innerHTML = '';
