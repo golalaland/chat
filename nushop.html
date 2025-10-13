@@ -324,6 +324,26 @@ header {
   to { transform: rotate(360deg); }
 }
 
+#vipFloatingBtn {
+  display: none;           /* hidden by default */
+  position: fixed;         /* floats above content */
+  bottom: 20px;            /* distance from bottom */
+  right: 20px;             /* distance from right */
+  z-index: 9999;           /* above other elements */
+  padding: 12px 20px;
+  background-color: #ffcc00;
+  color: #000;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+
+#vipFloatingBtn:hover {
+  transform: scale(1.05);
+}
+
 /* IMAGE PREVIEW */
 #imagePreview {
   position: fixed;
