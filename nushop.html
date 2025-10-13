@@ -1,4 +1,4 @@
-. <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -322,93 +322,6 @@ header {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* Floating Ticket Button */
-.vip-ticket {
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #ff5f6d, #ffc371);
-  border-radius: 50%;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  cursor: pointer;
-  z-index: 999;
-  animation: pulse 2s infinite;
-}
-.vip-ticket svg {
-  width: 28px;
-  height: 28px;
-}
-@keyframes pulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,99,71,0.4); }
-  70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(255,99,71,0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,99,71,0); }
-}
-
-/* Modal Overlay */
-.vip-modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(6px);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-/* Modal Content */
-.vip-modal-content {
-  background: #1c1c1e;
-  color: #fff;
-  border-radius: 16px;
-  padding: 25px 20px;
-  width: 90%;
-  max-width: 320px;
-  text-align: center;
-  animation: slideUp 0.3s ease-out;
-}
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-.vip-modal-content h3 {
-  font-weight: 500;
-  margin-bottom: 20px;
-}
-.vip-action {
-  display: block;
-  width: 100%;
-  border: none;
-  border-radius: 10px;
-  margin: 10px 0;
-  padding: 12px;
-  font-size: 15px;
-  color: #fff;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-.vip-action:hover {
-  transform: scale(1.03);
-}
-.leave-tab {
-  background: #ff5f6d;
-}
-.gift-tab {
-  background: #ffb347;
-}
-.vip-action small {
-  display: block;
-  font-size: 12px;
-  opacity: 0.8;
 }
 
 /* IMAGE PREVIEW */
@@ -760,28 +673,7 @@ header {
   </div>
 </div>
 
-<!-- VIP Floating Ticket Button (only visible to VIPs) -->
-<div class="vip-ticket" id="vipTicket" style="display:none;" title="Open VIP Menu">
-  <!-- SVG Ticket Icon -->
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 8a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2zm10-8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2h-4a2 2 0 01-2-2V7zm0 8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2z" />
-  </svg>
-</div>
 
-<!-- VIP Modal -->
-<div class="vip-modal" id="vipModal">
-  <div class="vip-modal-content" id="vipModalContent">
-    <h3>You’re on <span id="vipHostName">HostName</span>’s Tab</h3>
-    <button class="vip-action leave-tab" id="leaveTabBtn">
-      Leave <span id="leaveHostName">HostName</span>’s Tab  
-      <small>Cost: 500 ⭐️</small>
-    </button>
-    <button class="vip-action gift-tab" id="giftTabBtn">
-      Gift <span id="giftHostName">HostName</span> a Flower 💐  
-      <small>Cost: 1,500 ⭐️</small>
-    </button>
-  </div>
-</div>
 
 <!-- Host Tabs -->
 <div class="host-tabs" id="hostTabs" style="display:none;">
