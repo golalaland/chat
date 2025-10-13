@@ -291,10 +291,6 @@ const loadCurrentUser = async () => {
       updateHostPanels();
       renderShop().catch(console.error);
       
-            // Re-setup VIP / Host features dynamically once user is loaded
-      setupVIPButton();
-      setupHostGiftListener();
-
       // --- Invitee reward: dynamic gift count ---
       try {
         if (data.invitedBy && data.inviteeGiftShown !== true) {
