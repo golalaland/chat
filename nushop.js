@@ -283,28 +283,26 @@ const loadCurrentUser = async () => {
         stars: 0,
         cash: 0,
         isHost: false,
-        chatId: storedUser.displayName || storedUser.email.split('@')[0]
+        chatId: storedUser.displayName || storedUser.email.split('@')[0],
+        vipName: storedUser.vipName || storedUser.displayName || ''
       };
       if (DOM.username) DOM.username.textContent = currentUser.chatId;
       return;
     }
 
-    currentUser = { uid, ...snap.data() };
+    // --- Merge Firestore + local VIP name ---
+    const data = snap.data();
+    currentUser = {
+      uid,
+      ...data,
+      vipName: storedUser.vipName || data.vipName || data.chatId
+    };
 
     // --- Update UI ---
-    if (DOM.username)
-      DOM.username.textContent =
-        currentUser.chatId ||
-        storedUser.displayName ||
-        storedUser.email.split('@')[0] ||
-        'Guest';
-
-    if (DOM.stars)
-      DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    if (DOM.cash)
-      DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-    if (DOM.hostTabs)
-      DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+    if (DOM.username) DOM.username.textContent = currentUser.chatId || 'Guest';
+    if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+    if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
 
     updateHostPanels();
 
@@ -322,95 +320,81 @@ const loadCurrentUser = async () => {
 
     // --- Setup VIP/Host features ---
     try {
-      if (currentUser.isVIP) {
-        setupVIPButton();
-      } else if (currentUser.isHost) {
-        setupHostGiftListener();
-      }
+      if (currentUser.isVIP) setupVIPButton();
+      else if (currentUser.isHost) setupHostGiftListener();
     } catch (e) {
       console.error('Failed to initialize VIP/Host features:', e);
     }
 
+    // --- Persist VIP name locally ---
+    if (currentUser.isVIP) {
+      const storedVIP = JSON.parse(localStorage.getItem('vipUser') || '{}');
+      storedVIP.vipName = currentUser.vipName;
+      localStorage.setItem('vipUser', JSON.stringify(storedVIP));
+    }
+
     // --- Subscribe to realtime updates ---
     onSnapshot(userRef, async (docSnap) => {
+      if (!docSnap.exists()) return;
       const data = docSnap.data();
-      if (!data) return;
       currentUser = { uid, ...data };
 
       // Update UI live
-      if (DOM.username)
-        DOM.username.textContent =
-          currentUser.chatId ||
-          storedUser.displayName ||
-          storedUser.email.split('@')[0] ||
-          'Guest';
-      if (DOM.stars)
-        DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-      if (DOM.cash)
-        DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-      if (DOM.hostTabs)
-        DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
-
+      if (DOM.username) DOM.username.textContent = currentUser.chatId || 'Guest';
+      if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+      if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+      if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
       updateHostPanels();
-      renderShop().catch(console.error);
+      await renderShop();
 
       /* ------------------ Invitee + Inviter + VIP gifting flow ------------------ */
-try {
-  // --- Invitee reward (user joined via host/VIP) ---
-  if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
-    let inviterName = data.hostName || data.invitedBy;
+      try {
+        // --- Invitee reward ---
+        if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
+          let inviterName = data.hostName || data.invitedBy;
+          try {
+            const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
+            const invSnap = await getDoc(invRef);
+            if (invSnap.exists()) {
+              const invData = invSnap.data();
+              inviterName = invData.chatId || invData.hostName || (invData.email ? invData.email.split('@')[0] : inviterName);
+            }
+          } catch (err) {
+            console.warn('Could not fetch inviter details:', err);
+          }
+          const inviteeStars = data.inviteeGiftStars || 50;
+          showReward(`You’ve been gifted +${inviteeStars}⭐️ for joining <b>${inviterName}</b>’s VIP Tab.`, '⭐ Congratulations! ⭐️');
+          await updateDoc(userRef, { inviteeGiftShown: true });
+        }
 
-    try {
-      const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
-      const invSnap = await getDoc(invRef);
-      if (invSnap.exists()) {
-        const invData = invSnap.data();
-        inviterName =
-          invData.chatId ||
-          invData.hostName ||
-          (invData.email ? invData.email.split('@')[0] : inviterName);
+        // --- Inviter reward ---
+        const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
+        const pending = friendsArr.find(f => !f.giftShown && f.email);
+        if (pending) {
+          const friendName = pending.vipName || pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
+          const inviterStars = pending.giftStars || 200;
+          showReward(`You’ve been gifted +${inviterStars}⭐️, <b>${friendName}</b> just joined your Tab.`, '⭐ Congratulations! ⭐️');
+          const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
+          await updateDoc(userRef, { hostFriends: updated });
+        }
+
+        // --- VIP gifting a host ---
+        if (data.giftedByVIP && !data.giftReceivedShown) {
+          const vipName = data.giftedByVIP;
+          const productName = data.giftedProduct || 'Gifted Item';
+          showReward(`You’ve received <b>${productName}</b> from <b>${vipName}</b>!`, '🎁 Gift Received!');
+          await updateDoc(userRef, { giftReceivedShown: true });
+        }
+      } catch (e) {
+        console.error('Reward flow error', e);
       }
-    } catch (err) {
-      console.warn('Could not fetch inviter details:', err);
-    }
-
-    const inviteeStars = data.inviteeGiftStars || 50;
-    showReward(
-      `You’ve been gifted +${inviteeStars}⭐️ for joining <b>${inviterName}</b>’s VIP Tab.`,
-      '⭐ Congratulations! ⭐️'
-    );
-
-    await updateDoc(userRef, { inviteeGiftShown: true });
+    });
+  } catch (err) {
+    console.error('Load currentUser error:', err);
+  } finally {
+    hideSpinner();
   }
-
-  // --- Inviter reward (host sees new VIP friend) ---
-  const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-  const pending = friendsArr.find(f => !f.giftShown && f.email);
-  if (pending) {
-    const friendName = pending.vipName || pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
-    const inviterStars = pending.giftStars || 200;
-    showReward(
-      `You’ve been gifted +${inviterStars}⭐️, <b>${friendName}</b> just joined your Tab.`,
-      '⭐ Congratulations! ⭐️'
-    );
-
-    const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
-    await updateDoc(userRef, { hostFriends: updated });
-  }
-
-  // --- VIP gifting a host (bonus for host) ---
-  if (data.giftedByVIP && !data.giftReceivedShown) {
-    const vipName = data.giftedByVIP;
-    const productName = data.giftedProduct || 'Gifted Item';
-    showReward(
-      `You’ve received <b>${productName}</b> from <b>${vipName}</b>!`,
-      '🎁 Gift Received!'
-    );
-    await updateDoc(userRef, { giftReceivedShown: true });
-  }
-} catch (e) {
-  console.error('Reward flow error', e);
-}
+};
 
 /* ------------------ Host panels ------------------ */
 const updateHostPanels = () => {
@@ -574,68 +558,67 @@ const renderMyOrders = async () => {
 };
 
 /* ------------------ Shop rendering + card creation ------------------ */
-/* ------------------ Shop rendering + card creation ------------------ */
 const createProductCard = (product) => {
+  // --- Skip host-only items for non-hosts ---
+  if (product.hostOnly && !currentUser?.isHost) return null;
+
   const card = document.createElement('div');
   card.className = 'product-card';
 
-  // Image (preview only)
+  // --- Image (preview) ---
   const img = document.createElement('img');
   img.src = product.img || 'https://via.placeholder.com/300';
   img.alt = product.name || 'Item';
   img.addEventListener('click', () => previewImage(img.src));
 
-  // Availability badge
+  // --- Availability badge ---
   const badge = document.createElement('span');
   badge.className = 'availability-badge';
   const avail = Number(product.available) || 0;
   badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
   if (avail <= 0) badge.style.background = '#666';
 
-  // Title - clicking the name opens the description modal
+  // --- Title ---
   const title = document.createElement('h3');
   title.textContent = product.name || 'Unnamed';
   title.className = 'product-title';
   title.style.cursor = 'pointer';
-  title.addEventListener('click', () => openProductModal(product)); // <— this triggers description modal
+  title.addEventListener('click', () => openProductModal(product));
 
-  // Price
+  // --- Price ---
   const price = document.createElement('div');
   price.className = 'price';
   price.textContent = `${Number(product.cost) || 0} ⭐`;
 
-  // Redeem button
+  // --- Redeem button ---
   const btn = document.createElement('button');
   btn.className = 'buy-btn';
-  btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
-  if (avail <= 0 || (product.hostOnly && currentUser && !currentUser.isHost) ||
-      (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
-    btn.disabled = true;
-  }
+  btn.textContent = 'Redeem';
+  btn.disabled =
+    avail <= 0 ||
+    (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser?.cash || 0) <= 0);
+
   btn.addEventListener('click', () => {
-  if (currentUser?.isVIP && product.hostOnly) {
-    openGiftModal(product); // VIP gifting to their host only
-  } else {
-    redeemProduct(product); // Normal redemption
-  }
-});
+    if (currentUser?.isVIP && product.hostOnly) {
+      redeemGift(product, { uid: currentUser.hostUid, chatId: currentUser.hostName });
+    } else {
+      redeemProduct(product);
+    }
+  });
 
-  // Assemble the card
   card.append(badge, img, title, price, btn);
-
   return card;
 };
 
+/* ------------------ Normal Redemption ------------------ */
 const redeemProduct = async (product) => {
   if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
   if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
   if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
   if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
 
-  showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
-    // Show spinner immediately
+  showConfirmModal(`Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
     showSpinner();
-
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const productRef = doc(db, 'shopItems', String(product.id));
@@ -649,6 +632,7 @@ const redeemProduct = async (product) => {
         const uData = uSnap.data(), pData = pSnap.data();
         const cost = Number(pData.cost) || 0;
         const available = Number(pData.available) || 0;
+
         if (Number(uData.stars) < cost) throw new Error('Not enough stars');
         if (available <= 0) throw new Error('Out of stock');
 
@@ -662,11 +646,10 @@ const redeemProduct = async (product) => {
 
         t.update(userRef, { stars: newStars, cash: newCash });
         t.update(productRef, { available: available - 1 });
-        const purchasesCol = collection(db, 'purchases');
-        t.set(doc(purchasesCol), {
+
+        t.set(doc(collection(db, 'purchases')), {
           userId: currentUser.uid,
           email: uData.email || '',
-          phone: uData.phone || '',
           productId: String(pData.id),
           productName: pData.name,
           cost,
@@ -676,85 +659,79 @@ const redeemProduct = async (product) => {
         });
       });
 
+      // --- Update UI ---
       const prevStars = parseNumberFromText(DOM.stars.textContent);
       const prevCash = parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars = newStars; currentUser.cash = newCash;
+      currentUser.stars = newStars;
+      currentUser.cash = newCash;
       animateNumber(DOM.stars, prevStars, newStars);
       animateNumber(DOM.cash, prevCash, newCash);
       await renderShop();
       triggerConfetti();
+
       if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
       else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
       else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
-    } catch (e) {
-      console.error(e);
-      showThemedMessage('Redemption Failed', e.message || 'Try again');
+
+    } catch (err) {
+      console.error(err);
+      showThemedMessage('Redemption Failed', err.message || 'Try again');
     } finally {
-      // Hide spinner after processing with fade-out
       hideSpinner();
     }
   });
 };
 
+/* ------------------ VIP Gift to Host ------------------ */
 async function redeemGift(product, host) {
   if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
   if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
 
-  showConfirmModal(
-    'Confirm Gift',
-    `Gift "${product.name}" to your host?`,
-    async () => {
-      showSpinner();
-      try {
-        const hostRef = doc(db, 'users', host.uid);
-        const productRef = doc(db, 'shopItems', String(product.id));
+  showConfirmModal(`Gift "${product.name}" to your host?`, async () => {
+    showSpinner();
+    try {
+      const hostRef = doc(db, 'users', host.uid);
+      const productRef = doc(db, 'shopItems', String(product.id));
 
-        await runTransaction(db, async (t) => {
-          const [hSnap, pSnap] = await Promise.all([t.get(hostRef), t.get(productRef)]);
-          if (!hSnap.exists()) throw new Error('Host not found');
-          if (!pSnap.exists()) throw new Error('Product not found');
+      await runTransaction(db, async (t) => {
+        const [hSnap, pSnap] = await Promise.all([t.get(hostRef), t.get(productRef)]);
+        if (!hSnap.exists()) throw new Error('Host not found');
+        if (!pSnap.exists()) throw new Error('Product not found');
 
-          const hData = hSnap.data();
-          const available = Number(pSnap.data().available) || 0;
-          if (available <= 0) throw new Error('Product out of stock');
+        const hData = hSnap.data();
+        const available = Number(pSnap.data().available) || 0;
+        if (available <= 0) throw new Error('Product out of stock');
 
-          t.update(hostRef, {
-            hostFriends: [...(hData.hostFriends || []), {
-              giftedBy: currentUser.chatId || currentUser.vipName,
-              productName: product.name,
-              timestamp: serverTimestamp()
-            }]
-          });
-
-          t.update(productRef, { available: available - 1 });
-
-          const purchasesCol = collection(db, 'purchases');
-          t.set(doc(purchasesCol), {
-            userId: host.uid,
-            productId: product.id,
-            productName: product.name,
+        t.update(hostRef, {
+          hostFriends: [...(hData.hostFriends || []), {
             giftedBy: currentUser.chatId || currentUser.vipName,
+            productName: product.name,
             timestamp: serverTimestamp()
-          });
+          }]
         });
 
-        showReward(
-          `You’ve gifted <b>${product.name}</b> to <b>${host.chatId || host.hostName}</b>!`,
-          '🎁 Gift Sent!'
-        );
-        triggerConfetti();
-      } catch (err) {
-        console.error(err);
-        showThemedMessage('Gift Failed', err.message || 'Try again');
-      } finally {
-        hideSpinner();
-      }
+        t.update(productRef, { available: available - 1 });
+
+        t.set(doc(collection(db, 'purchases')), {
+          userId: host.uid,
+          productId: product.id,
+          productName: product.name,
+          giftedBy: currentUser.chatId || currentUser.vipName,
+          timestamp: serverTimestamp()
+        });
+      });
+
+      showReward(`You’ve gifted <b>${product.name}</b> to <b>${host.chatId || host.hostName}</b>!`, '🎁 Gift Sent!');
+      triggerConfetti();
+
+    } catch (err) {
+      console.error(err);
+      showThemedMessage('Gift Failed', err.message || 'Try again');
+    } finally {
+      hideSpinner();
     }
-  );
+  });
 }
-
-
-/* ------------------ Render shop ------------------ */
 /* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
@@ -769,12 +746,10 @@ const renderShop = async () => {
     }
 
     let delay = 0;
-    DOM.shopItems.innerHTML = ''; // clear
+    DOM.shopItems.innerHTML = ''; // clear container
 
-    // ForEach on QuerySnapshot
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
-      // Ensure product object contains id + description (if present)
       const product = {
         id: docSnap.id,
         name: data.name || '',
@@ -783,18 +758,29 @@ const renderShop = async () => {
         available: data.available || 0,
         hostOnly: data.hostOnly || false,
         cashReward: data.cashReward || 0,
-        description: data.description || data.desc || '' // support either field name
+        description: data.description || data.desc || '' // support both fields
       };
 
+      // --- Create card; skip if null (non-hosts cannot see host-only items) ---
       const card = createProductCard(product);
+      if (!card) return;
+
+      // --- Fade-in animation ---
       card.style.opacity = '0';
       card.style.animation = `fadeInUp 0.35s forwards`;
       card.style.animationDelay = `${delay}s`;
       delay += 0.05;
+
       DOM.shopItems.appendChild(card);
     });
-  } catch (e) {
-    console.error(e);
+
+    // If no cards were added (all host-only hidden), show message
+    if (!DOM.shopItems.hasChildNodes()) {
+      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items available</div>';
+    }
+
+  } catch (err) {
+    console.error(err);
     DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
   } finally {
     hideSpinner();
