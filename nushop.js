@@ -944,9 +944,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ------------------ SAFE INIT ------------------ */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    await loadCurrentUser();      // 1️⃣ Fetch Firestore user
-    await setupVIPButton();       // 2️⃣ Set up VIP button (depends on currentUser)
-    await setupHostGiftListener(); // 3️⃣ Host gift alerts (depends on currentUser)
+    await loadCurrentUser(); // 👈🏽 this alone handles everything
     console.log('✅ User data + listeners initialized');
   } catch (err) {
     console.error('Init error:', err);
