@@ -610,128 +610,129 @@ const createProductCard = (product) => {
   return card;
 };
 
-/* ------------------ Normal Redemption ------------------ */
+// ------------------ Redeem a product ------------------
 const redeemProduct = async (product) => {
-  if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
-  if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
-  if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
-  if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
+  if (!currentUser) return showThemedMessage('Error', 'User not loaded');
 
-  showConfirmModal(`Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
-    showSpinner();
-    try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      const productRef = doc(db, 'shopItems', String(product.id));
-      let newStars = 0, newCash = 0, redeemedCash = 0;
+  showConfirmModal(
+    `Redeem "${product.name}" for ${product.cost} ⭐?`,
+    `Are you sure you want to redeem "${product.name}"?`,
+    async () => {
+      showSpinner();
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const productRef = doc(db, 'shopItems', String(product.id));
+        let newStars = 0, newCash = 0, redeemedCash = 0;
 
-      await runTransaction(db, async (t) => {
-        const [uSnap, pSnap] = await Promise.all([t.get(userRef), t.get(productRef)]);
-        if (!uSnap.exists()) throw new Error('User not found');
-        if (!pSnap.exists()) throw new Error('Product not found');
+        await runTransaction(db, async (t) => {
+          const [uSnap, pSnap] = await Promise.all([t.get(userRef), t.get(productRef)]);
+          if (!uSnap.exists()) throw new Error('User not found');
+          if (!pSnap.exists()) throw new Error('Product not found');
 
-        const uData = uSnap.data(), pData = pSnap.data();
-        const cost = Number(pData.cost) || 0;
-        const available = Number(pData.available) || 0;
+          const uData = uSnap.data();
+          const pData = pSnap.data();
+          const cost = Number(pData.cost || 0);
+          const available = Number(pData.available || 0);
 
-        if (Number(uData.stars) < cost) throw new Error('Not enough stars');
-        if (available <= 0) throw new Error('Out of stock');
+          if (Number(uData.stars) < cost) throw new Error('Not enough stars');
+          if (available <= 0) throw new Error('Out of stock');
 
-        newStars = Number(uData.stars) - cost;
-        if (pData.name?.toLowerCase() === 'redeem cash balance') {
-          redeemedCash = Number(uData.cash) || 0;
-          newCash = 0;
-        } else {
-          newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
-        }
+          newStars = Number(uData.stars) - cost;
+          if (pData.name?.toLowerCase() === 'redeem cash balance') {
+            redeemedCash = Number(uData.cash || 0);
+            newCash = 0;
+          } else {
+            newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
+          }
 
-        t.update(userRef, { stars: newStars, cash: newCash });
-        t.update(productRef, { available: available - 1 });
+          t.update(userRef, { stars: newStars, cash: newCash });
+          t.update(productRef, { available: available - 1 });
 
-        t.set(doc(collection(db, 'purchases')), {
-          userId: currentUser.uid,
-          email: uData.email || '',
-          productId: String(pData.id),
-          productName: pData.name,
-          cost,
-          cashReward: Number(pData.cashReward || 0),
-          redeemedCash,
-          timestamp: serverTimestamp()
+          t.set(doc(collection(db, 'purchases')), {
+            userId: currentUser.uid,
+            email: uData.email || '',
+            productId: String(pData.id),
+            productName: pData.name,
+            cost,
+            cashReward: Number(pData.cashReward || 0),
+            redeemedCash,
+            timestamp: serverTimestamp()
+          });
         });
-      });
 
-      // --- Update UI ---
-      const prevStars = parseNumberFromText(DOM.stars.textContent);
-      const prevCash = parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars = newStars;
-      currentUser.cash = newCash;
-      animateNumber(DOM.stars, prevStars, newStars);
-      animateNumber(DOM.cash, prevCash, newCash);
-      await renderShop();
-      triggerConfetti();
+        const prevStars = parseNumberFromText(DOM.stars.textContent);
+        const prevCash = parseNumberFromText(DOM.cash.textContent);
+        currentUser.stars = newStars;
+        currentUser.cash = newCash;
+        animateNumber(DOM.stars, prevStars, newStars);
+        animateNumber(DOM.cash, prevCash, newCash);
 
-      if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
-      else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
-      else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
+        await renderShop();
+        triggerConfetti();
 
-    } catch (err) {
-      console.error(err);
-      showThemedMessage('Redemption Failed', err.message || 'Try again');
-    } finally {
-      hideSpinner();
+        if (redeemedCash > 0)
+          showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
+        else if (Number(product.cashReward) > 0)
+          showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
+        else
+          showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
+
+      } catch (err) {
+        console.error(err);
+        showThemedMessage('Redemption Failed', err.message || 'Try again');
+      } finally {
+        hideSpinner();
+      }
     }
-  });
+  );
 };
 
-/* ------------------ VIP Gift to Host ------------------ */
-async function redeemGift(product, host) {
-  if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
-  if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
+// ------------------ Redeem a gift ------------------
+const redeemGift = async (gift) => {
+  if (!currentUser) return showThemedMessage('Error', 'User not loaded');
 
-  showConfirmModal(`Gift "${product.name}" to your host?`, async () => {
-    showSpinner();
-    try {
-      const hostRef = doc(db, 'users', host.uid);
-      const productRef = doc(db, 'shopItems', String(product.id));
+  showConfirmModal(
+    `Claim gift "${gift.name}"?`,
+    `Are you sure you want to claim this gift?`,
+    async () => {
+      showSpinner();
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const giftRef = doc(db, 'gifts', String(gift.id));
 
-      await runTransaction(db, async (t) => {
-        const [hSnap, pSnap] = await Promise.all([t.get(hostRef), t.get(productRef)]);
-        if (!hSnap.exists()) throw new Error('Host not found');
-        if (!pSnap.exists()) throw new Error('Product not found');
+        await runTransaction(db, async (t) => {
+          const [uSnap, gSnap] = await Promise.all([t.get(userRef), t.get(giftRef)]);
+          if (!uSnap.exists()) throw new Error('User not found');
+          if (!gSnap.exists()) throw new Error('Gift not found');
 
-        const hData = hSnap.data();
-        const available = Number(pSnap.data().available) || 0;
-        if (available <= 0) throw new Error('Product out of stock');
+          const uData = uSnap.data();
+          const gData = gSnap.data();
+          const available = Number(gData.available || 0);
+          if (available <= 0) throw new Error('Gift out of stock');
 
-        t.update(hostRef, {
-          hostFriends: [...(hData.hostFriends || []), {
-            giftedBy: currentUser.chatId || currentUser.vipName,
-            productName: product.name,
+          t.update(giftRef, { available: available - 1 });
+          t.set(doc(collection(db, 'giftClaims')), {
+            userId: currentUser.uid,
+            email: uData.email || '',
+            giftId: String(gData.id),
+            giftName: gData.name,
             timestamp: serverTimestamp()
-          }]
+          });
         });
 
-        t.update(productRef, { available: available - 1 });
+        await renderGifts();
+        triggerConfetti();
+        showThemedMessage('Gift Claimed', `"${gift.name}" successfully claimed!`, 2500);
 
-        t.set(doc(collection(db, 'purchases')), {
-          userId: host.uid,
-          productId: product.id,
-          productName: product.name,
-          giftedBy: currentUser.chatId || currentUser.vipName,
-          timestamp: serverTimestamp()
-        });
-      });
-
-      showReward(`You’ve gifted <b>${product.name}</b> to <b>${host.chatId || host.hostName}</b>!`, '🎁 Gift Sent!');
-      triggerConfetti();
-
-    } catch (err) {
-      console.error(err);
-      showThemedMessage('Gift Failed', err.message || 'Try again');
-    } finally {
-      hideSpinner();
+      } catch (err) {
+        console.error(err);
+        showThemedMessage('Gift Claim Failed', err.message || 'Try again');
+      } finally {
+        hideSpinner();
+      }
     }
-  });
-}
+  );
+};
 /* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
