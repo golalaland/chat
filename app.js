@@ -178,7 +178,10 @@ async function showUserPopup(uidKey) {
   popupUsername.style.color = data.usernameColor || "#fff";
 
   // Gender / Age
-  popupGender.textContent = `A ${data.gender || "Unknown"} in their 20’s`;
+ const age = parseInt(data.age || 0);
+let ageGroup = "20s";
+if (!isNaN(age) && age >= 30) ageGroup = "30s";
+popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
 
   // Profile photo
   if (data.photoURL) {
