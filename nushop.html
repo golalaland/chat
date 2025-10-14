@@ -665,6 +665,24 @@ header {
   margin-left: 6px;  /* spacing from the name */
   vertical-align: middle;
 }
+#vipAccessBtn {
+  background: linear-gradient(90deg, gold, #f5b642, #c9961a);
+  color: #000;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 32px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+  position: fixed;
+  bottom: 60px;
+  right: 30px;
+  z-index: 999;
+  box-shadow: 0 0 15px rgba(255,215,0,0.4);
+}
+#vipAccessBtn:hover {
+  transform: scale(1.05);
+}
 
   </style>
 </head>
@@ -802,6 +820,8 @@ header {
     <p id="productModalDesc"></p>
   </div>
 </div>
+<button id="vipAccessBtn" style="display:none;">💎 Get VIP Access</button>
+<div id="vipTimer" style="display:none;"></div>
 <script type="module" src="nushop.js"></script>
 </body>
 </html>
