@@ -236,28 +236,39 @@ function attachMessagesListener() {
         lastMessagesArray.push({ id: change.doc.id, data: msgData });
         renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
 
-     /* 💝 Detect private gift message (sender + receiver only, personalized) */
-if (
-  (msgData.uid === "balleralert" || msgData.chatId === "BallerAlert🤩") &&
-  msgData.highlight &&
-  msgData.content.includes("gifted")
-) {
-  const myChatId = currentUser?.chatId?.toLowerCase();
-  if (!myChatId) return;
+    This? 
 
-  const parts = msgData.content.split(" ");
-  // Expected: ["Nushi", "gifted", "Goll", "50", "⭐️"]
-  const sender = parts[0];
-  const receiver = parts[2];
-  const amount = parts[3];
+   /* 💝 Detect private gift message (sender + receiver only, personalized) */
+        if (
+          msgData.uid === "system" &&
+          msgData.highlight &&
+          msgData.content.includes("gifted")
+        ) {
+          const myChatId = currentUser?.chatId?.toLowerCase();
+          const content = msgData.content.toLowerCase();
 
-  if (sender.toLowerCase() === myChatId) {
-    // 🫶 You are the sender
-    showGiftAlert(`You gifted ${receiver} ${amount} stars ⭐️`);
-  } else if (receiver.toLowerCase() === myChatId) {
-    // 💝 You are the receiver
-    showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
-  }
+          // Find both sender & receiver usernames
+          const [sender, , receiver, amount] = msgData.content.split(" ");
+          // Example: ["Nushi", "gifted", "Goll", "50"]
+
+          if (!myChatId) return;
+
+          if (sender.toLowerCase() === myChatId) {
+            // 🫶 You are the sender
+            showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
+          } else if (receiver.toLowerCase() === myChatId) {
+            // 💝 You are the receiver
+            showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
+          }
+        }
+
+        // 🌀 Keep scroll for your own messages
+        if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
+          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+        }
+      }
+    });
+  });
 }
 /* ---------- User Popup Logic ---------- */
 async function showUserPopup(uidKey) {
