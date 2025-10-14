@@ -661,7 +661,3 @@ if (popup && closeBtn) {
     }
   });
 }
-
-It can be JS but you can always give me CSS to add for customization. 
-
-we should create profileImageURL field that would add to already fields yes. 
