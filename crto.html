@@ -398,6 +398,84 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   object-fit:cover;
 }
 
+.host-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
+  backdrop-filter: blur(10px);
+}
+.hidden { display: none; }
+
+.host-modal-content {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 30px 25px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255,255,255,0.2);
+  color: white;
+  position: relative;
+}
+
+.host-avatar {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  margin-bottom: 10px;
+}
+
+.host-modal-content h2 {
+  font-size: 1.3em;
+  margin: 5px 0;
+}
+
+.host-modal-content p {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.social-links {
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.social-links a {
+  color: white;
+  font-size: 1.4em;
+  text-decoration: none;
+  transition: 0.3s;
+}
+.social-links a:hover { transform: scale(1.2); }
+
+.gift-btn {
+  background: linear-gradient(135deg, #ff66cc, #ff9966);
+  border: none;
+  border-radius: 25px;
+  color: white;
+  font-weight: bold;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+.gift-btn:hover { opacity: 0.9; }
+
+.close-btn {
+  position: absolute;
+  top: 10px; right: 15px;
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+}
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
@@ -530,65 +608,37 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<!-- 💵 Host Details Modal -->
-<div id="hostModal" style="
-  position: fixed; inset: 0;
-  display: none; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.85);
-  z-index: 2000;">
-  <div style="
-    background: var(--card);
-    border-radius: 18px;
-    padding: 20px;
-    width: 90%; max-width: 380px;
-    color: #fff;
-    box-shadow: 0 0 25px rgba(255,105,180,0.25);
-    text-align: center;">
-    <h3 style="color: var(--accent);margin-bottom:12px;">🏦 Host Details</h3>
+<!-- Host Setup (TIP) Modal -->
+<div id="hostSetupModal" class="host-modal hidden">
+  <div class="host-modal-content">
+    <button id="closeHostSetup" class="close-btn">×</button>
+    <h2>Host Setup</h2>
+    <p style="font-size:0.9em;opacity:0.8;margin-bottom:15px;">Update your payout & profile info</p>
 
-    <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px;">Bank Name</label>
-    <input id="bankName" placeholder="e.g. Access Bank"
-      style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0e0e0e;color:#fff;font-size:14px;margin-bottom:10px;">
+    <input id="bankName" placeholder="Bank Name" class="host-input" />
+    <input id="bankAccount" placeholder="Bank Account" class="host-input" />
 
-    <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px;">Bank Account</label>
-    <input id="bankAccount" placeholder="e.g. 0123456789"
-      style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0e0e0e;color:#fff;font-size:14px;margin-bottom:10px;">
+    <input id="profilePicUrl" placeholder="Profile Picture URL" class="host-input" />
 
-    <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px;">Profile Image</label>
-    <input type="file" id="hostImage" accept="image/*"
-      style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0e0e0e;color:#fff;font-size:14px;margin-bottom:10px;">
+    <input id="instagramInput" placeholder="Instagram link" class="host-input" />
+    <input id="tiktokInput" placeholder="TikTok link" class="host-input" />
+    <input id="telegramInput" placeholder="Telegram link" class="host-input" />
+    <input id="whatsappInput" placeholder="WhatsApp link" class="host-input" />
 
-    <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px;">Social Links</label>
-    <input id="instagram" placeholder="Instagram link (optional)" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0e0e0e;color:#fff;margin-bottom:8px;">
-    <input id="whatsapp" placeholder="WhatsApp link (optional)" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0e0e0e;color:#fff;margin-bottom:8px;">
-    <input id="tiktok" placeholder="TikTok link (optional)" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0e0e0e;color:#fff;margin-bottom:8px;">
-    <input id="telegram" placeholder="Telegram link (optional)" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0e0e0e;color:#fff;margin-bottom:16px;">
-
-    <button id="saveHostDetails" class="small-btn" style="width:100%;margin-bottom:10px;">Save Details</button>
-    <button id="closeHostModal" style="background:none;border:none;color:var(--muted);cursor:pointer;">Cancel</button>
+    <button id="saveHostSetup" class="gift-btn">Save Info</button>
   </div>
 </div>
-<!-- 🌸 Host Profile Popup -->
-<div id="hostProfileCard" style="
-  position: fixed; inset: 0;
-  display: none; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.6);
-  z-index: 3000;">
-  <div style="
-    background: var(--card);
-    border-radius: 20px;
-    padding: 20px;
-    text-align: center;
-    width: 90%; max-width: 360px;
-    box-shadow: 0 0 25px rgba(255,192,203,0.3);">
-    <img id="hostCardImage" src="" alt="Profile" style="width:90px;height:90px;border-radius:50%;object-fit:cover;margin-bottom:10px;">
-    <h3 id="hostCardName" style="margin:5px 0;color:#fff;"></h3>
-    <p id="hostCardInfo" style="color:var(--muted);font-size:14px;margin-bottom:10px;"></p>
-    <div id="hostCardSocials" style="display:flex;justify-content:center;gap:14px;margin-bottom:14px;"></div>
-    <button id="giftHostBtn" class="small-btn">Gift ⭐</button>
-    <div style="margin-top:12px;">
-      <button id="closeHostCard" style="background:none;border:none;color:var(--muted);cursor:pointer;">Close</button>
-    </div>
+
+<!-- Host Profile Modal -->
+<div id="hostProfileModal" class="host-modal hidden">
+  <div class="host-modal-content">
+    <button id="closeHostModal" class="close-btn">×</button>
+    <img id="hostProfilePic" class="host-avatar" src="" alt="Host photo" />
+    <h2 id="hostUsername"></h2>
+    <p id="hostAgeGender"></p>
+
+    <div id="hostSocials" class="social-links"></div>
+    <button id="giftHostBtn" class="gift-btn"></button>
   </div>
 </div>
 <script type="module" src="app.js"></script>
