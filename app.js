@@ -89,13 +89,13 @@ async function showGiftModal(targetUid, targetData) {
 
     // Optional: Send a system chat message visible to both
     await addDoc(collection(db, CHAT_COLLECTION), {
-      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-      uid: "system",
-      chatId: "system",
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor: "#FFD700"
-    });
+  content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+  uid: "balleralert",
+  chatId: "BallerAlert🤩",
+  timestamp: serverTimestamp(),
+  highlight: true,
+  buzzColor: "#FFD700"
+});
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
