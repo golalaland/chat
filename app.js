@@ -1,6 +1,4 @@
 
-// app.js
-
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -158,6 +156,83 @@ function attachMessagesListener() {
     });
   });
 }
+
+/* ---------- User Popup Logic ---------- */
+async function showUserPopup(uidKey) {
+  const popup = document.getElementById("userPopup");
+  const popupContent = popup.querySelector(".user-popup-content");
+  const popupUsername = document.getElementById("popupUsername");
+  const popupGender = document.getElementById("popupGender");
+  const socialsEl = document.getElementById("popupSocials");
+  const closeBtn = document.getElementById("popupCloseBtn");
+  const photoEl = popup.querySelector(".popup-photo");
+
+  const userRef = doc(db, "users", uidKey);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) return alert("User not found");
+
+  const data = snap.data();
+
+  // Username
+  popupUsername.textContent = data.chatId || "Unknown";
+  popupUsername.style.color = data.usernameColor || "#fff";
+
+  // Gender / Age
+  popupGender.textContent = `A ${data.gender || "Unknown"} in their 20’s`;
+
+  // Profile photo
+  if (data.photoURL) {
+    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
+  } else {
+    const initials = (data.chatId || "U").slice(0,2).toUpperCase();
+    photoEl.textContent = initials;
+    photoEl.style.background = data.usernameColor || "#333";
+  }
+
+  // Social icons (only show if user has value)
+  const socials = [
+    { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
+    { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
+    { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
+    { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
+  ];
+
+  socialsEl.innerHTML = "";
+  socials.forEach(s => {
+    const val = data[s.field] || "";
+    if (!val) return; // skip empty
+    const a = document.createElement("a");
+    a.href = val.startsWith("http") ? val : "#";
+    a.target = "_blank";
+    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
+    socialsEl.appendChild(a);
+  });
+
+  popup.style.display = "flex";
+  setTimeout(() => popupContent.classList.add("show"), 10);
+
+  const closePopup = () => {
+    popupContent.classList.remove("show");
+    setTimeout(() => { popup.style.display = "none"; }, 200);
+  };
+
+  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
+  closeBtn.onclick = closePopup;
+}
+
+/* ---------- Detect username tap ---------- */
+document.addEventListener("pointerdown", e => {
+  const el = e.target.closest(".chat-username");
+  if (!el) return;
+  const uid = el.dataset.username;
+  if (uid && uid !== currentUser?.uid) showUserPopup(uid);
+
+  // Small visual feedback (tapped highlight)
+  el.style.transition = "opacity 0.15s";
+  el.style.opacity = "0.5";
+  setTimeout(() => (el.style.opacity = "1"), 150);
+});
+
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
   if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
@@ -192,9 +267,6 @@ async function promptForChatID(userRef, userData){
     };
   });
 }
-
-
-
 
 /* ---------- VIP login (whitelist) ---------- */
 async function loginWhitelist(email, phone) {
@@ -571,78 +643,25 @@ refs.buzzBtn?.addEventListener("click", async () => {
     loadVideo(0);
   }
 });
-/* ---------- HOST PROFILE MODAL ---------- */
-const hostModal = document.getElementById('hostProfileModal');
-const closeHostModal = document.getElementById('closeHostModal');
-const hostPic = document.getElementById('hostProfilePic');
-const hostUsername = document.getElementById('hostUsername');
-const hostAgeGender = document.getElementById('hostAgeGender');
-const hostSocials = document.getElementById('hostSocials');
-const giftBtn = document.getElementById('giftHostBtn');
+// Popup close logic (works on mobile too)
+const popup = document.getElementById("userPopup");
+const closeBtn = document.getElementById("popupClose");
 
-// Function to calculate age group
-function getAgeGroup(dob) {
-  const birth = new Date(dob);
-  const age = Math.floor((Date.now() - birth) / (365.25 * 24 * 60 * 60 * 1000));
-  if (age < 30) return 'in their 20s';
-  if (age < 40) return 'in their 30s';
-  if (age < 50) return 'in their 40s';
-  return 'in their 50s+';
-}
-
-// Listen for username clicks
-document.addEventListener('click', async (e) => {
-  const target = e.target.closest('.username');
-  if (!target) return;
-
-  const uid = target.dataset.uid;
-  if (!uid) return;
-
-  const ref = doc(db, 'users', uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return;
-
-  const data = snap.data();
-  if (!data.isHost) return; // only show modal for hosts
-
-  // Fill modal data
-  hostPic.src = data.profilePic || 'https://i.imgur.com/0ZQZ0Z0.png';
-  hostUsername.textContent = data.hostName || data.fullName || 'Host';
-  const genderText = data.gender ? data.gender.toLowerCase() : '';
-  const ageGroup = data.dob ? getAgeGroup(data.dob) : '';
-  hostAgeGender.textContent = genderText && ageGroup
-    ? `A ${genderText} ${ageGroup}`
-    : '';
-
-  // Build socials
-  const socials = [
-    { key: 'instagram', icon: '📸' },
-    { key: 'tiktok', icon: '🎵' },
-    { key: 'telegram', icon: '✈️' },
-    { key: 'whatsapp', icon: '💬' },
-  ];
-
-  hostSocials.innerHTML = '';
-  socials.forEach(({ key, icon }) => {
-    if (data[key]) {
-      const a = document.createElement('a');
-      a.href = data[key];
-      a.target = '_blank';
-      a.textContent = icon;
-      hostSocials.appendChild(a);
-    }
+if (popup && closeBtn) {
+  // Close when clicking the X
+  closeBtn.addEventListener("pointerdown", e => {
+    e.stopPropagation();
+    popup.style.display = "none";
   });
 
-  giftBtn.textContent = `Gift ${data.hostName || data.fullName || 'Host'}`;
+  // Close when tapping outside the popup card
+  popup.addEventListener("pointerdown", e => {
+    if (e.target === popup) {
+      popup.style.display = "none";
+    }
+  });
+}
 
-  // Show modal
-  hostModal.classList.remove('hidden');
-});
+It can be JS but you can always give me CSS to add for customization. 
 
-closeHostModal.addEventListener('click', () => {
-  hostModal.classList.add('hidden');
-});
-
-hostModal.addEventListener('click', (e) => {
-  if (e.target === hostModal) hostModal.classList.add('hidden');
-});
+we should create profileImageURL field that would add to already fields yes. 
