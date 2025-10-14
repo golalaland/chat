@@ -395,19 +395,17 @@ const userData = {
         const inviterData = inviterRecord.data;
         const bonusStars = isVIP ? 100 : 50;
         try {
-          await updateDoc(inviterRef, {
-            stars: (inviterData.stars || 0) + bonusStars,
-            starsGifted: (inviterData.starsGifted || 0) + bonusStars,
-            hostFriends: arrayUnion({
-              chatId,
-              chatIdLower: chatId.toLowerCase(),
-              email,
-              giftShown: true,
-              hostLink: inviterData.hostLink || null,
-              hostVIP: isVIP ? 1 : 0,
-              invitedBy: invitedByField || referrer || null
-            })
-          });
+        await updateDoc(inviterRef, {
+  hostFriends: arrayUnion({
+    chatId,
+    chatIdLower: chatId.toLowerCase(),
+    email,
+    giftShown: true,
+    hostLink: inviterData.hostLink || null,
+    hostVIP: isVIP ? 1 : 0,
+    invitedBy: invitedByField || referrer || null
+  })
+});
         } catch(e){
           console.warn("Failed updating inviter stats:", e);
         }
