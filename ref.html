@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>VIP / Host Signup</title>
 <style>
+/* All your existing CSS retained */
 :root {
   --primary-color: #ff4081;
   --background-gradient: linear-gradient(135deg,#111,#000,#222);
@@ -46,7 +47,6 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 #paystackBtn { width:50%; max-width:250px; padding:0.65rem; border:none; border-radius:30px; font-weight:bold; font-size:0.9rem; color:#000; background:linear-gradient(45deg,gold,#ffd700); cursor:pointer; display:flex; justify-content:center; align-items:center; position:relative; transition:0.2s; z-index:10; }
 #paystackBtn:hover { transform: scale(1.03); }
 #paystackSpinner { width:18px; height:18px; border:3px solid #fff; border-top:3px solid rgba(255,255,255,0.3); border-radius:50%; animation:spin 0.7s linear infinite; display:none; margin-left:8px; }
-.small-note{font-size:0.75rem;color:#aaa;margin-bottom:0.6rem;}
 </style>
 </head>
 <body>
@@ -72,13 +72,6 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
   <input id="dob" type="date" class="dob-input" max="">
 </div>
 
-<!-- extra fields requested -->
-<div class="form-group"><input id="bankName" type="text" placeholder="Bank Name (optional)"></div>
-<div class="form-group"><input id="bankAccount" type="text" placeholder="Bank Account Number (optional)"></div>
-<div class="form-group"><input id="displayName" type="text" placeholder="Display Name (optional)"></div>
-<div class="form-group"><input id="profilePic" type="text" placeholder="Profile Pic URL (optional)"></div>
-<div class="form-group"><input id="bio" type="text" placeholder="Short Bio (optional)"></div>
-
 <div class="vip-label" id="vipLabel">VIP</div>
 <div class="vip-toggle" id="vipToggle"><span class="vip-circle"></span></div>
 <div class="vip-message" id="vipMessage">You're in VIP zone, way to go!</div>
@@ -100,12 +93,9 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, orderBy, limit,
-  updateDoc, arrayUnion
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs, orderBy, limit, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { startPaystackSubscription } from './paystack.js'; // your paystack.js
 
-/* ---------- Firebase config (unchanged) ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -117,7 +107,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------- DOM ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   let isVIP = false;
   let gender = '';
@@ -139,102 +128,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const paystackBtn = document.getElementById('paystackBtn');
   const paystackSpinner = document.getElementById('paystackSpinner');
 
-  const bankNameInput = document.getElementById('bankName');
-  const bankAccountInput = document.getElementById('bankAccount');
-  const displayNameInput = document.getElementById('displayName');
-  const profilePicInput = document.getElementById('profilePic');
-  const bioInput = document.getElementById('bio');
-
   const urlParams = new URLSearchParams(window.location.search);
-  const referrer = urlParams.get('ref') || null; // inviter email (as-is)
+  const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
-  /* ---------- Helpers ---------- */
   function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
   function calculateAge(dobStr){ const dob = new Date(dobStr); const diffMs = Date.now() - dob.getTime(); const ageDt = new Date(diffMs); return Math.abs(ageDt.getUTCFullYear() - 1970); }
-  async function isChatIdTaken(chatId) { if(!chatId) return false; const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase())); const snapshot = await getDocs(q); return !snapshot.empty; }
-  function generateRefCode(len=6){ return Math.random().toString(36).substring(2,2+len).toUpperCase(); }
-
-  /* ---------- Clean inputs ---------- */
+  async function isChatIdTaken(chatId) { const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase())); const snapshot = await getDocs(q); return !snapshot.empty; }
   phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
 
-  /* ---------- VIP toggle ---------- */
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
     vipLabel.classList.toggle('on', isVIP);
     vipMessage.style.opacity = isVIP ? '1' : '0';
-    if(isVIP) triggerSprayConfetti();
   });
 
-  /* ---------- Gender buttons ---------- */
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
 
-  /* ---------- DOB max ---------- */
   const today = new Date();
   const maxDate = new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
   dobInput.max = maxDate.toISOString().split('T')[0];
 
-  /* ---------- Confetti ---------- */
-  function triggerSprayConfetti() {
-    const colors = ['#FFD700','#FF69B4','#00BFFF','#FF4500','#32CD32'];
-    const numParticles = 50;
-    const rect = vipToggle.getBoundingClientRect();
-    const startX = rect.left + rect.width/2;
-    const startY = rect.bottom;
-    for (let i = 0; i < numParticles; i++) {
-      const particle = document.createElement('div');
-      particle.style.position='fixed';
-      particle.style.width='6px';
-      particle.style.height='16px';
-      particle.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
-      particle.style.left=`${startX}px`;
-      particle.style.top=`${startY}px`;
-      particle.style.opacity='0.9';
-      particle.style.borderRadius='2px';
-      particle.style.pointerEvents='none';
-      particle.style.zIndex='9999';
-      document.body.appendChild(particle);
-      const angle = (Math.random()*Math.PI/2) - Math.PI/4;
-      const speed = 300 + Math.random()*200;
-      const duration = 1500 + Math.random()*500;
-      const start = performance.now();
-      (function animate(time){
-        const t = (time-start)/duration;
-        if(t<1){
-          const dx = Math.sin(angle)*speed*t;
-          const dy = -Math.cos(angle)*speed*t;
-          particle.style.transform=`translate(${dx}px, ${dy}px) rotate(${t*720}deg)`;
-          particle.style.opacity=`${1-t}`;
-          requestAnimationFrame(animate);
-        } else { particle.remove(); }
-      })(start);
-    }
+  async function getUserCountry() {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      return data.country_name || 'Unknown';
+    } catch { return 'Unknown'; }
   }
 
-  /* ---------- FOMO ---------- */
   async function fetchRecentUsers() {
-    try {
-      const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
-      const snapshot = await getDocs(q);
-      const users = [];
-      snapshot.forEach(docSnap=>{
-        const data = docSnap.data();
-        users.push({
-          fullName: data.fullName || data.displayName || data.chatId,
-          isVIP: !!data.isVIP,
-          chatId: data.chatId || 'Anon',
-          usernameColor: data.usernameColor || '#fff'
-        });
-      });
-      return users;
-    } catch(e) {
-      console.error('FOMO fetch error', e);
-      return [];
-    }
+    const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
+    const snapshot = await getDocs(q);
+    const users = [];
+    snapshot.forEach(docSnap=>{
+      const data = docSnap.data();
+      users.push({fullName:data.fullName, isVIP:data.isVIP, chatId:data.chatId, usernameColor:data.usernameColor});
+    });
+    return users;
   }
 
   async function showFOMO() {
@@ -251,59 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   showFOMO();
 
-  /* ---------- Country detection ---------- */
-  async function detectCountry() {
-    try {
-      const res = await fetch('https://ipapi.co/json/');
-      const data = await res.json();
-      return data.country_name || 'Unknown';
-    } catch(e) {
-      return 'Unknown';
-    }
-  }
-
-  /* ---------- Subscription expiry check (on load & interval) ---------- */
-  async function checkSubscriptionExpiryByEmail(email) {
-    if(!email) return;
-    const uidKey = sanitizeKey(email.toLowerCase());
-    try {
-      const snap = await getDoc(doc(db,"users",uidKey));
-      if(!snap.exists()) return;
-      const data = snap.data();
-      if(data.subscriptionActive && data.subscriptionEnd){
-        const expiry = new Date(data.subscriptionEnd);
-        if(new Date() >= expiry){
-          await updateDoc(doc(db,"users",uidKey), { subscriptionActive:false, subscriptionEnd:null });
-          // update localStorage if present
-          const stored = localStorage.getItem('vipUser');
-          if(stored){
-            const u = JSON.parse(stored);
-            if(u.email && sanitizeKey(u.email) === uidKey){
-              u.subscriptionActive = false;
-              u.subscriptionEnd = null;
-              localStorage.setItem('vipUser', JSON.stringify(u));
-            }
-          }
-        }
-      }
-    } catch(e){ console.error('checkExpiry error', e); }
-  }
-
-  // run expiry check if we have a stored user
-  const storedUser = localStorage.getItem('vipUser');
-  if(storedUser){
-    try{
-      const su = JSON.parse(storedUser);
-      if(su && su.email) checkSubscriptionExpiryByEmail(su.email);
-    }catch(e){}
-  }
-  // periodic check (every 30 minutes)
-  setInterval(()=>{
-    const s = localStorage.getItem('vipUser');
-    if(s){ try{ const u=JSON.parse(s); if(u && u.email) checkSubscriptionExpiryByEmail(u.email); }catch(e){} }
-  }, 30*60*1000);
-
-  /* ---------- Save user ---------- */
   async function saveUser(isVipPaid=false){
     spinner.style.display='inline-block';
     submitBtn.querySelector('.btn-text').style.display='none';
@@ -316,256 +198,99 @@ document.addEventListener('DOMContentLoaded', () => {
     const dob = dobInput.value;
     const age = calculateAge(dob);
     const uidKey = sanitizeKey(email);
-
-    // Enforce female-only hosts (non-VIP)
-    if(!isVIP && gender !== 'Female'){
-      spinner.style.display='none';
-      submitBtn.querySelector('.btn-text').style.display='inline';
-      submitBtn.disabled = false;
-      messageEl.textContent = '❌ Only females can sign up as hosts (non-VIP).';
-      return;
-    }
-
-    // Determine hostName as inviter's chatId if present
-    let hostNameValue = chatId;
-    if(referrer){
-      try {
-        const refDocKey = sanitizeKey(referrer);
-        const refSnap = await getDoc(doc(db,"users",refDocKey));
-        if(refSnap.exists()){
-          const refData = refSnap.data();
-          if(refData && refData.chatId) hostNameValue = refData.chatId;
-        }
-      } catch(e){ console.warn('hostName lookup failed', e); }
-    }
-
-    // Detect country
-    const country = await detectCountry();
-
-    // Generate random usernameColor if not present
-    const usernameColor = '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
-
-    // Generate ref code
-    const refCode = generateRefCode(6);
+    const country = await getUserCountry();
 
     const userData = {
-      chatId,
-      chatIdLower: chatId.toLowerCase(),
-      fullName,
-      displayName: displayNameInput.value.trim() || fullName,
-      profilePic: profilePicInput.value.trim() || '',
-      bio: bioInput.value.trim() || '',
-      socialLinks: [],
-      stars:50,
-      starsToday:0,
-      starsGifted:0,
-      lastStarDate: new Date().toISOString().split("T")[0],
-      cash:0,
-      usernameColor,
-      isAdmin:false,
-      isVIP:isVIP,
-      isHost: !isVIP,
-      vipName: isVIP ? chatId : null,
-      hostLink: !isVIP ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
-      hostName: hostNameValue,
-      invitedBy: referrer || null, // inviter email as-is
-      dob,
-      age,
-      gender,
-      email,
-      phone,
-      bankName: bankNameInput.value.trim() || '',
-      bankAccountNumber: bankAccountInput.value.trim() || '',
-      country,
-      socialShare: !isVIP,
-      subscriptionActive: isVIP ? false : true, // hosts get active true by default, VIP will activate after payment
-      subscriptionEnd: isVIP ? null : null, // VIP: set after payment; host: no subscriptionEnd
-      createdAt: new Date().toISOString(),
-      refCode,
-      emailVerified:false,
-      phoneVerified:false,
+      chatId, chatIdLower:chatId.toLowerCase(), fullName,
+      stars:isVIP?50:50, starsToday:0, starsGifted:0, lastStarDate:new Date().toISOString().split("T")[0], cash:0,
+      usernameColor:'#'+Math.floor(Math.random()*16777215).toString(16),
+      isAdmin:false, isVIP:isVIP, isHost:!isVIP,
+      hostLink:!isVIP?`https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`:null,
+      invitedBy:referrer, hostName: referrer || null,
+      dob, age, gender, email, phone, country,
+      socialShare: !isVIP, subscriptionActive: isVIP ? false : true, subscriptionActivatedAt: isVIP ? null : new Date().toISOString(),
+      createdAt:new Date().toISOString(),
+      vipName:null, bankName:'', bankAccountNumber:'', socialLinks:{whatsapp:'',instagram:'',tiktok:'',telegram:''}
     };
 
     try{
       await setDoc(doc(db,"users",uidKey), userData);
 
-      // Referral bonus (based on selection; earlier working code used isVIP ? 100 : 50)
       if(referrer){
-        try{
-          const refDocKey = sanitizeKey(referrer);
-          const refDocRef = doc(db,"users",refDocKey);
-          const refSnap = await getDoc(refDocRef);
-          if(refSnap.exists()){
-            const refData = refSnap.data();
-            const bonus = isVipPaid ? 100 : (isVIP ? 100 : 50);
-            await updateDoc(refDocRef,{
-              stars: (refData.stars || 0) + bonus,
-              starsGifted: (refData.starsGifted || 0) + bonus,
-              hostFriends: arrayUnion({
-                chatId,
-                chatIdLower: chatId.toLowerCase(),
-                email,
-                isVIP,
-                gifted: bonus,
-                hostLink: refData.hostLink || null,
-                invitedBy: referrer
-              }),
-            });
-            // Try increment counts (best-effort: read then update)
-            // Note: we avoid race conditions with atomic increments here for brevity
-            // If you want exact increments, implement with transactions or Cloud Function.
-          }
-        }catch(e){ console.warn('referrer update failed', e); }
+        const refUidKey = sanitizeKey(referrer);
+        const refDoc = doc(db,"users",refUidKey);
+        const refSnap = await getDoc(refDoc);
+        if(refSnap.exists()){
+          const refData = refSnap.data();
+          const bonus = isVIP?100:50;
+          await updateDoc(refDoc,{
+            stars: refData.stars + bonus,
+            starsGifted: refData.starsGifted + bonus,
+            hostFriends: arrayUnion({ chatId, chatIdLower:chatId.toLowerCase(), isVIP:isVIP, gifted:bonus })
+          });
+        }
       }
-
-      // Save for auto-login (minimal safe fields)
-      localStorage.setItem('vipUser', JSON.stringify({
-        email,
-        chatId,
-        isVIP,
-        subscriptionActive: userData.subscriptionActive,
-        subscriptionEnd: userData.subscriptionEnd || null
-      }));
 
       spinner.style.display='none';
       submitBtn.querySelector('.btn-text').style.display='inline';
       submitBtn.disabled = false;
-
-      // Hide signup button to prevent reclick
-      submitBtn.style.display = 'none';
-      messageEl.textContent = "✅ Signup successful!";
-
-      // Show VIP access if selected, else redirect host
-      if(isVIP){
-        paystackContainer.style.display = 'flex';
-      } else {
-        // Hosts redirected
-        window.location.href = 'nushop.html';
-      }
-
+      messageEl.textContent="✅ Signup successful!";
+      if(!isVIP){
+        localStorage.setItem('hostUser', uidKey);
+        window.location.href='nushop.html';
+      } else paystackContainer.style.display='flex';
     } catch(e){
-      console.error('saveUser error', e);
+      console.error(e);
       spinner.style.display='none';
       submitBtn.querySelector('.btn-text').style.display='inline';
-      submitBtn.disabled = false;
-      messageEl.textContent = "❌ Signup failed.";
+      submitBtn.disabled=false;
+      messageEl.textContent="❌ Signup failed.";
     }
   }
 
-  /* ---------- Signup click ---------- */
   submitBtn.addEventListener('click', async ()=>{
-    messageEl.textContent = '';
     const fullName = nameInput.value.trim();
     const chatId = chatIdInput.value.trim();
     const phone = phoneInput.value.trim();
-    const email = emailInput.value.trim().toLowerCase();
+    const email = emailInput.value.trim();
     const dob = dobInput.value;
     if(!fullName||!chatId||!phone||!email||!gender||!dob){ messageEl.textContent='Please fill all fields.'; return; }
 
     const age = calculateAge(dob);
     if(age < 18){ messageEl.textContent='❌ Must be 18+'; return; }
-    if(!isValidEmail(email)){ messageEl.textContent='Invalid email domain'; return; }
+    if(!isValidEmail(email)){ messageEl.textContent='Invalid email'; return; }
 
-    // ChatId length/format
-    const cleanChat = cleanChatId(chatId);
-    if(cleanChat.length < 5 || cleanChat.length > 15){ messageEl.textContent='Username must be 5-15 characters (a-z,0-9,_).'; return; }
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
 
-    // Only females as hosts (if not VIP)
-    if(!isVIP && gender !== 'Female'){ messageEl.textContent='Only females can sign up as hosts.'; return; }
-
-    try {
-      const uidKey = sanitizeKey(email);
-      const userRef = doc(db, "users", uidKey);
+    try{
       const existingSnap = await getDoc(userRef);
-      const chatTaken = await isChatIdTaken(cleanChat);
-      if (existingSnap.exists() || chatTaken) { messageEl.textContent = "❌ Email or chat name already taken"; return; }
+      const chatTaken = await isChatIdTaken(cleanChatId(chatId));
+      if(existingSnap.exists() || chatTaken){ messageEl.textContent='❌ User/email/chat already exists'; return; }
+    } catch(e){ console.error(e); messageEl.textContent='❌ Error checking user'; return; }
 
-      await saveUser(false);
-
-    } catch(e){
-      console.error(e);
-      messageEl.textContent="❌ Signup failed.";
-    }
+    await saveUser();
   });
 
-  /* ---------- Paystack VIP access (subscription plan) ---------- */
-  paystackBtn.addEventListener('click', async ()=>{
-    // Ensure user signed up
-    const stored = localStorage.getItem('vipUser');
-    if(!stored){ messageEl.textContent='Please sign up first.'; return; }
-    const u = JSON.parse(stored);
-    if(!u.email){ messageEl.textContent='Please sign up with a valid email.'; return; }
-
+  paystackBtn.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    if(!email){ messageEl.textContent='Enter email before VIP payment'; return; }
     paystackSpinner.style.display='inline-block';
     paystackBtn.querySelector('.btn-text').style.display='none';
-    paystackBtn.disabled = true;
-
-    // Launch Paystack inline for subscription plan (using your plan id)
-    const handler = window.PaystackPop.setup({
-      key:'pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd', // keep test key or swap for live
-      email: u.email,
-      plan: 'PLN_grrpmsot7duff3v', // your plan code
-      metadata: {
-        custom_fields: [
-          { display_name: 'Chat ID', variable_name: 'chat_id', value: u.chatId }
-        ]
-      },
-      onClose: () => {
-        paystackSpinner.style.display='none';
-        paystackBtn.querySelector('.btn-text').style.display='inline';
-        paystackBtn.disabled = false;
-        messageEl.textContent = 'Payment cancelled';
-      },
-      callback: async function(response){
-        try {
-          // Payment success -> update Firestore subscription status
-          const uidKey = sanitizeKey(u.email);
-          const userRef = doc(db,"users",uidKey);
-
-          // set subscriptionActive true and subscriptionEnd to +169 hours
-          const now = new Date();
-          const expiry = new Date(now.getTime() + 169 * 60 * 60 * 1000); // 169 hours
-          await updateDoc(userRef, {
-            subscriptionActive: true,
-            subscriptionStart: now.toISOString(),
-            subscriptionEnd: expiry.toISOString(),
-            subscriptionRef: response.reference,
-            vipName: u.chatId // ensure vipName stored
-          });
-
-          // update localStorage
-          const storedUser = localStorage.getItem('vipUser');
-          if(storedUser){
-            const su = JSON.parse(storedUser);
-            su.subscriptionActive = true;
-            su.subscriptionEnd = expiry.toISOString();
-            localStorage.setItem('vipUser', JSON.stringify(su));
-          }
-
-          paystackSpinner.style.display='none';
-          paystackBtn.querySelector('.btn-text').style.display='inline';
-          paystackBtn.disabled = false;
-          messageEl.textContent='✅ Payment successful! VIP activated.';
-          // hide button and redirect
-          paystackContainer.style.display='none';
-          setTimeout(()=>{ window.location.href='nushop.html'; }, 1200);
-        } catch(err){
-          console.error('paystack callback error', err);
-          paystackSpinner.style.display='none';
-          paystackBtn.querySelector('.btn-text').style.display='inline';
-          paystackBtn.disabled = false;
-          messageEl.textContent='❌ Payment succeeded but activation failed. Contact support.';
-        }
-      }
+    startPaystackSubscription(email, async success=>{
+      paystackSpinner.style.display='none';
+      paystackBtn.querySelector('.btn-text').style.display='inline';
+      if(success){
+        const uidKey = sanitizeKey(email);
+        const userRef = doc(db,"users",uidKey);
+        await updateDoc(userRef,{ subscriptionActive:true, subscriptionActivatedAt:new Date().toISOString(), vipName:cleanChatId(chatIdInput.value.trim()) });
+        localStorage.setItem('vipUser', uidKey);
+        window.location.href='nushop.html';
+      } else messageEl.textContent='❌ VIP payment failed';
     });
-
-    handler.openIframe();
   });
-
 });
 </script>
 
-<!-- Paystack inline script -->
-<script src="https://js.paystack.co/v1/inline.js"></script>
 </body>
 </html>
