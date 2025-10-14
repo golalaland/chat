@@ -381,101 +381,115 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   color: #fff;                  /* subtle hover effect */
 }
 
-.user-popup-content.show {
-  transform: scale(1);
-  opacity:1;
-}
-.user-popup-content img {
-  width:28px;
-  height:28px;
-  border-radius:6px;
-  object-fit:cover;
-}
-.popup-photo img {
-  width:80px;
-  height:80px;
-  border-radius:50%;
-  object-fit:cover;
-}
-
-.host-modal {
+.user-popup {
+  display: none;
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 0;
   background: rgba(0,0,0,0.6);
-  z-index: 999;
-  backdrop-filter: blur(10px);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
-.hidden { display: none; }
 
-.host-modal-content {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 20px;
-  padding: 30px 25px;
-  width: 300px;
-  text-align: center;
-  box-shadow: 0 0 40px rgba(255,255,255,0.2);
+.user-popup-content {
+  background: #111;
   color: white;
+  border-radius: 12px;
+  width: 320px;
+  padding: 20px;
+  text-align: center;
   position: relative;
+  transform: scale(0.9);
+  transition: transform 0.2s ease;
+}
+.user-popup-content.show { transform: scale(1); }
+
+.popup-close {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: white;
+  cursor: pointer;
 }
 
-.host-avatar {
-  width: 90px; height: 90px;
+.popup-photo {
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #fff;
-  margin-bottom: 10px;
+  overflow: hidden;
+  margin: 10px auto;
+  background: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 32px;
+  color: #fff;
 }
 
-.host-modal-content h2 {
-  font-size: 1.3em;
-  margin: 5px 0;
-}
+.popup-username { margin: 6px 0 2px; }
+.popup-gender { font-size: 14px; color: #aaa; }
 
-.host-modal-content p {
-  font-size: 0.9em;
+.popup-socials img {
+  margin: 0 5px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: transform 0.2s;
+}
+.popup-socials img:hover { transform: scale(1.1); }
+
+.popup-gift button {
+  background: linear-gradient(135deg,#ff7a00,#ff0080);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 12px;
+}
+.popup-gift button:hover {
   opacity: 0.9;
 }
 
-.social-links {
-  margin: 15px 0;
-  display: flex;
+.host-bank-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
   justify-content: center;
-  gap: 15px;
+  align-items: center;
+  z-index: 1100;
 }
-
-.social-links a {
+.host-bank-content {
+  background: #1a1a1a;
   color: white;
-  font-size: 1.4em;
-  text-decoration: none;
-  transition: 0.3s;
+  border-radius: 10px;
+  width: 350px;
+  padding: 20px;
+  text-align: left;
 }
-.social-links a:hover { transform: scale(1.2); }
-
-.gift-btn {
-  background: linear-gradient(135deg, #ff66cc, #ff9966);
+.host-bank-content input {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0 12px;
+  border-radius: 6px;
   border: none;
-  border-radius: 25px;
+  background: #222;
   color: white;
-  font-weight: bold;
-  padding: 10px 20px;
-  cursor: pointer;
 }
-.gift-btn:hover { opacity: 0.9; }
-
-.close-btn {
-  position: absolute;
-  top: 10px; right: 15px;
-  background: transparent;
+#saveBankDetails {
+  width: 100%;
+  background: #ff7a00;
   color: white;
   border: none;
-  font-size: 1.5em;
+  border-radius: 8px;
+  padding: 10px;
   cursor: pointer;
 }
+#saveBankDetails:hover { opacity: 0.9; }
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
@@ -608,24 +622,44 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
-<!-- Host Setup (TIP) Modal -->
-<div id="hostSetupModal" class="host-modal hidden">
-  <div class="host-modal-content">
-    <button id="closeHostSetup" class="close-btn">×</button>
-    <h2>Host Setup</h2>
-    <p style="font-size:0.9em;opacity:0.8;margin-bottom:15px;">Update your payout & profile info</p>
+<!-- USER PROFILE POPUP -->
+<div id="userPopup" class="user-popup">
+  <div class="user-popup-content">
+    <button id="popupCloseBtn" class="popup-close">&times;</button>
+    
+    <div class="popup-photo"></div>
+    <div class="popup-info">
+      <h2 id="popupUsername" class="popup-username">Username</h2>
+      <p id="popupGender" class="popup-gender">A female in her 20s</p>
+    </div>
+    
+    <div id="popupSocials" class="popup-socials"></div>
 
-    <input id="bankName" placeholder="Bank Name" class="host-input" />
-    <input id="bankAccount" placeholder="Bank Account" class="host-input" />
+    <div class="popup-gift">
+      <button id="giftBtn">🎁 Gift <span id="giftUser">@username</span></button>
+    </div>
+  </div>
+</div>
 
-    <input id="profilePicUrl" placeholder="Profile Picture URL" class="host-input" />
-
-    <input id="instagramInput" placeholder="Instagram link" class="host-input" />
-    <input id="tiktokInput" placeholder="TikTok link" class="host-input" />
-    <input id="telegramInput" placeholder="Telegram link" class="host-input" />
-    <input id="whatsappInput" placeholder="WhatsApp link" class="host-input" />
-
-    <button id="saveHostSetup" class="gift-btn">Save Info</button>
+<!-- HOST BANK DETAILS MODAL -->
+<div id="hostBankModal" class="host-bank-modal">
+  <div class="host-bank-content">
+    <h3>Host Bank Info</h3>
+    <label>Bank Name</label>
+    <input id="bankName" type="text" placeholder="e.g. Access Bank">
+    <label>Account Number</label>
+    <input id="bankAccount" type="text" placeholder="e.g. 0123456789">
+    
+    <label>Upload Image</label>
+    <input id="uploadImage" type="file" accept="image/*">
+    
+    <label>Social Links</label>
+    <input id="instagram" type="text" placeholder="Instagram URL">
+    <input id="tiktok" type="text" placeholder="TikTok URL">
+    <input id="telegram" type="text" placeholder="Telegram URL">
+    <input id="whatsapp" type="text" placeholder="WhatsApp URL">
+    
+    <button id="saveBankDetails">Save Details</button>
   </div>
 </div>
 
