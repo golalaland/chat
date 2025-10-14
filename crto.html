@@ -538,6 +538,35 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
 .google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
+.gift-alert {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: linear-gradient(90deg,#ff6a00,#ff4081);
+  color: #fff;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  opacity: 0;
+  z-index: 99999;
+  transition: all 0.4s ease;
+  font-size: 1rem;
+}
+.gift-alert.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+.floating-star {
+  position: fixed;
+  animation: floatUp 2s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes floatUp {
+  from { transform: translateY(0) scale(1); opacity: 1; }
+  to { transform: translateY(-100px) scale(1.5); opacity: 0; }
+}
 </style>
 </head>
 <body>
@@ -707,6 +736,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <button id="giftHostBtn" class="gift-btn"></button>
   </div>
 </div>
+<!-- Gift Alert -->
+<div id="giftAlert" class="gift-alert"></div>
 <script type="module" src="app.js"></script>
 </body>
 </html>
