@@ -349,7 +349,7 @@ const loadCurrentUser = async () => {
 
           const inviteeStars = data.inviteeGiftStars || 50;
           showReward(
-            `You’ve been gifted +${inviteeStars}⭐️ for joining ${inviterName}’s VIP Tab.`,
+            `You’ve been gifted +${inviteeStars}⭐️ for joining ${hostName}’s VIP Tab.`,
             '⭐ Congratulations! ⭐️'
           );
 
