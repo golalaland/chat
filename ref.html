@@ -418,6 +418,16 @@ const userData = {
     invitedBy: invitedByField || referrer || null
   })
 });
+// 🔥 Give inviter their star bonus + gifted count update
+const bonusStars = isVIP ? 100 : 50;
+try {
+  await updateDoc(inviterRef, {
+    stars: (inviterData.stars || 0) + bonusStars,
+    starsGifted: (inviterData.starsGifted || 0) + bonusStars
+  });
+} catch (err) {
+  console.warn("Failed updating inviter stars:", err);
+}
         } catch(e){
           console.warn("Failed updating inviter stats:", e);
         }
