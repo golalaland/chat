@@ -99,7 +99,7 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
-  function sanitizeKey(key){ return key.replace(/[.#$[\]]/g, ','); }
+  function sanitizeKey(key){ return key ? key.replace(/[.#$[\]]/g, ',') : key; }
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
 
@@ -235,6 +235,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   showFOMO();
 
+  // helper: find inviter document (tries email-doc key first, then chatId lookup)
+  async function findInviter(ref) {
+    if(!ref) return null;
+    // try treat as sanitized email key (doc id)
+    try {
+      const docRef = doc(db, "users", sanitizeKey(ref));
+      const snap = await getDoc(docRef);
+      if(snap.exists()) return { ref: docRef, data: snap.data() };
+    } catch(e){}
+    // else try lookup by chatIdLower
+    try {
+      const q = query(collection(db,"users"), where("chatIdLower","==", ref.toLowerCase()), limit(1));
+      const snaps = await getDocs(q);
+      if(!snaps.empty){
+        const s = snaps.docs[0];
+        return { ref: doc(db,"users",s.id), data: s.data() };
+      }
+    } catch(e){}
+    return null;
+  }
+
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
@@ -253,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!isValidEmail(email)){ messageEl.textContent='Email Address not valid.'; return; }
 
     spinner.style.display='inline-block'; btnText.style.display='none'; messageEl.textContent='Signing up...';
+    submitBtn.disabled = true;
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
@@ -263,16 +285,40 @@ document.addEventListener('DOMContentLoaded', () => {
       if(existingSnap.exists() || chatTaken){
         messageEl.textContent = "❌ User already signed up with this email or username.";
         spinner.style.display='none'; btnText.style.display='inline';
+        submitBtn.disabled = false;
         return;
       }
 
+      // detect country (silent)
       let country = 'Unknown';
       try { const res = await fetch('https://ipapi.co/json/'); const data = await res.json(); country = data.country_name || 'Unknown'; } catch(e){}
 
-      // --- full agreed backend userData object (all fields included) ---
+      // attempt to resolve inviter (could be email or chatId)
+      let inviterRecord = null;
+      if(referrer){
+        inviterRecord = await findInviter(referrer);
+      }
+
+      // set invitedBy (sanitized email id) and hostName (chatId) properly
+      let invitedByField = null;
+      let hostNameField = null;
+      if(inviterRecord && inviterRecord.data){
+        const invData = inviterRecord.data;
+        // invitedBy should be sanitized email ID if present
+        if(invData.email) invitedByField = sanitizeKey(invData.email);
+        // hostName is inviter's chatId if available
+        if(invData.chatId) hostNameField = invData.chatId;
+        // if ref param was raw chatId and inviter doc found that way, ensure invitedBy set from inviter email if exists
+      } else {
+        // fallback: use referrer raw to populate hostName if it looks like a chatId (no '@')
+        if(referrer && !referrer.includes('@')) hostNameField = referrer;
+        // if referrer looks like an email, set invitedBy to sanitized ref
+        if(referrer && referrer.includes('@')) invitedByField = sanitizeKey(referrer);
+      }
+
       const nowIso = new Date().toISOString();
       const userData = {
-        // Identity
+        // identity
         fullName,
         chatId,
         chatIdLower: chatId.toLowerCase(),
@@ -282,34 +328,38 @@ document.addEventListener('DOMContentLoaded', () => {
         age,
         gender,
 
-        // Flags / roles
+        // verification flags
+        phoneVerified: false,
+        emailVerified: false,
+
+        // roles
         isAdmin: false,
         isVIP: !!isVIP,
         isHost: (gender==='Female' && !isVIP),
 
-        // Referral / host
-        invitedBy: referrer ? sanitizeKey(referrer) : null, // sanitized inviter identifier
-        hostName: referrer || null,                         // inviter chatID if provided
+        // referral / host
+        invitedBy: invitedByField || null,   // sanitized inviter email id
+        hostName: hostNameField || null,     // inviter chatId
         referral: referrer || null,
         hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
 
-        // VIP specific
+        // vipName = chatId if this user signed up as VIP
         vipName: isVIP ? chatId : null,
 
-        // Location
+        // location
         country,
 
-        // Bank (backend-only placeholders)
+        // bank placeholders
         bankName: "",
         bankAccountNumber: "",
 
-        // Socials placeholders
+        // socials placeholders
         instagram: "",
         tiktok: "",
         whatsapp: "",
         telegram: "",
 
-        // Stars / rewards / cash
+        // rewards & balances
         stars: 50,
         starsToday: 0,
         starsGifted: 0,
@@ -318,29 +368,30 @@ document.addEventListener('DOMContentLoaded', () => {
         points: 0,
         gifts: 0,
 
-        // Visual / misc
+        // ui / sharing
         usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
-        socialShare: !isVIP, // hosts (female non-VIP) can share
+        socialShare: (gender === 'Female' && !isVIP),
+
+        // subscription
         subscriptionActive: false,
         subscriptionCount: 0,
         subscriptionStartTime: null,
         subscriptionEndTime: null,
 
         // bookkeeping
-        createdAt: nowIso,
-        lastUpdated: nowIso
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
       };
 
       await setDoc(userRef,userData);
 
-      // Update inviter/referrer if exists
-      if(referrer){
-        const inviterRef = doc(db,"users",sanitizeKey(referrer));
-        const inviterSnap = await getDoc(inviterRef);
-        if(inviterSnap.exists()){
-          const inviterData = inviterSnap.data();
-          const bonusStars = isVIP ? 100 : 50;
-          await updateDoc(inviterRef,{
+      // update inviter stats if inviter exists
+      if(inviterRecord && inviterRecord.ref && inviterRecord.data){
+        const inviterRef = inviterRecord.ref;
+        const inviterData = inviterRecord.data;
+        const bonusStars = isVIP ? 100 : 50;
+        try {
+          await updateDoc(inviterRef, {
             stars: (inviterData.stars || 0) + bonusStars,
             starsGifted: (inviterData.starsGifted || 0) + bonusStars,
             hostFriends: arrayUnion({
@@ -350,22 +401,35 @@ document.addEventListener('DOMContentLoaded', () => {
               giftShown: true,
               hostLink: inviterData.hostLink || null,
               hostVIP: isVIP ? 1 : 0,
-              invitedBy: referrer
+              invitedBy: invitedByField || referrer || null
             })
           });
+        } catch(e){
+          console.warn("Failed updating inviter stats:", e);
         }
       }
 
+      // success UI
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
-      localStorage.setItem("vipUser",JSON.stringify({email,chatId}));
-      // confetti on signup success for visual celebration
+      // store for auto-login on shop
+      localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
+      // hide submit to prevent reclicks (hosts & vip)
+      submitBtn.style.display = 'none';
+      // confetti for signup success if VIP or just for celebration (keeps UX)
       if(isVIP) triggerSprayConfetti();
+
       setTimeout(()=>{ window.location.href="nushop.html"; },1500);
 
-    } catch(e){ console.error(e); messageEl.textContent="❌ Signup failed. Please try again."; }
-    finally{ spinner.style.display='none'; btnText.style.display='inline'; }
+    } catch(e){
+      console.error(e);
+      messageEl.textContent="❌ Signup failed. Please try again.";
+      submitBtn.disabled = false;
+    } finally {
+      spinner.style.display='none';
+      btnText.style.display='inline';
+    }
   });
 });
 </script>
 </body>
-</html>
+</html>(
