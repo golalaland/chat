@@ -629,47 +629,78 @@ refs.buzzBtn?.addEventListener("click", async () => {
     loadVideo(0);
   }
 });
-/* ---------- Show Host Popup (when tapping a username) ---------- */
-async function showUserPopup(uid) {
-  const popup = document.getElementById("userPopup");
-  const popupContent = document.getElementById("userPopupContent");
-  if (!popup || !popupContent) return;
+/* ---------- HOST PROFILE MODAL ---------- */
+const hostModal = document.getElementById('hostProfileModal');
+const closeHostModal = document.getElementById('closeHostModal');
+const hostPic = document.getElementById('hostProfilePic');
+const hostUsername = document.getElementById('hostUsername');
+const hostAgeGender = document.getElementById('hostAgeGender');
+const hostSocials = document.getElementById('hostSocials');
+const giftBtn = document.getElementById('giftHostBtn');
 
-  popup.style.display = "flex";
-  popupContent.innerHTML = "<p>Loading...</p>";
-
-  try {
-    const userSnap = await getDoc(doc(db, "users", uid));
-    if (!userSnap.exists()) {
-      popupContent.innerHTML = "<p>User not found.</p>";
-      return;
-    }
-
-    const data = userSnap.data();
-    const gender = data.gender || "User";
-    const age = parseInt(data.age || 0);
-    const ageGroup = age < 30 ? "20s" : "30s";
-    const socials = [];
-
-    if (data.instagram) socials.push(`<a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank">📸</a>`);
-    if (data.whatsapp) socials.push(`<a href="https://wa.me/${data.whatsapp.replace('+','')}" target="_blank">💬</a>`);
-    if (data.tiktok) socials.push(`<a href="https://tiktok.com/@${data.tiktok.replace('@','')}" target="_blank">🎵</a>`);
-    if (data.telegram) socials.push(`<a href="https://t.me/${data.telegram.replace('@','')}" target="_blank">📨</a>`);
-
-    const socialsHTML = socials.length ? socials.join(" ") : "<p>No socials added</p>";
-    const imgURL = data.profileImageURL || "https://placehold.co/120x120?text=No+Image";
-
-    popupContent.innerHTML = `
-      <div class="popup-card">
-        <img src="${imgURL}" alt="Host image" class="popup-img">
-        <h3>${data.chatId || "Unknown"}</h3>
-        <p>A ${gender.toLowerCase()} in her ${ageGroup}</p>
-        <div class="popup-socials">${socialsHTML}</div>
-        <button class="giftBtn">🎁 Gift ${data.chatId || "her"}</button>
-      </div>
-    `;
-  } catch (err) {
-    console.error("Popup error:", err);
-    popupContent.innerHTML = "<p>Error loading user data</p>";
-  }
+// Function to calculate age group
+function getAgeGroup(dob) {
+  const birth = new Date(dob);
+  const age = Math.floor((Date.now() - birth) / (365.25 * 24 * 60 * 60 * 1000));
+  if (age < 30) return 'in their 20s';
+  if (age < 40) return 'in their 30s';
+  if (age < 50) return 'in their 40s';
+  return 'in their 50s+';
 }
+
+// Listen for username clicks
+document.addEventListener('click', async (e) => {
+  const target = e.target.closest('.username');
+  if (!target) return;
+
+  const uid = target.dataset.uid;
+  if (!uid) return;
+
+  const ref = doc(db, 'users', uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+  if (!data.isHost) return; // only show modal for hosts
+
+  // Fill modal data
+  hostPic.src = data.profilePic || 'https://i.imgur.com/0ZQZ0Z0.png';
+  hostUsername.textContent = data.hostName || data.fullName || 'Host';
+  const genderText = data.gender ? data.gender.toLowerCase() : '';
+  const ageGroup = data.dob ? getAgeGroup(data.dob) : '';
+  hostAgeGender.textContent = genderText && ageGroup
+    ? `A ${genderText} ${ageGroup}`
+    : '';
+
+  // Build socials
+  const socials = [
+    { key: 'instagram', icon: '📸' },
+    { key: 'tiktok', icon: '🎵' },
+    { key: 'telegram', icon: '✈️' },
+    { key: 'whatsapp', icon: '💬' },
+  ];
+
+  hostSocials.innerHTML = '';
+  socials.forEach(({ key, icon }) => {
+    if (data[key]) {
+      const a = document.createElement('a');
+      a.href = data[key];
+      a.target = '_blank';
+      a.textContent = icon;
+      hostSocials.appendChild(a);
+    }
+  });
+
+  giftBtn.textContent = `Gift ${data.hostName || data.fullName || 'Host'}`;
+
+  // Show modal
+  hostModal.classList.remove('hidden');
+});
+
+closeHostModal.addEventListener('click', () => {
+  hostModal.classList.add('hidden');
+});
+
+hostModal.addEventListener('click', (e) => {
+  if (e.target === hostModal) hostModal.classList.add('hidden');
+});
