@@ -159,69 +159,50 @@ function attachMessagesListener() {
   });
 }
 
-/* ---------- User Popup Logic ---------- */
-async function showUserPopup(uidKey) {
-  const popup = document.getElementById("userPopup");
-  const popupContent = popup.querySelector(".user-popup-content");
-  const popupUsername = document.getElementById("popupUsername");
-  const popupGender = document.getElementById("popupGender");
-  const socialsEl = document.getElementById("popupSocials");
-  const closeBtn = document.getElementById("popupCloseBtn");
-  const photoEl = popup.querySelector(".popup-photo");
+/* ---------------- Host Modal Logic ---------------- */
+const hostModal = document.getElementById("hostModal");
+const tipBtn = document.getElementById("tipBtn");
+const closeHostModal = document.getElementById("closeHostModal");
+const saveHostDetails = document.getElementById("saveHostDetails");
 
-  const userRef = doc(db, "users", uidKey);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return alert("User not found");
-
-  const data = snap.data();
-
-  // Username
-  popupUsername.textContent = data.chatId || "Unknown";
-  popupUsername.style.color = data.usernameColor || "#fff";
-
-  // Gender / Age
-  popupGender.textContent = `A ${data.gender || "Unknown"} in their 20’s`;
-
-  // Profile photo
-  if (data.photoURL) {
-    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
-  } else {
-    const initials = (data.chatId || "U").slice(0,2).toUpperCase();
-    photoEl.textContent = initials;
-    photoEl.style.background = data.usernameColor || "#333";
-  }
-
-  // Social icons (only show if user has value)
-  const socials = [
-    { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
-    { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
-    { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
-    { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
-  ];
-
-  socialsEl.innerHTML = "";
-  socials.forEach(s => {
-    const val = data[s.field] || "";
-    if (!val) return; // skip empty
-    const a = document.createElement("a");
-    a.href = val.startsWith("http") ? val : "#";
-    a.target = "_blank";
-    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
-    socialsEl.appendChild(a);
-  });
-
-  popup.style.display = "flex";
-  setTimeout(() => popupContent.classList.add("show"), 10);
-
-  const closePopup = () => {
-    popupContent.classList.remove("show");
-    setTimeout(() => { popup.style.display = "none"; }, 200);
-  };
-
-  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
-  closeBtn.onclick = closePopup;
+if (currentUserData?.isHost) {
+  tipBtn.style.display = "inline-block";
+  tipBtn.addEventListener("click", () => (hostModal.style.display = "flex"));
+}
+if (closeHostModal) {
+  closeHostModal.addEventListener("click", () => (hostModal.style.display = "none"));
 }
 
+/* ---------- Save Host Details ---------- */
+saveHostDetails.addEventListener("click", async () => {
+  const bankName = document.getElementById("bankName").value;
+  const bankAccount = document.getElementById("bankAccount").value;
+  const instagram = document.getElementById("instagram").value;
+  const whatsapp = document.getElementById("whatsapp").value;
+  const tiktok = document.getElementById("tiktok").value;
+  const telegram = document.getElementById("telegram").value;
+  const imageFile = document.getElementById("hostImage").files[0];
+
+  let hostImageURL = currentUserData.profileImageURL || null;
+  if (imageFile) {
+    const storageRef = ref(storage, `hosts/${currentUser.uid}/${imageFile.name}`);
+    await uploadBytes(storageRef, imageFile);
+    hostImageURL = await getDownloadURL(storageRef);
+  }
+
+  await updateDoc(doc(db, "users", currentUser.uid), {
+    bankName,
+    bankAccount,
+    instagram,
+    whatsapp,
+    tiktok,
+    telegram,
+    profileImageURL: hostImageURL
+  });
+
+  alert("✨ Host details saved");
+  hostModal.style.display = "none";
+});
 /* ---------- Detect username tap ---------- */
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest(".chat-username");
@@ -269,6 +250,9 @@ async function promptForChatID(userRef, userData){
     };
   });
 }
+
+
+
 
 /* ---------- VIP login (whitelist) ---------- */
 async function loginWhitelist(email, phone) {
@@ -645,21 +629,47 @@ refs.buzzBtn?.addEventListener("click", async () => {
     loadVideo(0);
   }
 });
-// Popup close logic (works on mobile too)
-const popup = document.getElementById("userPopup");
-const closeBtn = document.getElementById("popupClose");
+/* ---------- Show Host Popup (when tapping a username) ---------- */
+async function showUserPopup(uid) {
+  const popup = document.getElementById("userPopup");
+  const popupContent = document.getElementById("userPopupContent");
+  if (!popup || !popupContent) return;
 
-if (popup && closeBtn) {
-  // Close when clicking the X
-  closeBtn.addEventListener("pointerdown", e => {
-    e.stopPropagation();
-    popup.style.display = "none";
-  });
+  popup.style.display = "flex";
+  popupContent.innerHTML = "<p>Loading...</p>";
 
-  // Close when tapping outside the popup card
-  popup.addEventListener("pointerdown", e => {
-    if (e.target === popup) {
-      popup.style.display = "none";
+  try {
+    const userSnap = await getDoc(doc(db, "users", uid));
+    if (!userSnap.exists()) {
+      popupContent.innerHTML = "<p>User not found.</p>";
+      return;
     }
-  });
+
+    const data = userSnap.data();
+    const gender = data.gender || "User";
+    const age = parseInt(data.age || 0);
+    const ageGroup = age < 30 ? "20s" : "30s";
+    const socials = [];
+
+    if (data.instagram) socials.push(`<a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank">📸</a>`);
+    if (data.whatsapp) socials.push(`<a href="https://wa.me/${data.whatsapp.replace('+','')}" target="_blank">💬</a>`);
+    if (data.tiktok) socials.push(`<a href="https://tiktok.com/@${data.tiktok.replace('@','')}" target="_blank">🎵</a>`);
+    if (data.telegram) socials.push(`<a href="https://t.me/${data.telegram.replace('@','')}" target="_blank">📨</a>`);
+
+    const socialsHTML = socials.length ? socials.join(" ") : "<p>No socials added</p>";
+    const imgURL = data.profileImageURL || "https://placehold.co/120x120?text=No+Image";
+
+    popupContent.innerHTML = `
+      <div class="popup-card">
+        <img src="${imgURL}" alt="Host image" class="popup-img">
+        <h3>${data.chatId || "Unknown"}</h3>
+        <p>A ${gender.toLowerCase()} in her ${ageGroup}</p>
+        <div class="popup-socials">${socialsHTML}</div>
+        <button class="giftBtn">🎁 Gift ${data.chatId || "her"}</button>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Popup error:", err);
+    popupContent.innerHTML = "<p>Error loading user data</p>";
+  }
 }
