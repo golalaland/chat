@@ -59,6 +59,48 @@ function showStarPopup(text) {
 
 function sanitizeKey(key) { return key.replace(/[.#$[\]]/g, ','); }
 
+async function showGiftModal(targetUid, targetData) {
+  const modal = document.getElementById("giftModal");
+  const titleEl = document.getElementById("giftModalTitle");
+  const amountInput = document.getElementById("giftAmountInput");
+  const confirmBtn = document.getElementById("giftConfirmBtn");
+  const closeBtn = document.getElementById("giftModalClose");
+
+  if (!modal || !titleEl || !amountInput || !confirmBtn) return;
+  titleEl.textContent = `Gift ${targetData.chatId} stars ⭐️`;
+  amountInput.value = "";
+
+  modal.style.display = "flex";
+
+  const close = () => modal.style.display = "none";
+  closeBtn.onclick = close;
+  modal.onclick = e => { if (e.target === modal) close(); };
+
+  confirmBtn.onclick = async () => {
+    const amt = parseInt(amountInput.value);
+    if (!amt || amt <= 0) return alert("Enter a valid amount");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+
+    const fromRef = doc(db, "users", currentUser.uid);
+    const toRef = doc(db, "users", targetUid);
+
+    await updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
+    await updateDoc(toRef, { stars: increment(amt) });
+
+    // Optional: Send a system chat message visible to both
+    await addDoc(collection(db, CHAT_COLLECTION), {
+      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+      uid: "system",
+      chatId: "system",
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor: "#FFD700"
+    });
+
+    showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
+    close();
+  };
+}
 /* ---------- UI refs ---------- */
 let refs = {};
 
@@ -210,7 +252,12 @@ popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
     a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
     socialsEl.appendChild(a);
   });
-
+// Gift button
+const giftBtn = document.createElement("button");
+giftBtn.textContent = `🎁 Gift ${data.chatId} stars ⭐️`;
+giftBtn.className = "gift-btn";
+giftBtn.onclick = () => showGiftModal(uidKey, data);
+popupContent.appendChild(giftBtn);
   popup.style.display = "flex";
   setTimeout(() => popupContent.classList.add("show"), 10);
 
