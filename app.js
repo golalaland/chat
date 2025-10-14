@@ -87,17 +87,14 @@ async function showGiftModal(targetUid, targetData) {
     await updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
     await updateDoc(toRef, { stars: increment(amt) });
 
-// 🎁 Send visible gift message
-const glowColors = ["#FFD700", "#FF69B4", "#87CEEB", "#90EE90", "#FFA500", "#FF00FF"];
-const randomGlow = glowColors[Math.floor(Math.random() * glowColors.length)];
-
-await addDoc(collection(db, CHAT_COLLECTION), {
+    // Optional: Send a system chat message visible to both
+    await addDoc(collection(db, CHAT_COLLECTION), {
   content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
   uid: "balleralert",
   chatId: "BallerAlert🤩",
   timestamp: serverTimestamp(),
   highlight: true,
-  buzzColor: randomGlow // random glow color
+  buzzColor: "#FFD700"
 });
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
@@ -188,25 +185,9 @@ function renderMessagesFromArray(arr){
     const content = document.createElement("span");
     content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
     content.textContent = " " + (m.content || "");
-    if (m.buzzColor) {
-  // Default highlight background
-  content.style.background = m.buzzColor;
+    if (m.buzzColor) content.style.background = m.buzzColor;
+    if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
 
-  // 💫 If it's a BallerAlert message → add glowing style
-  if (m.chatId === "BallerAlert🤩") {
-    content.style.color = "#fff";
-    content.style.fontWeight = "700";
-    content.style.textShadow = `0 0 8px ${m.buzzColor}, 0 0 14px ${m.buzzColor}`;
-    content.style.borderRadius = "6px";
-    content.style.padding = "2px 6px";
-    content.style.transition = "box-shadow 0.3s ease";
-    content.style.boxShadow = `0 0 12px ${m.buzzColor}`;
-  } else if (m.highlight) {
-    // 🔹 Normal highlight style (non-Baller)
-    content.style.color = "#000";
-    content.style.fontWeight = "700";
-  }
-}
     wrapper.appendChild(meta);
     wrapper.appendChild(content);
     refs.messagesEl.appendChild(wrapper);
@@ -236,9 +217,7 @@ function attachMessagesListener() {
         lastMessagesArray.push({ id: change.doc.id, data: msgData });
         renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
 
-    This? 
-
-   /* 💝 Detect private gift message (sender + receiver only, personalized) */
+        /* 💝 Detect private gift message (sender + receiver only, personalized) */
         if (
           msgData.uid === "system" &&
           msgData.highlight &&
