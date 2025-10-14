@@ -490,6 +490,29 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   cursor: pointer;
 }
 #saveBankDetails:hover { opacity: 0.9; }
+.gift-btn {
+  margin-top: 10px;
+  background: linear-gradient(90deg,#ff6a00,#ff4081);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: transform .2s;
+}
+.gift-btn:hover { transform: scale(1.05); }
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); justify-content:center; align-items:center; z-index:9999; }
+.modal-content {
+  background:#111; color:#fff; padding:20px; border-radius:10px; text-align:center; width:280px;
+  box-shadow:0 0 10px rgba(255,255,255,0.2);
+}
+.modal-content input {
+  width:80%; margin:12px auto; padding:8px; border-radius:6px; border:none; text-align:center;
+}
+.modal-content button {
+  background:#ff4081; color:#fff; border:none; padding:8px 14px; border-radius:6px; cursor:pointer;
+}
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
@@ -638,6 +661,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div class="popup-gift">
       <button id="giftBtn">🎁 Gift <span id="giftUser">@username</span></button>
     </div>
+  </div>
+</div>
+
+<div id="giftModal" class="modal">
+  <div class="modal-content">
+    <span id="giftModalClose">&times;</span>
+    <h3 id="giftModalTitle"></h3>
+    <input type="number" id="giftAmountInput" min="1" placeholder="Enter stars to gift">
+    <button id="giftConfirmBtn">Send Gift ⭐️</button>
   </div>
 </div>
 
