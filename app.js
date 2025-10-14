@@ -158,64 +158,6 @@ function attachMessagesListener() {
     });
   });
 }
-
-/* ---------------- Host Modal Logic ---------------- */
-const hostModal = document.getElementById("hostModal");
-const tipBtn = document.getElementById("tipBtn");
-const closeHostModal = document.getElementById("closeHostModal");
-const saveHostDetails = document.getElementById("saveHostDetails");
-
-if (currentUserData?.isHost) {
-  tipBtn.style.display = "inline-block";
-  tipBtn.addEventListener("click", () => (hostModal.style.display = "flex"));
-}
-if (closeHostModal) {
-  closeHostModal.addEventListener("click", () => (hostModal.style.display = "none"));
-}
-
-/* ---------- Save Host Details ---------- */
-saveHostDetails.addEventListener("click", async () => {
-  const bankName = document.getElementById("bankName").value;
-  const bankAccount = document.getElementById("bankAccount").value;
-  const instagram = document.getElementById("instagram").value;
-  const whatsapp = document.getElementById("whatsapp").value;
-  const tiktok = document.getElementById("tiktok").value;
-  const telegram = document.getElementById("telegram").value;
-  const imageFile = document.getElementById("hostImage").files[0];
-
-  let hostImageURL = currentUserData.profileImageURL || null;
-  if (imageFile) {
-    const storageRef = ref(storage, `hosts/${currentUser.uid}/${imageFile.name}`);
-    await uploadBytes(storageRef, imageFile);
-    hostImageURL = await getDownloadURL(storageRef);
-  }
-
-  await updateDoc(doc(db, "users", currentUser.uid), {
-    bankName,
-    bankAccount,
-    instagram,
-    whatsapp,
-    tiktok,
-    telegram,
-    profileImageURL: hostImageURL
-  });
-
-  alert("✨ Host details saved");
-  hostModal.style.display = "none";
-});
-/* ---------- Detect username tap ---------- */
-document.addEventListener("pointerdown", e => {
-  const el = e.target.closest(".chat-username");
-  if (!el) return;
-  const uid = el.dataset.username;
-  if (uid && uid !== currentUser?.uid) showUserPopup(uid);
-
-  // Small visual feedback (tapped highlight)
-  el.style.transition = "opacity 0.15s";
-  el.style.opacity = "0.5";
-  setTimeout(() => (el.style.opacity = "1"), 150);
-});
-
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
   if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
