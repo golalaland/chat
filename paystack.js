@@ -10,12 +10,13 @@ import {
 
 /* ------------------ FIREBASE CONFIG ------------------ */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -28,15 +29,15 @@ export async function launchSubscription(vipUser) {
   }
 
   // Paystack Plan Code (Create this once on your dashboard)
-  const PLAN_CODE = "PLN_yourplanid"; // replace with your Paystack plan code
+  const PLAN_CODE = "PLN_grrpmsot7duff3v"; // replace with your Paystack plan code
 
   // Generate reference
   const reference = "SUB_" + vipUser.chatId + "_" + Date.now();
 
   const handler = PaystackPop.setup({
-    key: "YOUR_PAYSTACK_PUBLIC_KEY", // your live or test public key
+    key: "pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd", // your live or test public key
     email: vipUser.email,
-    plan: PLAN_CODE,
+    plan: PLN_grrpmsot7duff3v,
     ref: reference,
     label: vipUser.chatId,
     metadata: {
