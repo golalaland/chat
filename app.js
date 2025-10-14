@@ -101,6 +101,31 @@ async function showGiftModal(targetUid, targetData) {
     close();
   };
 }
+
+/* ---------- Gift Alert (Live Floating Popup) ---------- */
+function showGiftAlert(text) {
+  const alertEl = document.getElementById("giftAlert");
+  if (!alertEl) return;
+  alertEl.textContent = text;
+  alertEl.classList.add("show");
+
+  createFloatingStars();
+
+  setTimeout(() => alertEl.classList.remove("show"), 4000);
+}
+
+function createFloatingStars() {
+  for (let i = 0; i < 6; i++) {
+    const star = document.createElement("div");
+    star.textContent = "⭐️";
+    star.className = "floating-star";
+    document.body.appendChild(star);
+    star.style.left = `${50 + (Math.random() * 100 - 50)}%`;
+    star.style.top = "45%";
+    star.style.fontSize = `${16 + Math.random() * 16}px`;
+    setTimeout(() => star.remove(), 2000);
+  }
+}
 /* ---------- UI refs ---------- */
 let refs = {};
 
@@ -191,6 +216,32 @@ function attachMessagesListener() {
         const msgData = change.doc.data();
         lastMessagesArray.push({ id: change.doc.id, data: msgData });
         renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
+
+        /* 💝 Detect private gift message (sender + receiver only, personalized) */
+        if (
+          msgData.uid === "system" &&
+          msgData.highlight &&
+          msgData.content.includes("gifted")
+        ) {
+          const myChatId = currentUser?.chatId?.toLowerCase();
+          const content = msgData.content.toLowerCase();
+
+          // Find both sender & receiver usernames
+          const [sender, , receiver, amount] = msgData.content.split(" ");
+          // Example: ["Nushi", "gifted", "Goll", "50"]
+
+          if (!myChatId) return;
+
+          if (sender.toLowerCase() === myChatId) {
+            // 🫶 You are the sender
+            showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
+          } else if (receiver.toLowerCase() === myChatId) {
+            // 💝 You are the receiver
+            showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
+          }
+        }
+
+        // 🌀 Keep scroll for your own messages
         if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
           refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
         }
@@ -198,7 +249,6 @@ function attachMessagesListener() {
     });
   });
 }
-
 /* ---------- User Popup Logic ---------- */
 async function showUserPopup(uidKey) {
   const popup = document.getElementById("userPopup");
