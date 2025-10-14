@@ -756,7 +756,104 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === 'Escape') modal?.classList.add('hidden');
   });
 });
+/* ---------------- VIP ACCESS SETUP ---------------- */
+import { startVipSubscription } from "./paystack.js";
+import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// Elements
+const vipBtn = document.getElementById("vipAccessBtn");
+const vipTimer = document.getElementById("vipTimer");
+
+// --- Check and render VIP state ---
+async function checkVipStatus() {
+  const storedUser = JSON.parse(localStorage.getItem("vipUser") || localStorage.getItem("hostUser"));
+  if (!storedUser) return;
+
+  const userRef = doc(db, "users", storedUser.id);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) return;
+
+  const data = userSnap.data();
+  const now = Date.now();
+  const expiresAt = data.vipExpiresAt ? data.vipExpiresAt.toMillis() : 0;
+
+  // Active & valid subscription
+  if (data.subscriptionActive && expiresAt > now) {
+    vipBtn.style.display = "none";
+
+    const timeLeft = expiresAt - now;
+    if (timeLeft <= 24 * 60 * 60 * 1000) {
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+      vipTimer.style.display = "block";
+      vipTimer.textContent = `⏳ ${hours}h ${minutes}m left on VIP access`;
+    } else {
+      vipTimer.style.display = "none";
+    }
+  } else {
+    // Expired or inactive
+    vipBtn.style.display = "block";
+    vipTimer.style.display = "none";
+    await updateDoc(userRef, { subscriptionActive: false, isVIP: false });
+  }
+}
+
+// --- Start VIP subscription ---
+vipBtn.addEventListener("click", async () => {
+  const storedUser = JSON.parse(localStorage.getItem("vipUser") || localStorage.getItem("hostUser"));
+  if (!storedUser) return;
+
+  const planCode = "PLN_xxxxxx"; // replace with your Paystack VIP plan code
+
+  startVipSubscription(
+    storedUser.email,
+    planCode,
+    async (response) => {
+      console.log("VIP Subscribed:", response);
+      const userRef = doc(db, "users", storedUser.id);
+      await updateDoc(userRef, {
+        subscriptionActive: true,
+        isVIP: true,
+        vipExpiresAt: new Date(Date.now() + 169 * 60 * 60 * 1000), // 169 hours
+        paystackReference: response.reference
+      });
+      vipBtn.style.display = "none";
+    },
+    () => console.log("Payment window closed.")
+  );
+});
+
+// --- Auto refresh VIP state every 60 seconds ---
+setInterval(async () => {
+  const storedUser = JSON.parse(localStorage.getItem("vipUser") || localStorage.getItem("hostUser"));
+  if (!storedUser) return;
+
+  const userRef = doc(db, "users", storedUser.id);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) return;
+
+  const data = userSnap.data();
+  const now = Date.now();
+  const expiresAt = data.vipExpiresAt?.toMillis() || 0;
+
+  if (data.subscriptionActive && expiresAt > now) {
+    vipBtn.style.display = "none";
+    const timeLeft = expiresAt - now;
+    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+    vipTimer.style.display = "block";
+    vipTimer.textContent = `⏳ ${hours}h ${minutes}m left on VIP access`;
+  } else {
+    vipBtn.style.display = "block";
+    vipTimer.style.display = "none";
+    await updateDoc(userRef, { subscriptionActive: false, isVIP: false });
+  }
+}, 60000); // refresh every minute
+
+// Initialize on load
+checkVipStatus();
+
+/* ---------------- END VIP ACCESS SETUP ---------------- */
 /* ------------------ SAFE INIT ------------------ */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
