@@ -853,11 +853,10 @@ setInterval(async () => {
 // Initialize on load
 checkVipStatus();
 
-/* ---------------- END VIP ACCESS SETUP ---------------- */
 /* ------------------ SAFE INIT ------------------ */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    await loadCurrentUser(); // 👈🏽 this alone handles everything
+    await loadCurrentUser(); // 👈🏽 ensures user & listeners are initialized safely
     console.log('✅ User data + listeners initialized');
   } catch (err) {
     console.error('Init error:', err);
