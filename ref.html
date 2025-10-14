@@ -317,71 +317,75 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const nowIso = new Date().toISOString();
-      const userData = {
-        // identity
-        fullName,
-        chatId,
-        chatIdLower: chatId.toLowerCase(),
-        email,
-        phone,
-        dob,
-        age,
-        gender,
+const userData = {
+  // identity
+  fullName,
+  chatId,
+  chatIdLower: chatId.toLowerCase(),
+  email,
+  phone,
+  dob,
+  age,
+  gender,
 
-        // verification flags
-        phoneVerified: false,
-        emailVerified: false,
+  // verification
+  phoneVerified: false,
+  emailVerified: false,
 
-        // roles
-        isAdmin: false,
-        isVIP: !!isVIP,
-        isHost: (gender==='Female' && !isVIP),
+  // roles
+  isAdmin: false,
+  isVIP: !!isVIP,
+  isHost: (gender === 'Female' && !isVIP),
 
-        // referral / host
-        invitedBy: invitedByField || null,   // sanitized inviter email id
-        hostName: hostNameField || null,     // inviter chatId
-        referral: referrer || null,
-        hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
+  // referral + inviter relationship
+  invitedBy: invitedByField || null,   // sanitized inviter email id
+  hostName: hostNameField || null,     // inviter chatId
+  referral: referrer || null,
+  hostLink: (!isVIP && gender === 'Female')
+    ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}`
+    : null,
+  vipName: isVIP ? chatId : null,      // VIP user chatId
 
-        // vipName = chatId if this user signed up as VIP
-        vipName: isVIP ? chatId : null,
+  // location
+  country,
 
-        // location
-        country,
+  // bank info
+  bankName: "",
+  bankAccountNumber: "",
 
-        // bank placeholders
-        bankName: "",
-        bankAccountNumber: "",
+  // socials
+  instagram: "",
+  tiktok: "",
+  whatsapp: "",
+  telegram: "",
 
-        // socials placeholders
-        instagram: "",
-        tiktok: "",
-        whatsapp: "",
-        telegram: "",
+  // reward + metrics
+  stars: 50,
+  starsToday: 0,
+  starsGifted: 0,
+  lastStarDate: nowIso.split("T")[0],
+  cash: 0,
+  points: 0,
+  gifts: 0,
 
-        // rewards & balances
-        stars: 50,
-        starsToday: 0,
-        starsGifted: 0,
-        lastStarDate: nowIso.split("T")[0],
-        cash: 0,
-        points: 0,
-        gifts: 0,
+  // display / ui
+  usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+  socialShare: (gender === 'Female' && !isVIP),
 
-        // ui / sharing
-        usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
-        socialShare: (gender === 'Female' && !isVIP),
+  // subscription
+  subscriptionActive: false,
+  subscriptionCount: 0,
+  subscriptionStartTime: null,
+  subscriptionEndTime: null,
 
-        // subscription
-        subscriptionActive: false,
-        subscriptionCount: 0,
-        subscriptionStartTime: null,
-        subscriptionEndTime: null,
+  // referral control
+  inviteeGiftShown: false,   // ✅ new for shop modal
+  hostFriends: [],           // ✅ new for referral tracking
 
-        // bookkeeping
-        createdAt: serverTimestamp(),
-        lastUpdated: serverTimestamp()
-      };
+  // housekeeping
+  createdAt: serverTimestamp(),
+  lastUpdated: serverTimestamp()
+};
 
       await setDoc(userRef,userData);
 
