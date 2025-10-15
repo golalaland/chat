@@ -98,74 +98,105 @@ async function showGiftModal(targetUid, targetData) {
   };
 
   newConfirmBtn.addEventListener("click", async () => {
-    const amt = parseInt(amountInput.value);
+  const amt = parseInt(amountInput.value);
 
-    // Minimum gift check
-    if (!amt || amt < 100) {
-      showStarPopup("🔥 Minimum gift is 100 ⭐️ — keep it baller!");
-      return;
+  // Minimum gift check
+  if (!amt || amt < 100) {
+    showStarPopup("🔥 Minimum gift is 100 ⭐️ — keep it baller!");
+    return;
+  }
+
+  // Balance check
+  if ((currentUser?.stars || 0) < amt) {
+    showStarPopup("Not enough stars 💫");
+    return;
+  }
+
+  const fromRef = doc(db, "users", currentUser.uid);
+  const toRef = doc(db, "users", targetUid);
+
+  const glowColor = randomColor();
+
+  // Firestore message
+  const messageData = {
+    content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+    uid: "balleralert",
+    chatId: "BallerAlert🤩",
+    timestamp: serverTimestamp(),
+    highlight: true,
+    buzzColor: glowColor
+  };
+
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
+  await Promise.all([
+    updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+    updateDoc(toRef, { stars: increment(amt) })
+  ]);
+
+  showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
+  close();
+
+  // Render message immediately
+  renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
+
+  const msgEl = document.getElementById(docRef.id);
+  if (!msgEl) return;
+
+  // Ensure proper stacking
+  msgEl.style.position = "relative";
+  msgEl.style.display = "flex";
+  msgEl.style.flexDirection = "column";
+  msgEl.style.alignItems = "flex-start";
+
+  const contentEl = msgEl.querySelector(".content") || msgEl;
+
+  // --- BallerAlert glow (21s) ---
+  contentEl.style.setProperty("--pulse-color", glowColor);
+  contentEl.classList.add("baller-highlight");
+  setTimeout(() => {
+    contentEl.classList.remove("baller-highlight");
+    contentEl.style.boxShadow = "none";
+  }, 21000);
+
+  // --- Floating stars burst ---
+  const spawnFloatingStars = (msgEl, count = 6) => {
+    const rect = msgEl.getBoundingClientRect();
+    for (let i = 0; i < count; i++) {
+      const star = document.createElement("div");
+      star.className = "floating-star";
+      const x = (Math.random() - 0.5) * rect.width;
+      const y = -Math.random() * 60;
+      star.style.setProperty("--x", x + "px");
+      star.style.setProperty("--y", y + "px");
+      star.style.left = rect.width / 2 + "px";
+      star.style.top = rect.height / 2 + "px";
+
+      msgEl.appendChild(star);
+      setTimeout(() => star.remove(), 2000 + Math.random() * 500);
     }
+  };
 
-    // Balance check
-    if ((currentUser?.stars || 0) < amt) {
-      showStarPopup("Not enough stars 💫");
-      return;
-    }
+  let starsInterval = setInterval(() => spawnFloatingStars(contentEl, 5), 300);
+  setTimeout(() => clearInterval(starsInterval), 2000);
 
-    const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUid);
+  // --- Buzz highlight (12s) ---
+  if (messageData.highlight) {
+    const buzzEl = document.createElement("div");
+    buzzEl.textContent = contentEl.textContent;
+    buzzEl.classList.add("buzz-highlight");
+    buzzEl.style.setProperty("--buzz-color", glowColor);
+    buzzEl.style.position = "absolute";
+    buzzEl.style.left = "0";
+    buzzEl.style.top = "0";
+    buzzEl.style.width = "100%";
+    buzzEl.style.textAlign = "center";
+    buzzEl.style.pointerEvents = "none";
+    buzzEl.style.zIndex = "10";
 
-    const glowColor = randomColor();
-
-    // Prepare Firestore message
-    const messageData = {
-      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-      uid: "balleralert",
-      chatId: "BallerAlert🤩",
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor: glowColor
-    };
-
-    // Firestore updates
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
-    await Promise.all([
-      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-      updateDoc(toRef, { stars: increment(amt) })
-    ]);
-
-    showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
-    close();
-
-    // Render message immediately
-    renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
-
-    const msgEl = document.getElementById(docRef.id);
-    if (!msgEl) return;
-    const contentEl = msgEl.querySelector(".content") || msgEl;
-
-    // Apply BallerAlert glow (21s)
-    contentEl.style.setProperty("--pulse-color", glowColor);
-    contentEl.classList.add("baller-highlight");
-    setTimeout(() => {
-      contentEl.classList.remove("baller-highlight");
-      contentEl.style.boxShadow = "none";
-    }, 21000);
-
-    // Floating stars burst for 2 seconds
-    let starsInterval = setInterval(() => spawnFloatingStars(contentEl, 5), 300);
-    setTimeout(() => clearInterval(starsInterval), 2000);
-
-    // Apply Buzz highlight (12s)
-    if (messageData.highlight) {
-      const buzzEl = contentEl.cloneNode(true);
-      buzzEl.classList.add("buzz-highlight");
-      buzzEl.style.setProperty("--buzz-color", glowColor);
-      msgEl.appendChild(buzzEl);
-
-      setTimeout(() => buzzEl.remove(), 12000); // 12s duration
-    }
-  });
+    msgEl.appendChild(buzzEl);
+    setTimeout(() => buzzEl.remove(), 12000);
+  }
+});
 }
 
 /* ---------- Gift Alert (Floating Popup) ---------- */
