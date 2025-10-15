@@ -623,6 +623,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 
 /* ---------- Buzz Highlight ---------- */
+/* Base BUZZ style */
 .buzz-highlight {
   display: inline-block;
   padding: 5px 12px;
@@ -631,16 +632,28 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   font-size: 0.95rem;
   font-family: 'Arial', sans-serif;
   color: #000;
-  background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 12px var(--buzz-color, #00FFFF);
-  animation: buzz-pulse 0.8s ease-in-out infinite alternate; /* faster for urgency */
 }
 
-/* Pulse animation for BUZZ — short, urgent bursts */
+/* Variant 1 */
+.buzz-1 { background: rgba(0, 255, 255, 0.2); --buzz-color: #00FFFF; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
+
+/* Variant 2 */
+.buzz-2 { background: rgba(255, 0, 255, 0.2); --buzz-color: #FF00FF; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
+
+/* Variant 3 */
+.buzz-3 { background: rgba(0, 255, 0, 0.2); --buzz-color: #00FF00; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
+
+/* Variant 4 */
+.buzz-4 { background: rgba(255, 255, 0, 0.2); --buzz-color: #FFFF00; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
+
+/* Variant 5 */
+.buzz-5 { background: rgba(255, 165, 0, 0.2); --buzz-color: #FFA500; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
+
+/* Shared pulse animation */
 @keyframes buzz-pulse {
-  0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
-  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 30px var(--buzz-color, #00FFFF); }
-  100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
+  0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color); }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 30px var(--buzz-color); }
+  100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color); }
 }
 #popupGender {
   font-family: 'Montserrat', sans-serif;
