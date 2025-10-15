@@ -762,7 +762,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
 /* ----------------------------
-     🚨 BUZZ Message Handler
+   🚨 BUZZ Glow
 ----------------------------- */
 refs.buzzBtn?.addEventListener("click", async () => {
   if (!currentUser) return showStarPopup("Sign in to BUZZ.");
@@ -774,42 +774,33 @@ refs.buzzBtn?.addEventListener("click", async () => {
   const stars = snap.data()?.stars || 0;
   if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
-  // Deduct stars
   await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+  const buzzColor = randomColor();
 
-  // Generate BUZZ message
   const newBuzz = {
     content: txt,
     uid: currentUser.uid,
     chatId: currentUser.chatId,
     timestamp: serverTimestamp(),
-    highlight: true
+    highlight: true,
+    buzzColor
   };
   const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
 
-  // Clear input & show popup
   refs.messageInputEl.value = "";
   showStarPopup("BUZZ sent!");
   renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
   scrollToBottom(refs.messagesEl);
 
-  // BUZZ styles & animations
-  const buzzStyles = ["buzz-style-1", "buzz-style-2", "buzz-style-3", "buzz-style-4", "buzz-style-5"];
-  const chosenStyle = buzzStyles[Math.floor(Math.random() * buzzStyles.length)];
-  const glowColors = ["#00FFFF", "#FF69B4", "#FFD700", "#7CFC00", "#FF4500"];
-  const chosenGlow = glowColors[Math.floor(Math.random() * glowColors.length)];
-
+  // Apply BUZZ glow
   const msgEl = document.getElementById(docRef.id);
   if (!msgEl) return;
   const contentEl = msgEl.querySelector(".content") || msgEl;
 
-  // Apply BUZZ highlight + random pulse + random glow
-  contentEl.style.setProperty("--buzz-color", chosenGlow);
-  contentEl.classList.add("buzz-highlight", chosenStyle);
-
-  // Cleanup after animation duration
+  contentEl.style.setProperty("--buzz-color", buzzColor);
+  contentEl.classList.add("buzz-highlight");
   setTimeout(() => {
-    contentEl.classList.remove("buzz-highlight", ...buzzStyles);
+    contentEl.classList.remove("buzz-highlight");
     contentEl.style.boxShadow = "none";
   }, 12000); // same as CSS animation
 });
