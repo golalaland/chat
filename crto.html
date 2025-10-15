@@ -322,16 +322,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .buzz-content {
   display: inline-block;
-  padding: 4px 8px;           /* smaller, thinner backdrop */
-  border-radius: 6px;          /* slightly rounded, not too big */
-  font-weight: 700;            /* bold but not extreme */
-  font-size: 0.95rem;          /* slightly smaller font */
-  line-height: 1.4;
-  color: #fff;                 /* default text */
-  background: #ff8c00;         /* fallback background */
-  transition: background 0.3s ease, color 0.3s ease;
-  margin: 1px 0;
+  position: relative;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
   font-family: 'Arial', sans-serif;
+  color: #000;
+  background: rgba(135, 206, 235, 0.2);
+  white-space: nowrap; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 2px 0;
+  transition: text-shadow 0.3s ease-in-out;
 }
 .room-subtitle {
   opacity: 1;
