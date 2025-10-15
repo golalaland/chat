@@ -187,30 +187,20 @@ function renderMessagesFromArray(messages) {
     usernameEl.style.marginRight = "4px";
 
     // ---------- Message Content ----------
-    const contentEl = document.createElement("span");
-    contentEl.className = "content";
-    contentEl.textContent = " " + (m.content || "");
+  const contentEl = document.createElement("span");
+contentEl.className = m.buzzColor ? "buzz-content" : "content";
+contentEl.textContent = " " + (m.content || "");
 
-    // BUZZ messages
-    if (m.buzzColor) {
-      contentEl.style.background = m.buzzColor;
-    }
+// Add background if BUZZ
+if (m.buzzColor) contentEl.style.background = m.buzzColor;
 
-    // Highlight messages
-    if (m.highlight && m.uid === "balleralert") {
-      contentEl.classList.add("baller-highlight"); // CSS handles glow & sparkle
-
-      // Optional: one-time sparkle
-      const sparkle = document.createElement("div");
-      sparkle.className = "baller-sparkle";
-      sparkle.textContent = "✨";
-      contentEl.appendChild(sparkle);
-      setTimeout(() => sparkle.remove(), 1200);
-
-    } else if (m.highlight) {
-      contentEl.style.color = "#000";
-      contentEl.style.fontWeight = "700";
-    }
+// BallerAlert
+if (m.highlight && m.uid === "balleralert") {
+  contentEl.classList.add("baller-highlight");
+} else if (m.highlight) {
+  contentEl.style.color = "#000";
+  contentEl.style.fontWeight = "700";
+}
 
     // ---------- Append ----------
     wrapper.append(usernameEl, contentEl);
