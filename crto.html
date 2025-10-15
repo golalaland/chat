@@ -592,7 +592,23 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     transform: translateY(-20px) scale(0.5);
     opacity: 0;
   }
+} 
+
+#popupGender {
+  font-family: 'Courier New', Courier, monospace; /* typewriter font */
+  font-size: 16px;
+  color: #fff;
+  white-space: nowrap;
+  border-right: 2px solid #fff; /* blinking cursor */
+  overflow: hidden;
+  animation: blink-cursor 0.7s step-end infinite;
 }
+
+@keyframes blink-cursor {
+  from, to { border-color: transparent; }
+  50% { border-color: #fff; }
+}
+
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
