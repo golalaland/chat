@@ -322,15 +322,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .buzz-content {
   display: inline-block;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-weight: 800;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #fff; /* default text color */
-  background: #ff8c00; /* fallback background if JS fails */
+  padding: 4px 8px;           /* smaller, thinner backdrop */
+  border-radius: 6px;          /* slightly rounded, not too big */
+  font-weight: 700;            /* bold but not extreme */
+  font-size: 0.95rem;          /* slightly smaller font */
+  line-height: 1.4;
+  color: #fff;                 /* default text */
+  background: #ff8c00;         /* fallback background */
   transition: background 0.3s ease, color 0.3s ease;
-  margin: 2px 0;
+  margin: 1px 0;
   font-family: 'Arial', sans-serif;
 }
 .room-subtitle {
@@ -486,16 +486,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .baller-highlight {
   display: inline-block;
   position: relative;
-  padding: 8px 16px;
-  border-radius: 10px;
+  padding: 4px 10px;              /* thinner, more compact */
+  border-radius: 6px;              /* subtle rounding */
   font-weight: 900;
-  font-size: 1.1rem;
-  font-family: 'Arial Black', Gadget, sans-serif; /* stronger font than Comic Sans */
+  font-size: 1rem;                 /* normal bold size */
+  font-family: 'Arial Black', Gadget, sans-serif;
   color: #FFD700;
   text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
   transition: text-shadow 0.6s ease-in-out;
-  margin: 3px 0;
-  background: rgba(255, 255, 255, 0.05);
+  margin: 1px 0;
+  background: rgba(255, 255, 255, 0.05); /* slight backdrop */
 }
 
 /* Optional sparkle effect for BallerAlert (JS fallback) */
