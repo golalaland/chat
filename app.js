@@ -79,16 +79,34 @@ async function showGiftModal(targetUid, targetData) {
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
+  // Helper: spawn floating stars
+  const spawnFloatingStars = (msgEl, count = 6) => {
+    const rect = msgEl.getBoundingClientRect();
+    for (let i = 0; i < count; i++) {
+      const star = document.createElement("div");
+      star.className = "floating-star";
+      const x = (Math.random() - 0.5) * rect.width;
+      const y = -Math.random() * 60;
+      star.style.setProperty("--x", x + "px");
+      star.style.setProperty("--y", y + "px");
+      star.style.left = rect.width / 2 + "px";
+      star.style.top = rect.height / 2 + "px";
+
+      msgEl.appendChild(star);
+      setTimeout(() => star.remove(), 2000 + Math.random() * 500);
+    }
+  };
+
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
 
-    // Minimum gift
+    // Minimum gift check
     if (!amt || amt < 100) {
       showStarPopup("🔥 Minimum gift is 100 ⭐️ — keep it baller!");
       return;
     }
 
-    // Check balance
+    // Balance check
     if ((currentUser?.stars || 0) < amt) {
       showStarPopup("Not enough stars 💫");
       return;
@@ -126,25 +144,26 @@ async function showGiftModal(targetUid, targetData) {
     if (!msgEl) return;
     const contentEl = msgEl.querySelector(".content") || msgEl;
 
-    // Apply BallerAlert highlight pulse (21s)
+    // Apply pulse highlight (21s)
     contentEl.style.setProperty("--pulse-color", glowColor);
     contentEl.classList.add("pulse-highlight");
     setTimeout(() => {
       contentEl.classList.remove("pulse-highlight");
       contentEl.style.boxShadow = "none";
-    }, 21000); // 21 seconds
+    }, 21000);
 
-    // Apply buzz pulse (21s) if highlighted
+    // Floating stars burst for 2 seconds
+    let starsInterval = setInterval(() => spawnFloatingStars(contentEl, 5), 300);
+    setTimeout(() => clearInterval(starsInterval), 2000);
+
+    // Apply buzz clone (21s)
     if (messageData.highlight) {
-      const buzzGlow = glowColor;
       const buzzEl = contentEl.cloneNode(true);
       buzzEl.classList.add("pulse-buzz");
-      buzzEl.style.setProperty("--pulse-color", buzzGlow);
+      buzzEl.style.setProperty("--pulse-color", glowColor);
       msgEl.appendChild(buzzEl);
 
-      setTimeout(() => {
-        buzzEl.remove();
-      }, 21000); // 21 seconds
+      setTimeout(() => buzzEl.remove(), 21000);
     }
   });
 }
