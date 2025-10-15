@@ -302,7 +302,6 @@ popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
     a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
     socialsEl.appendChild(a);
   });
-
 // Gift button
 const giftBtn = document.createElement("button");
 giftBtn.textContent = `🎁 Gift ${data.chatId} stars ⭐️`;
