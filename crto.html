@@ -553,7 +553,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .modal {
   z-index: 3000 !important;
 }
+.pulse-highlight {
+  animation: glowPulse 0.7s ease-in-out infinite;
+}
 
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 10px var(--pulse-color), 0 0 20px var(--pulse-color), 0 0 30px var(--pulse-color); }
+  50% { box-shadow: 0 0 15px var(--pulse-color), 0 0 25px var(--pulse-color), 0 0 35px var(--pulse-color); }
+  100% { box-shadow: 0 0 10px var(--pulse-color), 0 0 20px var(--pulse-color), 0 0 30px var(--pulse-color); }
+}
 /* 💫 Gift Stars Animation Layer */
 #giftStars {
   position: fixed;
@@ -606,7 +614,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 } 
 
 #popupGender {
-  font-family: 'Courier New', Courier, monospace; /* typewriter font */
+  font-family: 'Montserrat', sans-serif;
   font-size: 16px;
   color: #fff;
   white-space: nowrap;
