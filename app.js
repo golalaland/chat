@@ -194,16 +194,14 @@ function renderMessagesFromArray(messages) {
   contentEl.style.background = m.buzzColor;
 }
 
-// Special BallerAlert gift styling
+if (m.buzzColor) {
+  // Regular BUZZ messages get their background
+  contentEl.style.background = m.buzzColor;
+}
+
+// Special BallerAlert gift styling (safe, no intervals)
 if (m.highlight && m.uid === "balleralert") {
   contentEl.classList.add("baller-highlight");
-  contentEl.style.color = "#FFD700"; // gold
-  contentEl.style.fontWeight = "900";
-  contentEl.style.fontFamily = "'Comic Sans MS', cursive, sans-serif";
-  contentEl.style.textShadow = "0 0 6px #FFD700, 0 0 12px #FF69B4";
-  contentEl.style.transition = "text-shadow 0.6s ease-in-out";
-
-  // CSS handles glow + sparkle, no JS intervals
 } else if (m.highlight) {
   // Other highlighted messages (like BUZZ)
   contentEl.style.color = "#000";
@@ -212,7 +210,6 @@ if (m.highlight && m.uid === "balleralert") {
 
 wrapper.append(usernameEl, contentEl);
 refs.messagesEl.appendChild(wrapper);
-
   // auto-scroll logic
   if (!scrollPending) {
     scrollPending = true;
