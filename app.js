@@ -1,3 +1,4 @@
+
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -302,30 +303,35 @@ popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
     socialsEl.appendChild(a);
   });
 // Gift button
-const oldGiftBtn = popupContent.querySelector(".gift-btn");
-if (oldGiftBtn) oldGiftBtn.remove();
-
 const giftBtn = document.createElement("button");
-giftBtn.className = "gift-btn";
 giftBtn.textContent = `🎁 Gift ${data.chatId} stars ⭐️`;
-
-// ✨ Style (safe inline)
-giftBtn.style.background = "linear-gradient(135deg,#ffb300,#ff0080,#00c6ff)";
-giftBtn.style.color = "#fff";
-giftBtn.style.fontWeight = "600";
-giftBtn.style.padding = "10px 20px";
-giftBtn.style.border = "none";
-giftBtn.style.borderRadius = "10px";
-giftBtn.style.boxShadow = "0 0 10px rgba(255,255,255,0.5)";
-giftBtn.style.cursor = "pointer";
-giftBtn.style.transition = "all 0.3s ease";
-giftBtn.onpointerenter = () => giftBtn.style.transform = "scale(1.05)";
-giftBtn.onpointerleave = () => giftBtn.style.transform = "scale(1)";
-giftBtn.onpointerdown = () => showGiftModal(uidKey, data);
-
+giftBtn.className = "gift-btn";
+giftBtn.onclick = () => showGiftModal(uidKey, data);
 popupContent.appendChild(giftBtn);
+  popup.style.display = "flex";
+  setTimeout(() => popupContent.classList.add("show"), 10);
 
+  const closePopup = () => {
+    popupContent.classList.remove("show");
+    setTimeout(() => { popup.style.display = "none"; }, 200);
+  };
 
+  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
+  closeBtn.onclick = closePopup;
+}
+
+/* ---------- Detect username tap ---------- */
+document.addEventListener("pointerdown", e => {
+  const el = e.target.closest(".chat-username");
+  if (!el) return;
+  const uid = el.dataset.username;
+  if (uid && uid !== currentUser?.uid) showUserPopup(uid);
+
+  // Small visual feedback (tapped highlight)
+  el.style.transition = "opacity 0.15s";
+  el.style.opacity = "0.5";
+  setTimeout(() => (el.style.opacity = "1"), 150);
+});
 
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
@@ -521,19 +527,6 @@ function startStarEarning(uid) {
 
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
-  
-/* ---------- Detect username tap ---------- */
-document.addEventListener("pointerdown", e => {
-  const el = e.target.closest(".chat-username");
-  if (!el) return;
-  const uid = el.dataset.username;
-  if (uid && uid !== currentUser?.uid) showUserPopup(uid);
-
-  // Small visual feedback (tapped highlight)
-  el.style.transition = "opacity 0.15s";
-  el.style.opacity = "0.5";
-  setTimeout(() => (el.style.opacity = "1"), 150);
-});
 
 /* ---------- Loading Bar Helper ---------- */
 function showLoadingBar(duration = 1000) {
