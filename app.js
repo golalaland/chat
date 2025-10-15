@@ -115,7 +115,7 @@ async function showGiftModal(targetUid, targetData) {
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
 
-    // Render message immediately
+    // --- Render message immediately with slide + pulsing star ---
     renderMessagesFromArray([{ id: docRef.id, data: {
       content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
       uid: "balleralert",
@@ -124,18 +124,24 @@ async function showGiftModal(targetUid, targetData) {
       buzzColor: glowColor
     }}]);
 
-    // Apply unique pulsing glow behind gift stars
     const msgEl = document.getElementById(docRef.id);
     if (msgEl) {
       const contentEl = msgEl.querySelector(".content") || msgEl;
-      contentEl.style.setProperty("--pulse-color", glowColor);
-      contentEl.classList.add("pulse-highlight");
 
-      // Stop pulse after 7 seconds
-      setTimeout(() => {
-        contentEl.classList.remove("pulse-highlight");
-        contentEl.style.boxShadow = "none";
-      }, 7000);
+      // Wrap in slide + highlight
+      contentEl.innerHTML = `<span class="gift-highlight gift-slide">${contentEl.textContent}</span>`;
+      const highlightEl = contentEl.querySelector(".gift-slide");
+      requestAnimationFrame(() => highlightEl.classList.add("show")); // trigger slide
+
+      // Add pulsing star
+      const star = document.createElement("span");
+      star.className = "gift-star";
+      star.style.setProperty("--pulse-color", glowColor);
+      star.textContent = "⭐️";
+      highlightEl.appendChild(star);
+
+      // Stop pulse after 7s
+      setTimeout(() => { star.style.animation = "none"; }, 7000);
     }
   });
 }
