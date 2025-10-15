@@ -608,6 +608,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   from { transform: translateY(0) scale(1); opacity: 1; }
   to { transform: translateY(-100px) scale(1.5); opacity: 0; }
 }
+#starPopup {
+  z-index: 5000 !important; /* always above modal blur */
+  position: fixed;
+}
 </style>
 </head>
 <body>
