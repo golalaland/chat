@@ -282,9 +282,12 @@ async function showUserPopup(uid) {
 
   if (!popup || !content) return;
 
-  const snap = await getDoc(doc(db, "users", uid));
-  if (!snap.exists()) return alert("User not found ⚠️");
-  const data = snap.data();
+ const snap = await getDoc(doc(db, "users", uid));
+if (!snap.exists()) {
+  showStarPopup("This user has not unlocked a social card yet 🪪");
+  return;
+}
+const data = snap.data();
 
   // 🪄 Username
   usernameEl.textContent = data.chatId || "Unknown";
