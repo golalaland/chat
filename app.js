@@ -763,8 +763,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   /* ----------------------------
      🚨 BUZZ Message Handler
-  ----------------------------- */
-  refs.buzzBtn?.addEventListener("click", async () => {
+/* ----------------------------
+     🚨 BUZZ Message Handler
+----------------------------- */
+refs.buzzBtn?.addEventListener("click", async () => {
   if (!currentUser) return showStarPopup("Sign in to BUZZ.");
   const txt = refs.messageInputEl?.value.trim();
   if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
@@ -774,35 +776,38 @@ window.addEventListener("DOMContentLoaded", () => {
   const stars = snap.data()?.stars || 0;
   if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
+  // Deduct stars
   await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
 
-  // Pick a random variant 1-5
-  const variant = `buzz-${Math.ceil(Math.random() * 5)}`;
-
+  // Generate BUZZ message
   const newBuzz = {
     content: txt,
     uid: currentUser.uid,
     chatId: currentUser.chatId,
     timestamp: serverTimestamp(),
-    highlight: true,
-    buzzVariant: variant
+    highlight: true
   };
   const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
 
+  // Clear input & show popup
   refs.messageInputEl.value = "";
   showStarPopup("BUZZ sent!");
   renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
   scrollToBottom(refs.messagesEl);
 
-  // Apply BUZZ glow
+  // Apply random BUZZ pulse style
+  const buzzStyles = ["buzz-style-1", "buzz-style-2", "buzz-style-3", "buzz-style-4", "buzz-style-5"];
+  const chosenStyle = buzzStyles[Math.floor(Math.random() * buzzStyles.length)];
+
   const msgEl = document.getElementById(docRef.id);
   if (!msgEl) return;
   const contentEl = msgEl.querySelector(".content") || msgEl;
-  contentEl.classList.add("buzz-highlight", variant);
 
-  // Remove after 12s
+  contentEl.classList.add("buzz-highlight", chosenStyle);
+
+  // Remove the classes after the animation duration (here max 12s)
   setTimeout(() => {
-    contentEl.classList.remove("buzz-highlight", variant);
+    contentEl.classList.remove("buzz-highlight", ...buzzStyles);
     contentEl.style.boxShadow = "none";
   }, 12000);
 });
