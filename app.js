@@ -339,8 +339,6 @@ const closePopup = () => {
   popupContent.classList.remove("show");
   setTimeout(() => { popup.style.display = "none"; }, 200);
 };
-popup.onclick = (e) => { if (e.target === popup) closePopup(); };
-closeBtn.onclick = closePopup;
 
 /* ---------- Detect username tap ---------- */
 document.addEventListener("pointerdown", e => {
