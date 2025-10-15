@@ -1,9 +1,3 @@
-when I make those changes it, it hangs. 
-when I go back to the exact same code repaste the animations video and login btn works. 
-
-This code: 
-
-
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
