@@ -179,35 +179,33 @@ function renderMessagesFromArray(messages) {
     wrapper.className = "msg";
     wrapper.id = item.id;
 
-    const usernameEl = document.createElement("span");
-    usernameEl.className = "meta";
-    usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
-    usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
-    usernameEl.style.marginRight = "4px";
+const usernameEl = document.createElement("span");
+usernameEl.className = "meta";
+usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
+usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
+usernameEl.style.marginRight = "4px";
 
-    const contentEl = document.createElement("span");
-    contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-    contentEl.textContent = " " + (m.content || "");
+const contentEl = document.createElement("span");
+contentEl.className = "content";
+contentEl.textContent = " " + (m.content || "");
 
-   if (m.buzzColor) {
-  // Regular BUZZ messages get their background
-  contentEl.style.background = m.buzzColor;
-}
-
+// Regular BUZZ messages
 if (m.buzzColor) {
-  // Regular BUZZ messages get their background
   contentEl.style.background = m.buzzColor;
 }
 
-if (m.buzzColor) contentEl.style.background = m.buzzColor;
-    if (m.highlight) {
-      contentEl.style.color = "#000";
-      contentEl.style.fontWeight = "700";
-    }
+// BallerAlert special message
+if (m.highlight && m.uid === "balleralert") {
+  contentEl.classList.add("baller-highlight"); // CSS handles glow & sparkle
+} else if (m.highlight) {
+  // Other highlights
+  contentEl.style.color = "#000";
+  contentEl.style.fontWeight = "700";
+}
 
-    wrapper.append(usernameEl, contentEl);
-    refs.messagesEl.appendChild(wrapper);
-  });
+// ✅ Only append once
+wrapper.append(usernameEl, contentEl);
+refs.messagesEl.appendChild(wrapper);
   
   // auto-scroll logic
   if (!scrollPending) {
