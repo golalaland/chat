@@ -775,7 +775,9 @@ window.addEventListener("DOMContentLoaded", () => {
   if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
   await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-  const buzzColor = randomColor();
+
+  // Pick a random variant 1-5
+  const variant = `buzz-${Math.ceil(Math.random() * 5)}`;
 
   const newBuzz = {
     content: txt,
@@ -783,7 +785,7 @@ window.addEventListener("DOMContentLoaded", () => {
     chatId: currentUser.chatId,
     timestamp: serverTimestamp(),
     highlight: true,
-    buzzColor
+    buzzVariant: variant
   };
   const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
 
@@ -796,13 +798,13 @@ window.addEventListener("DOMContentLoaded", () => {
   const msgEl = document.getElementById(docRef.id);
   if (!msgEl) return;
   const contentEl = msgEl.querySelector(".content") || msgEl;
+  contentEl.classList.add("buzz-highlight", variant);
 
-  contentEl.style.setProperty("--buzz-color", buzzColor);
-  contentEl.classList.add("buzz-highlight");
+  // Remove after 12s
   setTimeout(() => {
-    contentEl.classList.remove("buzz-highlight");
+    contentEl.classList.remove("buzz-highlight", variant);
     contentEl.style.boxShadow = "none";
-  }, 12000); // same as CSS animation
+  }, 12000);
 });
 
   /* ----------------------------
