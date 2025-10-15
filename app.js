@@ -75,7 +75,6 @@ async function showGiftModal(targetUid, targetData) {
     if (e.target === modal) close();
   };
 
-  // ⚡ Replace confirm button to avoid duplicates
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
@@ -99,16 +98,18 @@ async function showGiftModal(targetUid, targetData) {
 
     const glowColor = randomColor();
 
-    // Firestore updates
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    // Prepare Firestore data
+    const messageData = {
       content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-      uid: "balleralert", // Can be "buzz" for buzz messages
+      uid: "balleralert",
       chatId: "BallerAlert🤩",
       timestamp: serverTimestamp(),
       highlight: true,
       buzzColor: glowColor
-    });
+    };
 
+    // Firestore updates
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
     await Promise.all([
       updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
       updateDoc(toRef, { stars: increment(amt) })
@@ -118,40 +119,31 @@ async function showGiftModal(targetUid, targetData) {
     close();
 
     // Render message immediately
-    renderMessagesFromArray([{ id: docRef.id, data: {
-      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-      uid: "balleralert",
-      chatId: "BallerAlert🤩",
-      highlight: true,
-      buzzColor: glowColor
-    }}]);
+    renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
 
-    // Apply unique pulsing glow
     const msgEl = document.getElementById(docRef.id);
-    if (msgEl) {
-      const contentEl = msgEl.querySelector(".content") || msgEl;
+    if (!msgEl) return;
+    const contentEl = msgEl.querySelector(".content") || msgEl;
 
-      if (docRef.data()?.uid === "balleralert") {
-        // BallerAlert glow (7s)
-        contentEl.style.setProperty("--pulse-color", glowColor);
-        contentEl.classList.add("pulse-highlight");
+    // Apply BallerAlert pulse (7s)
+    contentEl.style.setProperty("--pulse-color", glowColor);
+    contentEl.classList.add("pulse-highlight");
+    setTimeout(() => {
+      contentEl.classList.remove("pulse-highlight");
+      contentEl.style.boxShadow = "none";
+    }, 7000);
 
-        setTimeout(() => {
-          contentEl.classList.remove("pulse-highlight");
-          contentEl.style.boxShadow = "none";
-        }, 7000);
-      } else if (docRef.data()?.uid === "buzz") {
-        // Buzz glow + mini pulse (3s drop)
-        const buzzColor = randomColor();
-        contentEl.style.setProperty("--buzz-color", buzzColor);
-        contentEl.classList.add("buzz-highlight", "buzz-pulse");
+    // If the message has highlight/buzz, apply short buzz pulse (3s)
+    if (messageData.highlight) {
+      const buzzGlow = glowColor; // Could use a different color if you want
+      const buzzEl = contentEl.cloneNode(true);
+      buzzEl.classList.add("pulse-buzz");
+      buzzEl.style.setProperty("--pulse-color", buzzGlow);
+      msgEl.appendChild(buzzEl);
 
-        setTimeout(() => {
-          contentEl.classList.remove("buzz-highlight", "buzz-pulse");
-          contentEl.style.boxShadow = "none";
-          contentEl.style.opacity = 1;
-        }, 3000);
-      }
+      setTimeout(() => {
+        buzzEl.remove();
+      }, 3000); // Buzz glow lasts 3 seconds
     }
   });
 }
