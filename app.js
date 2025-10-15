@@ -104,7 +104,7 @@ async function showGiftModal(targetUid, targetData) {
     const glowColor = randomColor();
 
     const messageData = {
-      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt}stars⭐️`,
       uid: "balleralert",
       chatId: "BallerAlert🤩",
       timestamp: serverTimestamp(),
@@ -118,7 +118,7 @@ async function showGiftModal(targetUid, targetData) {
       updateDoc(toRef, { stars: increment(amt) })
     ]);
 
-    showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
+    showStarPopup(`You sent ${amt}stars⭐️ to ${targetData.chatId}!`);
     close();
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
 
@@ -279,9 +279,9 @@ function attachMessagesListener() {
         if (!sender || !receiver || !amount) return;
 
         if (sender.toLowerCase() === myId) {
-          showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
+          showGiftAlert(`You gifted ${receiver} ${amount}stars⭐️`);
         } else if (receiver.toLowerCase() === myId) {
-          showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
+          showGiftAlert(`${sender} gifted you ${amount}stars⭐️`);
         }
       }
 
@@ -310,7 +310,7 @@ export async function showUserPopup(uid) {
     if (!snap.exists()) {
       const starPopup = document.getElementById("starPopup");
       starPopup.style.display = "block";
-      starPopup.querySelector("#starText").textContent = "User has no profile yet!";
+      starPopup.querySelector("#starText").textContent = "User has not unlocked profile yet!";
       setTimeout(() => starPopup.style.display = "none", 1800);
       return;
     }
@@ -476,7 +476,7 @@ async function loginWhitelist(email, phone) {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      return showStarPopup("User not found. Please sign up on the main page first.");
+      return showStarPopup("RSVP not found. Please sign up through a Host.");
     }
 
     const data = userSnap.data() || {};
