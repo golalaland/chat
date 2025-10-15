@@ -73,7 +73,11 @@ async function showGiftModal(targetUid, targetData) {
   closeBtn.onclick = close;
   modal.onclick = e => { if (e.target === modal) close(); };
 
-  confirmBtn.onclick = async () => {
+  // ⚡ Remove old confirm button listeners by replacing the node
+  const newConfirmBtn = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+  newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
     if (!amt || amt <= 0) return alert("Enter a valid amount");
     if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
@@ -96,7 +100,7 @@ async function showGiftModal(targetUid, targetData) {
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
-  };
+  });
 }
 
 /* ---------- Gift Alert (Floating Popup) ---------- */
