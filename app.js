@@ -75,18 +75,20 @@ async function showGiftModal(targetUid, targetData) {
     if (e.target === modal) close();
   };
 
-  // Replace confirm button to avoid duplicates
+  // ⚡ Replace confirm button to avoid duplicates
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
 
+    // Minimum gift
     if (!amt || amt < 100) {
       showStarPopup("🔥 Minimum gift is 100 ⭐️ — keep it baller!");
       return;
     }
 
+    // Check balance
     if ((currentUser?.stars || 0) < amt) {
       showStarPopup("Not enough stars 💫");
       return;
@@ -97,7 +99,7 @@ async function showGiftModal(targetUid, targetData) {
 
     const glowColor = randomColor();
 
-    // Add chat + update Firestore
+    // Firestore updates
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
       uid: "balleralert",
@@ -115,7 +117,7 @@ async function showGiftModal(targetUid, targetData) {
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
 
-    // --- Render message immediately with slide + pulsing star ---
+    // Render message immediately
     renderMessagesFromArray([{ id: docRef.id, data: {
       content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
       uid: "balleralert",
@@ -124,27 +126,22 @@ async function showGiftModal(targetUid, targetData) {
       buzzColor: glowColor
     }}]);
 
+    // Apply unique pulsing glow
     const msgEl = document.getElementById(docRef.id);
     if (msgEl) {
       const contentEl = msgEl.querySelector(".content") || msgEl;
-
-      // Wrap in slide + highlight
-      contentEl.innerHTML = `<span class="gift-highlight gift-slide">${contentEl.textContent}</span>`;
-      const highlightEl = contentEl.querySelector(".gift-slide");
-      requestAnimationFrame(() => highlightEl.classList.add("show")); // trigger slide
-
-      // Add pulsing star
-      const star = document.createElement("span");
-      star.className = "gift-star";
-      star.style.setProperty("--pulse-color", glowColor);
-      star.textContent = "⭐️";
-      highlightEl.appendChild(star);
+      contentEl.style.setProperty("--pulse-color", glowColor);
+      contentEl.classList.add("pulse-highlight");
 
       // Stop pulse after 7s
-      setTimeout(() => { star.style.animation = "none"; }, 7000);
+      setTimeout(() => {
+        contentEl.classList.remove("pulse-highlight");
+        contentEl.style.boxShadow = "none";
+      }, 7000);
     }
   });
 }
+
 
 /* ---------- Gift Alert (Floating Popup) ---------- */
 function showGiftAlert(text) {
