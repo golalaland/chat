@@ -390,71 +390,130 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   color: #fff;                  /* subtle hover effect */
 }
 
+/* ---------- Overlay ---------- */
 .user-popup {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0,0,0,0.6);       /* nice dim overlay */
   justify-content: center;
   align-items: center;
   z-index: 2500;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
+  padding: 10px;                     /* small spacing on tiny screens */
 }
 
+/* ---------- Popup Box ---------- */
 .user-popup-content {
-  width: 200px;        /* smaller width */
-  padding: 12px 10px;  /* tighter padding */
-  border-radius: 14px;
-  transform: scale(0.85); /* start smaller */
-  box-shadow: 0 0 18px rgba(255, 0, 128, 0.3);
+  background: rgba(17,17,17,0.95);
+  color: white;
+  border-radius: 16px;
+  width: 220px;                      /* smaller width */
+  padding: 18px 14px;                /* slightly smaller padding */
+  text-align: center;
+  position: relative;
+  transform: scale(0.9);
+  transition: transform 0.25s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 20px rgba(255,0,128,0.35);
 }
 
 .user-popup-content.show { 
   transform: scale(1); 
-  box-shadow: 0 0 28px rgba(255, 0, 128, 0.45);
+  box-shadow: 0 0 30px rgba(255,0,128,0.45);
 }
 
+/* ---------- Close Button ---------- */
+.popup-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: white;
+  cursor: pointer;
+}
+
+/* ---------- Profile Photo ---------- */
 .popup-photo {
-  width: 60px;        /* smaller profile pic */
-  height: 60px;
-  font-size: 24px;    /* smaller initials */
-  box-shadow: 0 0 12px rgba(255, 0, 128, 0.4);
+  width: 70px;                        /* smaller cute circle */
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 10px auto 6px;
+  background: #222;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 28px;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255,0,128,0.4);
+  transition: box-shadow 0.3s ease;
 }
 
 .user-popup-content.show .popup-photo {
-  box-shadow: 0 0 18px rgba(255, 0, 128, 0.6);
+  box-shadow: 0 0 22px rgba(255,0,128,0.6);
 }
 
+/* ---------- Username ---------- */
 .popup-username {
-  font-size: 1rem;    /* smaller font */
   margin: 4px 0 2px;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
+/* ---------- Gender / Typewriter ---------- */
 .popup-gender {
-  font-size: 12px;    /* tiny typewriter text */
+  font-family: 'Courier New', Courier, monospace; /* typewriter font */
+  font-size: 13px;
   color: #ccc;
-  font-family: 'Courier New', Courier, monospace;
   margin-bottom: 6px;
 }
 
+/* ---------- Pulsing Fruit ---------- */
 .popup-glow {
-  font-size: 22px;     /* smaller emoji */
+  font-size: 22px;
   margin: 4px 0;
-  text-shadow: 0 0 8px rgba(255, 0, 128, 0.6);
+  text-shadow: 0 0 10px rgba(255,0,128,0.6);
+  animation: pulseGlow 2.5s infinite;
 }
 
+@keyframes pulseGlow {
+  0%, 100% { text-shadow: 0 0 10px rgba(255,0,128,0.6); transform: scale(1); }
+  50% { text-shadow: 0 0 16px rgba(255,0,128,0.8); transform: scale(1.15); }
+}
+
+/* ---------- Social Icons ---------- */
 .popup-socials img {
-  width: 20px;
-  height: 20px;
   margin: 0 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  transition: transform 0.2s, opacity 0.2s;
+  opacity: 0.9;
+}
+.popup-socials img:hover { 
+  transform: scale(1.1);
+  opacity: 1;
 }
 
+/* ---------- Gift Button ---------- */
 .popup-gift button {
-  padding: 6px 12px;   /* smaller button */
-  font-size: 13px;
+  background: linear-gradient(135deg,#ff4081,#ff80ab);
+  color: #fff;
+  border: none;
   border-radius: 8px;
-  margin-top: 8px;
-  box-shadow: 0 0 10px rgba(255, 0, 128, 0.3);
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(255,0,128,0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.popup-gift button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 14px rgba(255,0,128,0.45);
 }
 
 .modal {
