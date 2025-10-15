@@ -69,24 +69,39 @@ async function showGiftModal(targetUid, targetData) {
   amountInput.value = "";
   modal.style.display = "flex";
 
-  const close = () => modal.style.display = "none";
+  const close = () => (modal.style.display = "none");
   closeBtn.onclick = close;
-  modal.onclick = e => { if (e.target === modal) close(); };
+  modal.onclick = (e) => {
+    if (e.target === modal) close();
+  };
 
-  // ⚡ Remove old confirm button listeners by replacing the node
+  // ⚡ Replace confirm button listeners to avoid duplicates
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
-    if (!amt || amt < 100) return showStarPopup("Minimum gift is 100 ⭐️");
-if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+
+    // 🔒 Strict minimum enforcement
+    if (!amt || amt < 100) {
+      showStarPopup("🔥 Minimum gift is 100 ⭐️ — keep it baller!");
+      return; // 🚫 Stop execution here
+    }
+
+    // 🔒 Check balance
+    if ((currentUser?.stars || 0) < amt) {
+      showStarPopup("Not enough stars 💫");
+      return; // 🚫 Stop execution here
+    }
 
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
 
     await Promise.all([
-      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+      updateDoc(fromRef, {
+        stars: increment(-amt),
+        starsGifted: increment(amt),
+      }),
       updateDoc(toRef, { stars: increment(amt) }),
       addDoc(collection(db, CHAT_COLLECTION), {
         content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
@@ -94,8 +109,8 @@ if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫
         chatId: "BallerAlert🤩",
         timestamp: serverTimestamp(),
         highlight: true,
-        buzzColor: randomColor()
-      })
+        buzzColor: randomColor(),
+      }),
     ]);
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
