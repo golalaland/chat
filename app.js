@@ -302,33 +302,44 @@ popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
     a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
     socialsEl.appendChild(a);
   });
-// --- Gift button (prevent duplicates + clean reuse) ---
-let giftBtn = popupContent.querySelector(".gift-btn");
+// Gift button
+let existingGiftBtn = popupContent.querySelector(".gift-btn");
+if (existingGiftBtn) existingGiftBtn.remove(); // remove old one if exists
 
-if (!giftBtn) {
-  giftBtn = document.createElement("button");
-  giftBtn.className = "gift-btn";
-  popupContent.appendChild(giftBtn);
-}
+const giftBtn = document.createElement("button");
+giftBtn.className = "gift-btn";
+giftBtn.innerHTML = `
+  <span style="
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:linear-gradient(135deg,#ffb300,#ff0080,#00c6ff);
+    color:#fff;
+    font-weight:600;
+    padding:10px 20px;
+    border:none;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(255,255,255,0.5);
+    cursor:pointer;
+    transition:all 0.3s ease;
+  ">
+    🎁 Gift ${data.chatId} ⭐️
+  </span>
+`;
+giftBtn.onpointerdown = () => showGiftModal(uidKey, data);
 
-// Always update text and click handler
-giftBtn.textContent = `🎁 Gift ${data.chatId} stars ⭐️`;
-giftBtn.onclick = () => showGiftModal(uidKey, data);
+popupContent.appendChild(giftBtn);
 
-// --- Show popup animation ---
+// Display animation
 popup.style.display = "flex";
 setTimeout(() => popupContent.classList.add("show"), 10);
 
-// --- Close popup logic ---
+// Close logic
 const closePopup = () => {
   popupContent.classList.remove("show");
-  setTimeout(() => {
-    popup.style.display = "none";
-    giftBtn.onclick = null; // remove listener to prevent stacking
-  }, 200);
+  setTimeout(() => { popup.style.display = "none"; }, 200);
 };
-
-// Close button
+popup.onclick = (e) => { if (e.target === popup) closePopup(); };
 closeBtn.onclick = closePopup;
 
 // Close when clicking outside
