@@ -187,16 +187,16 @@ function renderMessagesFromArray(messages) {
     usernameEl.style.marginRight = "4px";
 
     // ---------- Message Content ----------
-  const contentEl = document.createElement("span");
-contentEl.className = m.buzzColor ? "buzz-content" : "content";
+const contentEl = document.createElement("span");
+contentEl.className = m.highlight ? "buzz-content" : "content"; // always buzz-content for BUZZ/highlight
 contentEl.textContent = " " + (m.content || "");
 
-// Add background if BUZZ
+// Apply dynamic background for BUZZ
 if (m.buzzColor) contentEl.style.background = m.buzzColor;
 
-// BallerAlert
+// BallerAlert special
 if (m.highlight && m.uid === "balleralert") {
-  contentEl.classList.add("baller-highlight");
+  contentEl.classList.add("baller-highlight"); // CSS handles glow/sparkle
 } else if (m.highlight) {
   contentEl.style.color = "#000";
   contentEl.style.fontWeight = "700";
