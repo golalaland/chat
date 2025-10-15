@@ -144,11 +144,11 @@ async function showGiftModal(targetUid, targetData) {
     if (!msgEl) return;
     const contentEl = msgEl.querySelector(".content") || msgEl;
 
-    // Apply pulse highlight (21s)
+    // Apply BallerAlert glow (21s)
     contentEl.style.setProperty("--pulse-color", glowColor);
-    contentEl.classList.add("pulse-highlight");
+    contentEl.classList.add("baller-highlight");
     setTimeout(() => {
-      contentEl.classList.remove("pulse-highlight");
+      contentEl.classList.remove("baller-highlight");
       contentEl.style.boxShadow = "none";
     }, 21000);
 
@@ -156,14 +156,14 @@ async function showGiftModal(targetUid, targetData) {
     let starsInterval = setInterval(() => spawnFloatingStars(contentEl, 5), 300);
     setTimeout(() => clearInterval(starsInterval), 2000);
 
-    // Apply buzz clone (21s)
+    // Apply Buzz highlight (12s)
     if (messageData.highlight) {
       const buzzEl = contentEl.cloneNode(true);
-      buzzEl.classList.add("pulse-buzz");
-      buzzEl.style.setProperty("--pulse-color", glowColor);
+      buzzEl.classList.add("buzz-highlight");
+      buzzEl.style.setProperty("--buzz-color", glowColor);
       msgEl.appendChild(buzzEl);
 
-      setTimeout(() => buzzEl.remove(), 21000);
+      setTimeout(() => buzzEl.remove(), 12000); // 12s duration
     }
   });
 }
