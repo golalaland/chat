@@ -320,17 +320,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   box-shadow: 0 0 16px rgba(255, 20, 147, 0.45),
               0 0 32px rgba(255, 20, 147, 0.25);
 }
-/* ---------- Normal BUZZ Messages ---------- */
+/* Normal BUZZ */
 .buzz-content {
   display: inline-block;
-  padding: 6px 12px;           /* nice thick backdrop */
+  padding: 6px 12px;
   border-radius: 8px;
-  font-weight: 700;             /* bold but not insane */
-  font-size: 1rem;              /* normal chat size */
+  font-weight: 800;          /* heavier now */
+  font-size: 1rem;
   line-height: 1.5;
-  color: #000;                  /* default text color for buzz */
+  color: #000;
   transition: background 0.3s ease, color 0.3s ease;
   margin: 2px 0;
+  font-family: 'Arial', sans-serif; /* solid bold font */
 }
 .room-subtitle {
   opacity: 1;
@@ -481,20 +482,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   pointer-events: none;
   z-index: 9999; /* ensure it's above everything */
 }
-/* ---------- BallerAlert Special Highlight ---------- */
+/* BallerAlert */
 .baller-highlight {
   display: inline-block;
   position: relative;
-  padding: 8px 16px;            /* extra thick padding for emphasis */
+  padding: 8px 16px;
   border-radius: 10px;
   font-weight: 900;
-  font-size: 1.1rem;            /* slightly bigger than normal */
-  font-family: 'Comic Sans MS', cursive, sans-serif;
-  color: #FFD700;               /* gold text */
+  font-size: 1.1rem;
+  font-family: 'Arial Black', Gadget, sans-serif; /* stronger font than Comic Sans */
+  color: #FFD700;
   text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
   transition: text-shadow 0.6s ease-in-out;
   margin: 3px 0;
-  background: rgba(255, 255, 255, 0.05); /* subtle backdrop */
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* Optional sparkle effect for BallerAlert (JS fallback) */
