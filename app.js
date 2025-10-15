@@ -302,23 +302,16 @@ popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
     a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
     socialsEl.appendChild(a);
   });
-// Gift button
-const giftBtn = document.createElement("button");
-giftBtn.textContent = `🎁 Gift ${data.chatId} stars ⭐️`;
-giftBtn.className = "gift-btn";
-giftBtn.onclick = () => showGiftModal(uidKey, data);
-popupContent.appendChild(giftBtn);
-  popup.style.display = "flex";
-  setTimeout(() => popupContent.classList.add("show"), 10);
+// --- Gift button (robust, no duplicates, safe listeners) ---
+try {
+  // ensure popup / popupContent exist
+  if (!popup || !popupContent) return;
 
-  const closePopup = () => {
-    popupContent.classList.remove("show");
-    setTimeout(() => { popup.style.display = "none"; }, 200);
-  };
-
-  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
-  closeBtn.onclick = closePopup;
-}
+  // find existing and remove to be extra-safe
+  const prev = popupContent.querySelector(".gift-btn");
+  if (prev) {
+    // remove any listener if attached (best-effort)
+    prev.replaceWith(prev.cloneNode
 
 /* ---------- Detect username tap ---------- */
 document.addEventListener("pointerdown", e => {
