@@ -199,17 +199,16 @@ if (m.buzzColor) {
   contentEl.style.background = m.buzzColor;
 }
 
-// Special BallerAlert gift styling (safe, no intervals)
-if (m.highlight && m.uid === "balleralert") {
-  contentEl.classList.add("baller-highlight");
-} else if (m.highlight) {
-  // Other highlighted messages (like BUZZ)
-  contentEl.style.color = "#000";
-  contentEl.style.fontWeight = "700";
-}
+if (m.buzzColor) contentEl.style.background = m.buzzColor;
+    if (m.highlight) {
+      contentEl.style.color = "#000";
+      contentEl.style.fontWeight = "700";
+    }
 
-wrapper.append(usernameEl, contentEl);
-refs.messagesEl.appendChild(wrapper);
+    wrapper.append(usernameEl, contentEl);
+    refs.messagesEl.appendChild(wrapper);
+  });
+  
   // auto-scroll logic
   if (!scrollPending) {
     scrollPending = true;
