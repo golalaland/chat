@@ -104,7 +104,7 @@ async function showGiftModal(targetUid, targetData) {
     const glowColor = randomColor();
 
     const messageData = {
-      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt}⭐️`,
       uid: "balleralert",
       chatId: "BallerAlert🤩",
       timestamp: serverTimestamp(),
@@ -118,7 +118,7 @@ async function showGiftModal(targetUid, targetData) {
       updateDoc(toRef, { stars: increment(amt) })
     ]);
 
-    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
+    showStarPopup(`You sent ${amt}⭐️ to ${targetData.chatId}!`);
     close();
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
 
