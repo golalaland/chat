@@ -271,110 +271,103 @@ function attachMessagesListener() {
 }
 
 /* ---------- 👤 User Popup Logic (Optimized & Instant) ---------- */
-async function showUserPopup(uid) {
-  const popup = document.getElementById("userPopup");
-  if (!popup) return;
+const userPopup = document.getElementById("userPopup");
+const popupContent = userPopup.querySelector(".user-popup-content");
+const popupCloseBtn = document.getElementById("popupCloseBtn");
+const popupPhoto = userPopup.querySelector(".popup-photo");
+const popupUsername = document.getElementById("popupUsername");
+const popupGender = document.getElementById("popupGender");
+const popupGlow = userPopup.querySelector(".popup-glow");
+const popupSocials = document.getElementById("popupSocials");
 
-  const content = popup.querySelector(".user-popup-content");
-  const usernameEl = document.getElementById("popupUsername");
-  const genderEl = document.getElementById("popupGender");
-  const socialsEl = document.getElementById("popupSocials");
-  const closeBtn = document.getElementById("popupCloseBtn");
-  const photoEl = popup.querySelector(".popup-photo");
-
-  // Pre-show popup skeleton instantly
-  popup.style.display = "flex";
-  content.classList.add("show");
-  usernameEl.textContent = "...";
-  genderEl.textContent = "";
-  socialsEl.innerHTML = "";
-  photoEl.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:#333;"></div>`;
-
-  let data = null;
+export async function showUserPopup(uid) {
   try {
     const snap = await getDoc(doc(db, "users", uid));
+
     if (!snap.exists()) {
-      popup.style.display = "none"; // hide skeleton
-      showStarPopup("This user has not unlocked a social card yet 🪪");
+      const starPopup = document.getElementById("starPopup");
+      starPopup.style.display = "block";
+      starPopup.querySelector("#starText").textContent = "User has no profile yet!";
+      setTimeout(() => starPopup.style.display = "none", 1800);
       return;
     }
-    data = snap.data();
+
+    const data = snap.data();
+
+    // Username
+    popupUsername.textContent = data.chatId || "Unknown";
+
+    // Typewriter effect for descriptor
+    const ageGroup = (data.age >= 30) ? "30s" : "20s";
+    const pronoun = data.gender?.toLowerCase() === "male" ? "his" : "her";
+    const textLine = `A ${data.naturePick || "sexy"} ${data.gender || "male"} in ${pronoun} ${ageGroup}`;
+    popupGender.textContent = "";
+    let i = 0;
+    function typeWriter() {
+      if (i < textLine.length) {
+        popupGender.textContent += textLine.charAt(i);
+        i++;
+        setTimeout(typeWriter, 50);
+      }
+    }
+    typeWriter();
+
+    // Photo
+    if (data.photoURL) {
+      popupPhoto.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    } else {
+      popupPhoto.textContent = (data.chatId || "?").slice(0, 2).toUpperCase();
+      popupPhoto.style.background = "#222";
+    }
+
+    // Fruit emoji
+    popupGlow.textContent = data.fruitPick || "🍇";
+
+    // Socials
+    popupSocials.innerHTML = "";
+    const socialsMap = {
+      instagram: "https://cdn-icons-png.flaticon.com/512/2111/2111463.png",
+      telegram: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png",
+      tiktok: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png",
+      whatsapp: "https://cdn-icons-png.flaticon.com/512/733/733585.png"
+    };
+    Object.keys(socialsMap).forEach(key => {
+      if (data[key]) {
+        const a = document.createElement("a");
+        a.href = data[key].startsWith("http") ? data[key] : `https://${data[key]}`;
+        a.target = "_blank";
+        a.innerHTML = `<img src="${socialsMap[key]}" alt="${key}">`;
+        popupSocials.appendChild(a);
+      }
+    });
+
+    // 🎁 Gift button
+    let giftBtn = popupContent.querySelector(".gift-btn");
+    if (!giftBtn) {
+      giftBtn = document.createElement("button");
+      giftBtn.className = "gift-btn";
+      popupContent.appendChild(giftBtn);
+    }
+    giftBtn.textContent = "Gift Stars ⭐️";
+    giftBtn.onclick = () => showGiftModal(uid, data);
+
+    // Show popup
+    userPopup.style.display = "flex";
+    setTimeout(() => popupContent.classList.add("show"), 20);
+
   } catch (err) {
-    popup.style.display = "none"; // hide skeleton
-    console.error("Popup fetch error:", err);
-    showStarPopup("Could not load profile 💫");
-    return;
+    console.error("Error fetching user popup:", err);
   }
-
-  // --- Populate content smoothly ---
-  usernameEl.textContent = data.chatId || "Unknown";
-  usernameEl.style.color = data.usernameColor || "#fff";
-
-  const age = parseInt(data.age || 0);
-  const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
-
-  let pronoun = "their";
-  if (data.gender?.toLowerCase() === "male") pronoun = "his";
-  if (data.gender?.toLowerCase() === "female") pronoun = "her";
-
-  genderEl.textContent = `A ${data.naturePick || "sexy"} ${data.gender || "male"} in ${pronoun} ${ageGroup}`;
-
-  let fruitEl = popup.querySelector(".popup-fruit");
-  if (!fruitEl) {
-    fruitEl = document.createElement("div");
-    fruitEl.className = "popup-fruit";
-    fruitEl.style.fontSize = "48px";
-    fruitEl.style.textAlign = "center";
-    fruitEl.style.margin = "10px 0";
-    genderEl.after(fruitEl);
-  }
-  fruitEl.textContent = data.fruitPick || "🍇";
-
-  // Photo
-  if (data.photoURL) {
-    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-  } else {
-    const initials = (data.chatId || "?").slice(0, 2).toUpperCase();
-    photoEl.textContent = initials;
-    photoEl.style.background = data.usernameColor || "#444";
-  }
-
-  // Socials
-  socialsEl.innerHTML = "";
-  const socialPlatforms = [
-    { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
-    { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
-    { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
-    { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
-  ];
-  for (const s of socialPlatforms) {
-    const link = data[s.field];
-    if (!link) continue;
-    const a = document.createElement("a");
-    a.href = link.startsWith("http") ? link : `https://${link}`;
-    a.target = "_blank";
-    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" width="28" height="28" style="border-radius:6px;">`;
-    socialsEl.appendChild(a);
-  }
-
-  // 🎁 Gift button
-  let giftBtn = content.querySelector(".gift-btn");
-  if (!giftBtn) {
-    giftBtn = document.createElement("button");
-    giftBtn.className = "gift-btn";
-    content.appendChild(giftBtn);
-  }
-  giftBtn.textContent = "Gift Stars ⭐️";
-  giftBtn.onclick = () => showGiftModal(uid, data);
-
-  // close controls
-  const close = () => {
-    content.classList.remove("show");
-    setTimeout(() => (popup.style.display = "none"), 200);
-  };
-  popup.onclick = (e) => { if (e.target === popup) close(); };
-  closeBtn.onclick = close;
 }
+
+// Close logic
+popupCloseBtn.onclick = () => {
+  popupContent.classList.remove("show");
+  setTimeout(() => userPopup.style.display = "none", 250);
+};
+userPopup.onclick = e => {
+  if (e.target === userPopup) popupCloseBtn.click();
+};
 
 /* ---------- 🪶 Detect Username Tap ---------- */
 document.addEventListener("pointerdown", e => {
