@@ -632,6 +632,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   position: relative;
 }
 
+.gift-star {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 16px;
+  animation: starPulse 0.7s ease-in-out infinite;
+}
+
+@keyframes starPulse {
+  0% { transform: scale(1); text-shadow: 0 0 5px var(--pulse-color); }
+  50% { transform: scale(1.4); text-shadow: 0 0 15px var(--pulse-color); }
+  100% { transform: scale(1); text-shadow: 0 0 5px var(--pulse-color); }
+}
+
 #popupGender {
   font-family: 'Montserrat', sans-serif;
   font-size: 16px;
