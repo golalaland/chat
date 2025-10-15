@@ -280,7 +280,7 @@ async function showUserPopup(uid) {
   // 🪄 Username
   usernameEl.textContent = data.chatId || "Unknown";
   usernameEl.style.color = data.usernameColor || "#fff";
-  usernameEl.classList.add("baller-highlight"); // glow
+  usernameEl.classList.add("baller-highlight");
 
   // 👥 Gender / Age description
   const age = parseInt(data.age || 0);
@@ -314,7 +314,7 @@ async function showUserPopup(uid) {
   descriptionEl.style.textAlign = "center";
   descriptionEl.style.margin = "6px 0";
   descriptionEl.style.color = "#fff";
-  descriptionEl.classList.add("baller-highlight"); // optional glow
+  descriptionEl.classList.add("baller-highlight");
 
   // 🌐 Socials
   const socialPlatforms = [
@@ -334,73 +334,30 @@ async function showUserPopup(uid) {
     socialsEl.appendChild(a);
   }
 
-// 🎁 Gift Button (inside showUserPopup)
-let giftBtn = content.querySelector(".gift-btn");
-if (!giftBtn) {
-  giftBtn = document.createElement("button");
-  giftBtn.className = "gift-btn baller-highlight"; // optional glow
-  giftBtn.textContent = `GIFT STARS ⭐️`;
-  content.appendChild(giftBtn);
-} else {
-  // Ensure text and handler are updated
-  giftBtn.textContent = `GIFT STARS ⭐️`;
-}
+  // 🎁 Gift Button
+  let giftBtn = content.querySelector(".gift-btn");
+  if (!giftBtn) {
+    giftBtn = document.createElement("button");
+    giftBtn.className = "gift-btn baller-highlight";
+    giftBtn.textContent = `GIFT STARS ⭐️`;
+    content.appendChild(giftBtn);
+  } else {
+    giftBtn.textContent = `GIFT STARS ⭐️`;
+  }
 
-// Click handler opens top-level gift modal
-giftBtn.onclick = () => showGiftModal(uid, data);
+  // Click opens top-level gift modal
+  giftBtn.onclick = () => showGiftModal(uid, data);
 
-/* ---------- Top-level Gift Modal Logic ---------- */
-function showGiftModal(targetUid, targetData) {
-  const modal = document.getElementById("giftModal");
-  const amountInput = document.getElementById("giftAmountInput");
-  const confirmBtn = document.getElementById("giftConfirmBtn");
-  const closeBtn = document.getElementById("giftModalClose");
+  // Show popup
+  popup.style.display = "flex";
 
-  if (!modal || !amountInput || !confirmBtn) return;
-
-  // Reset input and show modal
-  amountInput.value = "";
-  modal.style.display = "flex";
-
-  // Remove old click listeners to avoid duplicates
-  const newConfirmBtn = confirmBtn.cloneNode(true);
-  confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-  newConfirmBtn.addEventListener("click", async () => {
-    const amount = parseInt(amountInput.value);
-
-    if (isNaN(amount) || amount < 100) {
-      return alert("You must gift at least 100 stars ⭐️");
-    }
-
-    if ((currentUser?.stars || 0) < amount) {
-      return showStarPopup("Not enough stars 💫");
-    }
-
-    // Deduct stars and send gift
-    const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUid);
-
-    await Promise.all([
-      updateDoc(fromRef, { stars: increment(-amount), starsGifted: increment(amount) }),
-      updateDoc(toRef, { stars: increment(amount) }),
-      addDoc(collection(db, CHAT_COLLECTION), {
-        content: `${currentUser.chatId} gifted ${targetData.chatId} ${amount} ⭐️`,
-        uid: "balleralert",
-        chatId: "BallerAlert🤩",
-        timestamp: serverTimestamp(),
-        highlight: true,
-        buzzColor: randomColor()
-      })
-    ]);
-
-    showGiftAlert(`You gifted ${amount} stars ⭐️!`);
-    modal.style.display = "none";
-  });
-
-  // Close modal
-  closeBtn.onclick = () => modal.style.display = "none";
-  modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+  // Close button
+  closeBtn.onclick = () => {
+    popup.style.display = "none";
+  };
+  popup.onclick = e => {
+    if (e.target === popup) popup.style.display = "none";
+  };
 }
 
 /* ---------- 🪶 Detect Username Tap ---------- */
