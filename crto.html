@@ -13,6 +13,8 @@
   --muted:#aaa;
   --accent:#FF1493;
   --glass: rgba(255,255,255,0.03);
+   --pulse-color: #FFD700; /* BallerAlert glow */
+  --buzz-color: #0FF;      /* Buzz message glow */
 }
 #videoWrapper .nav-buttons {
   display: flex;
@@ -613,35 +615,44 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   }
 } 
 
-/* BallerAlert pulse */
-.pulse-highlight {
-  box-shadow: 0 0 20px var(--pulse-color);
-  animation: pulse-glow 1.2s ease-in-out infinite alternate;
+/* ---------- BallerAlert Glow ---------- */
+.baller-highlight {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 0.95rem;
+  font-family: 'Arial Black', Gadget, sans-serif;
+  color: #000;
+  background: rgba(255, 255, 0, 0.2);
+  box-shadow: 0 0 6px var(--pulse-color), 0 0 12px var(--pulse-color);
+  animation: baller-pulse 1.2s ease-in-out infinite alternate;
 }
 
-@keyframes pulse-glow {
+@keyframes baller-pulse {
   0% { box-shadow: 0 0 10px var(--pulse-color); }
   50% { box-shadow: 0 0 20px var(--pulse-color); }
   100% { box-shadow: 0 0 10px var(--pulse-color); }
 }
 
-/* Buzz mini glow */
+/* ---------- Buzz Glow & Pulse ---------- */
 .buzz-highlight {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: 'Arial', sans-serif;
+  color: #000;
   background: rgba(0, 255, 255, 0.2);
-  border-radius: 5px;
   box-shadow: 0 0 12px var(--buzz-color);
-  transition: opacity 0.5s ease, box-shadow 0.5s ease;
+  animation: buzz-pulse 0.8s ease-in-out 1;
 }
 
-/* Buzz pulse drop */
 @keyframes buzz-pulse {
   0% { transform: scale(1); opacity: 0.7; }
   50% { transform: scale(1.2); opacity: 1; }
   100% { transform: scale(1); opacity: 0.7; }
-}
-
-.buzz-pulse {
-  animation: buzz-pulse 0.8s ease-in-out 1;
 }
 
 #popupGender {
