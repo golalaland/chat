@@ -308,11 +308,17 @@ async function showUserPopup(uid) {
   }
 
   // 🎁 Gift Button
-  const giftBtn = document.createElement("button");
-  giftBtn.className = "gift-btn";
-  giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
-  giftBtn.onclick = () => showGiftModal(uid, data);
-  content.appendChild(giftBtn);
+  let giftBtn = content.querySelector(".gift-btn");
+  if (!giftBtn) {
+    giftBtn = document.createElement("button");
+    giftBtn.className = "gift-btn";
+    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
+    giftBtn.onclick = () => showGiftModal(uid, data);
+    content.appendChild(giftBtn);
+  } else {
+    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
+    giftBtn.onclick = () => showGiftModal(uid, data);
+  }
 
   // ✨ Show popup
   popup.style.display = "flex";
