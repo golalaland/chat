@@ -270,9 +270,11 @@ function attachMessagesListener() {
   });
 }
 
-/* ---------- 👤 User Popup Logic ---------- */
+/* ---------- 👤 User Popup Logic (Optimized & Safe) ---------- */
 async function showUserPopup(uid) {
   const popup = document.getElementById("userPopup");
+  if (!popup) return;
+
   const content = popup.querySelector(".user-popup-content");
   const usernameEl = document.getElementById("popupUsername");
   const genderEl = document.getElementById("popupGender");
@@ -280,41 +282,56 @@ async function showUserPopup(uid) {
   const closeBtn = document.getElementById("popupCloseBtn");
   const photoEl = popup.querySelector(".popup-photo");
 
-  if (!popup || !content) return;
+  // show popup immediately
+  popup.style.display = "flex";
+  content.classList.add("show");
 
- const snap = await getDoc(doc(db, "users", uid));
-if (!snap.exists()) {
-  showStarPopup("This user has not unlocked a social card yet 🪪");
-  return;
-}
-const data = snap.data();
+  // temp loading state
+  usernameEl.textContent = "Loading...";
+  genderEl.textContent = "Fetching profile 💫";
+  socialsEl.innerHTML = "";
+  photoEl.innerHTML = `<div style="font-size:30px;">⏳</div>`;
 
-  // 🪄 Username
+  let data = null;
+  try {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) {
+      showStarPopup("This user has not unlocked a social card yet 🪪");
+      popup.style.display = "none";
+      return;
+    }
+    data = snap.data();
+  } catch (err) {
+    console.error("Popup fetch error:", err);
+    showStarPopup("Could not load profile 💫");
+    popup.style.display = "none";
+    return;
+  }
+
+  // update fields
   usernameEl.textContent = data.chatId || "Unknown";
   usernameEl.style.color = data.usernameColor || "#fff";
 
-  // 👥 Gender / Age description
   const age = parseInt(data.age || 0);
   const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
-  genderEl.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
+  genderEl.textContent = `A ${data.nature || "sexy"} ${data.gender || "female"} in ${data.fruitPick || "🍇"} mode, ${ageGroup}`;
 
-  // 🖼️ Profile photo or initials
   if (data.photoURL) {
-    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
+    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
   } else {
     const initials = (data.chatId || "?").slice(0, 2).toUpperCase();
     photoEl.textContent = initials;
     photoEl.style.background = data.usernameColor || "#444";
   }
 
-  // 🌐 Socials
+  // socials
+  socialsEl.innerHTML = "";
   const socialPlatforms = [
     { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
     { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
     { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
     { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
   ];
-  socialsEl.innerHTML = "";
   for (const s of socialPlatforms) {
     const link = data[s.field];
     if (!link) continue;
@@ -325,36 +342,23 @@ const data = snap.data();
     socialsEl.appendChild(a);
   }
 
-// 🎁 Gift Button — classy & clean
-try {
-  const giftBtnExisting = content?.querySelector(".gift-btn");
-  let giftBtn = giftBtnExisting;
-
+  // 🎁 Gift button
+  let giftBtn = content.querySelector(".gift-btn");
   if (!giftBtn) {
     giftBtn = document.createElement("button");
     giftBtn.className = "gift-btn";
-    giftBtn.textContent = "Gift Stars ⭐️";
-    giftBtn.onclick = () => showGiftModal(uid, data);
     content.appendChild(giftBtn);
-  } else {
-    giftBtn.textContent = "Gift Stars ⭐️";
-    giftBtn.onclick = () => showGiftModal(uid, data);
   }
+  giftBtn.textContent = "Gift Stars ⭐️";
+  giftBtn.onclick = () => showGiftModal(uid, data);
 
-  // ✨ Show popup animation
-  popup.style.display = "flex";
-  setTimeout(() => content?.classList.add("show"), 10);
-
+  // close controls
   const close = () => {
-    content?.classList.remove("show");
+    content.classList.remove("show");
     setTimeout(() => (popup.style.display = "none"), 200);
   };
-
-  popup.onclick = e => { if (e.target === popup) close(); };
+  popup.onclick = (e) => { if (e.target === popup) close(); };
   closeBtn.onclick = close;
-} catch (err) {
-  console.error("Gift modal error:", err);
-  showStarPopup("Something went wrong opening this profile 💫");
 }
 
 /* ---------- 🪶 Detect Username Tap ---------- */
