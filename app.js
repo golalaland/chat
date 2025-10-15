@@ -761,8 +761,6 @@ window.addEventListener("DOMContentLoaded", () => {
     scrollToBottom(refs.messagesEl);
   });
 
-  /* ----------------------------
-     🚨 BUZZ Message Handler
 /* ----------------------------
      🚨 BUZZ Message Handler
 ----------------------------- */
@@ -795,21 +793,25 @@ refs.buzzBtn?.addEventListener("click", async () => {
   renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
   scrollToBottom(refs.messagesEl);
 
-  // Apply random BUZZ pulse style
+  // BUZZ styles & animations
   const buzzStyles = ["buzz-style-1", "buzz-style-2", "buzz-style-3", "buzz-style-4", "buzz-style-5"];
   const chosenStyle = buzzStyles[Math.floor(Math.random() * buzzStyles.length)];
+  const glowColors = ["#00FFFF", "#FF69B4", "#FFD700", "#7CFC00", "#FF4500"];
+  const chosenGlow = glowColors[Math.floor(Math.random() * glowColors.length)];
 
   const msgEl = document.getElementById(docRef.id);
   if (!msgEl) return;
   const contentEl = msgEl.querySelector(".content") || msgEl;
 
+  // Apply BUZZ highlight + random pulse + random glow
+  contentEl.style.setProperty("--buzz-color", chosenGlow);
   contentEl.classList.add("buzz-highlight", chosenStyle);
 
-  // Remove the classes after the animation duration (here max 12s)
+  // Cleanup after animation duration
   setTimeout(() => {
     contentEl.classList.remove("buzz-highlight", ...buzzStyles);
     contentEl.style.boxShadow = "none";
-  }, 12000);
+  }, 12000); // same as CSS animation
 });
 
   /* ----------------------------
