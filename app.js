@@ -325,9 +325,9 @@ const data = snap.data();
     socialsEl.appendChild(a);
   }
 
-// 🎁 Gift Button (safe + clean)
-(() => {
-  const giftBtnExisting = content.querySelector(".gift-btn");
+// 🎁 Gift Button — classy & clean
+try {
+  const giftBtnExisting = content?.querySelector(".gift-btn");
   let giftBtn = giftBtnExisting;
 
   if (!giftBtn) {
@@ -341,21 +341,21 @@ const data = snap.data();
     giftBtn.onclick = () => showGiftModal(uid, data);
   }
 
-  // ✨ Show popup
+  // ✨ Show popup animation
   popup.style.display = "flex";
-  setTimeout(() => content.classList.add("show"), 10);
+  setTimeout(() => content?.classList.add("show"), 10);
 
   const close = () => {
-    content.classList.remove("show");
+    content?.classList.remove("show");
     setTimeout(() => (popup.style.display = "none"), 200);
   };
 
-  popup.onclick = (e) => {
-    if (e.target === popup) close();
-  };
-
+  popup.onclick = e => { if (e.target === popup) close(); };
   closeBtn.onclick = close;
-})();
+} catch (err) {
+  console.error("Gift modal error:", err);
+  showStarPopup("Something went wrong opening this profile 💫");
+}
 
 /* ---------- 🪶 Detect Username Tap ---------- */
 document.addEventListener("pointerdown", e => {
