@@ -270,7 +270,7 @@ function attachMessagesListener() {
   });
 }
 
-/* ---------- 👤 User Popup Logic (Optimized & Safe) ---------- */
+/* ---------- 👤 User Popup Logic (Optimized & Instant) ---------- */
 async function showUserPopup(uid) {
   const popup = document.getElementById("userPopup");
   if (!popup) return;
@@ -282,20 +282,21 @@ async function showUserPopup(uid) {
   const closeBtn = document.getElementById("popupCloseBtn");
   const photoEl = popup.querySelector(".popup-photo");
 
-  // show popup immediately
+  // Show popup immediately
   popup.style.display = "flex";
   content.classList.add("show");
 
-  // temp loading state
-  usernameEl.textContent = "Loading...";
-  genderEl.textContent = "Fetching profile 💫";
+  // Clear previous content
+  usernameEl.textContent = "";
+  genderEl.textContent = "";
   socialsEl.innerHTML = "";
-  photoEl.innerHTML = `<div style="font-size:30px;">⏳</div>`;
+  photoEl.innerHTML = "";
 
   let data = null;
   try {
     const snap = await getDoc(doc(db, "users", uid));
     if (!snap.exists()) {
+      // If no profile, immediately show star popup and close main popup
       showStarPopup("This user has not unlocked a social card yet 🪪");
       popup.style.display = "none";
       return;
@@ -308,14 +309,33 @@ async function showUserPopup(uid) {
     return;
   }
 
-  // update fields
+  // --- Username ---
   usernameEl.textContent = data.chatId || "Unknown";
   usernameEl.style.color = data.usernameColor || "#fff";
 
+  // --- Nature + Gender + Age line ---
   const age = parseInt(data.age || 0);
   const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
-  genderEl.textContent = `A ${data.nature || "sexy"} ${data.gender || "female"} in ${data.fruitPick || "🍇"} mode, ${ageGroup}`;
 
+  let pronoun = "their";
+  if (data.gender?.toLowerCase() === "male") pronoun = "his";
+  if (data.gender?.toLowerCase() === "female") pronoun = "her";
+
+  genderEl.textContent = `A ${data.naturePick || "sexy"} ${data.gender || "male"} in ${pronoun} ${ageGroup}`;
+
+  // --- Fruit (centered like placeholder) ---
+  let fruitEl = popup.querySelector(".popup-fruit");
+  if (!fruitEl) {
+    fruitEl = document.createElement("div");
+    fruitEl.className = "popup-fruit";
+    fruitEl.style.fontSize = "48px";
+    fruitEl.style.textAlign = "center";
+    fruitEl.style.margin = "10px 0";
+    genderEl.after(fruitEl);
+  }
+  fruitEl.textContent = data.fruitPick || "🍇";
+
+  // --- Photo ---
   if (data.photoURL) {
     photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
   } else {
@@ -324,7 +344,7 @@ async function showUserPopup(uid) {
     photoEl.style.background = data.usernameColor || "#444";
   }
 
-  // socials
+  // --- Socials ---
   socialsEl.innerHTML = "";
   const socialPlatforms = [
     { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
