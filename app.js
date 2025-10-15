@@ -282,38 +282,34 @@ async function showUserPopup(uid) {
   const closeBtn = document.getElementById("popupCloseBtn");
   const photoEl = popup.querySelector(".popup-photo");
 
-  // Show popup immediately
+  // Pre-show popup skeleton instantly
   popup.style.display = "flex";
   content.classList.add("show");
-
-  // Clear previous content
-  usernameEl.textContent = "";
+  usernameEl.textContent = "...";
   genderEl.textContent = "";
   socialsEl.innerHTML = "";
-  photoEl.innerHTML = "";
+  photoEl.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:#333;"></div>`;
 
   let data = null;
   try {
     const snap = await getDoc(doc(db, "users", uid));
     if (!snap.exists()) {
-      // If no profile, immediately show star popup and close main popup
+      popup.style.display = "none"; // hide skeleton
       showStarPopup("This user has not unlocked a social card yet 🪪");
-      popup.style.display = "none";
       return;
     }
     data = snap.data();
   } catch (err) {
+    popup.style.display = "none"; // hide skeleton
     console.error("Popup fetch error:", err);
     showStarPopup("Could not load profile 💫");
-    popup.style.display = "none";
     return;
   }
 
-  // --- Username ---
+  // --- Populate content smoothly ---
   usernameEl.textContent = data.chatId || "Unknown";
   usernameEl.style.color = data.usernameColor || "#fff";
 
-  // --- Nature + Gender + Age line ---
   const age = parseInt(data.age || 0);
   const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
 
@@ -323,7 +319,6 @@ async function showUserPopup(uid) {
 
   genderEl.textContent = `A ${data.naturePick || "sexy"} ${data.gender || "male"} in ${pronoun} ${ageGroup}`;
 
-  // --- Fruit (centered like placeholder) ---
   let fruitEl = popup.querySelector(".popup-fruit");
   if (!fruitEl) {
     fruitEl = document.createElement("div");
@@ -335,7 +330,7 @@ async function showUserPopup(uid) {
   }
   fruitEl.textContent = data.fruitPick || "🍇";
 
-  // --- Photo ---
+  // Photo
   if (data.photoURL) {
     photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
   } else {
@@ -344,7 +339,7 @@ async function showUserPopup(uid) {
     photoEl.style.background = data.usernameColor || "#444";
   }
 
-  // --- Socials ---
+  // Socials
   socialsEl.innerHTML = "";
   const socialPlatforms = [
     { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
@@ -362,6 +357,24 @@ async function showUserPopup(uid) {
     socialsEl.appendChild(a);
   }
 
+  // Gift button
+  let giftBtn = content.querySelector(".gift-btn");
+  if (!giftBtn) {
+    giftBtn = document.createElement("button");
+    giftBtn.className = "gift-btn";
+    content.appendChild(giftBtn);
+  }
+  giftBtn.textContent = "Gift Stars ⭐️";
+  giftBtn.onclick = () => showGiftModal(uid, data);
+
+  // Close controls
+  const close = () => {
+    content.classList.remove("show");
+    setTimeout(() => (popup.style.display = "none"), 200);
+  };
+  popup.onclick = (e) => { if (e.target === popup) close(); };
+  closeBtn.onclick = close;
+}
   // 🎁 Gift button
   let giftBtn = content.querySelector(".gift-btn");
   if (!giftBtn) {
