@@ -622,8 +622,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 
-/* ---------- Buzz Highlight ---------- */
-/* Base BUZZ style */
+/* Common BUZZ styles */
 .buzz-highlight {
   display: inline-block;
   padding: 5px 12px;
@@ -631,31 +630,24 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   font-weight: 700;
   font-size: 0.95rem;
   font-family: 'Arial', sans-serif;
-  color: #000;
+  color: #000; /* full opacity */
+  background: rgba(0, 255, 255, 1); /* fully opaque */
 }
 
-/* Variant 1 */
-.buzz-1 { background: rgba(0, 255, 255, 0.2); --buzz-color: #00FFFF; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
+/* Pulse variations */
+.buzz-style-1 { animation: buzz-pulse-1 1.2s ease-in-out infinite alternate; }
+.buzz-style-2 { animation: buzz-pulse-2 1.4s ease-in-out infinite alternate; }
+.buzz-style-3 { animation: buzz-pulse-3 1.6s ease-in-out infinite alternate; }
+.buzz-style-4 { animation: buzz-pulse-4 1.2s ease-in-out infinite alternate; }
+.buzz-style-5 { animation: buzz-pulse-5 1.3s ease-in-out infinite alternate; }
 
-/* Variant 2 */
-.buzz-2 { background: rgba(255, 0, 255, 0.2); --buzz-color: #FF00FF; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
+@keyframes buzz-pulse-1 { 0% { box-shadow: 0 0 12px cyan; } 50% { box-shadow: 0 0 24px cyan; } 100% { box-shadow: 0 0 12px cyan; } }
+@keyframes buzz-pulse-2 { 0% { box-shadow: 0 0 10px lime; } 50% { box-shadow: 0 0 22px lime; } 100% { box-shadow: 0 0 10px lime; } }
+@keyframes buzz-pulse-3 { 0% { box-shadow: 0 0 14px magenta; } 50% { box-shadow: 0 0 28px magenta; } 100% { box-shadow: 0 0 14px magenta; } }
+@keyframes buzz-pulse-4 { 0% { box-shadow: 0 0 16px orange; } 50% { box-shadow: 0 0 32px orange; } 100% { box-shadow: 0 0 16px orange; } }
+@keyframes buzz-pulse-5 { 0% { box-shadow: 0 0 12px yellow; } 50% { box-shadow: 0 0 26px yellow; } 100% { box-shadow: 0 0 12px yellow; } }
 
-/* Variant 3 */
-.buzz-3 { background: rgba(0, 255, 0, 0.2); --buzz-color: #00FF00; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
-
-/* Variant 4 */
-.buzz-4 { background: rgba(255, 255, 0, 0.2); --buzz-color: #FFFF00; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
-
-/* Variant 5 */
-.buzz-5 { background: rgba(255, 165, 0, 0.2); --buzz-color: #FFA500; animation: buzz-pulse 0.8s ease-in-out infinite alternate; }
-
-/* Shared pulse animation */
-@keyframes buzz-pulse {
-  0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color); }
-  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 30px var(--buzz-color); }
-  100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color); }
-}
-#popupGender {
+  #popupGender {
   font-family: 'Montserrat', sans-serif;
   font-size: 16px;
   color: #fff;
