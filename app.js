@@ -325,30 +325,29 @@ const data = snap.data();
     socialsEl.appendChild(a);
   }
 
-  // 🎁 Gift Button
-  let giftBtn = content.querySelector(".gift-btn");
-  if (!giftBtn) {
-    giftBtn = document.createElement("button");
-    giftBtn.className = "gift-btn";
-    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
-    giftBtn.onclick = () => showGiftModal(uid, data);
-    content.appendChild(giftBtn);
-  } else {
-    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
-    giftBtn.onclick = () => showGiftModal(uid, data);
-  }
-
-  // ✨ Show popup
-  popup.style.display = "flex";
-  setTimeout(() => content.classList.add("show"), 10);
-
-  const close = () => {
-    content.classList.remove("show");
-    setTimeout(() => (popup.style.display = "none"), 200);
-  };
-  popup.onclick = e => { if (e.target === popup) close(); };
-  closeBtn.onclick = close;
+// 🎁 Gift Button
+let giftBtn = content.querySelector(".gift-btn");
+if (!giftBtn) {
+  giftBtn = document.createElement("button");
+  giftBtn.className = "gift-btn";
+  giftBtn.innerHTML = `Gift Stars ⭐️`; // ✨ Classy and minimal
+  giftBtn.onclick = () => showGiftModal(uid, data);
+  content.appendChild(giftBtn);
+} else {
+  giftBtn.innerHTML = `Gift Stars ⭐️`;
+  giftBtn.onclick = () => showGiftModal(uid, data);
 }
+
+// ✨ Show popup
+popup.style.display = "flex";
+setTimeout(() => content.classList.add("show"), 10);
+
+const close = () => {
+  content.classList.remove("show");
+  setTimeout(() => (popup.style.display = "none"), 200);
+};
+popup.onclick = e => { if (e.target === popup) close(); };
+closeBtn.onclick = close;
 
 /* ---------- 🪶 Detect Username Tap ---------- */
 document.addEventListener("pointerdown", e => {
