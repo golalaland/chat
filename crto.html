@@ -320,18 +320,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   box-shadow: 0 0 16px rgba(255, 20, 147, 0.45),
               0 0 32px rgba(255, 20, 147, 0.25);
 }
-/* Normal BUZZ */
 .buzz-content {
   display: inline-block;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-weight: 800;          /* heavier now */
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 800;
   font-size: 1rem;
   line-height: 1.5;
-  color: #000;
+  color: #fff; /* default text color */
+  background: #ff8c00; /* fallback background if JS fails */
   transition: background 0.3s ease, color 0.3s ease;
   margin: 2px 0;
-  font-family: 'Arial', sans-serif; /* solid bold font */
+  font-family: 'Arial', sans-serif;
 }
 .room-subtitle {
   opacity: 1;
