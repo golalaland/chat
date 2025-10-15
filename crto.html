@@ -320,12 +320,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   box-shadow: 0 0 16px rgba(255, 20, 147, 0.45),
               0 0 32px rgba(255, 20, 147, 0.25);
 }
+/* ---------- Normal BUZZ Messages ---------- */
 .buzz-content {
-  font-weight: 800;    /* really thick */
-  color: #000 !important;  /* force black text */
-  padding: 4px 6px;    /* make text breathe inside color */
-  border-radius: 4px;  /* rounded backdrop */
   display: inline-block;
+  padding: 6px 12px;           /* nice thick backdrop */
+  border-radius: 8px;
+  font-weight: 700;             /* bold but not insane */
+  font-size: 1rem;              /* normal chat size */
+  line-height: 1.5;
+  color: #000;                  /* default text color for buzz */
+  transition: background 0.3s ease, color 0.3s ease;
+  margin: 2px 0;
 }
 .room-subtitle {
   opacity: 1;
@@ -476,57 +481,41 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   pointer-events: none;
   z-index: 9999; /* ensure it's above everything */
 }
-/* ---------- BallerAlert Highlight ---------- */
+/* ---------- BallerAlert Special Highlight ---------- */
 .baller-highlight {
   display: inline-block;
   position: relative;
-  color: #FFD700; /* base gold */
+  padding: 8px 16px;            /* extra thick padding for emphasis */
+  border-radius: 10px;
   font-weight: 900;
+  font-size: 1.1rem;            /* slightly bigger than normal */
   font-family: 'Comic Sans MS', cursive, sans-serif;
+  color: #FFD700;               /* gold text */
   text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
-  animation: pulse-glow 1.2s ease-in-out infinite alternate;
+  transition: text-shadow 0.6s ease-in-out;
+  margin: 3px 0;
+  background: rgba(255, 255, 255, 0.05); /* subtle backdrop */
 }
 
-/* ---------- Pulsing Glow Animation ---------- */
-@keyframes pulse-glow {
-  0% {
-    text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
-  }
-  100% {
-    text-shadow: 0 0 10px #FFD700, 0 0 20px #FF69B4, 0 0 30px #FF4500;
-  }
-}
-
-/* ---------- Sparkle Effect ---------- */
+/* Optional sparkle effect for BallerAlert (JS fallback) */
 .baller-sparkle {
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 14px;
+  position: fixed;
   pointer-events: none;
   user-select: none;
   animation: sparkle-float 1.2s forwards;
   z-index: 9999;
 }
 
-/* ---------- Sparkle Float Animation ---------- */
+/* Sparkle float animation */
 @keyframes sparkle-float {
   0% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
   100% {
-    transform: translateX(-50%) translateY(-20px) scale(0.5);
+    transform: translateY(-20px) scale(0.5);
     opacity: 0;
   }
-}
-
-/* ---------- Optional: Smooth Background for BUZZ ---------- */
-.buzz-content {
-  padding: 2px 6px;
-  border-radius: 6px;
-  transition: background 0.3s ease, color 0.3s ease;
 }
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
