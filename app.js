@@ -79,8 +79,8 @@ async function showGiftModal(targetUid, targetData) {
 
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
-    if (!amt || amt <= 0) return alert("Enter a valid amount");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+    if (!amt || amt < 100) return showStarPopup("Minimum gift is 100 ⭐️");
+if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
 
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
