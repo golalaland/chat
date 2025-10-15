@@ -189,15 +189,57 @@ function renderMessagesFromArray(messages) {
     contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
     contentEl.textContent = " " + (m.content || "");
 
-    if (m.buzzColor) contentEl.style.background = m.buzzColor;
-    if (m.highlight) {
-      contentEl.style.color = "#000";
-      contentEl.style.fontWeight = "700";
-    }
+   if (m.buzzColor) {
+  // Regular BUZZ messages get their background
+  contentEl.style.background = m.buzzColor;
+}
 
-    wrapper.append(usernameEl, contentEl);
-    refs.messagesEl.appendChild(wrapper);
-  });
+// Special BallerAlert gift styling
+if (m.highlight && m.uid === "balleralert") {
+  contentEl.classList.add("baller-highlight");
+  contentEl.style.color = "#FFD700"; // gold
+  contentEl.style.fontWeight = "900";
+  contentEl.style.fontFamily = "'Comic Sans MS', cursive, sans-serif";
+  contentEl.style.textShadow = "0 0 6px #FFD700, 0 0 12px #FF69B4";
+  contentEl.style.transition = "text-shadow 0.6s ease-in-out";
+
+  // Pulsing glow effect
+  let pulse = true;
+  const pulseInterval = setInterval(() => {
+    if (!contentEl.isConnected) {
+      clearInterval(pulseInterval);
+      return;
+    }
+    contentEl.style.textShadow = pulse
+      ? "0 0 10px #FFD700, 0 0 20px #FF69B4, 0 0 30px #FF4500"
+      : "0 0 6px #FFD700, 0 0 12px #FF69B4";
+    pulse = !pulse;
+  }, 600);
+
+  // Optional floating sparkles
+  for (let i = 0; i < 6; i++) {
+    const sparkle = document.createElement("div");
+    sparkle.className = "baller-sparkle";
+    sparkle.textContent = "✨";
+
+    const rect = contentEl.getBoundingClientRect();
+    sparkle.style.position = "fixed";
+    sparkle.style.left = rect.left + rect.width / 2 + "px";
+    sparkle.style.top = rect.top + "px";
+    sparkle.style.fontSize = `${12 + Math.random() * 16}px`;
+    sparkle.style.pointerEvents = "none";
+
+    document.body.appendChild(sparkle);
+    setTimeout(() => sparkle.remove(), 1200);
+  }
+} else if (m.highlight) {
+  // Other highlighted messages (like BUZZ)
+  contentEl.style.color = "#000";
+  contentEl.style.fontWeight = "700";
+}
+
+wrapper.append(usernameEl, contentEl);
+refs.messagesEl.appendChild(wrapper);
 
   // auto-scroll logic
   if (!scrollPending) {
