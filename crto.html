@@ -482,40 +482,55 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   pointer-events: none;
   z-index: 9999; /* ensure it's above everything */
 }
-/* BallerAlert */
 .baller-highlight {
   display: inline-block;
   position: relative;
-  padding: 4px 10px;              /* thinner, more compact */
-  border-radius: 6px;              /* subtle rounding */
+  padding: 4px 12px;
+  border-radius: 8px;
+
   font-weight: 900;
-  font-size: 1rem;                 /* normal bold size */
+  font-size: 1rem;
   font-family: 'Arial Black', Gadget, sans-serif;
-  color: #FFD700;
-  text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
-  transition: text-shadow 0.6s ease-in-out;
-  margin: 1px 0;
-  background: rgba(255, 255, 255, 0.05); /* slight backdrop */
+  color: #000; /* text stays black for readability */
+
+  /* subtle backdrop */
+  background-color: rgba(255, 255, 0, 0.2); /* light yellow tint */
+
+  /* glow effect around the box */
+  box-shadow:
+    0 0 6px #FFD700,
+    0 0 12px #FF69B4,
+    0 0 18px #FF4500;
+
+  /* pulsing animation */
+  animation: glowPulse 1s ease-in-out infinite alternate;
+
+  margin: 2px 0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Optional sparkle effect for BallerAlert (JS fallback) */
-.baller-sparkle {
-  position: fixed;
-  pointer-events: none;
-  user-select: none;
-  animation: sparkle-float 1.2s forwards;
-  z-index: 9999;
+/* subtle hover scale for extra pop */
+.baller-highlight:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 8px #FFD700,
+    0 0 16px #FF69B4,
+    0 0 24px #FF4500;
 }
 
-/* Sparkle float animation */
-@keyframes sparkle-float {
+/* pulsing glow animation */
+@keyframes glowPulse {
   0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
+    box-shadow:
+      0 0 4px #FFD700,
+      0 0 8px #FF69B4,
+      0 0 12px #FF4500;
   }
   100% {
-    transform: translateY(-20px) scale(0.5);
-    opacity: 0;
+    box-shadow:
+      0 0 10px #FFD700,
+      0 0 20px #FF69B4,
+      0 0 28px #FF4500;
   }
 }
 /* ---------- Auth Inputs ---------- */
