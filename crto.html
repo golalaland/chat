@@ -613,6 +613,25 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   }
 } 
 
+.gift-slide {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: transform 0.6s ease, opacity 0.6s ease;
+}
+
+.gift-slide.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.gift-highlight {
+  background-color: rgba(255, 255, 0, 0.15);
+  border-radius: 8px;
+  padding: 2px 6px;
+  display: inline-block;
+  position: relative;
+}
+
 #popupGender {
   font-family: 'Montserrat', sans-serif;
   font-size: 16px;
