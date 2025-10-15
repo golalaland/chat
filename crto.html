@@ -566,15 +566,41 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   transition: all 0.4s ease;
   font-size: 1rem;
 }
+.gift-alert {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: linear-gradient(90deg,#ff6a00,#ff4081);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  opacity: 0;
+  z-index: 99999;
+  transition: all 0.4s ease;
+  font-size: 1rem;
+
+  /* 🟢 One-liner behavior */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 90%; /* optional for small screens */
+}
+
 .gift-alert.show {
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
+
 .floating-star {
   position: fixed;
   animation: floatUp 2s ease-out forwards;
   pointer-events: none;
 }
+
 @keyframes floatUp {
   from { transform: translateY(0) scale(1); opacity: 1; }
   to { transform: translateY(-100px) scale(1.5); opacity: 0; }
@@ -690,24 +716,39 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="userPopup" class="user-popup">
   <div class="user-popup-content">
     <button id="popupCloseBtn" class="popup-close">&times;</button>
-    
-    <div class="popup-photo"></div>
-    <div class="popup-info">
-      <h2 id="popupUsername" class="popup-username">Username</h2>
-      <p id="popupGender" class="popup-gender">A female in her 20s</p>
-    </div>
-    <div id="popupSocials" class="popup-socials"></div>
 
-  <div class="popup-gift">
+    <!-- User Photo -->
+    <div class="popup-photo"></div>
+
+    <!-- Username -->
+    <h2 id="popupUsername" class="popup-username">Username</h2>
+
+    <!-- Descriptor -->
+    <p id="popupGender" class="popup-gender">A Sexy Female in her 20’s</p>
+
+    <!-- Centered glow emoji -->
+    <div class="popup-glow" style="font-size:28px; margin:8px 0;">🍇</div>
+
+    <!-- Gift button -->
+    <div class="popup-gift">
+      <button id="popupGiftBtn" class="gift-btn">Gift Username stars ⭐️</button>
+    </div>
+
+    <!-- Social icons (static, underneath) -->
+    <div id="popupSocials" class="popup-socials" style="margin-top:12px; display:flex; justify-content:center; gap:12px;">
+      <a href="https://instagram.com" target="_blank">
+        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram">
+      </a>
     </div>
   </div>
 </div>
 
+<!-- Gift Modal -->
 <div id="giftModal" class="modal">
   <div class="modal-content">
     <span id="giftModalClose">&times;</span>
     <h3 id="giftModalTitle"></h3>
-    <input type="number" id="giftAmountInput" min="1" placeholder="Enter stars to gift">
+    <input type="number" id="giftAmountInput" min="100" placeholder="Enter stars to gift">
     <button id="giftConfirmBtn">Send Gift ⭐️</button>
   </div>
 </div>
