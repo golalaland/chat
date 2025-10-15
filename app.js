@@ -765,34 +765,45 @@ window.addEventListener("DOMContentLoaded", () => {
      🚨 BUZZ Message Handler
   ----------------------------- */
   refs.buzzBtn?.addEventListener("click", async () => {
-    if (!currentUser) return showStarPopup("Sign in to BUZZ.");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+  if (!currentUser) return showStarPopup("Sign in to BUZZ.");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    const stars = snap.data()?.stars || 0;
+  const userRef = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(userRef);
+  const stars = snap.data()?.stars || 0;
+  if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
-    if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
+  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+  const buzzColor = randomColor();
 
-    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-    const buzzColor = randomColor();
+  const newBuzz = {
+    content: txt,
+    uid: currentUser.uid,
+    chatId: currentUser.chatId,
+    timestamp: serverTimestamp(),
+    highlight: true,
+    buzzColor
+  };
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
 
-    const newBuzz = {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor
-    };
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
+  refs.messageInputEl.value = "";
+  showStarPopup("BUZZ sent!");
+  renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
+  scrollToBottom(refs.messagesEl);
 
-    refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent!");
-    renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
-    scrollToBottom(refs.messagesEl);
-  });
+  // Apply BUZZ glow
+  const msgEl = document.getElementById(docRef.id);
+  if (!msgEl) return;
+  const contentEl = msgEl.querySelector(".content") || msgEl;
+
+  contentEl.style.setProperty("--buzz-color", buzzColor);
+  contentEl.classList.add("buzz-highlight");
+  setTimeout(() => {
+    contentEl.classList.remove("buzz-highlight");
+    contentEl.style.boxShadow = "none";
+  }, 12000); // same as CSS animation
+});
 
   /* ----------------------------
      👋 Rotating Hello Text
