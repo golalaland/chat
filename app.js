@@ -327,14 +327,15 @@ const data = snap.data();
 
 // 🎁 Gift Button
 let giftBtn = content.querySelector(".gift-btn");
+
 if (!giftBtn) {
   giftBtn = document.createElement("button");
   giftBtn.className = "gift-btn";
-  giftBtn.innerHTML = `Gift Stars ⭐️`; // ✨ Classy and minimal
+  giftBtn.textContent = "Gift Stars ⭐️"; // simple, safe text
   giftBtn.onclick = () => showGiftModal(uid, data);
   content.appendChild(giftBtn);
 } else {
-  giftBtn.innerHTML = `Gift Stars ⭐️`;
+  giftBtn.textContent = "Gift Stars ⭐️";
   giftBtn.onclick = () => showGiftModal(uid, data);
 }
 
@@ -346,7 +347,11 @@ const close = () => {
   content.classList.remove("show");
   setTimeout(() => (popup.style.display = "none"), 200);
 };
-popup.onclick = e => { if (e.target === popup) close(); };
+
+popup.onclick = (e) => {
+  if (e.target === popup) close();
+};
+
 closeBtn.onclick = close;
 
 /* ---------- 🪶 Detect Username Tap ---------- */
