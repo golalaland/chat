@@ -476,59 +476,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   pointer-events: none;
   z-index: 9999; /* ensure it's above everything */
 }
-/* ---------- BallerAlert Gift Highlight ---------- */
-.baller-highlight {
-  display: inline-block;
-  position: relative;
-  color: #FFD700; /* gold text */
-  font-weight: 900;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
-  text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
-  animation: ballerGlow 1.2s infinite alternate;
-}
-
-/* Glowing text animation */
-@keyframes ballerGlow {
-  0% {
-    text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
-  }
-  50% {
-    text-shadow: 0 0 10px #FFD700, 0 0 20px #FF69B4, 0 0 30px #FF4500;
-  }
-  100% {
-    text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
-  }
-}
-
-/* Floating sparkles around the message */
-.baller-highlight::before,
-.baller-highlight::after {
-  content: "✨";
-  position: absolute;
-  font-size: 12px;
-  pointer-events: none;
-  opacity: 0.8;
-  animation: sparkleFloat 1.5s infinite alternate;
-}
-
-.baller-highlight::before {
-  top: -4px;
-  left: -6px;
-  animation-delay: 0s;
-}
-
-.baller-highlight::after {
-  top: 0px;
-  right: -6px;
-  animation-delay: 0.7s;
-}
-
-/* Sparkle floating animation */
-@keyframes sparkleFloat {
-  0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
-  50% { transform: translateY(-6px) rotate(15deg); opacity: 1; }
-  100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
-}
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
