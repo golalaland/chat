@@ -482,52 +482,43 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   pointer-events: none;
   z-index: 9999; /* ensure it's above everything */
 }
+/* ---------- BallerAlert Highlight ---------- */
 .baller-highlight {
   display: inline-block;
   position: relative;
-  padding: 4px 12px;
-  border-radius: 8px;
-
+  padding: 6px 14px;            /* slightly smaller padding */
+  border-radius: 10px;
   font-weight: 900;
-  font-size: 1rem;
+  font-size: 0.95rem;           /* smaller for long gifts */
   font-family: 'Arial Black', Gadget, sans-serif;
-  color: #000; /* black font for readability */
-
-  background-color: rgba(255, 255, 0, 0.2); /* light yellow tint */
-  box-shadow:
-    0 0 4px #FFD700,
-    0 0 8px #FF69B4,
-    0 0 12px #FF4500;
-
-  /* Glow pulses 5 times then stops */
-  animation: glowPulse 1s ease-in-out 5 alternate;
-
-  margin: 2px 0;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  color: #000;                  /* black text */
+  background: rgba(255, 255, 0, 0.1); /* subtle yellow highlight */
+  text-shadow: 0 0 4px #FFD700;       /* initial glow */
+  transition: text-shadow 0.3s ease-in-out;
+  white-space: nowrap;           /* keep one line */
+  overflow: hidden;
+  text-overflow: ellipsis;       /* truncate if still too long */
+  margin: 3px 0;
 }
 
-/* subtle hover scale for extra pop */
-.baller-highlight:hover {
-  transform: scale(1.05);
-  box-shadow:
-    0 0 8px #FFD700,
-    0 0 16px #FF69B4,
-    0 0 24px #FF4500;
+/* Optional sparkle fallback */
+.baller-sparkle {
+  position: fixed;
+  pointer-events: none;
+  user-select: none;
+  animation: sparkle-float 1.2s forwards;
+  z-index: 9999;
 }
 
-/* glow pulse animation */
-@keyframes glowPulse {
+/* Sparkle float animation */
+@keyframes sparkle-float {
   0% {
-    box-shadow:
-      0 0 4px #FFD700,
-      0 0 8px #FF69B4,
-      0 0 12px #FF4500;
+    transform: translateY(0) scale(1);
+    opacity: 1;
   }
   100% {
-    box-shadow:
-      0 0 10px #FFD700,
-      0 0 20px #FF69B4,
-      0 0 28px #FF4500;
+    transform: translateY(-20px) scale(0.5);
+    opacity: 0;
   }
 }
 /* ---------- Auth Inputs ---------- */
