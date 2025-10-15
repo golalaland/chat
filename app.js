@@ -3,14 +3,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot
-  , query, orderBy, increment, getDocs, where
+  onSnapshot, query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* ---------- Firebase config ---------- */
+/* ---------- Firebase Config ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -26,39 +25,37 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 
-/* ---------- Room & chat ---------- */
+/* ---------- Global State ---------- */
 const ROOM_ID = "room5";
 const CHAT_COLLECTION = "messages_room5";
-
-/* ---------- State ---------- */
-let currentUser = null;
-let lastMessagesArray = [];
-
-// ⭐ ADD THIS LINE HERE
-let starInterval = null;
-
-/* ---------- Constants ---------- */
 const BUZZ_COST = 50;
 const SEND_COST = 1;
 
+let currentUser = null;
+let lastMessagesArray = [];
+let starInterval = null;
+let refs = {};
+
 /* ---------- Helpers ---------- */
-function generateGuestName() { return "GUEST " + Math.floor(1000 + Math.random()*9000); }
-function formatNumberWithCommas(n) { return new Intl.NumberFormat('en-NG').format(n || 0); }
-function randomColor() { 
-  const colors = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
-  return colors[Math.floor(Math.random()*colors.length)];
+const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
+const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
+const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
+
+function randomColor() {
+  const palette = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
+  return palette[Math.floor(Math.random() * palette.length)];
 }
+
 function showStarPopup(text) {
   const popup = document.getElementById("starPopup");
   const starText = document.getElementById("starText");
   if (!popup || !starText) return;
   starText.innerText = text;
   popup.style.display = "block";
-  setTimeout(() => { popup.style.display = "none"; }, 1700);
+  setTimeout(() => popup.style.display = "none", 1700);
 }
 
-function sanitizeKey(key) { return key.replace(/[.#$[\]]/g, ','); }
-
+/* ---------- Gift Modal ---------- */
 async function showGiftModal(targetUid, targetData) {
   const modal = document.getElementById("giftModal");
   const titleEl = document.getElementById("giftModalTitle");
@@ -67,9 +64,9 @@ async function showGiftModal(targetUid, targetData) {
   const closeBtn = document.getElementById("giftModalClose");
 
   if (!modal || !titleEl || !amountInput || !confirmBtn) return;
+
   titleEl.textContent = `Gift ${targetData.chatId} stars ⭐️`;
   amountInput.value = "";
-
   modal.style.display = "flex";
 
   const close = () => modal.style.display = "none";
@@ -84,34 +81,35 @@ async function showGiftModal(targetUid, targetData) {
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
 
-    await updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
-    await updateDoc(toRef, { stars: increment(amt) });
-
-    // Optional: Send a system chat message visible to both
-    await addDoc(collection(db, CHAT_COLLECTION), {
-  content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-  uid: "balleralert",
-  chatId: "BallerAlert🤩",
-  timestamp: serverTimestamp(),
-  highlight: true,
-  buzzColor: "#FFD700"
-});
+    await Promise.all([
+      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+      updateDoc(toRef, { stars: increment(amt) }),
+      addDoc(collection(db, CHAT_COLLECTION), {
+        content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+        uid: "balleralert",
+        chatId: "BallerAlert🤩",
+        timestamp: serverTimestamp(),
+        highlight: true,
+        buzzColor: randomColor()
+      })
+    ]);
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
   };
 }
 
-/* ---------- Gift Alert (Live Floating Popup) ---------- */
+/* ---------- Gift Alert (Floating Popup) ---------- */
 function showGiftAlert(text) {
   const alertEl = document.getElementById("giftAlert");
   if (!alertEl) return;
+
   alertEl.textContent = text;
-  alertEl.classList.add("show");
+  alertEl.classList.add("show", "glow");
 
   createFloatingStars();
 
-  setTimeout(() => alertEl.classList.remove("show"), 4000);
+  setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
 }
 
 function createFloatingStars() {
@@ -120,55 +118,56 @@ function createFloatingStars() {
     star.textContent = "⭐️";
     star.className = "floating-star";
     document.body.appendChild(star);
+
     star.style.left = `${50 + (Math.random() * 100 - 50)}%`;
     star.style.top = "45%";
     star.style.fontSize = `${16 + Math.random() * 16}px`;
+
     setTimeout(() => star.remove(), 2000);
   }
 }
-/* ---------- UI refs ---------- */
-let refs = {};
 
-/* ---------- Redeem link update ---------- */
+/* ---------- Redeem Link ---------- */
 function updateRedeemLink() {
-  if (refs.redeemBtn && currentUser) {
-    refs.redeemBtn.href = `https://golalaland.github.io/chat/nushop.html?uid=${encodeURIComponent(currentUser.uid)}`;
-    refs.redeemBtn.style.display = "inline-block";
-  }
+  if (!refs.redeemBtn || !currentUser) return;
+  refs.redeemBtn.href = `https://golalaland.github.io/chat/nushop.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  refs.redeemBtn.style.display = "inline-block";
 }
 
-/* ---------- Presence ---------- */
-function setupPresence(user){
+/* ---------- Presence (Realtime) ---------- */
+function setupPresence(user) {
   if (!rtdb) return;
   const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
-  rtdbSet(pRef, { online:true, chatId:user.chatId, email:user.email }).catch(()=>{});
-  onDisconnect(pRef).remove().catch(()=>{});
+  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
+  onDisconnect(pRef).remove().catch(() => {});
 }
-if (rtdb){
-  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap=>{
-    const val = snap.val() || {};
-    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(val).length} online)`;
+
+if (rtdb) {
+  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap => {
+    const users = snap.val() || {};
+    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(users).length} online)`;
   });
 }
 
-/* ---------- Users color listener ---------- */
-function setupUsersListener(){
-  onSnapshot(collection(db, "users"), snap=>{
+/* ---------- User Colors ---------- */
+function setupUsersListener() {
+  onSnapshot(collection(db, "users"), snap => {
     refs.userColors = refs.userColors || {};
-    snap.forEach(d => {
-      refs.userColors[d.id] = d.data()?.usernameColor || "#ffffff";
+    snap.forEach(docSnap => {
+      refs.userColors[docSnap.id] = docSnap.data()?.usernameColor || "#ffffff";
     });
     if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
   });
 }
 setupUsersListener();
 
-/* ---------- Render messages ---------- */
+/* ---------- Render Messages ---------- */
 let scrollPending = false;
-function renderMessagesFromArray(arr){
+
+function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
-  arr.forEach(item => {
+  messages.forEach(item => {
     if (document.getElementById(item.id)) return;
 
     const m = item.data;
@@ -176,28 +175,32 @@ function renderMessagesFromArray(arr){
     wrapper.className = "msg";
     wrapper.id = item.id;
 
-    const meta = document.createElement("span");
-    meta.className = "meta";
-   meta.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
-    meta.style.color = (m.uid && refs.userColors && refs.userColors[m.uid]) ? refs.userColors[m.uid] : '#ffffff';
-    meta.style.marginRight = "4px";
+    const usernameEl = document.createElement("span");
+    usernameEl.className = "meta";
+    usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
+    usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
+    usernameEl.style.marginRight = "4px";
 
-    const content = document.createElement("span");
-    content.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
-    content.textContent = " " + (m.content || "");
-    if (m.buzzColor) content.style.background = m.buzzColor;
-    if (m.highlight) { content.style.color = "#000"; content.style.fontWeight = "700"; }
+    const contentEl = document.createElement("span");
+    contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    contentEl.textContent = " " + (m.content || "");
 
-    wrapper.appendChild(meta);
-    wrapper.appendChild(content);
+    if (m.buzzColor) contentEl.style.background = m.buzzColor;
+    if (m.highlight) {
+      contentEl.style.color = "#000";
+      contentEl.style.fontWeight = "700";
+    }
+
+    wrapper.append(usernameEl, contentEl);
     refs.messagesEl.appendChild(wrapper);
   });
 
+  // auto-scroll logic
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
       const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
-      if (arr.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
+      if (messages.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       }
       scrollPending = false;
@@ -207,198 +210,208 @@ function renderMessagesFromArray(arr){
 
 
 
-/* ---------- Messages listener ---------- */
+/* ---------- 🔔 Messages Listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
+
   onSnapshot(q, snapshot => {
     snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const msgData = change.doc.data();
-        lastMessagesArray.push({ id: change.doc.id, data: msgData });
-        renderMessagesFromArray([{ id: change.doc.id, data: msgData }]);
+      if (change.type !== "added") return;
 
-        /* 💝 Detect private gift message (sender + receiver only, personalized) */
-        if (
-          msgData.uid === "system" &&
-          msgData.highlight &&
-          msgData.content.includes("gifted")
-        ) {
-          const myChatId = currentUser?.chatId?.toLowerCase();
-          const content = msgData.content.toLowerCase();
+      const msg = change.doc.data();
+      const msgId = change.doc.id;
 
-          // Find both sender & receiver usernames
-          const [sender, , receiver, amount] = msgData.content.split(" ");
-          // Example: ["Nushi", "gifted", "Goll", "50"]
+      // Prevent duplicate render
+      if (document.getElementById(msgId)) return;
 
-          if (!myChatId) return;
+      // Add to memory + render
+      lastMessagesArray.push({ id: msgId, data: msg });
+      renderMessagesFromArray([{ id: msgId, data: msg }]);
 
-          if (sender.toLowerCase() === myChatId) {
-            // 🫶 You are the sender
-            showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
-          } else if (receiver.toLowerCase() === myChatId) {
-            // 💝 You are the receiver
-            showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
-          }
+      /* 💝 Detect personalized gift messages */
+      if (msg.uid === "system" && msg.highlight && msg.content?.includes("gifted")) {
+        const myId = currentUser?.chatId?.toLowerCase();
+        if (!myId) return;
+
+        const [sender, , receiver, amount] = msg.content.split(" "); // e.g., Nushi gifted Goll 50
+        if (!sender || !receiver || !amount) return;
+
+        if (sender.toLowerCase() === myId) {
+          showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
+        } else if (receiver.toLowerCase() === myId) {
+          showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
         }
+      }
 
-        // 🌀 Keep scroll for your own messages
-        if (refs.messagesEl && currentUser && msgData.uid === currentUser.uid) {
-          refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-        }
+      // 🌀 Keep scroll for your own messages
+      if (refs.messagesEl && msg.uid === currentUser?.uid) {
+        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       }
     });
   });
 }
-/* ---------- User Popup Logic ---------- */
-async function showUserPopup(uidKey) {
+
+/* ---------- 👤 User Popup Logic ---------- */
+async function showUserPopup(uid) {
   const popup = document.getElementById("userPopup");
-  const popupContent = popup.querySelector(".user-popup-content");
-  const popupUsername = document.getElementById("popupUsername");
-  const popupGender = document.getElementById("popupGender");
+  const content = popup.querySelector(".user-popup-content");
+  const usernameEl = document.getElementById("popupUsername");
+  const genderEl = document.getElementById("popupGender");
   const socialsEl = document.getElementById("popupSocials");
   const closeBtn = document.getElementById("popupCloseBtn");
   const photoEl = popup.querySelector(".popup-photo");
 
-  const userRef = doc(db, "users", uidKey);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return alert("User not found");
+  if (!popup || !content) return;
 
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return alert("User not found ⚠️");
   const data = snap.data();
 
-  // Username
-  popupUsername.textContent = data.chatId || "Unknown";
-  popupUsername.style.color = data.usernameColor || "#fff";
+  // 🪄 Username
+  usernameEl.textContent = data.chatId || "Unknown";
+  usernameEl.style.color = data.usernameColor || "#fff";
 
-  // Gender / Age
- const age = parseInt(data.age || 0);
-let ageGroup = "20s";
-if (!isNaN(age) && age >= 30) ageGroup = "30s";
-popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
+  // 👥 Gender / Age description
+  const age = parseInt(data.age || 0);
+  const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
+  genderEl.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
 
-  // Profile photo
+  // 🖼️ Profile photo or initials
   if (data.photoURL) {
     photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
   } else {
-    const initials = (data.chatId || "U").slice(0,2).toUpperCase();
+    const initials = (data.chatId || "?").slice(0, 2).toUpperCase();
     photoEl.textContent = initials;
-    photoEl.style.background = data.usernameColor || "#333";
+    photoEl.style.background = data.usernameColor || "#444";
   }
 
-  // Social icons (only show if user has value)
-  const socials = [
+  // 🌐 Socials
+  const socialPlatforms = [
     { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
     { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
     { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
     { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
   ];
-
   socialsEl.innerHTML = "";
-  socials.forEach(s => {
-    const val = data[s.field] || "";
-    if (!val) return; // skip empty
+  for (const s of socialPlatforms) {
+    const link = data[s.field];
+    if (!link) continue;
     const a = document.createElement("a");
-    a.href = val.startsWith("http") ? val : "#";
+    a.href = link.startsWith("http") ? link : `https://${link}`;
     a.target = "_blank";
-    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
+    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" width="28" height="28" style="border-radius:6px;">`;
     socialsEl.appendChild(a);
-  });
-// Gift button
-const giftBtn = document.createElement("button");
-giftBtn.textContent = `🎁 Gift ${data.chatId} stars ⭐️`;
-giftBtn.className = "gift-btn";
-giftBtn.onclick = () => showGiftModal(uidKey, data);
-popupContent.appendChild(giftBtn);
+  }
+
+  // 🎁 Gift Button
+  const giftBtn = document.createElement("button");
+  giftBtn.className = "gift-btn";
+  giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
+  giftBtn.onclick = () => showGiftModal(uid, data);
+  content.appendChild(giftBtn);
+
+  // ✨ Show popup
   popup.style.display = "flex";
-  setTimeout(() => popupContent.classList.add("show"), 10);
+  setTimeout(() => content.classList.add("show"), 10);
 
-  const closePopup = () => {
-    popupContent.classList.remove("show");
-    setTimeout(() => { popup.style.display = "none"; }, 200);
+  const close = () => {
+    content.classList.remove("show");
+    setTimeout(() => (popup.style.display = "none"), 200);
   };
-
-  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
-  closeBtn.onclick = closePopup;
+  popup.onclick = e => { if (e.target === popup) close(); };
+  closeBtn.onclick = close;
 }
 
-/* ---------- Detect username tap ---------- */
+/* ---------- 🪶 Detect Username Tap ---------- */
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest(".chat-username");
   if (!el) return;
+
   const uid = el.dataset.username;
   if (uid && uid !== currentUser?.uid) showUserPopup(uid);
 
-  // Small visual feedback (tapped highlight)
   el.style.transition = "opacity 0.15s";
   el.style.opacity = "0.5";
   setTimeout(() => (el.style.opacity = "1"), 150);
 });
 
-/* ---------- ChatID modal ---------- */
-async function promptForChatID(userRef, userData){
-  if(!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn) return userData?.chatId || null;
-  if(userData?.chatId && !userData.chatId.startsWith("GUEST")) return userData.chatId;
+/* ---------- 🆔 ChatID Modal ---------- */
+async function promptForChatID(userRef, userData) {
+  if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn)
+    return userData?.chatId || null;
+
+  // Skip if user already set chatId
+  if (userData?.chatId && !userData.chatId.startsWith("GUEST"))
+    return userData.chatId;
 
   refs.chatIDInput.value = "";
   refs.chatIDModal.style.display = "flex";
-  if(refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
+  if (refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
 
-  return new Promise(resolve=>{
-    refs.chatIDConfirmBtn.onclick = async ()=>{
-      const chosenID = refs.chatIDInput.value.trim();
-      if(chosenID.length < 3 || chosenID.length > 12){ 
-        alert("Chat ID must be 3-12 characters"); return; 
+  return new Promise(resolve => {
+    refs.chatIDConfirmBtn.onclick = async () => {
+      const chosen = refs.chatIDInput.value.trim();
+      if (chosen.length < 3 || chosen.length > 12)
+        return alert("Chat ID must be 3–12 characters");
+
+      const lower = chosen.toLowerCase();
+      const q = query(collection(db, "users"), where("chatIdLower", "==", lower));
+      const snap = await getDocs(q);
+
+      let taken = false;
+      snap.forEach(docSnap => {
+        if (docSnap.id !== userRef.id) taken = true;
+      });
+      if (taken) return alert("This Chat ID is taken 💬");
+
+      try {
+        await updateDoc(userRef, { chatId: chosen, chatIdLower: lower });
+        currentUser.chatId = chosen;
+        currentUser.chatIdLower = lower;
+        refs.chatIDModal.style.display = "none";
+        if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+        showStarPopup(`Welcome ${chosen}! 🎉`);
+        resolve(chosen);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to save Chat ID");
       }
-      const normalized = chosenID.toLowerCase();
-      try{
-        const q = query(collection(db,"users"), where("chatIdLower","==",normalized));
-        const snap = await getDocs(q);
-        let conflict = false;
-        snap.forEach(docSnap => { if(docSnap.id !== userRef.id) conflict = true; });
-        if(conflict){ alert("This Chat ID is taken"); return; }
-        await updateDoc(userRef, { chatId: chosenID, chatIdLower: normalized });
-        currentUser.chatId = chosenID;
-        currentUser.chatIdLower = normalized;
-      } catch(e){ console.error(e); alert("Failed to save ChatID"); return; }
-
-      refs.chatIDModal.style.display = "none";
-      if(refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-      showStarPopup(`Welcome ${currentUser.chatId}! 🎉`);
-      resolve(chosenID);
     };
   });
 }
-
-/* ---------- VIP login (whitelist) ---------- */
+/* ===============================
+   🔐 VIP Login (Whitelist Check)
+================================= */
 async function loginWhitelist(email, phone) {
   const loader = document.getElementById("postLoginLoader");
   try {
     if (loader) loader.style.display = "flex";
-    await new Promise(res => setTimeout(res, 50));
+    await sleep(50);
 
-    // Query whitelist
-    const q = query(
+    // 🔍 Query whitelist
+    const whitelistQuery = query(
       collection(db, "whitelist"),
       where("email", "==", email),
       where("phone", "==", phone)
     );
-    const snap = await getDocs(q);
-    console.log("Whitelist query result:", snap.docs.map(d => d.data())); // debug
+    const whitelistSnap = await getDocs(whitelistQuery);
+    console.log("📋 Whitelist result:", whitelistSnap.docs.map(d => d.data()));
 
-    if (snap.empty) {
-      showStarPopup("You’re not on the whitelist. Check your email and phone format.");
-      return false;
+    if (whitelistSnap.empty) {
+      return showStarPopup("You’re not on the whitelist. Please check your email and phone format.");
     }
 
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
-    const docSnap = await getDoc(userRef);
+    const userSnap = await getDoc(userRef);
 
-    if (!docSnap.exists()) {
-      showStarPopup("User not found. Please sign up on the main page first.");
-      return false;
+    if (!userSnap.exists()) {
+      return showStarPopup("User not found. Please sign up on the main page first.");
     }
 
-    const data = docSnap.data() || {};
+    const data = userSnap.data() || {};
+
+    // 🧍🏽 Set current user details
     currentUser = {
       uid: uidKey,
       email: data.email,
@@ -408,21 +421,22 @@ async function loginWhitelist(email, phone) {
       stars: data.stars || 0,
       cash: data.cash || 0,
       usernameColor: data.usernameColor || randomColor(),
-      isAdmin: data.isAdmin || false,
-      isVIP: data.isVIP || false,
-      fullName: data.fullName,
-      gender: data.gender,
-      subscriptionActive: data.subscriptionActive || false,
+      isAdmin: !!data.isAdmin,
+      isVIP: !!data.isVIP,
+      fullName: data.fullName || "",
+      gender: data.gender || "",
+      subscriptionActive: !!data.subscriptionActive,
       subscriptionCount: data.subscriptionCount || 0,
-      lastStarDate: data.lastStarDate || new Date().toISOString().split("T")[0],
+      lastStarDate: data.lastStarDate || todayDate(),
       starsGifted: data.starsGifted || 0,
       starsToday: data.starsToday || 0,
       hostLink: data.hostLink || null,
       invitedBy: data.invitedBy || null,
-      inviteeGiftShown: data.inviteeGiftShown || false,
-      isHost: data.isHost || false
+      inviteeGiftShown: !!data.inviteeGiftShown,
+      isHost: !!data.isHost
     };
 
+    // 🧠 Setup post-login systems
     updateRedeemLink();
     setupPresence(currentUser);
     attachMessagesListener();
@@ -430,26 +444,18 @@ async function loginWhitelist(email, phone) {
 
     localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-    if(currentUser.chatId.startsWith("GUEST")) await promptForChatID(userRef, data);
-
-    // Hide login UI & show chatroom
-    const emailAuthWrapper = document.getElementById("emailAuthWrapper");
-    if (emailAuthWrapper) emailAuthWrapper.style.display = "none";
-    if (refs.authBox) refs.authBox.style.display = "none";
-    if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-    if (refs.profileBoxEl) refs.profileBoxEl.style.display = "block";
-    if (refs.profileNameEl) { 
-      refs.profileNameEl.innerText = currentUser.chatId; 
-      refs.profileNameEl.style.color = currentUser.usernameColor; 
+    // Prompt guests for a permanent chatID
+    if (currentUser.chatId?.startsWith("GUEST")) {
+      await promptForChatID(userRef, data);
     }
-    if (refs.starCountEl) refs.starCountEl.innerText = formatNumberWithCommas(currentUser.stars);
-    if (refs.cashCountEl) refs.cashCountEl.innerText = formatNumberWithCommas(currentUser.cash);
-    if (refs.adminControlsEl) refs.adminControlsEl.style.display = currentUser.isAdmin ? "flex" : "none";
+
+    // 🎨 Update UI
+    showChatUI(currentUser);
 
     return true;
 
-  } catch(e) {
-    console.error("Login error:", e);
+  } catch (err) {
+    console.error("❌ Login error:", err);
     showStarPopup("Login failed. Try again!");
     return false;
   } finally {
@@ -457,30 +463,34 @@ async function loginWhitelist(email, phone) {
   }
 }
 
-/* ---------- Stars auto-earning (cleaned) ---------- */
+/* ===============================
+   💫 Auto Star Earning System
+================================= */
 function startStarEarning(uid) {
   if (!uid) return;
-  if (starInterval) clearInterval(starInterval); // clear previous interval
+  if (starInterval) clearInterval(starInterval);
 
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
   let animationTimeout = null;
 
-  // Smoothly animate star count in the UI
-  function updateStarDisplay(target) {
+  // ✨ Smooth UI update
+  const animateStarCount = target => {
     if (!refs.starCountEl) return;
     const diff = target - displayedStars;
+
     if (Math.abs(diff) < 1) {
       displayedStars = target;
       refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
       return;
     }
-    displayedStars += diff * 0.3;
-    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
-    animationTimeout = setTimeout(() => updateStarDisplay(target), 50);
-  }
 
-  // Listen for real-time Firestore updates
+    displayedStars += diff * 0.25; // smoother easing
+    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
+    animationTimeout = setTimeout(() => animateStarCount(target), 40);
+  };
+
+  // 🔄 Real-time listener
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.data();
@@ -488,73 +498,103 @@ function startStarEarning(uid) {
     currentUser.stars = targetStars;
 
     if (animationTimeout) clearTimeout(animationTimeout);
-    updateStarDisplay(targetStars);
+    animateStarCount(targetStars);
 
-    // Optional milestone popup every 1000 stars
-    if (currentUser.stars > 0 && currentUser.stars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(currentUser.stars)} stars!`);
+    // 🎉 Milestone popup
+    if (targetStars > 0 && targetStars % 1000 === 0) {
+      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(targetStars)} stars!`);
     }
   });
 
-  // Auto-increment stars every minute (max 250 stars per day)
+  // ⏱️ Increment loop
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
 
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
-    const data = snap.data();
-    const today = new Date().toISOString().split("T")[0];
 
-    // Reset daily earned stars if new day
+    const data = snap.data();
+    const today = todayDate();
+
+    // Reset daily count
     if (data.lastStarDate !== today) {
       await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
       return;
     }
 
-    // Only increment if under daily cap
+    // Limit: 250/day
     if ((data.starsToday || 0) < 250) {
-      await updateDoc(userRef, { 
-        stars: increment(10), 
-        starsToday: increment(10) 
+      await updateDoc(userRef, {
+        stars: increment(10),
+        starsToday: increment(10)
       });
     }
   }, 60000);
 
-  // Clean up on page unload
+  // 🧹 Cleanup
   window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
+/* ===============================
+   🧩 Helper Functions
+================================= */
+const todayDate = () => new Date().toISOString().split("T")[0];
+const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-/* ---------- DOMContentLoaded ---------- */
-window.addEventListener("DOMContentLoaded", () => {
+function showChatUI(user) {
+  const { authBox, sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
 
-/* ---------- Loading Bar Helper ---------- */
-function showLoadingBar(duration = 1000) {
-  const postLoginLoader = document.getElementById("postLoginLoader");
-  const loadingBar = document.getElementById("loadingBar");
-  if (!postLoginLoader || !loadingBar) return;
+  // Hide auth, show chat
+  document.getElementById("emailAuthWrapper")?.style?.setProperty("display", "none");
+  authBox && (authBox.style.display = "none");
+  sendAreaEl && (sendAreaEl.style.display = "flex");
+  profileBoxEl && (profileBoxEl.style.display = "block");
 
-  postLoginLoader.style.display = "flex";
-  loadingBar.style.width = "0%";
+  if (profileNameEl) {
+    profileNameEl.innerText = user.chatId;
+    profileNameEl.style.color = user.usernameColor;
+  }
 
-  let progress = 0;
-  const interval = 50;
-  const step = 100 / (duration / interval);
-
-  const loadingInterval = setInterval(() => {
-    progress += step + Math.random() * 5; // slight randomness for realism
-    if (progress >= 100) progress = 100;
-    loadingBar.style.width = progress + "%";
-    if (progress >= 100) {
-      clearInterval(loadingInterval);
-      setTimeout(() => {
-        postLoginLoader.style.display = "none";
-      }, 300);
-    }
-  }, interval);
+  if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars);
+  if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash);
+  if (adminControlsEl) adminControlsEl.style.display = user.isAdmin ? "flex" : "none";
 }
 
-  // Cache DOM elements
+
+/* =======================================
+   🚀 DOMContentLoaded Bootstrap
+======================================= */
+window.addEventListener("DOMContentLoaded", () => {
+
+  /* ----------------------------
+     ⚡ Smooth Loading Bar Helper
+  ----------------------------- */
+  function showLoadingBar(duration = 1000) {
+    const postLoginLoader = document.getElementById("postLoginLoader");
+    const loadingBar = document.getElementById("loadingBar");
+    if (!postLoginLoader || !loadingBar) return;
+
+    postLoginLoader.style.display = "flex";
+    loadingBar.style.width = "0%";
+
+    let progress = 0;
+    const interval = 50;
+    const step = 100 / (duration / interval);
+
+    const loadingInterval = setInterval(() => {
+      progress += step + Math.random() * 4; // adds organic feel
+      loadingBar.style.width = `${Math.min(progress, 100)}%`;
+
+      if (progress >= 100) {
+        clearInterval(loadingInterval);
+        setTimeout(() => postLoginLoader.style.display = "none", 250);
+      }
+    }, interval);
+  }
+
+  /* ----------------------------
+     🧩 Cache DOM References
+  ----------------------------- */
   refs = {
     authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
@@ -574,190 +614,248 @@ function showLoadingBar(duration = 1000) {
     chatIDInput: document.getElementById("chatIDInput"),
     chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
   };
-  if(refs.chatIDInput) refs.chatIDInput.setAttribute("maxlength","12");
 
- /* ---------- VIP login (whitelist) ---------- */
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
+  if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
-if (loginBtn) {
-  loginBtn.addEventListener("click", async () => {
-    const email = (emailInput.value || "").trim().toLowerCase();
-    const phone = (phoneInput.value || "").trim();
+  /* ----------------------------
+     🔐 VIP Login Setup
+  ----------------------------- */
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
+
+  async function handleLogin() {
+    const email = (emailInput?.value || "").trim().toLowerCase();
+    const phone = (phoneInput?.value || "").trim();
 
     if (!email || !phone) {
-      showStarPopup("Enter your email and phone to get access");
-      return;
+      return showStarPopup("Enter your email and phone to get access.");
     }
 
-    showLoadingBar(1000); // show smooth loading bar during login
-    await new Promise(res => setTimeout(res, 50));
+    showLoadingBar(1000);
+    await sleep(50);
 
     const success = await loginWhitelist(email, phone);
-
-    if (!success) return; // showStarPopup handled inside loginWhitelist
-
-    await new Promise(res => setTimeout(res, 500)); // slight post-login delay
-
-    updateRedeemLink(); // update chatroom UI after login
-  });
-}
-
-/* ---------- Auto-login session ---------- */
-const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-if (vipUser?.email && vipUser?.phone) {
-  (async () => {
-    showLoadingBar(1000);
-    await new Promise(res => setTimeout(res, 50));
-
-    const success = await loginWhitelist(vipUser.email, vipUser.phone);
-
     if (!success) return;
 
-    await new Promise(res => setTimeout(res, 500));
-
+    await sleep(400);
     updateRedeemLink();
-  })();
-}
+  }
 
-/* ---------- Send & BUZZ ---------- */
-refs.sendBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to chat");
+  loginBtn?.addEventListener("click", handleLogin);
 
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message first");
+  /* ----------------------------
+     🔁 Auto Login Session
+  ----------------------------- */
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if (vipUser?.email && vipUser?.phone) {
+    (async () => {
+      showLoadingBar(1000);
+      await sleep(60);
+      const success = await loginWhitelist(vipUser.email, vipUser.phone);
+      if (!success) return;
+      await sleep(400);
+      updateRedeemLink();
+    })();
+  }
 
-  if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to create a BUZZ!");
+  /* ----------------------------
+     💬 Send Message Handler
+  ----------------------------- */
+  refs.sendBtn?.addEventListener("click", async () => {
+    if (!currentUser) return showStarPopup("Sign in to chat.");
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first.");
+    if ((currentUser.stars || 0) < SEND_COST)
+      return showStarPopup("Not enough stars to send message.");
 
-  currentUser.stars -= SEND_COST;
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-  await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+    // Deduct star cost
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
 
-  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-    content: txt,
-    uid: currentUser.uid,
-    chatId: currentUser.chatId,
-    timestamp: serverTimestamp(),
-    highlight: false,
-    buzzColor: null
+    // Add to chat
+    const newMsg = {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null
+    };
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), newMsg);
+
+    // Render immediately (optimistic)
+    refs.messageInputEl.value = "";
+    renderMessagesFromArray([{ id: docRef.id, data: newMsg }], true);
+    scrollToBottom(refs.messagesEl);
   });
 
-  refs.messageInputEl.value = "";
-  renderMessagesFromArray([{ id: docRef.id, data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId } }], true);
+  /* ----------------------------
+     🚨 BUZZ Message Handler
+  ----------------------------- */
+  refs.buzzBtn?.addEventListener("click", async () => {
+    if (!currentUser) return showStarPopup("Sign in to BUZZ.");
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-  requestAnimationFrame(() => {
-    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const stars = snap.data()?.stars || 0;
+
+    if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
+
+    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+    const buzzColor = randomColor();
+
+    const newBuzz = {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor
+    };
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
+
+    refs.messageInputEl.value = "";
+    showStarPopup("BUZZ sent!");
+    renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
+    scrollToBottom(refs.messagesEl);
   });
-});
 
-refs.buzzBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to BUZZ");
-
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
-
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-
-  if ((snap.data()?.stars || 0) < BUZZ_COST) return showStarPopup("Not enough stars");
-
-  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-
-  const buzzColor = randomColor();
-  const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
-    content: txt,
-    uid: currentUser.uid,
-    chatId: currentUser.chatId,
-    timestamp: serverTimestamp(),
-    highlight: true,
-    buzzColor
-  });
-
-  refs.messageInputEl.value = "";
-  showStarPopup("BUZZ sent!");
-  renderMessagesFromArray([{ 
-    id: docRef.id, 
-    data: { content: txt, uid: currentUser.uid, chatId: currentUser.chatId, highlight: true, buzzColor } 
-  }]);
-
-  requestAnimationFrame(() => {
-    if (refs.messagesEl) refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-  });
-});
-  /* ---------- Hello text rotation ---------- */
+  /* ----------------------------
+     👋 Rotating Hello Text
+  ----------------------------- */
   const greetings = ["HELLO","HOLA","BONJOUR","CIAO","HALLO","こんにちは","你好","안녕하세요","SALUT","OLÁ","NAMASTE","MERHABA"];
-  let helloIndex = 0;
   const helloEl = document.getElementById("helloText");
-  setInterval(()=>{
-    if(!helloEl) return;
-    helloEl.style.opacity='0';
-    setTimeout(()=>{
-      helloEl.innerText = greetings[helloIndex++ % greetings.length];
-      helloEl.style.color = randomColor();
-      helloEl.style.opacity='1';
-    },220);
-  },1500);
+  let greetIndex = 0;
 
-  /* ---------- Video nav & fade ---------- */
+  setInterval(() => {
+    if (!helloEl) return;
+    helloEl.style.opacity = "0";
+
+    setTimeout(() => {
+      helloEl.innerText = greetings[greetIndex++ % greetings.length];
+      helloEl.style.color = randomColor();
+      helloEl.style.opacity = "1";
+    }, 220);
+  }, 1500);
+
+  /* ----------------------------
+     🧩 Tiny Helpers
+  ----------------------------- */
+  const scrollToBottom = el => {
+    if (!el) return;
+    requestAnimationFrame(() => el.scrollTop = el.scrollHeight);
+  };
+  const sleep = ms => new Promise(res => setTimeout(res, ms));
+});
+  /* =======================================
+   🎥 Video Navigation & UI Fade Logic
+======================================= */
+(() => {
   const videoPlayer = document.getElementById("videoPlayer");
   const prevBtn = document.getElementById("prev");
   const nextBtn = document.getElementById("next");
   const container = document.querySelector(".video-container");
-  const navButtons = [prevBtn,nextBtn].filter(Boolean);
+  const navButtons = [prevBtn, nextBtn].filter(Boolean);
 
-  if(videoPlayer && navButtons.length){
-    const videos = [
-      "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
-      "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
-      "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
-    ];
-    let currentVideoIndex = 0;
+  if (!videoPlayer || navButtons.length === 0) return;
 
-    function loadVideo(index){
-      if(index<0) index = videos.length-1;
-      if(index>=videos.length) index = 0;
-      currentVideoIndex = index;
-      videoPlayer.src = videos[currentVideoIndex];
-      videoPlayer.muted = true;
-      videoPlayer.play().catch(()=>console.warn("Autoplay blocked"));
-    }
+  // 🎞️ Video list
+  const videos = [
+    "https://res.cloudinary.com/dekxhwh6l/video/upload/v1695/35a6ff0764563d1dcfaaaedac912b2c7_zfzxlw.mp4",
+    "https://xixi.b-cdn.net/Petitie%20Bubble%20Butt%20Stripper.mp4",
+    "https://xixi.b-cdn.net/Bootylicious%20Ebony%20Queen%20Kona%20Jade%20Twerks%20Teases%20and%20Rides%20POV%20u.mp4"
+  ];
+  let currentVideo = 0;
+  let hideTimeout = null;
 
-    prevBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex-1));
-    nextBtn?.addEventListener("click", ()=>loadVideo(currentVideoIndex+1));
-    videoPlayer.addEventListener("click", ()=>{ videoPlayer.muted = !videoPlayer.muted; });
+  /* ----------------------------
+     ▶️ Load & Play Video
+  ----------------------------- */
+  const loadVideo = (index) => {
+    if (index < 0) index = videos.length - 1;
+    if (index >= videos.length) index = 0;
 
-    let hideTimeout;
-    function showButtons(){
-      navButtons.forEach(btn=>{ btn.style.opacity="1"; btn.style.pointerEvents="auto"; });
-      clearTimeout(hideTimeout);
-      hideTimeout = setTimeout(()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); }, 3000);
-    }
+    currentVideo = index;
+    videoPlayer.src = videos[currentVideo];
+    videoPlayer.muted = true;
 
-    navButtons.forEach(btn=>{ btn.style.transition="opacity 0.6s"; btn.style.opacity="0"; btn.style.pointerEvents="none"; });
-    container?.addEventListener("mouseenter", showButtons);
-    container?.addEventListener("mousemove", showButtons);
-    container?.addEventListener("mouseleave", ()=>{ navButtons.forEach(btn=>{ btn.style.opacity="0"; btn.style.pointerEvents="none"; }); });
-    container?.addEventListener("click", showButtons);
+    videoPlayer.play().catch(() => console.warn("Autoplay may be blocked by browser"));
+  };
 
-    loadVideo(0);
-  }
-});
-// Popup close logic (works on mobile too)
-const popup = document.getElementById("userPopup");
-const closeBtn = document.getElementById("popupClose");
+  /* ----------------------------
+     🔊 Toggle Mute on Tap
+  ----------------------------- */
+  videoPlayer.addEventListener("click", () => {
+    videoPlayer.muted = !videoPlayer.muted;
+    const state = videoPlayer.muted ? "🔇" : "🔊";
+    showStarPopup(`Video sound: ${state}`);
+  });
 
-if (popup && closeBtn) {
-  // Close when clicking the X
-  closeBtn.addEventListener("pointerdown", e => {
-    e.stopPropagation();
+  /* ----------------------------
+     ⏪⏩ Navigation Buttons
+  ----------------------------- */
+  prevBtn?.addEventListener("click", () => loadVideo(currentVideo - 1));
+  nextBtn?.addEventListener("click", () => loadVideo(currentVideo + 1));
+
+  /* ----------------------------
+     👀 Auto Hide/Show Buttons
+  ----------------------------- */
+  const showButtons = () => {
+    navButtons.forEach(btn => {
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
+    });
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      navButtons.forEach(btn => {
+        btn.style.opacity = "0";
+        btn.style.pointerEvents = "none";
+      });
+    }, 3000);
+  };
+
+  navButtons.forEach(btn => {
+    btn.style.transition = "opacity 0.6s ease";
+    btn.style.opacity = "0";
+    btn.style.pointerEvents = "none";
+  });
+
+  ["mouseenter", "mousemove", "click"].forEach(evt => container?.addEventListener(evt, showButtons));
+  container?.addEventListener("mouseleave", () => {
+    navButtons.forEach(btn => {
+      btn.style.opacity = "0";
+      btn.style.pointerEvents = "none";
+    });
+  });
+
+  // Start with first video
+  loadVideo(0);
+})();
+
+/* =======================================
+   🧱 User Popup Close Logic (Mobile + PC)
+======================================= */
+(() => {
+  const popup = document.getElementById("userPopup");
+  const closeBtn = document.getElementById("popupClose");
+
+  if (!popup || !closeBtn) return;
+
+  const hidePopup = () => {
     popup.style.display = "none";
+    popup.classList.remove("show");
+  };
+
+  closeBtn.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+    hidePopup();
   });
 
-  // Close when tapping outside the popup card
-  popup.addEventListener("pointerdown", e => {
-    if (e.target === popup) {
-      popup.style.display = "none";
-    }
+  popup.addEventListener("pointerdown", (e) => {
+    if (e.target === popup) hidePopup();
   });
-}
+})();
