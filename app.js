@@ -54,7 +54,7 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
-/* ---------- Gift Modal ---------- */
+/* ---------- Gift Modal (with 100 star minimum) ---------- */
 async function showGiftModal(targetUid, targetData) {
   const modal = document.getElementById("giftModal");
   const titleEl = document.getElementById("giftModalTitle");
@@ -72,13 +72,12 @@ async function showGiftModal(targetUid, targetData) {
   closeBtn.onclick = close;
   modal.onclick = e => { if (e.target === modal) close(); };
 
-  // ⚡ Remove old confirm button listeners by replacing the node
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
-    if (!amt || amt <= 0) return alert("Enter a valid amount");
+    if (!amt || amt < 100) return alert("Minimum gift is 100 stars ⭐️");
     if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
 
     const fromRef = doc(db, "users", currentUser.uid);
@@ -102,6 +101,100 @@ async function showGiftModal(targetUid, targetData) {
   });
 }
 
+/* ---------- User Popup (Profile Card) ---------- */
+async function showUserPopup(uid) {
+  const popup = document.getElementById("userPopup");
+  const content = popup.querySelector(".user-popup-content");
+  const usernameEl = document.getElementById("popupUsername");
+  const genderEl = document.getElementById("popupGender");
+  const socialsEl = document.getElementById("popupSocials");
+  const closeBtn = document.getElementById("popupCloseBtn");
+  const photoEl = popup.querySelector(".popup-photo");
+
+  if (!popup || !content) return;
+
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return alert("User not found ⚠️");
+  const data = snap.data();
+
+  // ---------- Photo ----------
+  photoEl.innerHTML = "";
+  if (data.photoURL) {
+    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    const initials = (data.chatId || "?").slice(0, 2).toUpperCase();
+    photoEl.textContent = initials;
+    photoEl.style.background = data.usernameColor || "#444";
+    photoEl.style.color = "#fff";
+    photoEl.style.display = "flex";
+    photoEl.style.alignItems = "center";
+    photoEl.style.justifyContent = "center";
+    photoEl.style.fontSize = "32px";
+    photoEl.style.borderRadius = "50%";
+  }
+
+  // ---------- Username ----------
+  usernameEl.textContent = data.chatId || "Unknown";
+  usernameEl.style.color = data.usernameColor || "#fff";
+  usernameEl.classList.add("baller-highlight");
+
+  // ---------- Gender & Age ----------
+  const age = parseInt(data.age || 0);
+  const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
+  const nature = data.nature || "Sexy";
+  const fruitPick = data.fruitPick || "🍇";
+  genderEl.textContent = `A ${nature} ${data.gender || "Female"} in her ${ageGroup}`;
+  genderEl.style.textAlign = "center";
+  genderEl.style.color = "#fff";
+  genderEl.classList.add("baller-highlight");
+
+  // ---------- FruitPick Glow ----------
+  let descriptionEl = content.querySelector(".popup-description");
+  if (!descriptionEl) {
+    descriptionEl = document.createElement("p");
+    descriptionEl.className = "popup-description";
+    content.insertBefore(descriptionEl, socialsEl);
+  }
+  descriptionEl.textContent = fruitPick;
+  descriptionEl.style.textAlign = "center";
+  descriptionEl.style.margin = "6px 0";
+  descriptionEl.style.fontSize = "28px";
+  descriptionEl.classList.add("baller-highlight");
+
+  // ---------- Socials ----------
+  const socialPlatforms = [
+    { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
+    { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
+    { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
+    { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
+  ];
+  socialsEl.innerHTML = "";
+  for (const s of socialPlatforms) {
+    const link = data[s.field];
+    if (!link) continue;
+    const a = document.createElement("a");
+    a.href = link.startsWith("http") ? link : `https://${link}`;
+    a.target = "_blank";
+    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" width="28" height="28" style="border-radius:6px;">`;
+    socialsEl.appendChild(a);
+  }
+
+  // ---------- Gift Button ----------
+  let giftBtn = content.querySelector(".gift-btn");
+  if (!giftBtn) {
+    giftBtn = document.createElement("button");
+    giftBtn.className = "gift-btn baller-highlight";
+    giftBtn.textContent = `Gift ${data.chatId} stars ⭐️`;
+    content.appendChild(giftBtn);
+  } else {
+    giftBtn.textContent = `Gift ${data.chatId} stars ⭐️`;
+  }
+  giftBtn.onclick = () => showGiftModal(uid, data);
+
+  popup.style.display = "flex";
+  closeBtn.onclick = () => { popup.style.display = "none"; };
+  popup.onclick = e => { if (e.target === popup) popup.style.display = "none"; };
+}
 /* ---------- Gift Alert (Floating Popup) ---------- */
 function showGiftAlert(text) {
   const alertEl = document.getElementById("giftAlert");
@@ -261,7 +354,7 @@ function attachMessagesListener() {
   });
 }
 
-/* ---------- 👤 User Popup Logic ---------- */
+/* ---------- User Popup (Profile Card) ---------- */
 async function showUserPopup(uid) {
   const popup = document.getElementById("userPopup");
   const content = popup.querySelector(".user-popup-content");
@@ -277,17 +370,8 @@ async function showUserPopup(uid) {
   if (!snap.exists()) return alert("User not found ⚠️");
   const data = snap.data();
 
-  // 🪄 Username
-  usernameEl.textContent = data.chatId || "Unknown";
-  usernameEl.style.color = data.usernameColor || "#fff";
-  usernameEl.classList.add("baller-highlight");
-
-  // 👥 Gender / Age description
-  const age = parseInt(data.age || 0);
-  const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
-  genderEl.textContent = `A ${data.gender || "user"} in her ${ageGroup}`;
-
-  // 🖼️ Profile photo or initials
+  // ---------- Photo ----------
+  photoEl.innerHTML = "";
   if (data.photoURL) {
     photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
   } else {
@@ -299,24 +383,38 @@ async function showUserPopup(uid) {
     photoEl.style.alignItems = "center";
     photoEl.style.justifyContent = "center";
     photoEl.style.fontSize = "32px";
+    photoEl.style.borderRadius = "50%";
   }
 
-  // 🍇 FruitPick & Nature description
-  const fruitPick = data.fruitPick || "🍇";
+  // ---------- Username ----------
+  usernameEl.textContent = data.chatId || "Unknown";
+  usernameEl.style.color = data.usernameColor || "#fff";
+  usernameEl.classList.add("baller-highlight");
+
+  // ---------- Gender & Age ----------
+  const age = parseInt(data.age || 0);
+  const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
   const nature = data.nature || "Sexy";
+  const fruitPick = data.fruitPick || "🍇";
+  genderEl.textContent = `A ${nature} ${data.gender || "Female"} in her ${ageGroup}`;
+  genderEl.style.textAlign = "center";
+  genderEl.style.color = "#fff";
+  genderEl.classList.add("baller-highlight");
+
+  // ---------- FruitPick Glow ----------
   let descriptionEl = content.querySelector(".popup-description");
   if (!descriptionEl) {
     descriptionEl = document.createElement("p");
     descriptionEl.className = "popup-description";
     content.insertBefore(descriptionEl, socialsEl);
   }
-  descriptionEl.textContent = `${nature} ${fruitPick}`;
+  descriptionEl.textContent = fruitPick;
   descriptionEl.style.textAlign = "center";
   descriptionEl.style.margin = "6px 0";
-  descriptionEl.style.color = "#fff";
+  descriptionEl.style.fontSize = "28px";
   descriptionEl.classList.add("baller-highlight");
 
-  // 🌐 Socials
+  // ---------- Socials ----------
   const socialPlatforms = [
     { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
     { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
@@ -334,30 +432,21 @@ async function showUserPopup(uid) {
     socialsEl.appendChild(a);
   }
 
-  // 🎁 Gift Button
+  // ---------- Gift Button ----------
   let giftBtn = content.querySelector(".gift-btn");
   if (!giftBtn) {
     giftBtn = document.createElement("button");
     giftBtn.className = "gift-btn baller-highlight";
-    giftBtn.textContent = `GIFT STARS ⭐️`;
+    giftBtn.textContent = `Gift ${data.chatId} stars ⭐️`;
     content.appendChild(giftBtn);
   } else {
-    giftBtn.textContent = `GIFT STARS ⭐️`;
+    giftBtn.textContent = `Gift ${data.chatId} stars ⭐️`;
   }
-
-  // Click opens top-level gift modal
   giftBtn.onclick = () => showGiftModal(uid, data);
 
-  // Show popup
   popup.style.display = "flex";
-
-  // Close button
-  closeBtn.onclick = () => {
-    popup.style.display = "none";
-  };
-  popup.onclick = e => {
-    if (e.target === popup) popup.style.display = "none";
-  };
+  closeBtn.onclick = () => { popup.style.display = "none"; };
+  popup.onclick = e => { if (e.target === popup) popup.style.display = "none"; };
 }
 
 /* ---------- 🪶 Detect Username Tap ---------- */
