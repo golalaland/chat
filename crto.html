@@ -575,6 +575,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 9999; /* ensure it's above everything */
 }
 /* ---------- BallerAlert Highlight ---------- */
+/* ---------- BallerAlert Highlight ---------- */
 .baller-highlight {
   display: inline-block;
   position: relative;
@@ -583,18 +584,24 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   font-weight: 900;
   font-size: 0.95rem;
   font-family: 'Arial Black', Gadget, sans-serif;
-  color: #000;                  /* black text */
-  background: rgba(255, 255, 0, 0.2); /* subtle yellow highlight */
+  color: #000;
+  background: rgba(255, 255, 0, 0.2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 3px 0;
-  /* initial soft glow */
-  box-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
+  box-shadow: 0 0 6px var(--pulse-color, #FFD700), 0 0 12px var(--pulse-color, #FF69B4);
   transition: box-shadow 0.3s ease-in-out;
+  animation: baller-pulse 1.2s ease-in-out infinite alternate;
 }
 
-/* Optional sparkle fallback */
+@keyframes baller-pulse {
+  0% { box-shadow: 0 0 10px var(--pulse-color, #FFD700); }
+  50% { box-shadow: 0 0 20px var(--pulse-color, #FFD700); }
+  100% { box-shadow: 0 0 10px var(--pulse-color, #FFD700); }
+}
+
+/* Optional sparkle fallback for BallerAlert */
 .baller-sparkle {
   position: fixed;
   pointer-events: none;
@@ -603,7 +610,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 9999;
 }
 
-/* Sparkle float animation */
 @keyframes sparkle-float {
   0% {
     transform: translateY(0) scale(1);
@@ -613,29 +619,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     transform: translateY(-20px) scale(0.5);
     opacity: 0;
   }
-} 
-
-/* ---------- BallerAlert Glow ---------- */
-.baller-highlight {
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 10px;
-  font-weight: 900;
-  font-size: 0.95rem;
-  font-family: 'Arial Black', Gadget, sans-serif;
-  color: #000;
-  background: rgba(255, 255, 0, 0.2);
-  box-shadow: 0 0 6px var(--pulse-color), 0 0 12px var(--pulse-color);
-  animation: baller-pulse 1.2s ease-in-out infinite alternate;
 }
 
-@keyframes baller-pulse {
-  0% { box-shadow: 0 0 10px var(--pulse-color); }
-  50% { box-shadow: 0 0 20px var(--pulse-color); }
-  100% { box-shadow: 0 0 10px var(--pulse-color); }
-}
 
-/* ---------- Buzz Glow & Pulse ---------- */
+/* ---------- Buzz Highlight ---------- */
 .buzz-highlight {
   display: inline-block;
   padding: 5px 12px;
@@ -645,16 +632,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   font-family: 'Arial', sans-serif;
   color: #000;
   background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 12px var(--buzz-color);
+  box-shadow: 0 0 12px var(--buzz-color, #00FFFF);
   animation: buzz-pulse 12s ease-in-out 1; /* 12 seconds */
 }
 
 @keyframes buzz-pulse {
-  0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color); }
-  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 24px var(--buzz-color); }
-  100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color); }
+  0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 24px var(--buzz-color, #00FFFF); }
+  100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
 }
-
 #popupGender {
   font-family: 'Montserrat', sans-serif;
   font-size: 16px;
