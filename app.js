@@ -75,46 +75,68 @@ async function showGiftModal(targetUid, targetData) {
     if (e.target === modal) close();
   };
 
-  // ⚡ Replace confirm button listeners to avoid duplicates
+  // Replace confirm button to avoid duplicates
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
 
-    // 🔒 Strict minimum enforcement
     if (!amt || amt < 100) {
       showStarPopup("🔥 Minimum gift is 100 ⭐️ — keep it baller!");
-      return; // 🚫 Stop execution here
+      return;
     }
 
-    // 🔒 Check balance
     if ((currentUser?.stars || 0) < amt) {
       showStarPopup("Not enough stars 💫");
-      return; // 🚫 Stop execution here
+      return;
     }
 
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
 
+    const glowColor = randomColor();
+
+    // Add chat + update Firestore
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+      uid: "balleralert",
+      chatId: "BallerAlert🤩",
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor: glowColor
+    });
+
     await Promise.all([
-      updateDoc(fromRef, {
-        stars: increment(-amt),
-        starsGifted: increment(amt),
-      }),
-      updateDoc(toRef, { stars: increment(amt) }),
-      addDoc(collection(db, CHAT_COLLECTION), {
-        content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-        uid: "balleralert",
-        chatId: "BallerAlert🤩",
-        timestamp: serverTimestamp(),
-        highlight: true,
-        buzzColor: randomColor(),
-      }),
+      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+      updateDoc(toRef, { stars: increment(amt) })
     ]);
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
+
+    // Render message immediately
+    renderMessagesFromArray([{ id: docRef.id, data: {
+      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+      uid: "balleralert",
+      chatId: "BallerAlert🤩",
+      highlight: true,
+      buzzColor: glowColor
+    }}]);
+
+    // Apply unique pulsing glow behind gift stars
+    const msgEl = document.getElementById(docRef.id);
+    if (msgEl) {
+      const contentEl = msgEl.querySelector(".content") || msgEl;
+      contentEl.style.setProperty("--pulse-color", glowColor);
+      contentEl.classList.add("pulse-highlight");
+
+      // Stop pulse after 7 seconds
+      setTimeout(() => {
+        contentEl.classList.remove("pulse-highlight");
+        contentEl.style.boxShadow = "none";
+      }, 7000);
+    }
   });
 }
 
