@@ -75,6 +75,7 @@ async function showGiftModal(targetUid, targetData) {
     if (e.target === modal) close();
   };
 
+  // Replace old button with a fresh one to remove previous listeners
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
@@ -98,7 +99,7 @@ async function showGiftModal(targetUid, targetData) {
 
     const glowColor = randomColor();
 
-    // Prepare Firestore data
+    // Prepare Firestore message
     const messageData = {
       content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
       uid: "balleralert",
@@ -125,17 +126,17 @@ async function showGiftModal(targetUid, targetData) {
     if (!msgEl) return;
     const contentEl = msgEl.querySelector(".content") || msgEl;
 
-    // Apply BallerAlert pulse (7s)
+    // Apply BallerAlert highlight pulse (21s)
     contentEl.style.setProperty("--pulse-color", glowColor);
     contentEl.classList.add("pulse-highlight");
     setTimeout(() => {
       contentEl.classList.remove("pulse-highlight");
       contentEl.style.boxShadow = "none";
-    }, 7000);
+    }, 21000); // 21 seconds
 
-    // If the message has highlight/buzz, apply short buzz pulse (3s)
+    // Apply buzz pulse (21s) if highlighted
     if (messageData.highlight) {
-      const buzzGlow = glowColor; // Could use a different color if you want
+      const buzzGlow = glowColor;
       const buzzEl = contentEl.cloneNode(true);
       buzzEl.classList.add("pulse-buzz");
       buzzEl.style.setProperty("--pulse-color", buzzGlow);
@@ -143,11 +144,10 @@ async function showGiftModal(targetUid, targetData) {
 
       setTimeout(() => {
         buzzEl.remove();
-      }, 3000); // Buzz glow lasts 3 seconds
+      }, 21000); // 21 seconds
     }
   });
 }
-
 
 /* ---------- Gift Alert (Floating Popup) ---------- */
 function showGiftAlert(text) {
