@@ -633,12 +633,13 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   color: #000;
   background: rgba(0, 255, 255, 0.2);
   box-shadow: 0 0 12px var(--buzz-color, #00FFFF);
-  animation: buzz-pulse 12s ease-in-out 1; /* 12 seconds */
+  animation: buzz-pulse 0.8s ease-in-out infinite alternate; /* faster for urgency */
 }
 
+/* Pulse animation for BUZZ — short, urgent bursts */
 @keyframes buzz-pulse {
   0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
-  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 24px var(--buzz-color, #00FFFF); }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 30px var(--buzz-color, #00FFFF); }
   100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
 }
 #popupGender {
