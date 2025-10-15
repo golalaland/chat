@@ -342,9 +342,6 @@ const closePopup = () => {
 popup.onclick = (e) => { if (e.target === popup) closePopup(); };
 closeBtn.onclick = closePopup;
 
-// Close when clicking outside
-popup.onclick = (e) => { if (e.target === popup) closePopup(); };
-
 /* ---------- Detect username tap ---------- */
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest(".chat-username");
