@@ -264,6 +264,7 @@ function attachMessagesListener() {
 
 /* ---------- 👤 User Popup Logic ---------- */
 async function showUserPopup(uid) {
+ async function showUserPopup(uid) {
   const popup = document.getElementById("userPopup");
   const content = popup.querySelector(".user-popup-content");
   const usernameEl = document.getElementById("popupUsername");
@@ -281,20 +282,41 @@ async function showUserPopup(uid) {
   // 🪄 Username
   usernameEl.textContent = data.chatId || "Unknown";
   usernameEl.style.color = data.usernameColor || "#fff";
+  usernameEl.classList.add("baller-highlight"); // glow
 
   // 👥 Gender / Age description
   const age = parseInt(data.age || 0);
   const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
-  genderEl.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
+  genderEl.textContent = `A ${data.gender || "user"} in her ${ageGroup}`;
 
   // 🖼️ Profile photo or initials
   if (data.photoURL) {
-    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
+    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
   } else {
     const initials = (data.chatId || "?").slice(0, 2).toUpperCase();
     photoEl.textContent = initials;
     photoEl.style.background = data.usernameColor || "#444";
+    photoEl.style.color = "#fff";
+    photoEl.style.display = "flex";
+    photoEl.style.alignItems = "center";
+    photoEl.style.justifyContent = "center";
+    photoEl.style.fontSize = "32px";
   }
+
+  // 🍇 FruitPick & Nature description
+  const fruitPick = data.fruitPick || "🍇";
+  const nature = data.nature || "Sexy";
+  let descriptionEl = content.querySelector(".popup-description");
+  if (!descriptionEl) {
+    descriptionEl = document.createElement("p");
+    descriptionEl.className = "popup-description";
+    content.insertBefore(descriptionEl, socialsEl);
+  }
+  descriptionEl.textContent = `${nature} ${fruitPick}`;
+  descriptionEl.style.textAlign = "center";
+  descriptionEl.style.margin = "6px 0";
+  descriptionEl.style.color = "#fff";
+  descriptionEl.classList.add("baller-highlight"); // optional glow
 
   // 🌐 Socials
   const socialPlatforms = [
@@ -314,23 +336,25 @@ async function showUserPopup(uid) {
     socialsEl.appendChild(a);
   }
 
-  // 🎁 Gift Button
+  // 🎁 Gift Button (just "GIFT STARS ⭐️")
   let giftBtn = content.querySelector(".gift-btn");
   if (!giftBtn) {
     giftBtn = document.createElement("button");
-    giftBtn.className = "gift-btn";
-    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
+    giftBtn.className = "gift-btn baller-highlight"; // glow
+    giftBtn.textContent = `GIFT STARS ⭐️`;
     giftBtn.onclick = () => showGiftModal(uid, data);
     content.appendChild(giftBtn);
   } else {
-    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
+    giftBtn.textContent = `GIFT STARS ⭐️`;
     giftBtn.onclick = () => showGiftModal(uid, data);
+    giftBtn.classList.add("baller-highlight");
   }
 
   // ✨ Show popup
   popup.style.display = "flex";
   setTimeout(() => content.classList.add("show"), 10);
 
+  // Close logic
   const close = () => {
     content.classList.remove("show");
     setTimeout(() => (popup.style.display = "none"), 200);
