@@ -357,24 +357,6 @@ async function showUserPopup(uid) {
     socialsEl.appendChild(a);
   }
 
-  // Gift button
-  let giftBtn = content.querySelector(".gift-btn");
-  if (!giftBtn) {
-    giftBtn = document.createElement("button");
-    giftBtn.className = "gift-btn";
-    content.appendChild(giftBtn);
-  }
-  giftBtn.textContent = "Gift Stars ⭐️";
-  giftBtn.onclick = () => showGiftModal(uid, data);
-
-  // Close controls
-  const close = () => {
-    content.classList.remove("show");
-    setTimeout(() => (popup.style.display = "none"), 200);
-  };
-  popup.onclick = (e) => { if (e.target === popup) close(); };
-  closeBtn.onclick = close;
-}
   // 🎁 Gift button
   let giftBtn = content.querySelector(".gift-btn");
   if (!giftBtn) {
