@@ -476,6 +476,34 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   pointer-events: none;
   z-index: 9999; /* ensure it's above everything */
 }
+<style>
+/* BallerAlert gift highlight */
+.baller-highlight {
+  display: inline-block;
+  position: relative;
+}
+
+/* Optional sparkle effect (just in case JS fails) */
+.baller-sparkle {
+  position: fixed;
+  pointer-events: none;
+  user-select: none;
+  animation: sparkle-float 1.2s forwards;
+  z-index: 9999;
+}
+
+/* Sparkle float animation */
+@keyframes sparkle-float {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px) scale(0.5);
+    opacity: 0;
+  }
+}
+</style>
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
