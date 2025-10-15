@@ -336,31 +336,48 @@ async function showUserPopup(uid) {
     socialsEl.appendChild(a);
   }
 
-  // 🎁 Gift Button (just "GIFT STARS ⭐️")
-  let giftBtn = content.querySelector(".gift-btn");
-  if (!giftBtn) {
-    giftBtn = document.createElement("button");
-    giftBtn.className = "gift-btn baller-highlight"; // glow
-    giftBtn.textContent = `GIFT STARS ⭐️`;
-    giftBtn.onclick = () => showGiftModal(uid, data);
-    content.appendChild(giftBtn);
-  } else {
-    giftBtn.textContent = `GIFT STARS ⭐️`;
-    giftBtn.onclick = () => showGiftModal(uid, data);
-    giftBtn.classList.add("baller-highlight");
-  }
+ // 🎁 Gift Button
+let giftBtn = content.querySelector(".gift-btn");
+if (!giftBtn) {
+  giftBtn = document.createElement("button");
+  giftBtn.className = "gift-btn baller-highlight"; // glow
+  giftBtn.textContent = `GIFT STARS ⭐️`;
+  content.appendChild(giftBtn);
+}
 
-  // ✨ Show popup
-  popup.style.display = "flex";
-  setTimeout(() => content.classList.add("show"), 10);
+// Always update text and click handler
+giftBtn.textContent = `GIFT STARS ⭐️`;
+giftBtn.onclick = () => {
+  showGiftModal(uid, data);
+};
 
-  // Close logic
-  const close = () => {
-    content.classList.remove("show");
-    setTimeout(() => (popup.style.display = "none"), 200);
+// ---------- Gift Modal Logic ----------
+function showGiftModal(uid, data) {
+  const modal = document.getElementById("giftModal");
+  const input = document.getElementById("giftAmountInput");
+  const confirmBtn = document.getElementById("giftConfirmBtn");
+
+  // Reset input
+  input.value = "";
+  modal.style.display = "flex";
+
+  // Update button handler
+  confirmBtn.onclick = async () => {
+    const amount = parseInt(input.value);
+    if (isNaN(amount) || amount < 100) {
+      alert("You must gift at least 100 stars ⭐️");
+      return;
+    }
+    modal.style.display = "none";
+    // Call your gifting logic here
+    await sendGift(uid, amount);
+    showGiftAlert(`You gifted ${amount} stars ⭐️!`);
   };
-  popup.onclick = e => { if (e.target === popup) close(); };
-  closeBtn.onclick = close;
+
+  // Close modal
+  document.getElementById("giftModalClose").onclick = () => {
+    modal.style.display = "none";
+  };
 }
 
 /* ---------- 🪶 Detect Username Tap ---------- */
