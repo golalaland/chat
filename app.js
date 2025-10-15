@@ -102,7 +102,7 @@ async function showGiftModal(targetUid, targetData) {
     // Firestore updates
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-      uid: "balleralert",
+      uid: "balleralert", // Can be "buzz" for buzz messages
       chatId: "BallerAlert🤩",
       timestamp: serverTimestamp(),
       highlight: true,
@@ -130,14 +130,28 @@ async function showGiftModal(targetUid, targetData) {
     const msgEl = document.getElementById(docRef.id);
     if (msgEl) {
       const contentEl = msgEl.querySelector(".content") || msgEl;
-      contentEl.style.setProperty("--pulse-color", glowColor);
-      contentEl.classList.add("pulse-highlight");
 
-      // Stop pulse after 7s
-      setTimeout(() => {
-        contentEl.classList.remove("pulse-highlight");
-        contentEl.style.boxShadow = "none";
-      }, 7000);
+      if (docRef.data()?.uid === "balleralert") {
+        // BallerAlert glow (7s)
+        contentEl.style.setProperty("--pulse-color", glowColor);
+        contentEl.classList.add("pulse-highlight");
+
+        setTimeout(() => {
+          contentEl.classList.remove("pulse-highlight");
+          contentEl.style.boxShadow = "none";
+        }, 7000);
+      } else if (docRef.data()?.uid === "buzz") {
+        // Buzz glow + mini pulse (3s drop)
+        const buzzColor = randomColor();
+        contentEl.style.setProperty("--buzz-color", buzzColor);
+        contentEl.classList.add("buzz-highlight", "buzz-pulse");
+
+        setTimeout(() => {
+          contentEl.classList.remove("buzz-highlight", "buzz-pulse");
+          contentEl.style.boxShadow = "none";
+          contentEl.style.opacity = 1;
+        }, 3000);
+      }
     }
   });
 }
