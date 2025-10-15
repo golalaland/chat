@@ -172,42 +172,52 @@ function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
   messages.forEach(item => {
-    if (document.getElementById(item.id)) return;
+    if (document.getElementById(item.id)) return; // skip duplicates
 
     const m = item.data;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
 
-const usernameEl = document.createElement("span");
-usernameEl.className = "meta";
-usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
-usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
-usernameEl.style.marginRight = "4px";
+    // ---------- Username ----------
+    const usernameEl = document.createElement("span");
+    usernameEl.className = "meta";
+    usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
+    usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
+    usernameEl.style.marginRight = "4px";
 
-const contentEl = document.createElement("span");
-contentEl.className = "content";
-contentEl.textContent = " " + (m.content || "");
+    // ---------- Message Content ----------
+    const contentEl = document.createElement("span");
+    contentEl.className = "content";
+    contentEl.textContent = " " + (m.content || "");
 
-// Regular BUZZ messages
-if (m.buzzColor) {
-  contentEl.style.background = m.buzzColor;
-}
+    // BUZZ messages
+    if (m.buzzColor) {
+      contentEl.style.background = m.buzzColor;
+    }
 
-// BallerAlert special message
-if (m.highlight && m.uid === "balleralert") {
-  contentEl.classList.add("baller-highlight"); // CSS handles glow & sparkle
-} else if (m.highlight) {
-  // Other highlights
-  contentEl.style.color = "#000";
-  contentEl.style.fontWeight = "700";
-}
+    // Highlight messages
+    if (m.highlight && m.uid === "balleralert") {
+      contentEl.classList.add("baller-highlight"); // CSS handles glow & sparkle
 
-// ✅ Only append once
-wrapper.append(usernameEl, contentEl);
-refs.messagesEl.appendChild(wrapper);
-  
-  // auto-scroll logic
+      // Optional: one-time sparkle
+      const sparkle = document.createElement("div");
+      sparkle.className = "baller-sparkle";
+      sparkle.textContent = "✨";
+      contentEl.appendChild(sparkle);
+      setTimeout(() => sparkle.remove(), 1200);
+
+    } else if (m.highlight) {
+      contentEl.style.color = "#000";
+      contentEl.style.fontWeight = "700";
+    }
+
+    // ---------- Append ----------
+    wrapper.append(usernameEl, contentEl);
+    refs.messagesEl.appendChild(wrapper);
+  });
+
+  // ---------- Auto-Scroll ----------
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
@@ -219,7 +229,6 @@ refs.messagesEl.appendChild(wrapper);
     });
   }
 }
-
 
 
 /* ---------- 🔔 Messages Listener ---------- */
