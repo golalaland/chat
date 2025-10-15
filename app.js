@@ -1,3 +1,8 @@
+when I make those changes it, it hangs. 
+when I go back to the exact same code repaste the animations video and login btn works. 
+
+This code: 
+
 
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -302,16 +307,23 @@ popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
     a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
     socialsEl.appendChild(a);
   });
-// --- Gift button (robust, no duplicates, safe listeners) ---
-try {
-  // ensure popup / popupContent exist
-  if (!popup || !popupContent) return;
+// Gift button
+const giftBtn = document.createElement("button");
+giftBtn.textContent = `🎁 Gift ${data.chatId} stars ⭐️`;
+giftBtn.className = "gift-btn";
+giftBtn.onclick = () => showGiftModal(uidKey, data);
+popupContent.appendChild(giftBtn);
+  popup.style.display = "flex";
+  setTimeout(() => popupContent.classList.add("show"), 10);
 
-  // find existing and remove to be extra-safe
-  const prev = popupContent.querySelector(".gift-btn");
-  if (prev) {
-    // remove any listener if attached (best-effort)
-    prev.replaceWith(prev.cloneNode
+  const closePopup = () => {
+    popupContent.classList.remove("show");
+    setTimeout(() => { popup.style.display = "none"; }, 200);
+  };
+
+  popup.onclick = (e) => { if (e.target === popup) closePopup(); };
+  closeBtn.onclick = closePopup;
+}
 
 /* ---------- Detect username tap ---------- */
 document.addEventListener("pointerdown", e => {
