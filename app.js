@@ -302,43 +302,17 @@ popupGender.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
     a.innerHTML = `<img src="${s.icon}" alt="${s.field}" style="width:28px;height:28px;border-radius:6px;">`;
     socialsEl.appendChild(a);
   });
-// Gift button
-let existingGiftBtn = popupContent.querySelector(".gift-btn");
-if (existingGiftBtn) existingGiftBtn.remove(); // remove old one if exists
+  
+// --- Gift button (robust, no duplicates, safe listeners) ---
+try {
+  // ensure popup / popupContent exist
+  if (!popup || !popupContent) return;
 
-const giftBtn = document.createElement("button");
-giftBtn.className = "gift-btn";
-giftBtn.innerHTML = `
-  <span style="
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    background:linear-gradient(135deg,#ffb300,#ff0080,#00c6ff);
-    color:#fff;
-    font-weight:600;
-    padding:10px 20px;
-    border:none;
-    border-radius:10px;
-    box-shadow:0 0 10px rgba(255,255,255,0.5);
-    cursor:pointer;
-    transition:all 0.3s ease;
-  ">
-    🎁 Gift ${data.chatId} ⭐️
-  </span>
-`;
-giftBtn.onpointerdown = () => showGiftModal(uidKey, data);
-
-popupContent.appendChild(giftBtn);
-
-// Display animation
-popup.style.display = "flex";
-setTimeout(() => popupContent.classList.add("show"), 10);
-
-// Close logic
-const closePopup = () => {
-  popupContent.classList.remove("show");
-  setTimeout(() => { popup.style.display = "none"; }, 200);
-};
+  // find existing and remove to be extra-safe
+  const prev = popupContent.querySelector(".gift-btn");
+  if (prev) {
+    // remove any listener if attached (best-effort)
+    prev.replaceWith(prev.cloneNode
 
 /* ---------- Detect username tap ---------- */
 document.addEventListener("pointerdown", e => {
