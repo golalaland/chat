@@ -613,36 +613,35 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   }
 } 
 
-.gift-slide {
-  transform: translateX(-100%);
-  opacity: 0;
-  transition: transform 0.6s ease, opacity 0.6s ease;
+/* BallerAlert pulse */
+.pulse-highlight {
+  box-shadow: 0 0 20px var(--pulse-color);
+  animation: pulse-glow 1.2s ease-in-out infinite alternate;
 }
 
-.gift-slide.show {
-  transform: translateX(0);
-  opacity: 1;
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 10px var(--pulse-color); }
+  50% { box-shadow: 0 0 20px var(--pulse-color); }
+  100% { box-shadow: 0 0 10px var(--pulse-color); }
 }
 
-.gift-highlight {
-  background-color: rgba(255, 255, 0, 0.15);
-  border-radius: 8px;
-  padding: 2px 6px;
-  display: inline-block;
-  position: relative;
+/* Buzz mini glow */
+.buzz-highlight {
+  background: rgba(0, 255, 255, 0.2);
+  border-radius: 5px;
+  box-shadow: 0 0 12px var(--buzz-color);
+  transition: opacity 0.5s ease, box-shadow 0.5s ease;
 }
 
-.gift-star {
-  display: inline-block;
-  margin-left: 4px;
-  font-size: 16px;
-  animation: starPulse 0.7s ease-in-out infinite;
+/* Buzz pulse drop */
+@keyframes buzz-pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.7; }
 }
 
-@keyframes starPulse {
-  0% { transform: scale(1); text-shadow: 0 0 5px var(--pulse-color); }
-  50% { transform: scale(1.4); text-shadow: 0 0 15px var(--pulse-color); }
-  100% { transform: scale(1); text-shadow: 0 0 5px var(--pulse-color); }
+.buzz-pulse {
+  animation: buzz-pulse 0.8s ease-in-out 1;
 }
 
 #popupGender {
