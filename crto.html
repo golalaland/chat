@@ -476,6 +476,58 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   pointer-events: none;
   z-index: 9999; /* ensure it's above everything */
 }
+/* ---------- BallerAlert Highlight ---------- */
+.baller-highlight {
+  display: inline-block;
+  position: relative;
+  color: #FFD700; /* base gold */
+  font-weight: 900;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
+  animation: pulse-glow 1.2s ease-in-out infinite alternate;
+}
+
+/* ---------- Pulsing Glow Animation ---------- */
+@keyframes pulse-glow {
+  0% {
+    text-shadow: 0 0 6px #FFD700, 0 0 12px #FF69B4;
+  }
+  100% {
+    text-shadow: 0 0 10px #FFD700, 0 0 20px #FF69B4, 0 0 30px #FF4500;
+  }
+}
+
+/* ---------- Sparkle Effect ---------- */
+.baller-sparkle {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  pointer-events: none;
+  user-select: none;
+  animation: sparkle-float 1.2s forwards;
+  z-index: 9999;
+}
+
+/* ---------- Sparkle Float Animation ---------- */
+@keyframes sparkle-float {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(-20px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* ---------- Optional: Smooth Background for BUZZ ---------- */
+.buzz-content {
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.3s ease, color 0.3s ease;
+}
 /* ---------- Auth Inputs ---------- */
 #authBox{display:flex;justify-content:center;margin-top:12px;}
 #emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
