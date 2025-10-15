@@ -325,18 +325,7 @@ giftBtn.onpointerdown = () => showGiftModal(uidKey, data);
 
 popupContent.appendChild(giftBtn);
 
-/* ---------- Detect username tap ---------- */
-document.addEventListener("pointerdown", e => {
-  const el = e.target.closest(".chat-username");
-  if (!el) return;
-  const uid = el.dataset.username;
-  if (uid && uid !== currentUser?.uid) showUserPopup(uid);
 
-  // Small visual feedback (tapped highlight)
-  el.style.transition = "opacity 0.15s";
-  el.style.opacity = "0.5";
-  setTimeout(() => (el.style.opacity = "1"), 150);
-});
 
 /* ---------- ChatID modal ---------- */
 async function promptForChatID(userRef, userData){
@@ -532,6 +521,19 @@ function startStarEarning(uid) {
 
 /* ---------- DOMContentLoaded ---------- */
 window.addEventListener("DOMContentLoaded", () => {
+  
+/* ---------- Detect username tap ---------- */
+document.addEventListener("pointerdown", e => {
+  const el = e.target.closest(".chat-username");
+  if (!el) return;
+  const uid = el.dataset.username;
+  if (uid && uid !== currentUser?.uid) showUserPopup(uid);
+
+  // Small visual feedback (tapped highlight)
+  el.style.transition = "opacity 0.15s";
+  el.style.opacity = "0.5";
+  setTimeout(() => (el.style.opacity = "1"), 150);
+});
 
 /* ---------- Loading Bar Helper ---------- */
 function showLoadingBar(duration = 1000) {
