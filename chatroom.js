@@ -949,10 +949,11 @@ function replaceStarsWithImage(root = document.body) {
         const img = document.createElement("img");
         img.src = customStarURL;
         img.alt = "⭐";
-        img.style.width = "16px";
-        img.style.height = "16px";
-        img.style.display = "inline-block";
-        img.style.verticalAlign = "middle";
+     img.style.width = "40px";
+img.style.height = "40px";
+img.style.display = "inline-block";
+img.style.verticalAlign = "middle";
+img.style.transform = "scale(1.2)"; // optional extra punch
         span.appendChild(img);
         parent.insertBefore(span, textNode);
       }
