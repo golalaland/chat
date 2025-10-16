@@ -839,6 +839,109 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   object-fit: cover;
 }
 .host-item:hover { transform: scale(1.08); }
+/* Center Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  justify-content: center;
+  align-items: center;
+}
+
+/* Modal Content (Centered & Clean) */
+.modal-content {
+  position: relative;
+  background: #000;
+  border: 1px solid #222;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 85vh;
+  padding: 15px;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Host Video (Fitted + Proportionate) */
+.host-video-container {
+  width: 100%;
+  position: relative;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.host-video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+/* Host Footer */
+.host-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  width: 100%;
+  color: white;
+}
+
+.host-username {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.gift-btn {
+  background: #ff4081;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Host List (Circles Underneath) */
+.host-list {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  margin-top: 18px;
+  gap: 12px;
+  padding-bottom: 5px;
+}
+
+.host-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.host-item img {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: 2px solid #ff4081;
+  object-fit: cover;
+}
+
+.host-item span {
+  font-size: 12px;
+  color: #fff;
+  margin-top: 5px;
+}
 </style>
 </head>
 <body>
