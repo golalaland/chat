@@ -724,69 +724,68 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 5000 !important; /* always above modal blur */
   position: fixed;
 }
-/* ---------- Modal Trigger ---------- */
-.hosts-btn {
-  margin-top: 10px;
-  padding: 8px 16px;
-  background: #ff4081;
+/* ====== Featured Hosts Styles ====== */
+.featured-btn {
+  background: linear-gradient(90deg, #ff007a, #ffa500);
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 25px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 15px;
+  display: block;
+  margin: 20px auto;
+  box-shadow: 0 0 10px rgba(255, 0, 122, 0.6);
+  transition: transform 0.2s;
 }
+.featured-btn:hover { transform: scale(1.05); }
 
-/* ---------- Modal ---------- */
-.hosts-modal {
+/* ====== Modal ====== */
+.modal {
   display: none;
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 340px;
-  max-height: 560px;
-  background: #111;
-  border-radius: 14px;
-  box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  justify-content: center;
+  align-items: center;
   z-index: 9999;
-  overflow: hidden;
-  color: #fff;
-  font-family: sans-serif;
+}
+.modal-content {
+  background: #111;
+  border-radius: 15px;
+  padding: 20px;
+  width: 90%;
+  max-width: 420px;
   text-align: center;
-}
-
-.hosts-modal-content {
   position: relative;
-  padding: 10px;
+  box-shadow: 0 0 20px rgba(255,255,255,0.15);
 }
-
-.hosts-close {
+.close {
   position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 20px;
+  top: 10px;
+  right: 14px;
+  font-size: 26px;
   cursor: pointer;
+  color: #fff;
 }
 
-/* ---------- Video Container ---------- */
+/* ====== Video Section ====== */
 .host-video-container {
   position: relative;
   width: 100%;
-  height: 360px;
+  height: 380px;
   background: #000;
   border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
-
 #hostVideo {
   width: 100%;
   height: 100%;
   border: none;
-  border-radius: 10px;
+  display: block;
 }
-
-/* ---------- Footer ---------- */
 .host-footer {
   position: absolute;
   bottom: 0;
@@ -794,73 +793,52 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 6px 10px;
+  background: rgba(0,0,0,0.5);
+  padding: 8px 12px;
 }
-
 .host-username {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #fff;
   text-shadow: 0 0 4px #000;
 }
-
 .gift-btn {
   background: #FFD700;
   color: #000;
   border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
+  border-radius: 8px;
+  padding: 6px 10px;
   cursor: pointer;
   font-size: 13px;
 }
 
-/* ---------- Hosts List (Profile Circles) ---------- */
+/* ====== Circular Host List ====== */
 .host-list {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
   justify-content: center;
-  padding: 8px 0;
-  margin-bottom: 8px;
-}
-
-.host-list .host-item {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  cursor: pointer;
+  overflow-x: auto;
+  padding: 10px 0;
+  gap: 12px;
 }
+.host-list::-webkit-scrollbar { display: none; }
 
-.host-list img {
-  width: 50px;
-  height: 50px;
+.host-item {
+  width: 65px;
+  height: 65px;
   border-radius: 50%;
-  border: 2px solid #ff4081;
+  overflow: hidden;
+  border: 3px solid #ff007a;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.host-item img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
-
-.host-list span {
-  font-size: 12px;
-  margin-top: 4px;
-  color: #fff;
-}
-
-/* ---------- Nav Buttons ---------- */
-.host-nav-buttons {
-  display: flex;
-  justify-content: space-between;
-}
-
-.host-nav-buttons button {
-  background: #222;
-  color: #fff;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-}
+.host-item:hover { transform: scale(1.08); }
 </style>
 </head>
 <body>
@@ -890,35 +868,25 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
 <span id="onlineCount" class="onlineCount"></span>
 
-<!-- 🔘 Featured Hosts Trigger -->
-<button id="openHostsBtn" class="hosts-btn">🎥 View Featured Hosts</button>
+<!-- Featured Hosts Button -->
+<button id="openHostsBtn" class="featured-btn">🌟 Featured Hosts</button>
 
-<!-- 🌟 Featured Hosts Modal -->
+<!-- Featured Hosts Modal -->
 <div id="hostsModal" class="modal">
   <div class="modal-content">
     <span class="close">&times;</span>
 
     <!-- Host Video Container -->
     <div class="host-video-container">
-      <iframe
-        id="hostVideo"
-        allowfullscreen
-        frameborder="0"
-      ></iframe>
+      <iframe id="hostVideo" allowfullscreen frameborder="0"></iframe>
 
       <div class="host-footer">
-        <div class="host-username" id="hostUsername">Username</div>
+        <div class="host-username" id="hostUsername"></div>
         <button class="gift-btn" id="giftBtn">🎁 Gift</button>
       </div>
     </div>
 
-    <!-- Navigation -->
-    <div class="nav-buttons">
-      <button id="prevHost">◀</button>
-      <button id="nextHost">▶</button>
-    </div>
-
-    <!-- Scrollable Host List -->
+    <!-- Scrollable Circular Host List -->
     <div class="host-list" id="hostList"></div>
   </div>
 </div>
