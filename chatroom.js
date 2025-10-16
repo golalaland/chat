@@ -28,7 +28,7 @@ const rtdb = getDatabase(app);
 const ROOM_ID = "room5";
 const CHAT_COLLECTION = "messages_room5";
 const BUZZ_COST = 50;
-const SEND_COST = 5;
+const SEND_COST = 1;
 
 let currentUser = null;
 let lastMessagesArray = [];
@@ -55,6 +55,9 @@ function showStarPopup(text) {
 }
 
 /* ---------- Gift Modal ---------- */
+/* ----------------------------
+   ⭐ GIFT / BALLER ALERT Glow
+----------------------------- */
 async function showGiftModal(targetUid, targetData) {
   const modal = document.getElementById("giftModal");
   const titleEl = document.getElementById("giftModalTitle");
@@ -95,8 +98,8 @@ async function showGiftModal(targetUid, targetData) {
 
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
-    if (!amt || amt < 100) return showStarPopup("🔥 Minimum gift is 100 stars ⭐️");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars to Ball yet, Champ.  💫");
+    if (!amt || amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
 
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
@@ -117,7 +120,7 @@ async function showGiftModal(targetUid, targetData) {
       updateDoc(toRef, { stars: increment(amt) })
     ]);
 
-    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
+    showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
 
@@ -138,7 +141,6 @@ async function showGiftModal(targetUid, targetData) {
     setTimeout(() => clearInterval(starsInterval), 2000);
   });
 }
-
 
 /* ---------- Gift Alert (Floating Popup) ---------- */
 function showGiftAlert(text) {
@@ -251,11 +253,8 @@ function renderMessagesFromArray(messages) {
 
 
 
-can we make this message show only once? 
-
-/* ---------- 🔔 Messages Listener (One-Time Message Display) ---------- */
+/* ---------- 🔔 Messages Listener ---------- */
 function attachMessagesListener() {
-  const shownMessages = new Set(); // ✅ track messages already displayed
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
 
   onSnapshot(q, snapshot => {
@@ -265,11 +264,10 @@ function attachMessagesListener() {
       const msg = change.doc.data();
       const msgId = change.doc.id;
 
-      // ✅ Prevent re-render or re-alert of the same message
-      if (shownMessages.has(msgId)) return;
-      shownMessages.add(msgId);
+      // Prevent duplicate render
+      if (document.getElementById(msgId)) return;
 
-      // Add to render memory
+      // Add to memory + render
       lastMessagesArray.push({ id: msgId, data: msg });
       renderMessagesFromArray([{ id: msgId, data: msg }]);
 
@@ -278,29 +276,23 @@ function attachMessagesListener() {
         const myId = currentUser?.chatId?.toLowerCase();
         if (!myId) return;
 
-        const [sender, , receiver, amount] = msg.content.split(" "); 
+        const [sender, , receiver, amount] = msg.content.split(" "); // e.g., Nushi gifted Goll 50
         if (!sender || !receiver || !amount) return;
 
-        // ✅ only show once per session
-        const uniqueKey = `${msgId}_${myId}`;
-        if (shownMessages.has(uniqueKey)) return;
-        shownMessages.add(uniqueKey);
-
         if (sender.toLowerCase() === myId) {
-          showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
+          showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
         } else if (receiver.toLowerCase() === myId) {
-          showGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
+          showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
         }
       }
 
-      // 🌀 Auto-scroll for your messages
+      // 🌀 Keep scroll for your own messages
       if (refs.messagesEl && msg.uid === currentUser?.uid) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       }
     });
   });
 }
-
 /* ---------- 👤 User Popup Logic (Optimized & Instant) ---------- */
 const userPopup = document.getElementById("userPopup");
 const popupContent = userPopup.querySelector(".user-popup-content");
@@ -484,7 +476,7 @@ async function loginWhitelist(email, phone) {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      return showStarPopup("RSVP not found. Please sign up through a Host.");
+      return showStarPopup("User not found. Please sign up on the main page first.");
     }
 
     const data = userSnap.data() || {};
@@ -769,10 +761,10 @@ window.addEventListener("DOMContentLoaded", () => {
     scrollToBottom(refs.messagesEl);
   });
 
-/* ----------------------------
-   🚨 BUZZ Glow
------------------------------ */
-refs.buzzBtn?.addEventListener("click", async () => {
+  /* ----------------------------
+     🚨 BUZZ Message Handler
+  ----------------------------- */
+  refs.buzzBtn?.addEventListener("click", async () => {
   if (!currentUser) return showStarPopup("Sign in to BUZZ.");
   const txt = refs.messageInputEl?.value.trim();
   if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
@@ -925,7 +917,6 @@ refs.buzzBtn?.addEventListener("click", async () => {
   loadVideo(0);
 })();
 
-<script>
 // URL of your custom star image
 const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760574055/stars_ojgnny.svg";
 
