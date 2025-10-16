@@ -55,6 +55,9 @@ function showStarPopup(text) {
 }
 
 /* ---------- Gift Modal ---------- */
+/* ----------------------------
+   ⭐ GIFT / BALLER ALERT Glow
+----------------------------- */
 async function showGiftModal(targetUid, targetData) {
   const modal = document.getElementById("giftModal");
   const titleEl = document.getElementById("giftModalTitle");
@@ -68,37 +71,74 @@ async function showGiftModal(targetUid, targetData) {
   amountInput.value = "";
   modal.style.display = "flex";
 
-  const close = () => modal.style.display = "none";
+  const close = () => (modal.style.display = "none");
   closeBtn.onclick = close;
-  modal.onclick = e => { if (e.target === modal) close(); };
+  modal.onclick = (e) => { if (e.target === modal) close(); };
 
-  // ⚡ Remove old confirm button listeners by replacing the node
+  // Replace old confirm button with fresh one
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
+  // Floating stars helper
+  const spawnFloatingStars = (msgEl, count = 6) => {
+    const rect = msgEl.getBoundingClientRect();
+    for (let i = 0; i < count; i++) {
+      const star = document.createElement("div");
+      star.className = "floating-star";
+      const x = (Math.random() - 0.5) * rect.width;
+      const y = -Math.random() * 60;
+      star.style.setProperty("--x", x + "px");
+      star.style.setProperty("--y", y + "px");
+      star.style.left = rect.width / 2 + "px";
+      star.style.top = rect.height / 2 + "px";
+      msgEl.appendChild(star);
+      setTimeout(() => star.remove(), 2000 + Math.random() * 500);
+    }
+  };
+
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
-    if (!amt || amt <= 0) return alert("Enter a valid amount");
+    if (!amt || amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
     if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
 
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
+    const glowColor = randomColor();
 
+    const messageData = {
+      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+      uid: "balleralert",
+      chatId: "BallerAlert🤩",
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor: glowColor
+    };
+
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
     await Promise.all([
       updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-      updateDoc(toRef, { stars: increment(amt) }),
-      addDoc(collection(db, CHAT_COLLECTION), {
-        content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-        uid: "balleralert",
-        chatId: "BallerAlert🤩",
-        timestamp: serverTimestamp(),
-        highlight: true,
-        buzzColor: randomColor()
-      })
+      updateDoc(toRef, { stars: increment(amt) })
     ]);
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
+    renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
+
+    const msgEl = document.getElementById(docRef.id);
+    if (!msgEl) return;
+    const contentEl = msgEl.querySelector(".content") || msgEl;
+
+    // Apply BallerAlert glow
+    contentEl.style.setProperty("--pulse-color", glowColor);
+    contentEl.classList.add("baller-highlight");
+    setTimeout(() => {
+      contentEl.classList.remove("baller-highlight");
+      contentEl.style.boxShadow = "none";
+    }, 21000);
+
+    // Floating stars burst
+    let starsInterval = setInterval(() => spawnFloatingStars(contentEl, 5), 300);
+    setTimeout(() => clearInterval(starsInterval), 2000);
   });
 }
 
@@ -704,34 +744,45 @@ window.addEventListener("DOMContentLoaded", () => {
      🚨 BUZZ Message Handler
   ----------------------------- */
   refs.buzzBtn?.addEventListener("click", async () => {
-    if (!currentUser) return showStarPopup("Sign in to BUZZ.");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+  if (!currentUser) return showStarPopup("Sign in to BUZZ.");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    const stars = snap.data()?.stars || 0;
+  const userRef = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(userRef);
+  const stars = snap.data()?.stars || 0;
+  if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
-    if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
+  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+  const buzzColor = randomColor();
 
-    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-    const buzzColor = randomColor();
+  const newBuzz = {
+    content: txt,
+    uid: currentUser.uid,
+    chatId: currentUser.chatId,
+    timestamp: serverTimestamp(),
+    highlight: true,
+    buzzColor
+  };
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
 
-    const newBuzz = {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor
-    };
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
+  refs.messageInputEl.value = "";
+  showStarPopup("BUZZ sent!");
+  renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
+  scrollToBottom(refs.messagesEl);
 
-    refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent!");
-    renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
-    scrollToBottom(refs.messagesEl);
-  });
+  // Apply BUZZ glow
+  const msgEl = document.getElementById(docRef.id);
+  if (!msgEl) return;
+  const contentEl = msgEl.querySelector(".content") || msgEl;
+
+  contentEl.style.setProperty("--buzz-color", buzzColor);
+  contentEl.classList.add("buzz-highlight");
+  setTimeout(() => {
+    contentEl.classList.remove("buzz-highlight");
+    contentEl.style.boxShadow = "none";
+  }, 12000); // same as CSS animation
+});
 
   /* ----------------------------
      👋 Rotating Hello Text
