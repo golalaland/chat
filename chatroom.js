@@ -921,12 +921,16 @@ window.addEventListener("DOMContentLoaded", () => {
 const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
 
 // Replace stars in text nodes with image
+// URL of your custom star image
+const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
+
+// Replace stars in text nodes with image
 function replaceStarsWithImage(root = document.body) {
   const walker = document.createTreeWalker(
     root,
     NodeFilter.SHOW_TEXT,
     {
-      acceptNode: function(node) {
+      acceptNode: node => {
         if ((node.nodeValue.includes("⭐") || node.nodeValue.includes("⭐️")) && !node.parentNode.dataset.star) {
           return NodeFilter.FILTER_ACCEPT;
         }
@@ -946,27 +950,26 @@ function replaceStarsWithImage(root = document.body) {
       if (frag) parent.insertBefore(document.createTextNode(frag), textNode);
 
       if (i < fragments.length - 1) {
-        // ----- Inline SVG star -----
+        // Inline star wrapper
         const span = document.createElement("span");
         span.dataset.star = "⭐";
+        span.style.display = "inline-flex";
+        span.style.alignItems = "center";
+        span.style.position = "relative"; // For floating star positioning
 
+        // Inline star
         const inlineStar = document.createElement("img");
-        inlineStar.src = customStarURL;  // Your SVG star
+        inlineStar.src = customStarURL;
         inlineStar.alt = "⭐";
-
-        // Big inline star
-        inlineStar.style.width = "12px";
-        inlineStar.style.height = "12px";
+        inlineStar.style.width = "1.2em";   // scales with font
+        inlineStar.style.height = "1.2em";
         inlineStar.style.display = "inline-block";
-        inlineStar.style.verticalAlign = "middle";
-        inlineStar.style.lineHeight = "1";
-        inlineStar.style.transform = "scale(1.2)";
-        inlineStar.style.margin = "0 2px";
+        inlineStar.style.verticalAlign = "text-bottom";
 
         span.appendChild(inlineStar);
         parent.insertBefore(span, textNode);
 
-        // ----- Floating animated star effect -----
+        // Floating animated star
         const floatingStar = document.createElement("img");
         floatingStar.src = customStarURL;
         floatingStar.alt = "⭐";
@@ -974,10 +977,13 @@ function replaceStarsWithImage(root = document.body) {
         floatingStar.style.height = "40px";
         floatingStar.style.position = "absolute";
         floatingStar.style.pointerEvents = "none";
-        floatingStar.style.top = "50%";
-        floatingStar.style.left = "50%";
-        floatingStar.style.transform = "translate(-50%, -50%) scale(1)";
         floatingStar.style.zIndex = "9999";
+
+        // Position exactly over inline star
+        const rect = inlineStar.getBoundingClientRect();
+        floatingStar.style.top = `${rect.top + rect.height / 2 + window.scrollY}px`;
+        floatingStar.style.left = `${rect.left + rect.width / 2 + window.scrollX}px`;
+        floatingStar.style.transform = "translate(-50%, -50%) scale(0)";
 
         document.body.appendChild(floatingStar);
 
@@ -994,7 +1000,8 @@ function replaceStarsWithImage(root = document.body) {
     parent.removeChild(textNode);
   });
 }
-// Function to revert back to original stars
+
+// Function to revert stars back to original text
 function revertStars(root = document.body) {
   root.querySelectorAll("span[data-star]").forEach(span => {
     const starText = document.createTextNode(span.dataset.star);
@@ -1002,15 +1009,19 @@ function revertStars(root = document.body) {
   });
 }
 
-// Run on page load
+// Initial run
 replaceStarsWithImage();
 
-// Automatically replace stars in new chat messages or dynamic content
+// Observe dynamic content
 const observer = new MutationObserver(mutations => {
-  mutations.forEach(m => replaceStarsWithImage(m.target));
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) replaceStarsWithImage(node.parentNode);
+      else if (node.nodeType === Node.ELEMENT_NODE) replaceStarsWithImage(node);
+    });
+  });
 });
 observer.observe(document.body, { childList: true, subtree: true });
-
 /* =======================================
    🧱 User Popup Close Logic (Mobile + PC)
 ======================================= */
