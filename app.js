@@ -96,15 +96,15 @@ async function showGiftModal(targetUid, targetData) {
 
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
-    if (!amt || amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+    if (!amt || amt < 100) return showStarPopup("🔥 Minimum gift is 100 stars ⭐️");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars to Ball yet, Champ.  💫");
 
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
     const glowColor = randomColor();
 
     const messageData = {
-      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt}⭐️`,
+      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
       uid: "balleralert",
       chatId: "BallerAlert🤩",
       timestamp: serverTimestamp(),
@@ -118,7 +118,7 @@ async function showGiftModal(targetUid, targetData) {
       updateDoc(toRef, { stars: increment(amt) })
     ]);
 
-    showStarPopup(`You sent ${amt}⭐️ to ${targetData.chatId}!`);
+    showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
 
@@ -252,24 +252,9 @@ function renderMessagesFromArray(messages) {
 
 
 
-/* ---------- 🔔 Messages Listener with auto-disappearing alerts ---------- */
-const shownGiftAlerts = new Set(); // Track shown messages
-const ALERT_DURATION = 5000; // 5 seconds
+can we make this message show only once? 
 
-function showTemporaryGiftAlert(message) {
-  const alertEl = document.createElement("div");
-  alertEl.className = "gift-alert"; // you can style this in CSS
-  alertEl.textContent = message;
-  document.body.appendChild(alertEl);
-
-  // Fade out after ALERT_DURATION
-  setTimeout(() => {
-    alertEl.style.transition = "opacity 0.5s";
-    alertEl.style.opacity = 0;
-    setTimeout(() => alertEl.remove(), 500);
-  }, ALERT_DURATION);
-}
-
+/* ---------- 🔔 Messages Listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
 
@@ -289,10 +274,6 @@ function attachMessagesListener() {
 
       /* 💝 Detect personalized gift messages */
       if (msg.uid === "system" && msg.highlight && msg.content?.includes("gifted")) {
-        // Only show once per message
-        if (shownGiftAlerts.has(msgId)) return;
-        shownGiftAlerts.add(msgId);
-
         const myId = currentUser?.chatId?.toLowerCase();
         if (!myId) return;
 
@@ -300,9 +281,9 @@ function attachMessagesListener() {
         if (!sender || !receiver || !amount) return;
 
         if (sender.toLowerCase() === myId) {
-          showTemporaryGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
+          showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
         } else if (receiver.toLowerCase() === myId) {
-          showTemporaryGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
+          showGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
         }
       }
 
