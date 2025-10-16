@@ -724,6 +724,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 5000 !important; /* always above modal blur */
   position: fixed;
 }
+/* -------------------- Buttons -------------------- */
 .hosts-btn {
   margin-top: 10px;
   padding: 6px 12px;
@@ -735,14 +736,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-radius: 5px;
 }
 
+/* -------------------- Modal -------------------- */
 .hosts-modal {
   display: none;
   position: fixed;
-  top: 10%;
+  top: 8%;
   left: 50%;
   transform: translateX(-50%);
-  width: 280px;
-  max-height: 450px;
+  width: 300px;
+  max-height: 520px;
   background: #111;
   border-radius: 12px;
   box-shadow: 0 0 12px #000;
@@ -750,13 +752,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   overflow: hidden;
   color: #fff;
   font-family: sans-serif;
-}
-
-.hosts-modal-content {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 8px;
 }
 
+/* -------------------- Modal Content -------------------- */
+.hosts-modal-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* -------------------- Close Button -------------------- */
 .hosts-close {
   position: absolute;
   top: 6px;
@@ -765,6 +773,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   cursor: pointer;
 }
 
+/* -------------------- Host List (scrollable buttons) -------------------- */
 .hosts-list {
   display: flex;
   gap: 6px;
@@ -781,23 +790,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
+  white-space: nowrap;
 }
 
+/* -------------------- Video Container -------------------- */
 .host-video-container {
   position: relative;
   width: 100%;
-  height: 250px;
+  height: 320px;
   background: #000;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   text-align: center;
+  margin-bottom: 8px; /* space for gift button */
 }
 
 #hostVideoPlayer {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .host-username {
@@ -812,19 +824,23 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   text-shadow: 0 0 5px #000;
 }
 
+/* -------------------- Gift Button -------------------- */
 .host-gift-btn {
-  position: absolute;
-  bottom: 32px;
-  right: 10px;
-  padding: 4px 8px;
-  font-size: 12px;
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  font-size: 14px;
+  margin-bottom: 8px;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   background: #FFD700;
   color: #000;
   cursor: pointer;
+  font-weight: bold;
 }
 
+/* -------------------- Navigation Buttons -------------------- */
 .host-nav-buttons {
   display: flex;
   justify-content: space-between;
@@ -838,6 +854,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   padding: 4px 6px;
   border-radius: 5px;
   cursor: pointer;
+  flex: 1;
+  margin: 0 2px;
 }
 </style>
 </head>
@@ -875,12 +893,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="hostsModal" class="hosts-modal">
   <div class="hosts-modal-content">
     <span id="hostsModalClose" class="hosts-close">&times;</span>
+
+    <!-- Hosts List (scrollable) -->
     <div id="hostsList" class="hosts-list"></div>
+
+    <!-- Bigger Video Container -->
     <div id="hostVideoContainer" class="host-video-container">
       <video id="hostVideoPlayer" autoplay muted playsinline></video>
       <div id="hostUsername" class="host-username"></div>
-      <button id="hostGiftBtn" class="host-gift-btn">Gift ⭐️</button>
     </div>
+
+    <!-- Gift Button BELOW the video -->
+    <button id="hostGiftBtn" class="host-gift-btn">Gift ⭐️</button>
+
+    <!-- Navigation Arrows -->
     <div class="host-nav-buttons">
       <button id="hostPrev">◀️</button>
       <button id="hostNext">▶️</button>
