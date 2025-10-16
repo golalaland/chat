@@ -917,7 +917,7 @@ window.addEventListener("DOMContentLoaded", () => {
   loadVideo(0);
 })();
 
-// URL of your custom star image
+// URL of your custom star SVG
 const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
 
 // Replace stars in text nodes with image
@@ -927,7 +927,7 @@ function replaceStarsWithImage(root = document.body) {
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: node => {
-        if ((node.nodeValue.includes("⭐") || node.nodeValue.includes("⭐️")) && !node.parentNode.dataset.star) {
+        if (node.nodeValue.includes("⭐") || node.nodeValue.includes("⭐️")) {
           return NodeFilter.FILTER_ACCEPT;
         }
         return NodeFilter.FILTER_REJECT;
@@ -943,24 +943,26 @@ function replaceStarsWithImage(root = document.body) {
     const fragments = textNode.nodeValue.split(/⭐️?|⭐/);
 
     fragments.forEach((frag, i) => {
+      // Insert regular text
       if (frag) parent.insertBefore(document.createTextNode(frag), textNode);
 
+      // Insert star
       if (i < fragments.length - 1) {
-        // Inline star wrapper
+        // Wrapper span for inline star
         const span = document.createElement("span");
-        span.dataset.star = "⭐";
         span.style.display = "inline-flex";
         span.style.alignItems = "center";
-        span.style.position = "relative"; // For floating star positioning
+        span.style.position = "relative"; // relative for floating star
 
         // Inline star
         const inlineStar = document.createElement("img");
         inlineStar.src = customStarURL;
         inlineStar.alt = "⭐";
-        inlineStar.style.width = "1.2em";   // scales with font
+        inlineStar.style.width = "1.2em";           // scales with font
         inlineStar.style.height = "1.2em";
         inlineStar.style.display = "inline-block";
         inlineStar.style.verticalAlign = "text-bottom";
+        inlineStar.style.transform = "translateY(0.15em) scale(1.2)"; // tweak alignment
 
         span.appendChild(inlineStar);
         parent.insertBefore(span, textNode);
@@ -975,9 +977,9 @@ function replaceStarsWithImage(root = document.body) {
         floatingStar.style.pointerEvents = "none";
         floatingStar.style.zIndex = "9999";
 
-        // Position exactly over inline star
+        // Position over inline star
         const rect = inlineStar.getBoundingClientRect();
-        floatingStar.style.top = `${rect.top + rect.height / 2 + window.scrollY}px`;
+        floatingStar.style.top = `${rect.top + rect.height / 2 + window.scrollY + 2}px`; // +2px nudge
         floatingStar.style.left = `${rect.left + rect.width / 2 + window.scrollX}px`;
         floatingStar.style.transform = "translate(-50%, -50%) scale(0)";
 
@@ -997,11 +999,13 @@ function replaceStarsWithImage(root = document.body) {
   });
 }
 
-// Function to revert stars back to original text
+// Revert back to original stars
 function revertStars(root = document.body) {
-  root.querySelectorAll("span[data-star]").forEach(span => {
-    const starText = document.createTextNode(span.dataset.star);
-    span.parentNode.replaceChild(starText, span);
+  root.querySelectorAll("span").forEach(span => {
+    if (span.querySelector("img") && span.querySelector("img").alt === "⭐") {
+      const starText = document.createTextNode("⭐");
+      span.parentNode.replaceChild(starText, span);
+    }
   });
 }
 
