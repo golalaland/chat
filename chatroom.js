@@ -918,7 +918,7 @@ window.addEventListener("DOMContentLoaded", () => {
 })();
 
 // URL of your custom star image
-const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760574055/stars_ojgnny.svg";
+const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
 
 // Replace stars in text nodes with image
 function replaceStarsWithImage(root = document.body) {
