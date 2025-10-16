@@ -54,7 +54,7 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
-/* ---------- Gift Modall ---------- */
+/* ---------- Gift Modal---------- */
 /* ----------------------------
    ⭐ GIFT / BALLER ALERT Glow
 ----------------------------- */
