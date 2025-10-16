@@ -955,8 +955,8 @@ function replaceStarsWithImage(root = document.body) {
         inlineStar.alt = "⭐";
 
         // Big inline star
-        inlineStar.style.width = "60px";
-        inlineStar.style.height = "60px";
+        inlineStar.style.width = "24px";
+        inlineStar.style.height = "24px";
         inlineStar.style.display = "inline-block";
         inlineStar.style.verticalAlign = "middle";
         inlineStar.style.lineHeight = "1";
