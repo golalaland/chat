@@ -252,7 +252,6 @@ function renderMessagesFromArray(messages) {
 }
 
 
-
 /* ---------- 🔔 Messages Listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
