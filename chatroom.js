@@ -832,7 +832,7 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 });
-  /* =======================================
+  /* =====================================
    🎥 Video Navigation & UI Fade Logic
 ======================================= */
 (() => {
