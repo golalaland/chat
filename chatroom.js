@@ -920,8 +920,8 @@ window.addEventListener("DOMContentLoaded", () => {
 // URL of your custom star SVG
 const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
 
-// Replace stars in text nodes with inline + floating stars
-function replaceStarsWithImage(root = document.body) {
+// Replace stars in text nodes with SVG + floating stars
+function replaceStarsWithSVG(root = document.body) {
   if (!root) return;
 
   const walker = document.createTreeWalker(
@@ -942,6 +942,8 @@ function replaceStarsWithImage(root = document.body) {
 
   nodesToReplace.forEach(textNode => {
     const parent = textNode.parentNode;
+    if (!parent) return;
+
     const fragments = textNode.nodeValue.split(/⭐️?|⭐/);
 
     fragments.forEach((frag, i) => {
@@ -966,7 +968,7 @@ function replaceStarsWithImage(root = document.body) {
         span.appendChild(inlineStar);
         parent.insertBefore(span, textNode);
 
-        // Floating star (original simple pop animation)
+        // Floating star (same for BallerAlert)
         const floatingStar = document.createElement("img");
         floatingStar.src = customStarURL;
         floatingStar.alt = "⭐";
@@ -976,14 +978,14 @@ function replaceStarsWithImage(root = document.body) {
         floatingStar.style.pointerEvents = "none";
         floatingStar.style.zIndex = "9999";
 
+        // Get bounding rect relative to viewport + scroll
         const rect = inlineStar.getBoundingClientRect();
-        floatingStar.style.top = `${rect.top + rect.height / 2 + window.scrollY + 2}px`;
+        floatingStar.style.top = `${rect.top + rect.height / 2 + window.scrollY}px`;
         floatingStar.style.left = `${rect.left + rect.width / 2 + window.scrollX}px`;
         floatingStar.style.transform = "translate(-50%, -50%) scale(0)";
 
         document.body.appendChild(floatingStar);
 
-        // Original scale pop-in animation only
         floatingStar.animate([
           { transform: "translate(-50%, -50%) scale(0)", opacity: 0 },
           { transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
@@ -998,29 +1000,19 @@ function replaceStarsWithImage(root = document.body) {
   });
 }
 
-// Revert stars to original text
-function revertStars(root = document.body) {
-  root.querySelectorAll("span").forEach(span => {
-    if (span.querySelector("img") && span.querySelector("img").alt === "⭐") {
-      const starText = document.createTextNode("⭐");
-      span.parentNode.replaceChild(starText, span);
-    }
-  });
-}
-
-// Initial run
-replaceStarsWithImage();
-
-// Observe dynamic content
+// Observe dynamic content including BallerAlert
 const observer = new MutationObserver(mutations => {
   mutations.forEach(m => {
     m.addedNodes.forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) replaceStarsWithImage(node.parentNode);
-      else if (node.nodeType === Node.ELEMENT_NODE) replaceStarsWithImage(node);
+      if (node.nodeType === Node.TEXT_NODE) replaceStarsWithSVG(node.parentNode);
+      else if (node.nodeType === Node.ELEMENT_NODE) replaceStarsWithSVG(node);
     });
   });
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+// Initial run
+replaceStarsWithSVG();
 /* =======================================
    🧱 User Popup Close Logic (Mobile + PC)
 ======================================= */
