@@ -1036,69 +1036,56 @@ replaceStarsWithSVG();
     if (e.target === popup) hidePopup();
   });
 })();
-const hostsBtn = document.getElementById("hostsBtn");
+
+// DOM Elements
 const hostsModal = document.getElementById("hostsModal");
-const hostsListEl = document.getElementById("hostsList");
-const hostsClose = document.getElementById("hostsModalClose");
+const hostsBtn = document.querySelector(".hosts-btn");
+const hostsClose = document.getElementById("hostsClose");
+const hostsList = document.getElementById("hostsList");
 const hostVideoPlayer = document.getElementById("hostVideoPlayer");
-const hostUsernameEl = document.getElementById("hostUsername");
-const hostGiftBtn = document.getElementById("hostGiftBtn");
-const hostPrevBtn = document.getElementById("hostPrev");
-const hostNextBtn = document.getElementById("hostNext");
+const hostUsername = document.getElementById("hostUsername");
+const prevHostBtn = document.getElementById("prevHostBtn");
+const nextHostBtn = document.getElementById("nextHostBtn");
 
-let hostsArray = []; // List of selected host users
-let currentHostIndex = 0;
+let hosts = [];
+let currentIndex = 0;
 
-// Open modal
-hostsBtn.addEventListener("click", async () => {
-  hostsModal.style.display = "block";
-  await loadHosts(); // Load hosts from Firebase
-  showHostVideo(0);
-});
+// Fetch videos from Firestore
+async function fetchHosts() {
+  const q = query(collection(db, "hosts"), orderBy("createdAt", "asc"));
+  const snapshot = await getDocs(q);
+  hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  renderHostButtons();
+  if (hosts.length > 0) showHost(0);
+}
 
-// Close modal
-hostsClose.addEventListener("click", () => {
-  hostsModal.style.display = "none";
-});
-
-// Load hosts (example: filter users with isHost = true)
-async function loadHosts() {
-  const snap = await getDocs(collection(db, "users"));
-  hostsArray = [];
-  snap.forEach(docSnap => {
-    const data = docSnap.data();
-    if (data.isHost) hostsArray.push({ uid: docSnap.id, ...data });
-  });
-
-  hostsListEl.innerHTML = "";
-  hostsArray.forEach((host, index) => {
+// Render host buttons
+function renderHostButtons() {
+  hostsList.innerHTML = "";
+  hosts.forEach((host, idx) => {
     const btn = document.createElement("button");
-    btn.textContent = host.chatId || "Guest";
-    btn.addEventListener("click", () => showHostVideo(index));
-    hostsListEl.appendChild(btn);
+    btn.textContent = host.username;
+    btn.onclick = () => showHost(idx);
+    hostsList.appendChild(btn);
   });
 }
 
-// Show host video and username
-function showHostVideo(index) {
-  if (!hostsArray[index]) return;
-  currentHostIndex = index;
-  const host = hostsArray[index];
-  hostUsernameEl.textContent = host.chatId || "Guest";
-
-  if (host.videoURL) hostVideoPlayer.src = host.videoURL;
-  else hostVideoPlayer.src = ""; // fallback
-
-  hostVideoPlayer.play().catch(() => {});
+// Show host video by index
+function showHost(index) {
+  if (index < 0 || index >= hosts.length) return;
+  currentIndex = index;
+  hostVideoPlayer.src = hosts[index].videoUrl;
+  hostUsername.textContent = hosts[index].username;
 }
 
-// Navigate
-hostPrevBtn.addEventListener("click", () => showHostVideo(currentHostIndex - 1));
-hostNextBtn.addEventListener("click", () => showHostVideo(currentHostIndex + 1));
+// Modal events
+hostsBtn.onclick = () => hostsModal.style.display = "block";
+hostsClose.onclick = () => hostsModal.style.display = "none";
+window.onclick = e => { if (e.target === hostsModal) hostsModal.style.display = "none"; };
 
-// Gift button
-hostGiftBtn.addEventListener("click", () => {
-  const host = hostsArray[currentHostIndex];
-  if (!host || !host.uid) return;
-  showGiftModal(host.uid, host);
-});
+// Navigation
+prevHostBtn.onclick = () => showHost(currentIndex - 1);
+nextHostBtn.onclick = () => showHost(currentIndex + 1);
+
+// Initial load
+fetchHosts();
