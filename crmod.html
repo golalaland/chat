@@ -749,10 +749,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-btn:hover { transform: scale(1.05); }
 
-/* ====== 🌟 Featured Hosts Styles (Unique) ====== */
-
-/* 💫 Featured Hosts Modal — Clean, Centered, Compact */
-.featured-modal {
+/* ====== Modal ====== */
+.modal {
   display: none;
   position: fixed;
   top: 0;
@@ -763,55 +761,54 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   justify-content: center;
   align-items: center;
   z-index: 9999;
-  backdrop-filter: blur(6px);
 }
 
-.featured-modal-content {
+/* 💫 Featured Hosts Modal — Clean, Centered, Compact */
+.modal-content {
   position: relative;
-  background: #000;
-  border: 1px solid #222;
+  background: #111;
   border-radius: 14px;
-  width: 90%;
-  max-width: 420px; /* balanced size — cute but centered */
+  width: 92%;
+  max-width: 280px; /* smaller, cute modal */
   overflow: hidden;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14px;
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
-/* Close button */
-.featured-close {
+/* Close button stays top-right inside modal */
+.modal-content .close {
   position: absolute;
-  top: 8px;
-  right: 12px;
+  top: 6px;
+  right: 10px;
   font-size: 18px;
   color: #fff;
   cursor: pointer;
 }
 
-/* 🎥 Host Video Container (proportionate before & after play) */
-.featured-host-video {
+/* 🎥 Video container perfectly fits its frame */
+.host-video-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 9 / 16; /* keeps same size even before play */
+  aspect-ratio: 9 / 16;
   background: #000;
-  border-radius: 12px;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.featured-host-video iframe {
+#hostVideo {
   width: 100%;
   height: 100%;
   border: none;
   object-fit: cover;
-  border-radius: 12px;
 }
 
-/* Footer (Username + Gift Button) */
-.featured-host-footer {
+/* Footer (Username + Gift Btn) */
+.host-footer {
   position: absolute;
   bottom: 0;
   width: 100%;
@@ -823,66 +820,161 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.featured-username {
+.host-username {
   font-size: 13px;
   font-weight: 600;
   color: #fff;
   text-shadow: 0 0 3px #000;
 }
 
-/* Navigation Arrows */
-.featured-nav {
-  display: flex;
-  justify-content: space-between;
-  width: 60%;
-  margin-top: 12px;
-}
-
-.featured-nav button {
-  background: none;
+.gift-btn {
+  background: #FFD700;
+  color: #000;
   border: none;
-  color: #fff;
-  font-size: 20px;
+  border-radius: 6px;
+  padding: 4px 9px;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-/* Avatar Circle List (no duplication, sleek scroll) */
-.featured-host-list {
+/* Avatar Circles List */
+.host-list {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
-  margin: 14px 0 10px;
+  gap: 8px;
+  margin: 10px 0 14px;
   overflow-x: auto;
 }
 
-.featured-host-list::-webkit-scrollbar {
-  display: none;
-}
-
-.featured-host-list .host-item {
+.host-item {
   text-align: center;
   cursor: pointer;
 }
 
-.featured-host-list .host-item img {
-  width: 48px;
-  height: 48px;
+.host-item img {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #ff4081;
   transition: transform 0.2s ease;
 }
 
-.featured-host-list .host-item img:hover {
-  transform: scale(1.08);
+.host-item img:hover {
+  transform: scale(1.1);
 }
 
-.featured-host-list .host-item span {
+.host-item span {
   display: block;
   font-size: 11px;
   color: #ccc;
-  margin-top: 3px;
+  margin-top: 4px;
+}
+
+/* Center Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  justify-content: center;
+  align-items: center;
+}
+
+/* Modal Content (Centered & Clean) */
+.modal-content {
+  position: relative;
+  background: #000;
+  border: 1px solid #222;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 85vh;
+  padding: 15px;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Host Video (Fitted + Proportionate) */
+.host-video-container {
+  width: 100%;
+  position: relative;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.host-video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+/* Host Footer */
+.host-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  width: 100%;
+  color: white;
+}
+
+.host-username {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.gift-btn {
+  background: #ff4081;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Host List (Circles Underneath) */
+.host-list {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  margin-top: 18px;
+  gap: 12px;
+  padding-bottom: 5px;
+}
+
+.host-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.host-item img {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: 2px solid #ff4081;
+  object-fit: cover;
+}
+
+.host-item span {
+  font-size: 12px;
+  color: #fff;
+  margin-top: 5px;
 }
 </style>
 </head>
@@ -918,28 +1010,28 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <button id="openHostsBtn" class="featured-btn">🌟 Star Hosts 🌟</button>
 
 <!-- 🌟 Featured Hosts Modal -->
-<div id="hostsModal" class="featured-modal">
-  <div class="featured-modal-content">
-    <span class="featured-close">&times;</span>
+<div id="hostsModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
 
     <!-- Host Video Container -->
-    <div class="featured-host-video">
+    <div class="host-video-container">
       <iframe id="hostVideo" allowfullscreen frameborder="0"></iframe>
 
-      <div class="featured-host-footer">
-        <div class="featured-username" id="hostUsername"></div>
+      <div class="host-footer">
+        <div class="host-username" id="hostUsername"></div>
         <button class="gift-btn" id="giftBtn">🎁 Gift</button>
       </div>
     </div>
 
     <!-- Navigation -->
-    <div class="featured-nav">
+    <div class="nav-buttons">
       <button id="prevHost">◀</button>
       <button id="nextHost">▶</button>
     </div>
 
     <!-- Circular Host List -->
-    <div class="featured-host-list" id="hostList"></div>
+    <div class="host-list" id="hostList"></div>
   </div>
 </div>
 
