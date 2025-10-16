@@ -253,8 +253,9 @@ function renderMessagesFromArray(messages) {
 
 can we make this message show only once? 
 
-/* ---------- 🔔 Messages Listener ---------- */
+/* ---------- 🔔 Messages Listener (One-Time Message Display) ---------- */
 function attachMessagesListener() {
+  const shownMessages = new Set(); // ✅ track messages already displayed
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
 
   onSnapshot(q, snapshot => {
@@ -264,10 +265,11 @@ function attachMessagesListener() {
       const msg = change.doc.data();
       const msgId = change.doc.id;
 
-      // Prevent duplicate render
-      if (document.getElementById(msgId)) return;
+      // ✅ Prevent re-render or re-alert of the same message
+      if (shownMessages.has(msgId)) return;
+      shownMessages.add(msgId);
 
-      // Add to memory + render
+      // Add to render memory
       lastMessagesArray.push({ id: msgId, data: msg });
       renderMessagesFromArray([{ id: msgId, data: msg }]);
 
@@ -276,8 +278,13 @@ function attachMessagesListener() {
         const myId = currentUser?.chatId?.toLowerCase();
         if (!myId) return;
 
-        const [sender, , receiver, amount] = msg.content.split(" "); // e.g., Nushi gifted Goll 50
+        const [sender, , receiver, amount] = msg.content.split(" "); 
         if (!sender || !receiver || !amount) return;
+
+        // ✅ only show once per session
+        const uniqueKey = `${msgId}_${myId}`;
+        if (shownMessages.has(uniqueKey)) return;
+        shownMessages.add(uniqueKey);
 
         if (sender.toLowerCase() === myId) {
           showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
@@ -286,7 +293,7 @@ function attachMessagesListener() {
         }
       }
 
-      // 🌀 Keep scroll for your own messages
+      // 🌀 Auto-scroll for your messages
       if (refs.messagesEl && msg.uid === currentUser?.uid) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       }
