@@ -918,14 +918,12 @@ window.addEventListener("DOMContentLoaded", () => {
 })();
 
 // URL of your custom star SVG
-// URL of your custom star SVG
 const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
 
 // Replace stars in text nodes with inline + floating stars
 function replaceStarsWithImage(root = document.body) {
   if (!root) return;
 
-  // Handle all text-containing elements, including spans, strong, etc.
   const walker = document.createTreeWalker(
     root,
     NodeFilter.SHOW_TEXT,
@@ -947,30 +945,28 @@ function replaceStarsWithImage(root = document.body) {
     const fragments = textNode.nodeValue.split(/⭐️?|⭐/);
 
     fragments.forEach((frag, i) => {
-      // Insert normal text
       if (frag) parent.insertBefore(document.createTextNode(frag), textNode);
 
-      // Insert star
       if (i < fragments.length - 1) {
+        // Inline star
         const span = document.createElement("span");
         span.style.display = "inline-flex";
         span.style.alignItems = "center";
-        span.style.position = "relative"; // needed for floating star
+        span.style.position = "relative";
 
-        // Inline star
         const inlineStar = document.createElement("img");
         inlineStar.src = customStarURL;
         inlineStar.alt = "⭐";
-        inlineStar.style.width = "1.2em";                 // scales with font
+        inlineStar.style.width = "1.2em";
         inlineStar.style.height = "1.2em";
         inlineStar.style.display = "inline-block";
         inlineStar.style.verticalAlign = "text-bottom";
-        inlineStar.style.transform = "translateY(0.15em) scale(1.2)"; // adjust alignment
+        inlineStar.style.transform = "translateY(0.15em) scale(1.2)";
 
         span.appendChild(inlineStar);
         parent.insertBefore(span, textNode);
 
-        // Floating sparkle
+        // Floating star (original simple pop animation)
         const floatingStar = document.createElement("img");
         floatingStar.src = customStarURL;
         floatingStar.alt = "⭐";
@@ -987,6 +983,7 @@ function replaceStarsWithImage(root = document.body) {
 
         document.body.appendChild(floatingStar);
 
+        // Original scale pop-in animation only
         floatingStar.animate([
           { transform: "translate(-50%, -50%) scale(0)", opacity: 0 },
           { transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
@@ -1014,7 +1011,7 @@ function revertStars(root = document.body) {
 // Initial run
 replaceStarsWithImage();
 
-// Observe dynamic content including highlighted messages
+// Observe dynamic content
 const observer = new MutationObserver(mutations => {
   mutations.forEach(m => {
     m.addedNodes.forEach(node => {
