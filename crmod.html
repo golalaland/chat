@@ -724,115 +724,49 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 5000 !important; /* always above modal blur */
   position: fixed;
 }
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.9);
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  position: relative;
-  width: 95%;
-  max-width: 400px;
-  background: #000;
-  border-radius: 16px;
-  overflow: hidden;
-  color: #fff;
-}
-
-.video-wrapper {
+.host-video-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 9/16;
-  background: #111;
+  height: 320px;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: center;
+  margin-bottom: 10px;
 }
 
 #hostVideo {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 16px 16px 0 0;
+  border: none;
 }
 
-.host-overlay {
+.host-footer {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  right: 10px;
+  bottom: 0;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: rgba(0,0,0,0.5);
+  padding: 6px 10px;
 }
 
-#hostUsername {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-#giftBtn {
-  background: #ff4081;
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 20px;
+.host-username {
   font-size: 14px;
-}
-
-.host-list {
-  display: flex;
-  overflow-x: auto;
-  padding: 10px;
-  gap: 10px;
-  background: #111;
-  scrollbar-width: none;
-}
-
-.host-list::-webkit-scrollbar {
-  display: none;
-}
-
-.host-item {
-  flex: 0 0 auto;
-  text-align: center;
+  font-weight: 600;
   color: #fff;
-  cursor: pointer;
+  text-shadow: 0 0 4px #000;
 }
 
-.host-item img {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ff4081;
-}
-
-.nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px;
-  background: #000;
-}
-
-.nav-buttons button {
-  background: #ff4081;
-  color: white;
+.gift-btn {
+  background: #FFD700;
+  color: #000;
   border: none;
-  padding: 8px 14px;
   border-radius: 6px;
+  padding: 5px 10px;
   cursor: pointer;
-}
-
-.close {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 28px;
-  cursor: pointer;
+  font-size: 13px;
 }
 </style>
 </head>
@@ -863,40 +797,35 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
 <span id="onlineCount" class="onlineCount"></span>
 
-<!-- Hosts Button -->
-<button id="openHostsBtn">Hosts</button>
-
-<!-- 🔥 Featured Hosts Modal -->
+<!-- Featured Hosts Modal -->
 <div id="hostsModal" class="modal">
   <div class="modal-content">
+    <span class="close">&times;</span>
 
-    <!-- Video container -->
-    <div class="video-wrapper">
-      <video id="hostVideo" autoplay muted loop playsinline></video>
+    <!-- Host Video Container -->
+    <div class="host-video-container">
+      <iframe
+        id="hostVideo"
+        allowfullscreen
+        frameborder="0"
+      ></iframe>
 
-      <!-- Overlay details -->
-      <div class="host-overlay">
-        <span id="hostUsername">@username</span>
-        <button id="giftBtn">🎁</button>
+      <div class="host-footer">
+        <div class="host-username" id="hostUsername"></div>
+        <button class="gift-btn" id="giftBtn">🎁 Gift</button>
       </div>
     </div>
 
-    <!-- Scrollable host list -->
-    <div id="hostList" class="host-list"></div>
-
-    <!-- Navigation buttons -->
+    <!-- Navigation -->
     <div class="nav-buttons">
-      <button id="prevHost">⟨ Prev</button>
-      <button id="nextHost">Next ⟩</button>
+      <button id="prevHost">◀</button>
+      <button id="nextHost">▶</button>
     </div>
 
-    <!-- Close button -->
-    <span class="close">&times;</span>
+    <!-- Scrollable Host List -->
+    <div class="host-list" id="hostList"></div>
   </div>
 </div>
-
-<!-- Trigger -->
-<button id="openHostsBtn">Open Featured Hosts</button>
 
  <div id="guestMsg"></div>
 <div id="authBox">
