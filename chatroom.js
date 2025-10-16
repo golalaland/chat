@@ -1037,57 +1037,85 @@ replaceStarsWithSVG();
   });
 })();
 
- const hosts = [
-  { username: "Alice", video: "video1.mp4", avatar: "avatar1.png" },
-  { username: "Bob", video: "video2.mp4", avatar: "avatar2.png" },
-  { username: "Cara", video: "video3.mp4", avatar: "avatar3.png" },
-];
+// DOM elements
+  const modal = document.getElementById('hostsModal');
+  const openBtn = document.getElementById('openHostsBtn');
+  const closeBtn = document.querySelector('.close');
+  const videoEl = document.getElementById('hostVideo');
+  const usernameEl = document.getElementById('hostUsername');
+  const hostListEl = document.getElementById('hostList');
 
-let currentHostIndex = 0;
+  const prevBtn = document.getElementById('prevHost');
+  const nextBtn = document.getElementById('nextHost');
 
-const modal = document.getElementById('hostsModal');
-const openBtn = document.getElementById('openHostsBtn');
-const closeBtn = document.querySelector('.close');
-const videoEl = document.getElementById('hostVideo');
-const usernameEl = document.getElementById('hostUsername');
-const hostListEl = document.getElementById('hostList');
+  /* ------------------ Fetch Featured Hosts ------------------ */
+  async function fetchHosts() {
+    try {
+      const q = query(collection(db, "featuredHosts"), orderBy("createdAt", "asc"));
+      const snapshot = await getDocs(q);
+      hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-function loadHost(index) {
-  const host = hosts[index];
-  videoEl.src = host.video;
-  usernameEl.textContent = host.username;
-}
+      if (hosts.length === 0) {
+        hostListEl.innerHTML = `<div style="color:#aaa;text-align:center;">No featured hosts yet</div>`;
+        return;
+      }
 
-function populateHostList() {
-  hostListEl.innerHTML = '';
-  hosts.forEach((host, i) => {
-    const div = document.createElement('div');
-    div.classList.add('host-item');
-    div.innerHTML = `<img src="${host.avatar}" alt="${host.username}"><div>${host.username}</div>`;
-    div.addEventListener('click', () => {
-      currentHostIndex = i;
-      loadHost(i);
+      populateHostList();
+      loadHost(0); // show first host
+    } catch (error) {
+      console.error("Error fetching hosts:", error);
+    }
+  }
+
+  /* ------------------ Display Functions ------------------ */
+  function loadHost(index) {
+    const host = hosts[index];
+    if (!host) return;
+
+    currentHostIndex = index;
+    videoEl.src = host.videoUrl;  // ← uses Firestore field `videoUrl`
+    usernameEl.textContent = host.username || "Unknown Host";
+  }
+
+  function populateHostList() {
+    hostListEl.innerHTML = "";
+    hosts.forEach((host, i) => {
+      const div = document.createElement("div");
+      div.classList.add("host-item");
+      div.innerHTML = `
+        <img src="${host.avatar || 'https://placehold.co/60x60'}" alt="${host.username}">
+        <div>${host.username}</div>
+      `;
+      div.addEventListener("click", () => {
+        currentHostIndex = i;
+        loadHost(i);
+      });
+      hostListEl.appendChild(div);
     });
-    hostListEl.appendChild(div);
+  }
+
+  /* ------------------ Navigation ------------------ */
+  prevBtn.addEventListener("click", () => {
+    currentHostIndex = (currentHostIndex - 1 + hosts.length) % hosts.length;
+    loadHost(currentHostIndex);
   });
-}
 
-document.getElementById('prevHost').addEventListener('click', () => {
-  currentHostIndex = (currentHostIndex - 1 + hosts.length) % hosts.length;
-  loadHost(currentHostIndex);
-});
+  nextBtn.addEventListener("click", () => {
+    currentHostIndex = (currentHostIndex + 1) % hosts.length;
+    loadHost(currentHostIndex);
+  });
 
-document.getElementById('nextHost').addEventListener('click', () => {
-  currentHostIndex = (currentHostIndex + 1) % hosts.length;
-  loadHost(currentHostIndex);
-});
+  /* ------------------ Modal ------------------ */
+  openBtn.onclick = () => {
+    modal.style.display = "block";
+    loadHost(currentHostIndex);
+  };
 
-openBtn.onclick = () => {
-  modal.style.display = 'block';
-  loadHost(currentHostIndex);
-};
+  closeBtn.onclick = () => modal.style.display = "none";
 
-closeBtn.onclick = () => modal.style.display = 'none';
-window.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; }
+  window.onclick = (e) => {
+    if (e.target === modal) modal.style.display = "none";
+  };
 
-populateHostList();
+  /* ------------------ Init ------------------ */
+  fetchHosts();
