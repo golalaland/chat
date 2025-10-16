@@ -1037,78 +1037,60 @@ replaceStarsWithSVG();
   });
 })();
 
-// Featured Hosts Logic
-const modal = document.getElementById('hostsModal');
-const openBtn = document.getElementById('openHostsBtn');
-const closeBtn = document.querySelector('.close');
-const videoEl = document.getElementById('hostVideo');
-const usernameEl = document.getElementById('hostUsername');
-const giftBtn = document.getElementById('giftBtn');
-const hostListEl = document.getElementById('hostList');
+// Elements
+const modal = document.getElementById("hostsModal");
+const openBtn = document.getElementById("openHostsBtn");
+const closeBtn = document.getElementById("closeHostsBtn");
+const videoFrame = document.getElementById("hostVideo");
+const usernameEl = document.getElementById("hostUsername");
+const hostListEl = document.getElementById("hostList");
+const prevBtn = document.getElementById("prevHost");
+const nextBtn = document.getElementById("nextHost");
 
-let featuredHosts = [];
-let currentHostIndex = 0;
+let hosts = [];
+let currentIndex = 0;
 
-/* Fetch Featured Hosts from Firestore */
-async function fetchFeaturedHosts() {
-  const q = query(collection(db, "FeaturedHosts"), orderBy("createdAt", "asc"));
+// Fetch Featured Hosts from Firestore
+async function loadfeaturedHosts() {
+  const q = query(collection(db, "featuredHosts"), orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
-  featuredHosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   populateHostList();
-  if (featuredHosts.length > 0) loadHost(0);
+  if (hosts.length > 0) showHost(0);
 }
 
-/* Load host data into modal */
-function loadHost(index) {
-  const host = featuredHosts[index];
-  if (!host) return;
-  currentHostIndex = index;
-  usernameEl.textContent = host.username || "Unnamed Host";
-  videoEl.src = host.videoUrl;
-}
-
-/* Populate bottom list with circles */
+// Populate Circle List
 function populateHostList() {
-  hostListEl.innerHTML = '';
-  featuredHosts.forEach((host, i) => {
-    const div = document.createElement('div');
-    div.classList.add('host-item');
-    div.style.width = "40px";
-    div.style.height = "40px";
-    div.style.borderRadius = "50%";
-    div.style.background = `url(${host.avatar || "https://via.placeholder.com/40"}) center/cover no-repeat`;
-    div.style.cursor = "pointer";
-    div.addEventListener('click', () => {
-      currentHostIndex = i;
-      loadHost(i);
-    });
+  hostListEl.innerHTML = "";
+  hosts.forEach((host, i) => {
+    const div = document.createElement("div");
+    div.classList.add("host-item");
+    div.innerHTML = `
+      <img src="${host.avatar || "https://via.placeholder.com/50"}" alt="${host.username}">
+      <span>${host.username}</span>
+    `;
+    div.onclick = () => showHost(i);
     hostListEl.appendChild(div);
   });
 }
 
-/* Gifting */
-giftBtn.addEventListener('click', async () => {
-  const host = featuredHosts[currentHostIndex];
-  if (!host) return;
-  const ref = doc(db, "FeaturedHosts", host.id);
-  await updateDoc(ref, { giftsReceived: increment(1) });
-  alert(`🎁 You just sent a gift to ${host.username}!`);
-});
+// Show Selected Host
+function showHost(index) {
+  if (index < 0 || index >= hosts.length) return;
+  currentIndex = index;
+  const host = hosts[index];
+  videoFrame.src = host.videoUrl || "";
+  usernameEl.textContent = host.username || "Host";
+}
 
-/* Navigation */
-document.getElementById('prevHost').addEventListener('click', () => {
-  currentHostIndex = (currentHostIndex - 1 + featuredHosts.length) % featuredHosts.length;
-  loadHost(currentHostIndex);
-});
-document.getElementById('nextHost').addEventListener('click', () => {
-  currentHostIndex = (currentHostIndex + 1) % featuredHosts.length;
-  loadHost(currentHostIndex);
-});
+// Navigation
+prevBtn.onclick = () => showHost(currentIndex - 1);
+nextBtn.onclick = () => showHost(currentIndex + 1);
 
-/* Modal Events */
-openBtn.onclick = () => {
-  modal.style.display = 'block';
-  if (featuredHosts.length === 0) fetchFeaturedHosts();
-};
-closeBtn.onclick = () => modal.style.display = 'none';
-window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+// Modal Controls
+openBtn.onclick = () => modal.style.display = "block";
+closeBtn.onclick = () => modal.style.display = "none";
+window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
+
+// Init
+loadfeaturedHosts();
