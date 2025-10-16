@@ -926,7 +926,7 @@ function replaceStarsWithImage(root = document.body) {
     root,
     NodeFilter.SHOW_TEXT,
     {
-      acceptNode: function(node) {
+      acceptNode(node) {
         if ((node.nodeValue.includes("⭐") || node.nodeValue.includes("⭐️")) && !node.parentNode.dataset.star) {
           return NodeFilter.FILTER_ACCEPT;
         }
@@ -936,38 +936,58 @@ function replaceStarsWithImage(root = document.body) {
   );
 
   const nodesToReplace = [];
-  while(walker.nextNode()) nodesToReplace.push(walker.currentNode);
+  while (walker.nextNode()) nodesToReplace.push(walker.currentNode);
 
   nodesToReplace.forEach(textNode => {
     const parent = textNode.parentNode;
     const fragments = textNode.nodeValue.split(/⭐️?|⭐/);
+
     fragments.forEach((frag, i) => {
-      if(frag) parent.insertBefore(document.createTextNode(frag), textNode);
-      if(i < fragments.length - 1) {
+      if (frag) parent.insertBefore(document.createTextNode(frag), textNode);
+
+      if (i < fragments.length - 1) {
+        // --- Inline replacement star ---
         const span = document.createElement("span");
-        span.dataset.star = "⭐"; // store original star
-       const img = document.createElement("img");
-img.src = customStarURL;
-img.alt = "⭐";
-img.style.width = "40px";
-img.style.height = "40px";
-img.style.position = "absolute";   // floats over content
-img.style.pointerEvents = "none";  // don’t block clicks
-img.style.top = "50%";             // adjust
-img.style.left = "50%";
-img.style.transform = "translate(-50%, -50%) scale(1.2)";
-img.style.zIndex = "9999";
+        span.dataset.star = "⭐";
 
-document.body.appendChild(img);
+        const inlineStar = document.createElement("img");
+        inlineStar.src = customStarURL; // your SVG/star URL
+        inlineStar.alt = "⭐";
+        inlineStar.style.width = "40px";         // big inline star
+        inlineStar.style.height = "40px";
+        inlineStar.style.display = "inline-block";
+        inlineStar.style.verticalAlign = "middle";
+        inlineStar.style.transform = "scale(1.2)";
+        span.appendChild(inlineStar);
+        parent.insertBefore(span, textNode);
 
-// Optional: animate then remove
-img.animate([
-  { transform: "translate(-50%, -50%) scale(0)", opacity: 0 },
-  { transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
-  { transform: "translate(-50%, -50%) scale(1)", opacity: 1 }
-], { duration: 600, easing: "ease-out" });
+        // --- Optional: floating sparkle above inline star ---
+        const rect = inlineStar.getBoundingClientRect();
+        const animStar = document.createElement("img");
+        animStar.src = customStarURL;
+        animStar.alt = "⭐";
+        animStar.style.width = "30px";
+        animStar.style.height = "30px";
+        animStar.style.position = "absolute";
+        animStar.style.top = `${rect.top - 10 + window.scrollY}px`;
+        animStar.style.left = `${rect.left + rect.width/2 - 15 + window.scrollX}px`;
+        animStar.style.zIndex = 9999;
+        animStar.style.pointerEvents = "none";
 
-setTimeout(() => img.remove(), 1500);
+        document.body.appendChild(animStar);
+        animStar.animate([
+          { transform: "translateY(0) scale(0)", opacity: 0 },
+          { transform: "translateY(-20px) scale(1.2)", opacity: 1 },
+          { transform: "translateY(-30px) scale(1)", opacity: 0 }
+        ], { duration: 800, easing: "ease-out" });
+
+        setTimeout(() => animStar.remove(), 800);
+      }
+    });
+
+    parent.removeChild(textNode);
+  });
+}
 // Function to revert back to original stars
 function revertStars(root = document.body) {
   root.querySelectorAll("span[data-star]").forEach(span => {
