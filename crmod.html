@@ -742,32 +742,44 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .featured-btn:hover { transform: scale(1.05); }
 
 /* ====== Modal ====== */
+/* Center the modal on screen */
 .modal {
   display: none;
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); /* semi-dark overlay */
+  display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
 }
+
+/* Keep modal content centered & clean */
 .modal-content {
   background: #111;
-  border-radius: 15px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 16px;
   width: 90%;
-  max-width: 420px;
-  text-align: center;
+  max-width: 520px; /* nice compact center frame */
+  color: #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
   position: relative;
-  box-shadow: 0 0 20px rgba(255,255,255,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.close {
+
+/* Close button stays top-right inside modal */
+.modal-content .close {
   position: absolute;
   top: 10px;
   right: 14px;
-  font-size: 26px;
-  cursor: pointer;
+  font-size: 22px;
   color: #fff;
+  cursor: pointer;
 }
 
 /* ====== Video Section ====== */
@@ -792,6 +804,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   object-fit: cover; /* Prevents zoom in/out jump */
   transition: none; /* Removes any scaling animation */
 }
+/* Host footer with username + gift */
 .host-footer {
   position: absolute;
   bottom: 0;
@@ -799,52 +812,56 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0,0,0,0.5);
-  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 6px 10px;
+  box-sizing: border-box;
 }
+
 .host-username {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #fff;
   text-shadow: 0 0 4px #000;
 }
+
 .gift-btn {
   background: #FFD700;
   color: #000;
   border: none;
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 6px;
+  padding: 5px 10px;
   cursor: pointer;
   font-size: 13px;
 }
 
-/* ====== Circular Host List ====== */
+/* Avatar circles below */
 .host-list {
   display: flex;
-  justify-content: center;
-  align-items: center;
   overflow-x: auto;
-  padding: 10px 0;
-  gap: 12px;
+  gap: 10px;
+  margin-top: 10px;
+  padding-bottom: 10px;
+  justify-content: center;
 }
-.host-list::-webkit-scrollbar { display: none; }
 
 .host-item {
-  width: 65px;
-  height: 65px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid #ff007a;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #fff;
   cursor: pointer;
-  transition: transform 0.2s;
 }
+
 .host-item img {
-  width: 100%;
-  height: 100%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   object-fit: cover;
+  border: 2px solid #FFD700;
+  margin-bottom: 4px;
 }
-.host-item:hover { transform: scale(1.08); }
+
 /* Center Modal */
 .modal {
   display: none;
