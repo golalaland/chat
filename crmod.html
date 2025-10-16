@@ -724,27 +724,69 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 5000 !important; /* always above modal blur */
   position: fixed;
 }
+/* ---------- Modal Trigger ---------- */
+.hosts-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #ff4081;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+/* ---------- Modal ---------- */
+.hosts-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 340px;
+  max-height: 560px;
+  background: #111;
+  border-radius: 14px;
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  overflow: hidden;
+  color: #fff;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.hosts-modal-content {
+  position: relative;
+  padding: 10px;
+}
+
+.hosts-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* ---------- Video Container ---------- */
 .host-video-container {
   position: relative;
   width: 100%;
-  height: 320px;
+  height: 360px;
   background: #000;
   border-radius: 10px;
   overflow: hidden;
-  text-align: center;
   margin-bottom: 10px;
 }
 
-/* Ensure iframe doesn’t cover the footer */
 #hostVideo {
   width: 100%;
   height: 100%;
   border: none;
-  position: relative;
-  z-index: 1;
-  display: block;
+  border-radius: 10px;
 }
 
+/* ---------- Footer ---------- */
 .host-footer {
   position: absolute;
   bottom: 0;
@@ -752,9 +794,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   padding: 6px 10px;
-  z-index: 10; /* make sure footer appears above video */
 }
 
 .host-username {
@@ -765,21 +806,60 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .gift-btn {
-  background: linear-gradient(90deg, #FFD700, #ffea70);
+  background: #FFD700;
   color: #000;
   border: none;
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 0 5px rgba(255, 215, 0, 0.6);
-  z-index: 11; /* keep above iframe */
-  transition: 0.2s;
 }
 
-.gift-btn:hover {
-  transform: scale(1.05);
+/* ---------- Hosts List (Profile Circles) ---------- */
+.host-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  justify-content: center;
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
+
+.host-list .host-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.host-list img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #ff4081;
+  object-fit: cover;
+}
+
+.host-list span {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #fff;
+}
+
+/* ---------- Nav Buttons ---------- */
+.host-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.host-nav-buttons button {
+  background: #222;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
 }
 </style>
 </head>
