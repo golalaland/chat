@@ -1037,85 +1037,78 @@ replaceStarsWithSVG();
   });
 })();
 
-// DOM elements
-  const modal = document.getElementById('hostsModal');
-  const openBtn = document.getElementById('openHostsBtn');
-  const closeBtn = document.querySelector('.close');
-  const videoEl = document.getElementById('hostVideo');
-  const usernameEl = document.getElementById('hostUsername');
-  const hostListEl = document.getElementById('hostList');
+// Featured Hosts Logic
+const modal = document.getElementById('hostsModal');
+const openBtn = document.getElementById('openHostsBtn');
+const closeBtn = document.querySelector('.close');
+const videoEl = document.getElementById('hostVideo');
+const usernameEl = document.getElementById('hostUsername');
+const giftBtn = document.getElementById('giftBtn');
+const hostListEl = document.getElementById('hostList');
 
-  const prevBtn = document.getElementById('prevHost');
-  const nextBtn = document.getElementById('nextHost');
+let featuredHosts = [];
+let currentHostIndex = 0;
 
-  /* ------------------ Fetch Featured Hosts ------------------ */
-  async function fetchHosts() {
-    try {
-      const q = query(collection(db, "featuredHosts"), orderBy("createdAt", "asc"));
-      const snapshot = await getDocs(q);
-      hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+/* Fetch Featured Hosts from Firestore */
+async function fetchFeaturedHosts() {
+  const q = query(collection(db, "FeaturedHosts"), orderBy("createdAt", "asc"));
+  const snapshot = await getDocs(q);
+  featuredHosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  populateHostList();
+  if (featuredHosts.length > 0) loadHost(0);
+}
 
-      if (hosts.length === 0) {
-        hostListEl.innerHTML = `<div style="color:#aaa;text-align:center;">No featured hosts yet</div>`;
-        return;
-      }
+/* Load host data into modal */
+function loadHost(index) {
+  const host = featuredHosts[index];
+  if (!host) return;
+  currentHostIndex = index;
+  usernameEl.textContent = host.username || "Unnamed Host";
+  videoEl.src = host.videoUrl;
+}
 
-      populateHostList();
-      loadHost(0); // show first host
-    } catch (error) {
-      console.error("Error fetching hosts:", error);
-    }
-  }
-
-  /* ------------------ Display Functions ------------------ */
-  function loadHost(index) {
-    const host = hosts[index];
-    if (!host) return;
-
-    currentHostIndex = index;
-    videoEl.src = host.videoUrl;  // ← uses Firestore field `videoUrl`
-    usernameEl.textContent = host.username || "Unknown Host";
-  }
-
-  function populateHostList() {
-    hostListEl.innerHTML = "";
-    hosts.forEach((host, i) => {
-      const div = document.createElement("div");
-      div.classList.add("host-item");
-      div.innerHTML = `
-        <img src="${host.avatar || 'https://placehold.co/60x60'}" alt="${host.username}">
-        <div>${host.username}</div>
-      `;
-      div.addEventListener("click", () => {
-        currentHostIndex = i;
-        loadHost(i);
-      });
-      hostListEl.appendChild(div);
+/* Populate bottom list with circles */
+function populateHostList() {
+  hostListEl.innerHTML = '';
+  featuredHosts.forEach((host, i) => {
+    const div = document.createElement('div');
+    div.classList.add('host-item');
+    div.style.width = "40px";
+    div.style.height = "40px";
+    div.style.borderRadius = "50%";
+    div.style.background = `url(${host.avatar || "https://via.placeholder.com/40"}) center/cover no-repeat`;
+    div.style.cursor = "pointer";
+    div.addEventListener('click', () => {
+      currentHostIndex = i;
+      loadHost(i);
     });
-  }
-
-  /* ------------------ Navigation ------------------ */
-  prevBtn.addEventListener("click", () => {
-    currentHostIndex = (currentHostIndex - 1 + hosts.length) % hosts.length;
-    loadHost(currentHostIndex);
+    hostListEl.appendChild(div);
   });
+}
 
-  nextBtn.addEventListener("click", () => {
-    currentHostIndex = (currentHostIndex + 1) % hosts.length;
-    loadHost(currentHostIndex);
-  });
+/* Gifting */
+giftBtn.addEventListener('click', async () => {
+  const host = featuredHosts[currentHostIndex];
+  if (!host) return;
+  const ref = doc(db, "FeaturedHosts", host.id);
+  await updateDoc(ref, { giftsReceived: increment(1) });
+  alert(`🎁 You just sent a gift to ${host.username}!`);
+});
 
-  /* ------------------ Modal ------------------ */
-  openBtn.onclick = () => {
-    modal.style.display = "block";
-    loadHost(currentHostIndex);
-  };
+/* Navigation */
+document.getElementById('prevHost').addEventListener('click', () => {
+  currentHostIndex = (currentHostIndex - 1 + featuredHosts.length) % featuredHosts.length;
+  loadHost(currentHostIndex);
+});
+document.getElementById('nextHost').addEventListener('click', () => {
+  currentHostIndex = (currentHostIndex + 1) % featuredHosts.length;
+  loadHost(currentHostIndex);
+});
 
-  closeBtn.onclick = () => modal.style.display = "none";
-
-  window.onclick = (e) => {
-    if (e.target === modal) modal.style.display = "none";
-  };
-
-  /* ------------------ Init ------------------ */
-  fetchHosts();
+/* Modal Events */
+openBtn.onclick = () => {
+  modal.style.display = 'block';
+  if (featuredHosts.length === 0) fetchFeaturedHosts();
+};
+closeBtn.onclick = () => modal.style.display = 'none';
+window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
