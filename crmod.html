@@ -735,10 +735,14 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   margin-bottom: 10px;
 }
 
+/* Ensure iframe doesn’t cover the footer */
 #hostVideo {
   width: 100%;
   height: 100%;
   border: none;
+  position: relative;
+  z-index: 1;
+  display: block;
 }
 
 .host-footer {
@@ -750,6 +754,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   align-items: center;
   background: rgba(0,0,0,0.5);
   padding: 6px 10px;
+  z-index: 10; /* make sure footer appears above video */
 }
 
 .host-username {
@@ -760,13 +765,21 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .gift-btn {
-  background: #FFD700;
+  background: linear-gradient(90deg, #FFD700, #ffea70);
   color: #000;
   border: none;
   border-radius: 6px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.6);
+  z-index: 11; /* keep above iframe */
+  transition: 0.2s;
+}
+
+.gift-btn:hover {
+  transform: scale(1.05);
 }
 </style>
 </head>
@@ -797,7 +810,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
 <span id="onlineCount" class="onlineCount"></span>
 
-<!-- Featured Hosts Modal -->
+<!-- 🔘 Featured Hosts Trigger -->
+<button id="openHostsBtn" class="hosts-btn">🎥 View Featured Hosts</button>
+
+<!-- 🌟 Featured Hosts Modal -->
 <div id="hostsModal" class="modal">
   <div class="modal-content">
     <span class="close">&times;</span>
@@ -811,7 +827,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       ></iframe>
 
       <div class="host-footer">
-        <div class="host-username" id="hostUsername"></div>
+        <div class="host-username" id="hostUsername">Username</div>
         <button class="gift-btn" id="giftBtn">🎁 Gift</button>
       </div>
     </div>
