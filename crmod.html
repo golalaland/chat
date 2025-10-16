@@ -750,35 +750,32 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .featured-btn:hover { transform: scale(1.05); }
 
 /* ====== Modal ====== */
-/* Center the modal on screen */
-.modal-content {
-  background: #111;
-  border-radius: 14px;
-  padding: 14px;
-  width: 85%;
-  max-width: 320px;  /* smaller modal width */
-  color: #fff;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-  position: relative;
-  display: flex;
-  flex-direction: column;
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  justify-content: center;
   align-items: center;
-  transform: scale(0.9); /* visually smaller */
+  z-index: 9999;
 }
 
-/* Keep modal content centered & clean */
+/* 💫 Featured Hosts Modal — Clean, Centered, Compact */
 .modal-content {
+  position: relative;
   background: #111;
   border-radius: 14px;
-  padding: 16px;
-  width: 90%;
-  max-width: 520px; /* nice compact center frame */
-  color: #fff;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-  position: relative;
+  width: 92%;
+  max-width: 280px; /* smaller, cute modal */
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
+  transform: scale(0.96);
 }
 
 /* Close button stays top-right inside modal */
@@ -791,27 +788,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   cursor: pointer;
 }
 
-/* ====== Video Section ====== */
+/* 🎥 Video container perfectly fits its frame */
 .host-video-container {
   position: relative;
   width: 100%;
-  max-width: 240px; /* much smaller video frame */
   aspect-ratio: 9 / 16;
-  margin: 0 auto 12px;
   background: #000;
-  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #hostVideo {
   width: 100%;
   height: 100%;
   border: none;
-  object-fit: cover; /* Prevents zoom in/out jump */
-  transition: none; /* Removes any scaling animation */
+  object-fit: cover;
 }
-/* Host footer with username + gift */
+
+/* Footer (Username + Gift Btn) */
 .host-footer {
   position: absolute;
   bottom: 0;
@@ -819,16 +815,16 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 6px 10px;
-  box-sizing: border-box;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .host-username {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #fff;
-  text-shadow: 0 0 4px #000;
+  text-shadow: 0 0 3px #000;
 }
 
 .gift-btn {
@@ -836,37 +832,45 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   color: #000;
   border: none;
   border-radius: 6px;
-  padding: 5px 10px;
+  padding: 4px 9px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
 }
 
-/* Avatar circles below */
+/* Avatar Circles List */
 .host-list {
   display: flex;
-  overflow-x: auto;
-  gap: 10px;
-  margin-top: 10px;
-  padding-bottom: 10px;
   justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 14px;
+  overflow-x: auto;
 }
 
 .host-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 12px;
-  color: #fff;
+  text-align: center;
   cursor: pointer;
 }
 
 .host-item img {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #FFD700;
-  margin-bottom: 4px;
+  border: 2px solid #ff4081;
+  transition: transform 0.2s ease;
+}
+
+.host-item img:hover {
+  transform: scale(1.1);
+}
+
+.host-item span {
+  display: block;
+  font-size: 11px;
+  color: #ccc;
+  margin-top: 4px;
 }
 
 /* Center Modal */
