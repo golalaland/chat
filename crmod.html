@@ -880,14 +880,25 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
     <!-- Video Container -->
     <div class="host-video-container" id="hostVideoContainer">
+      <!-- Host name on top -->
+      <div class="host-username" id="hostUsername">Host Name</div>
+
+      <!-- Video player -->
       <iframe
         id="hostVideoPlayer"
         src=""
         frameborder="0"
         allowfullscreen
       ></iframe>
-      <div class="host-username" id="hostUsername"></div>
+
+      <!-- Optional overlay (gifts, stars) -->
+      <div class="host-overlay">
+        <button class="gift-button" id="sendGiftBtn">🎁 Send Gift</button>
+        <div class="stars-container" id="starsContainer"></div>
+      </div>
     </div>
+  </div>
+</div>
 
     <!-- Gift Button -->
     <button class="host-gift-btn" id="hostGiftBtn">Send Gift</button>
