@@ -852,30 +852,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
 <span id="onlineCount" class="onlineCount"></span>
 
-<!-- Hosts Modal Trigger -->
-<button class="hosts-btn" id="openHostsModal">View Hosts</button>
+<button class="hosts-btn">View Hosts</button>
 
 <!-- Hosts Modal -->
-<div class="hosts-modal" id="hostsModal" style="display:none;">
+<div class="hosts-modal" id="hostsModal">
   <div class="hosts-modal-content">
     <span class="hosts-close" id="hostsClose">&times;</span>
 
-    <!-- Host Name -->
-    <div class="host-username" id="hostUsername" style="font-weight:bold; font-size:1.2em; margin-bottom:10px;"></div>
-
     <!-- Hosts List Buttons -->
-    <div class="hosts-list" id="hostsList" style="margin-bottom:15px;"></div>
+    <div class="hosts-list" id="hostsList"></div>
 
     <!-- Video Container -->
-    <div class="host-video-container">
+    <div class="host-video-container" id="hostVideoContainer">
       <iframe
         id="hostVideoPlayer"
         src=""
         frameborder="0"
         allowfullscreen
-        width="100%"
-        height="400px"
       ></iframe>
+      <div class="host-username" id="hostUsername"></div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="host-nav-buttons">
+      <button id="prevHostBtn" disabled>Prev</button>
+      <button id="nextHostBtn" disabled>Next</button>
     </div>
   </div>
 </div>
