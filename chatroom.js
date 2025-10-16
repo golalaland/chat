@@ -946,22 +946,28 @@ function replaceStarsWithImage(root = document.body) {
       if(i < fragments.length - 1) {
         const span = document.createElement("span");
         span.dataset.star = "⭐"; // store original star
-        const img = document.createElement("img");
-        img.src = customStarURL;
-        img.alt = "⭐";
-     img.style.width = "40px";
+       const img = document.createElement("img");
+img.src = customStarURL;
+img.alt = "⭐";
+img.style.width = "40px";
 img.style.height = "40px";
-img.style.display = "inline-block";
-img.style.verticalAlign = "middle";
-img.style.transform = "scale(1.2)"; // optional extra punch
-        span.appendChild(img);
-        parent.insertBefore(span, textNode);
-      }
-    });
-    parent.removeChild(textNode);
-  });
-}
+img.style.position = "absolute";   // floats over content
+img.style.pointerEvents = "none";  // don’t block clicks
+img.style.top = "50%";             // adjust
+img.style.left = "50%";
+img.style.transform = "translate(-50%, -50%) scale(1.2)";
+img.style.zIndex = "9999";
 
+document.body.appendChild(img);
+
+// Optional: animate then remove
+img.animate([
+  { transform: "translate(-50%, -50%) scale(0)", opacity: 0 },
+  { transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
+  { transform: "translate(-50%, -50%) scale(1)", opacity: 1 }
+], { duration: 600, easing: "ease-out" });
+
+setTimeout(() => img.remove(), 1500);
 // Function to revert back to original stars
 function revertStars(root = document.body) {
   root.querySelectorAll("span[data-star]").forEach(span => {
