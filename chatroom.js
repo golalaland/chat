@@ -926,7 +926,7 @@ function replaceStarsWithImage(root = document.body) {
     root,
     NodeFilter.SHOW_TEXT,
     {
-      acceptNode(node) {
+      acceptNode: function(node) {
         if ((node.nodeValue.includes("⭐") || node.nodeValue.includes("⭐️")) && !node.parentNode.dataset.star) {
           return NodeFilter.FILTER_ACCEPT;
         }
@@ -946,42 +946,48 @@ function replaceStarsWithImage(root = document.body) {
       if (frag) parent.insertBefore(document.createTextNode(frag), textNode);
 
       if (i < fragments.length - 1) {
-        // --- Inline replacement star ---
+        // ----- Inline SVG star -----
         const span = document.createElement("span");
         span.dataset.star = "⭐";
 
         const inlineStar = document.createElement("img");
-        inlineStar.src = customStarURL; // your SVG/star URL
+        inlineStar.src = customStarURL;  // Your SVG star
         inlineStar.alt = "⭐";
-        inlineStar.style.width = "40px";         // big inline star
-        inlineStar.style.height = "40px";
+
+        // Big inline star
+        inlineStar.style.width = "60px";
+        inlineStar.style.height = "60px";
         inlineStar.style.display = "inline-block";
         inlineStar.style.verticalAlign = "middle";
+        inlineStar.style.lineHeight = "1";
         inlineStar.style.transform = "scale(1.2)";
+        inlineStar.style.margin = "0 2px";
+
         span.appendChild(inlineStar);
         parent.insertBefore(span, textNode);
 
-        // --- Optional: floating sparkle above inline star ---
-        const rect = inlineStar.getBoundingClientRect();
-        const animStar = document.createElement("img");
-        animStar.src = customStarURL;
-        animStar.alt = "⭐";
-        animStar.style.width = "30px";
-        animStar.style.height = "30px";
-        animStar.style.position = "absolute";
-        animStar.style.top = `${rect.top - 10 + window.scrollY}px`;
-        animStar.style.left = `${rect.left + rect.width/2 - 15 + window.scrollX}px`;
-        animStar.style.zIndex = 9999;
-        animStar.style.pointerEvents = "none";
+        // ----- Floating animated star effect -----
+        const floatingStar = document.createElement("img");
+        floatingStar.src = customStarURL;
+        floatingStar.alt = "⭐";
+        floatingStar.style.width = "40px";
+        floatingStar.style.height = "40px";
+        floatingStar.style.position = "absolute";
+        floatingStar.style.pointerEvents = "none";
+        floatingStar.style.top = "50%";
+        floatingStar.style.left = "50%";
+        floatingStar.style.transform = "translate(-50%, -50%) scale(1)";
+        floatingStar.style.zIndex = "9999";
 
-        document.body.appendChild(animStar);
-        animStar.animate([
-          { transform: "translateY(0) scale(0)", opacity: 0 },
-          { transform: "translateY(-20px) scale(1.2)", opacity: 1 },
-          { transform: "translateY(-30px) scale(1)", opacity: 0 }
-        ], { duration: 800, easing: "ease-out" });
+        document.body.appendChild(floatingStar);
 
-        setTimeout(() => animStar.remove(), 800);
+        floatingStar.animate([
+          { transform: "translate(-50%, -50%) scale(0)", opacity: 0 },
+          { transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
+          { transform: "translate(-50%, -50%) scale(1)", opacity: 1 }
+        ], { duration: 600, easing: "ease-out" });
+
+        setTimeout(() => floatingStar.remove(), 1500);
       }
     });
 
