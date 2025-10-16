@@ -724,116 +724,115 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 5000 !important; /* always above modal blur */
   position: fixed;
 }
-/* Modal Styles */
 .modal {
   display: none;
   position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background: rgba(0,0,0,0.8);
-  backdrop-filter: blur(5px);
+  z-index: 9999;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9);
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-content {
-  background: #111;
-  margin: 50px auto;
-  padding: 20px;
-  border-radius: 12px;
-  max-width: 700px;
-  color: #fff;
   position: relative;
+  width: 95%;
+  max-width: 400px;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  color: #fff;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9/16;
+  background: #111;
+}
+
+#hostVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px 16px 0 0;
+}
+
+.host-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#hostUsername {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+#giftBtn {
+  background: #ff4081;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.host-list {
+  display: flex;
+  overflow-x: auto;
+  padding: 10px;
+  gap: 10px;
+  background: #111;
+  scrollbar-width: none;
+}
+
+.host-list::-webkit-scrollbar {
+  display: none;
+}
+
+.host-item {
+  flex: 0 0 auto;
+  text-align: center;
+  color: #fff;
+  cursor: pointer;
+}
+
+.host-item img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ff4081;
+}
+
+.nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background: #000;
+}
+
+.nav-buttons button {
+  background: #ff4081;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .close {
   position: absolute;
-  top: 12px;
-  right: 20px;
+  top: 10px;
+  right: 15px;
   font-size: 28px;
   cursor: pointer;
-}
-
-/* Video Container */
-.host-video-container {
-  position: relative;
-  width: 100%;
-  height: 400px;
-  background: #000;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 15px;
-}
-
-.host-video-container video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Username overlay */
-.host-username {
-  position: absolute;
-  bottom: 15px;
-  left: 15px;
-  font-size: 20px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 0 5px #000;
-}
-
-/* Gift Button */
-.gift-btn {
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  background: #ff4081;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 18px;
-  cursor: pointer;
-  color: #fff;
-}
-
-/* Navigation */
-.nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.nav-buttons button {
-  background: #333;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #fff;
-}
-
-/* Scrollable Host List */
-.host-list {
-  display: flex;
-  overflow-x: auto;
-  gap: 10px;
-  padding: 10px 0;
-}
-
-.host-list .host-item {
-  min-width: 100px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.host-list .host-item img {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ff4081;
 }
 </style>
 </head>
@@ -867,31 +866,37 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <!-- Hosts Button -->
 <button id="openHostsBtn">Hosts</button>
 
-<!-- Hosts Modal -->
+<!-- 🔥 Featured Hosts Modal -->
 <div id="hostsModal" class="modal">
   <div class="modal-content">
-    <span class="close">&times;</span>
 
-    <!-- Host Video Container -->
-    <div class="host-video-container">
-      <video id="hostVideo" controls autoplay></video>
-      <div class="host-username" id="hostUsername">Username</div>
-      <button class="gift-btn" id="giftBtn">🎁 Gift</button>
+    <!-- Video container -->
+    <div class="video-wrapper">
+      <video id="hostVideo" autoplay muted loop playsinline></video>
+
+      <!-- Overlay details -->
+      <div class="host-overlay">
+        <span id="hostUsername">@username</span>
+        <button id="giftBtn">🎁</button>
+      </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Scrollable host list -->
+    <div id="hostList" class="host-list"></div>
+
+    <!-- Navigation buttons -->
     <div class="nav-buttons">
-      <button id="prevHost">Prev</button>
-      <button id="nextHost">Next</button>
+      <button id="prevHost">⟨ Prev</button>
+      <button id="nextHost">Next ⟩</button>
     </div>
 
-    <!-- Scrollable Host List -->
-    <div class="host-list" id="hostList">
-      <!-- Hosts will be dynamically inserted here -->
-    </div>
+    <!-- Close button -->
+    <span class="close">&times;</span>
   </div>
 </div>
 
+<!-- Trigger -->
+<button id="openHostsBtn">Open Featured Hosts</button>
 
  <div id="guestMsg"></div>
 <div id="authBox">
