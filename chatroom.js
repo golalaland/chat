@@ -1037,55 +1037,61 @@ replaceStarsWithSVG();
   });
 })();
 
-// DOM Elements
-const hostsModal = document.getElementById("hostsModal");
-const hostsBtn = document.querySelector(".hosts-btn");
-const hostsClose = document.getElementById("hostsClose");
-const hostsList = document.getElementById("hostsList");
-const hostVideoPlayer = document.getElementById("hostVideoPlayer");
-const hostUsername = document.getElementById("hostUsername");
-const prevHostBtn = document.getElementById("prevHostBtn");
-const nextHostBtn = document.getElementById("nextHostBtn");
+ // DOM Elements
+  const hostsModal = document.getElementById("hostsModal");
+  const hostsBtn = document.querySelector(".hosts-btn");
+  const hostsClose = document.getElementById("hostsClose");
+  const hostsList = document.getElementById("hostsList");
+  const hostVideoPlayer = document.getElementById("hostVideoPlayer");
+  const hostUsername = document.getElementById("hostUsername");
+  const prevHostBtn = document.getElementById("prevHostBtn");
+  const nextHostBtn = document.getElementById("nextHostBtn");
 
-let hosts = [];
-let currentIndex = 0;
+  let hosts = [];
+  let currentIndex = 0;
 
-// Fetch videos from Firestore
-async function fetchHosts() {
-  const q = query(collection(db, "hosts"), orderBy("createdAt", "asc"));
-  const snapshot = await getDocs(q);
-  hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  renderHostButtons();
-  if (hosts.length > 0) showHost(0);
-}
+  // Fetch videos from Firestore
+  async function fetchHosts() {
+    const q = query(collection(db, "hosts"), orderBy("createdAt", "asc"));
+    const snapshot = await getDocs(q);
+    hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderHostButtons();
+    if (hosts.length > 0) showHost(0);
+  }
 
-// Render host buttons
-function renderHostButtons() {
-  hostsList.innerHTML = "";
-  hosts.forEach((host, idx) => {
-    const btn = document.createElement("button");
-    btn.textContent = host.username;
-    btn.onclick = () => showHost(idx);
-    hostsList.appendChild(btn);
-  });
-}
+  // Render host buttons
+  function renderHostButtons() {
+    hostsList.innerHTML = "";
+    hosts.forEach((host, idx) => {
+      const btn = document.createElement("button");
+      btn.textContent = host.username;
+      btn.onclick = () => showHost(idx);
+      hostsList.appendChild(btn);
+    });
+  }
 
-// Show host video by index
-function showHost(index) {
-  if (index < 0 || index >= hosts.length) return;
-  currentIndex = index;
-  hostVideoPlayer.src = hosts[index].videoUrl;
-  hostUsername.textContent = hosts[index].username;
-}
+  // Show host video by index
+  function showHost(index) {
+    if (index < 0 || index >= hosts.length) return;
+    currentIndex = index;
 
-// Modal events
-hostsBtn.onclick = () => hostsModal.style.display = "block";
-hostsClose.onclick = () => hostsModal.style.display = "none";
-window.onclick = e => { if (e.target === hostsModal) hostsModal.style.display = "none"; };
+    const host = hosts[index];
+    hostVideoPlayer.src = host.videoUrl || "";
+    hostUsername.textContent = host.username || "";
 
-// Navigation
-prevHostBtn.onclick = () => showHost(currentIndex - 1);
-nextHostBtn.onclick = () => showHost(currentIndex + 1);
+    // Enable/disable navigation buttons
+    prevHostBtn.disabled = currentIndex === 0;
+    nextHostBtn.disabled = currentIndex === hosts.length - 1;
+  }
 
-// Initial load
-fetchHosts();
+  // Modal events
+  hostsBtn.onclick = () => hostsModal.style.display = "block";
+  hostsClose.onclick = () => hostsModal.style.display = "none";
+  window.onclick = e => { if (e.target === hostsModal) hostsModal.style.display = "none"; };
+
+  // Navigation
+  prevHostBtn.onclick = () => showHost(currentIndex - 1);
+  nextHostBtn.onclick = () => showHost(currentIndex + 1);
+
+  // Initial load
+  fetchHosts();
