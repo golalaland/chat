@@ -1037,61 +1037,57 @@ replaceStarsWithSVG();
   });
 })();
 
- // DOM Elements
-  const hostsModal = document.getElementById("hostsModal");
-  const hostsBtn = document.querySelector(".hosts-btn");
-  const hostsClose = document.getElementById("hostsClose");
-  const hostsList = document.getElementById("hostsList");
-  const hostVideoPlayer = document.getElementById("hostVideoPlayer");
-  const hostUsername = document.getElementById("hostUsername");
-  const prevHostBtn = document.getElementById("prevHostBtn");
-  const nextHostBtn = document.getElementById("nextHostBtn");
+ const hosts = [
+  { username: "Alice", video: "video1.mp4", avatar: "avatar1.png" },
+  { username: "Bob", video: "video2.mp4", avatar: "avatar2.png" },
+  { username: "Cara", video: "video3.mp4", avatar: "avatar3.png" },
+];
 
-  let hosts = [];
-  let currentIndex = 0;
+let currentHostIndex = 0;
 
-  // Fetch videos from Firestore
-  async function fetchHosts() {
-    const q = query(collection(db, "hosts"), orderBy("createdAt", "asc"));
-    const snapshot = await getDocs(q);
-    hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderHostButtons();
-    if (hosts.length > 0) showHost(0);
-  }
+const modal = document.getElementById('hostsModal');
+const openBtn = document.getElementById('openHostsBtn');
+const closeBtn = document.querySelector('.close');
+const videoEl = document.getElementById('hostVideo');
+const usernameEl = document.getElementById('hostUsername');
+const hostListEl = document.getElementById('hostList');
 
-  // Render host buttons
-  function renderHostButtons() {
-    hostsList.innerHTML = "";
-    hosts.forEach((host, idx) => {
-      const btn = document.createElement("button");
-      btn.textContent = host.username;
-      btn.onclick = () => showHost(idx);
-      hostsList.appendChild(btn);
+function loadHost(index) {
+  const host = hosts[index];
+  videoEl.src = host.video;
+  usernameEl.textContent = host.username;
+}
+
+function populateHostList() {
+  hostListEl.innerHTML = '';
+  hosts.forEach((host, i) => {
+    const div = document.createElement('div');
+    div.classList.add('host-item');
+    div.innerHTML = `<img src="${host.avatar}" alt="${host.username}"><div>${host.username}</div>`;
+    div.addEventListener('click', () => {
+      currentHostIndex = i;
+      loadHost(i);
     });
-  }
+    hostListEl.appendChild(div);
+  });
+}
 
-  // Show host video by index
-  function showHost(index) {
-    if (index < 0 || index >= hosts.length) return;
-    currentIndex = index;
+document.getElementById('prevHost').addEventListener('click', () => {
+  currentHostIndex = (currentHostIndex - 1 + hosts.length) % hosts.length;
+  loadHost(currentHostIndex);
+});
 
-    const host = hosts[index];
-    hostVideoPlayer.src = host.videoUrl || "";
-    hostUsername.textContent = host.username || "";
+document.getElementById('nextHost').addEventListener('click', () => {
+  currentHostIndex = (currentHostIndex + 1) % hosts.length;
+  loadHost(currentHostIndex);
+});
 
-    // Enable/disable navigation buttons
-    prevHostBtn.disabled = currentIndex === 0;
-    nextHostBtn.disabled = currentIndex === hosts.length - 1;
-  }
+openBtn.onclick = () => {
+  modal.style.display = 'block';
+  loadHost(currentHostIndex);
+};
 
-  // Modal events
-  hostsBtn.onclick = () => hostsModal.style.display = "block";
-  hostsClose.onclick = () => hostsModal.style.display = "none";
-  window.onclick = e => { if (e.target === hostsModal) hostsModal.style.display = "none"; };
+closeBtn.onclick = () => modal.style.display = 'none';
+window.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; }
 
-  // Navigation
-  prevHostBtn.onclick = () => showHost(currentIndex - 1);
-  nextHostBtn.onclick = () => showHost(currentIndex + 1);
-
-  // Initial load
-  fetchHosts();
+populateHostList();
