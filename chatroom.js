@@ -921,10 +921,6 @@ window.addEventListener("DOMContentLoaded", () => {
 const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
 
 // Replace stars in text nodes with image
-// URL of your custom star image
-const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760596116/starssvg_k3hmsu.svg";
-
-// Replace stars in text nodes with image
 function replaceStarsWithImage(root = document.body) {
   const walker = document.createTreeWalker(
     root,
