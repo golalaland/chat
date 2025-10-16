@@ -724,6 +724,121 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 5000 !important; /* always above modal blur */
   position: fixed;
 }
+.hosts-btn {
+  margin-top: 10px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #ff4081;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+}
+
+.hosts-modal {
+  display: none;
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  max-height: 450px;
+  background: #111;
+  border-radius: 12px;
+  box-shadow: 0 0 12px #000;
+  z-index: 9999;
+  overflow: hidden;
+  color: #fff;
+  font-family: sans-serif;
+}
+
+.hosts-modal-content {
+  position: relative;
+  padding: 8px;
+}
+
+.hosts-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.hosts-list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.hosts-list button {
+  background: #222;
+  color: #fff;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.host-video-container {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: center;
+}
+
+#hostVideoPlayer {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.host-username {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 0 5px #000;
+}
+
+.host-gift-btn {
+  position: absolute;
+  bottom: 32px;
+  right: 10px;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: none;
+  border-radius: 5px;
+  background: #FFD700;
+  color: #000;
+  cursor: pointer;
+}
+
+.host-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.host-nav-buttons button {
+  background: #222;
+  color: #fff;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -752,6 +867,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         
 <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
 <span id="onlineCount" class="onlineCount"></span>
+
+<!-- Hosts Button -->
+<button id="hostsBtn" class="hosts-btn">Hosts</button>
+
+<!-- Hosts Modal -->
+<div id="hostsModal" class="hosts-modal">
+  <div class="hosts-modal-content">
+    <span id="hostsModalClose" class="hosts-close">&times;</span>
+    <div id="hostsList" class="hosts-list"></div>
+    <div id="hostVideoContainer" class="host-video-container">
+      <video id="hostVideoPlayer" autoplay muted playsinline></video>
+      <div id="hostUsername" class="host-username"></div>
+      <button id="hostGiftBtn" class="host-gift-btn">Gift ⭐️</button>
+    </div>
+    <div class="host-nav-buttons">
+      <button id="hostPrev">◀️</button>
+      <button id="hostNext">▶️</button>
+    </div>
+  </div>
+</div>
 
  <div id="guestMsg"></div>
 <div id="authBox">
