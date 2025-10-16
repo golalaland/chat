@@ -724,6 +724,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 5000 !important; /* always above modal blur */
   position: fixed;
 }
+/* Trigger Button */
 .hosts-btn {
   margin-top: 10px;
   padding: 6px 12px;
@@ -735,108 +736,92 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-radius: 5px;
 }
 
+/* Modal Overlay */
 .hosts-modal {
   display: none;
   position: fixed;
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px;
-  max-height: 500px;
-  background: #111;
-  border-radius: 12px;
-  box-shadow: 0 0 12px #000;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   z-index: 9999;
-  overflow: hidden;
-  color: #fff;
-  font-family: sans-serif;
 }
 
+/* Modal Content */
 .hosts-modal-content {
   position: relative;
-  padding: 8px;
+  width: 90%;
+  max-width: 500px;
+  background: #111;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 0 12px #000;
+  color: #fff;
 }
 
+/* Close Button */
 .hosts-close {
   position: absolute;
-  top: 6px;
-  right: 10px;
-  font-size: 18px;
+  top: 8px;
+  right: 12px;
+  font-size: 22px;
   cursor: pointer;
+  font-weight: bold;
 }
 
+/* Scrollable Hosts List */
 .hosts-list {
   display: flex;
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
 }
 
 .hosts-list button {
   background: #222;
   color: #fff;
   border: none;
-  padding: 4px 6px;
+  padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
+  white-space: nowrap;
 }
 
+/* Video Container */
 .host-video-container {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 280px;
   background: #000;
   border-radius: 10px;
   overflow: hidden;
-  text-align: center;
-  margin-bottom: 8px;
 }
 
+/* Video Player */
 #hostVideoPlayer {
   width: 100%;
   height: 100%;
   border-radius: 10px;
 }
 
+/* Host Name Overlay */
 .host-username {
   position: absolute;
-  bottom: 8px;
+  top: 8px; /* top of video */
   left: 0;
   width: 100%;
   text-align: center;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 16px;
   color: #fff;
-  text-shadow: 0 0 5px #000;
-}
-
-.host-gift-btn {
-  display: block;
-  width: 100%;
-  margin-bottom: 6px;
-  padding: 6px;
-  font-size: 14px;
-  border: none;
-  border-radius: 5px;
-  background: #FFD700;
-  color: #000;
-  cursor: pointer;
-}
-
-.host-nav-buttons {
-  display: flex;
-  justify-content: space-between;
-}
-
-.host-nav-buttons button {
-  background: #222;
-  color: #fff;
-  border: none;
-  padding: 4px 6px;
-  border-radius: 5px;
-  cursor: pointer;
+  text-shadow: 0 0 6px #000;
+  pointer-events: none; /* don't block clicks */
 }
 </style>
 </head>
@@ -868,48 +853,33 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <span id="onlineCount" class="onlineCount"></span>
 
 <!-- Hosts Modal Trigger -->
-<button class="hosts-btn">View Hosts</button>
+<button class="hosts-btn" id="openHostsModal">View Hosts</button>
 
 <!-- Hosts Modal -->
-<div class="hosts-modal" id="hostsModal">
+<div class="hosts-modal" id="hostsModal" style="display:none;">
   <div class="hosts-modal-content">
     <span class="hosts-close" id="hostsClose">&times;</span>
 
+    <!-- Host Name -->
+    <div class="host-username" id="hostUsername" style="font-weight:bold; font-size:1.2em; margin-bottom:10px;"></div>
+
     <!-- Hosts List Buttons -->
-    <div class="hosts-list" id="hostsList"></div>
+    <div class="hosts-list" id="hostsList" style="margin-bottom:15px;"></div>
 
     <!-- Video Container -->
-    <div class="host-video-container" id="hostVideoContainer">
-      <!-- Host name on top -->
-      <div class="host-username" id="hostUsername">Host Name</div>
-
-      <!-- Video player -->
+    <div class="host-video-container">
       <iframe
         id="hostVideoPlayer"
         src=""
         frameborder="0"
         allowfullscreen
+        width="100%"
+        height="400px"
       ></iframe>
-
-      <!-- Optional overlay (gifts, stars) -->
-      <div class="host-overlay">
-        <button class="gift-button" id="sendGiftBtn">🎁 Send Gift</button>
-        <div class="stars-container" id="starsContainer"></div>
-      </div>
     </div>
   </div>
 </div>
 
-    <!-- Gift Button -->
-    <button class="host-gift-btn" id="hostGiftBtn">Send Gift</button>
-
-    <!-- Navigation Buttons -->
-    <div class="host-nav-buttons">
-      <button id="prevHostBtn">Prev</button>
-      <button id="nextHostBtn">Next</button>
-    </div>
-  </div>
-</div>
 
  <div id="guestMsg"></div>
 <div id="authBox">
