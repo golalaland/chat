@@ -1,4 +1,10 @@
 
+New JS 
+
+
+
+
+
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -118,7 +124,7 @@ async function showGiftModal(targetUid, targetData) {
       updateDoc(toRef, { stars: increment(amt) })
     ]);
 
-    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
+    showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
 
@@ -274,22 +280,18 @@ function attachMessagesListener() {
 
       /* 💝 Detect personalized gift messages */
       if (msg.uid === "system" && msg.highlight && msg.content?.includes("gifted")) {
-  const myId = currentUser?.chatId?.toLowerCase();
-  if (!myId) return;
+        const myId = currentUser?.chatId?.toLowerCase();
+        if (!myId) return;
 
-  // 💡 Prevent showing the same alert more than once
-  if (shownGiftMessages.has(msgId)) return;
-  shownGiftMessages.add(msgId);
+        const [sender, , receiver, amount] = msg.content.split(" "); // e.g., Nushi gifted Goll 50
+        if (!sender || !receiver || !amount) return;
 
-  const [sender, , receiver, amount] = msg.content.split(" "); // e.g. "Nushi gifted Goll 50"
-  if (!sender || !receiver || !amount) return;
-
-  if (sender.toLowerCase() === myId) {
-    showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
-  } else if (receiver.toLowerCase() === myId) {
-    showGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
-  }
-}
+        if (sender.toLowerCase() === myId) {
+          showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
+        } else if (receiver.toLowerCase() === myId) {
+          showGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
+        }
+      }
 
       // 🌀 Keep scroll for your own messages
       if (refs.messagesEl && msg.uid === currentUser?.uid) {
@@ -922,68 +924,6 @@ refs.buzzBtn?.addEventListener("click", async () => {
   // Start with first video
   loadVideo(0);
 })();
-
-<script>
-// URL of your custom star image
-const customStarURL = "https://res.cloudinary.com/dekxhwh6l/image/upload/v1760574055/stars_ojgnny.svg";
-
-// Replace stars in text nodes with image
-function replaceStarsWithImage(root = document.body) {
-  const walker = document.createTreeWalker(
-    root,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: function(node) {
-        if ((node.nodeValue.includes("⭐") || node.nodeValue.includes("⭐️")) && !node.parentNode.dataset.star) {
-          return NodeFilter.FILTER_ACCEPT;
-        }
-        return NodeFilter.FILTER_REJECT;
-      }
-    }
-  );
-
-  const nodesToReplace = [];
-  while(walker.nextNode()) nodesToReplace.push(walker.currentNode);
-
-  nodesToReplace.forEach(textNode => {
-    const parent = textNode.parentNode;
-    const fragments = textNode.nodeValue.split(/⭐️?|⭐/);
-    fragments.forEach((frag, i) => {
-      if(frag) parent.insertBefore(document.createTextNode(frag), textNode);
-      if(i < fragments.length - 1) {
-        const span = document.createElement("span");
-        span.dataset.star = "⭐"; // store original star
-        const img = document.createElement("img");
-        img.src = customStarURL;
-        img.alt = "⭐";
-        img.style.width = "16px";
-        img.style.height = "16px";
-        img.style.display = "inline-block";
-        img.style.verticalAlign = "middle";
-        span.appendChild(img);
-        parent.insertBefore(span, textNode);
-      }
-    });
-    parent.removeChild(textNode);
-  });
-}
-
-// Function to revert back to original stars
-function revertStars(root = document.body) {
-  root.querySelectorAll("span[data-star]").forEach(span => {
-    const starText = document.createTextNode(span.dataset.star);
-    span.parentNode.replaceChild(starText, span);
-  });
-}
-
-// Run on page load
-replaceStarsWithImage();
-
-// Automatically replace stars in new chat messages or dynamic content
-const observer = new MutationObserver(mutations => {
-  mutations.forEach(m => replaceStarsWithImage(m.target));
-});
-observer.observe(document.body, { childList: true, subtree: true });
 
 /* =======================================
    🧱 User Popup Close Logic (Mobile + PC)
