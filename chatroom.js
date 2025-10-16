@@ -1036,3 +1036,69 @@ replaceStarsWithSVG();
     if (e.target === popup) hidePopup();
   });
 })();
+const hostsBtn = document.getElementById("hostsBtn");
+const hostsModal = document.getElementById("hostsModal");
+const hostsListEl = document.getElementById("hostsList");
+const hostsClose = document.getElementById("hostsModalClose");
+const hostVideoPlayer = document.getElementById("hostVideoPlayer");
+const hostUsernameEl = document.getElementById("hostUsername");
+const hostGiftBtn = document.getElementById("hostGiftBtn");
+const hostPrevBtn = document.getElementById("hostPrev");
+const hostNextBtn = document.getElementById("hostNext");
+
+let hostsArray = []; // List of selected host users
+let currentHostIndex = 0;
+
+// Open modal
+hostsBtn.addEventListener("click", async () => {
+  hostsModal.style.display = "block";
+  await loadHosts(); // Load hosts from Firebase
+  showHostVideo(0);
+});
+
+// Close modal
+hostsClose.addEventListener("click", () => {
+  hostsModal.style.display = "none";
+});
+
+// Load hosts (example: filter users with isHost = true)
+async function loadHosts() {
+  const snap = await getDocs(collection(db, "users"));
+  hostsArray = [];
+  snap.forEach(docSnap => {
+    const data = docSnap.data();
+    if (data.isHost) hostsArray.push({ uid: docSnap.id, ...data });
+  });
+
+  hostsListEl.innerHTML = "";
+  hostsArray.forEach((host, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = host.chatId || "Guest";
+    btn.addEventListener("click", () => showHostVideo(index));
+    hostsListEl.appendChild(btn);
+  });
+}
+
+// Show host video and username
+function showHostVideo(index) {
+  if (!hostsArray[index]) return;
+  currentHostIndex = index;
+  const host = hostsArray[index];
+  hostUsernameEl.textContent = host.chatId || "Guest";
+
+  if (host.videoURL) hostVideoPlayer.src = host.videoURL;
+  else hostVideoPlayer.src = ""; // fallback
+
+  hostVideoPlayer.play().catch(() => {});
+}
+
+// Navigate
+hostPrevBtn.addEventListener("click", () => showHostVideo(currentHostIndex - 1));
+hostNextBtn.addEventListener("click", () => showHostVideo(currentHostIndex + 1));
+
+// Gift button
+hostGiftBtn.addEventListener("click", () => {
+  const host = hostsArray[currentHostIndex];
+  if (!host || !host.uid) return;
+  showGiftModal(host.uid, host);
+});
