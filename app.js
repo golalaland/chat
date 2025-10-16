@@ -274,18 +274,22 @@ function attachMessagesListener() {
 
       /* 💝 Detect personalized gift messages */
       if (msg.uid === "system" && msg.highlight && msg.content?.includes("gifted")) {
-        const myId = currentUser?.chatId?.toLowerCase();
-        if (!myId) return;
+  const myId = currentUser?.chatId?.toLowerCase();
+  if (!myId) return;
 
-        const [sender, , receiver, amount] = msg.content.split(" "); // e.g., Nushi gifted Goll 50
-        if (!sender || !receiver || !amount) return;
+  // 💡 Prevent showing the same alert more than once
+  if (shownGiftMessages.has(msgId)) return;
+  shownGiftMessages.add(msgId);
 
-        if (sender.toLowerCase() === myId) {
-          showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
-        } else if (receiver.toLowerCase() === myId) {
-          showGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
-        }
-      }
+  const [sender, , receiver, amount] = msg.content.split(" "); // e.g. "Nushi gifted Goll 50"
+  if (!sender || !receiver || !amount) return;
+
+  if (sender.toLowerCase() === myId) {
+    showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
+  } else if (receiver.toLowerCase() === myId) {
+    showGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
+  }
+}
 
       // 🌀 Keep scroll for your own messages
       if (refs.messagesEl && msg.uid === currentUser?.uid) {
