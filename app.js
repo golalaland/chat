@@ -68,77 +68,39 @@ async function showGiftModal(targetUid, targetData) {
   amountInput.value = "";
   modal.style.display = "flex";
 
-  const close = () => (modal.style.display = "none");
+  const close = () => modal.style.display = "none";
   closeBtn.onclick = close;
-  modal.onclick = (e) => { if (e.target === modal) close(); };
+  modal.onclick = e => { if (e.target === modal) close(); };
 
-  // Replace old confirm button with fresh one
+  // ⚡ Remove old confirm button listeners by replacing the node
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
-  // Floating stars helper
-  const spawnFloatingStars = (msgEl, count = 6) => {
-    const rect = msgEl.getBoundingClientRect();
-    for (let i = 0; i < count; i++) {
-      const star = document.createElement("div");
-      star.className = "floating-star";
-      const x = (Math.random() - 0.5) * rect.width;
-      const y = -Math.random() * 60;
-      star.style.setProperty("--x", x + "px");
-      star.style.setProperty("--y", y + "px");
-      star.style.left = rect.width / 2 + "px";
-      star.style.top = rect.height / 2 + "px";
-      msgEl.appendChild(star);
-      setTimeout(() => star.remove(), 2000 + Math.random() * 500);
-    }
-  };
-
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value);
-    if (!amt || amt < 100) return showStarPopup("🔥 Minimum gift is 100 stars ⭐️");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars to Ball yet, Champ.  💫");
+    if (!amt || amt <= 0) return alert("Enter a valid amount");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
 
     const fromRef = doc(db, "users", currentUser.uid);
     const toRef = doc(db, "users", targetUid);
-    const glowColor = randomColor();
 
-    const messageData = {
-      content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
-      uid: "balleralert",
-      chatId: "BallerAlert🤩",
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor: glowColor
-    };
-
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
     await Promise.all([
       updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-      updateDoc(toRef, { stars: increment(amt) })
+      updateDoc(toRef, { stars: increment(amt) }),
+      addDoc(collection(db, CHAT_COLLECTION), {
+        content: `${currentUser.chatId} gifted ${targetData.chatId} ${amt} ⭐️`,
+        uid: "balleralert",
+        chatId: "BallerAlert🤩",
+        timestamp: serverTimestamp(),
+        highlight: true,
+        buzzColor: randomColor()
+      })
     ]);
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
-    renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
-
-    const msgEl = document.getElementById(docRef.id);
-    if (!msgEl) return;
-    const contentEl = msgEl.querySelector(".content") || msgEl;
-
-    // Apply BallerAlert glow
-    contentEl.style.setProperty("--pulse-color", glowColor);
-    contentEl.classList.add("baller-highlight");
-    setTimeout(() => {
-      contentEl.classList.remove("baller-highlight");
-      contentEl.style.boxShadow = "none";
-    }, 21000);
-
-    // Floating stars burst
-    let starsInterval = setInterval(() => spawnFloatingStars(contentEl, 5), 300);
-    setTimeout(() => clearInterval(starsInterval), 2000);
   });
 }
-
 
 /* ---------- Gift Alert (Floating Popup) ---------- */
 function showGiftAlert(text) {
@@ -251,8 +213,6 @@ function renderMessagesFromArray(messages) {
 
 
 
-can we make this message show only once? 
-
 /* ---------- 🔔 Messages Listener ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
@@ -280,9 +240,9 @@ function attachMessagesListener() {
         if (!sender || !receiver || !amount) return;
 
         if (sender.toLowerCase() === myId) {
-          showGiftAlert(`⭐️ You gifted ${receiver} ${amount} stars ⭐️`);
+          showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
         } else if (receiver.toLowerCase() === myId) {
-          showGiftAlert(`⭐️ ${sender} gifted you ${amount} stars ⭐️`);
+          showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
         }
       }
 
@@ -294,104 +254,82 @@ function attachMessagesListener() {
   });
 }
 
-/* ---------- 👤 User Popup Logic (Optimized & Instant) ---------- */
-const userPopup = document.getElementById("userPopup");
-const popupContent = userPopup.querySelector(".user-popup-content");
-const popupCloseBtn = document.getElementById("popupCloseBtn");
-const popupPhoto = userPopup.querySelector(".popup-photo");
-const popupUsername = document.getElementById("popupUsername");
-const popupGender = document.getElementById("popupGender");
-const popupGlow = userPopup.querySelector(".popup-glow");
-const popupSocials = document.getElementById("popupSocials");
+/* ---------- 👤 User Popup Logic ---------- */
+async function showUserPopup(uid) {
+  const popup = document.getElementById("userPopup");
+  const content = popup.querySelector(".user-popup-content");
+  const usernameEl = document.getElementById("popupUsername");
+  const genderEl = document.getElementById("popupGender");
+  const socialsEl = document.getElementById("popupSocials");
+  const closeBtn = document.getElementById("popupCloseBtn");
+  const photoEl = popup.querySelector(".popup-photo");
 
-export async function showUserPopup(uid) {
-  try {
-    const snap = await getDoc(doc(db, "users", uid));
+  if (!popup || !content) return;
 
-    if (!snap.exists()) {
-      const starPopup = document.getElementById("starPopup");
-      starPopup.style.display = "block";
-      starPopup.querySelector("#starText").textContent = "User has not unlocked profile yet!";
-      setTimeout(() => starPopup.style.display = "none", 1800);
-      return;
-    }
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return alert("User not found ⚠️");
+  const data = snap.data();
 
-    const data = snap.data();
+  // 🪄 Username
+  usernameEl.textContent = data.chatId || "Unknown";
+  usernameEl.style.color = data.usernameColor || "#fff";
 
-    // Username
-    popupUsername.textContent = data.chatId || "Unknown";
+  // 👥 Gender / Age description
+  const age = parseInt(data.age || 0);
+  const ageGroup = !isNaN(age) && age >= 30 ? "30s" : "20s";
+  genderEl.textContent = `A ${data.gender || "user"} in their ${ageGroup}`;
 
-    // Typewriter effect for descriptor
-    const ageGroup = (data.age >= 30) ? "30s" : "20s";
-    const pronoun = data.gender?.toLowerCase() === "male" ? "his" : "her";
-    const textLine = `A ${data.naturePick || "sexy"} ${data.gender || "male"} in ${pronoun} ${ageGroup}`;
-    popupGender.textContent = "";
-    let i = 0;
-    function typeWriter() {
-      if (i < textLine.length) {
-        popupGender.textContent += textLine.charAt(i);
-        i++;
-        setTimeout(typeWriter, 50);
-      }
-    }
-    typeWriter();
-
-    // Photo
-    if (data.photoURL) {
-      popupPhoto.innerHTML = `<img src="${data.photoURL}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-    } else {
-      popupPhoto.textContent = (data.chatId || "?").slice(0, 2).toUpperCase();
-      popupPhoto.style.background = "#222";
-    }
-
-    // Fruit emoji
-    popupGlow.textContent = data.fruitPick || "🍇";
-
-    // Socials
-    popupSocials.innerHTML = "";
-    const socialsMap = {
-      instagram: "https://cdn-icons-png.flaticon.com/512/2111/2111463.png",
-      telegram: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png",
-      tiktok: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png",
-      whatsapp: "https://cdn-icons-png.flaticon.com/512/733/733585.png"
-    };
-    Object.keys(socialsMap).forEach(key => {
-      if (data[key]) {
-        const a = document.createElement("a");
-        a.href = data[key].startsWith("http") ? data[key] : `https://${data[key]}`;
-        a.target = "_blank";
-        a.innerHTML = `<img src="${socialsMap[key]}" alt="${key}">`;
-        popupSocials.appendChild(a);
-      }
-    });
-
-    // 🎁 Gift button
-    let giftBtn = popupContent.querySelector(".gift-btn");
-    if (!giftBtn) {
-      giftBtn = document.createElement("button");
-      giftBtn.className = "gift-btn";
-      popupContent.appendChild(giftBtn);
-    }
-    giftBtn.textContent = "Gift Stars ⭐️";
-    giftBtn.onclick = () => showGiftModal(uid, data);
-
-    // Show popup
-    userPopup.style.display = "flex";
-    setTimeout(() => popupContent.classList.add("show"), 20);
-
-  } catch (err) {
-    console.error("Error fetching user popup:", err);
+  // 🖼️ Profile photo or initials
+  if (data.photoURL) {
+    photoEl.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
+  } else {
+    const initials = (data.chatId || "?").slice(0, 2).toUpperCase();
+    photoEl.textContent = initials;
+    photoEl.style.background = data.usernameColor || "#444";
   }
-}
 
-// Close logic
-popupCloseBtn.onclick = () => {
-  popupContent.classList.remove("show");
-  setTimeout(() => userPopup.style.display = "none", 250);
-};
-userPopup.onclick = e => {
-  if (e.target === userPopup) popupCloseBtn.click();
-};
+  // 🌐 Socials
+  const socialPlatforms = [
+    { field: "instagram", icon: "https://cdn-icons-png.flaticon.com/512/174/174855.png" },
+    { field: "telegram", icon: "https://cdn-icons-png.flaticon.com/512/2111/2111646.png" },
+    { field: "tiktok", icon: "https://cdn-icons-png.flaticon.com/512/3046/3046122.png" },
+    { field: "whatsapp", icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" }
+  ];
+  socialsEl.innerHTML = "";
+  for (const s of socialPlatforms) {
+    const link = data[s.field];
+    if (!link) continue;
+    const a = document.createElement("a");
+    a.href = link.startsWith("http") ? link : `https://${link}`;
+    a.target = "_blank";
+    a.innerHTML = `<img src="${s.icon}" alt="${s.field}" width="28" height="28" style="border-radius:6px;">`;
+    socialsEl.appendChild(a);
+  }
+
+  // 🎁 Gift Button
+  let giftBtn = content.querySelector(".gift-btn");
+  if (!giftBtn) {
+    giftBtn = document.createElement("button");
+    giftBtn.className = "gift-btn";
+    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
+    giftBtn.onclick = () => showGiftModal(uid, data);
+    content.appendChild(giftBtn);
+  } else {
+    giftBtn.textContent = `🎁 Gift ${data.chatId} ⭐️`;
+    giftBtn.onclick = () => showGiftModal(uid, data);
+  }
+
+  // ✨ Show popup
+  popup.style.display = "flex";
+  setTimeout(() => content.classList.add("show"), 10);
+
+  const close = () => {
+    content.classList.remove("show");
+    setTimeout(() => (popup.style.display = "none"), 200);
+  };
+  popup.onclick = e => { if (e.target === popup) close(); };
+  closeBtn.onclick = close;
+}
 
 /* ---------- 🪶 Detect Username Tap ---------- */
 document.addEventListener("pointerdown", e => {
@@ -477,7 +415,7 @@ async function loginWhitelist(email, phone) {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      return showStarPopup("RSVP not found. Please sign up through a Host.");
+      return showStarPopup("User not found. Please sign up on the main page first.");
     }
 
     const data = userSnap.data() || {};
@@ -762,49 +700,38 @@ window.addEventListener("DOMContentLoaded", () => {
     scrollToBottom(refs.messagesEl);
   });
 
-/* ----------------------------
-   🚨 BUZZ Glow
------------------------------ */
-refs.buzzBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to BUZZ.");
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+  /* ----------------------------
+     🚨 BUZZ Message Handler
+  ----------------------------- */
+  refs.buzzBtn?.addEventListener("click", async () => {
+    if (!currentUser) return showStarPopup("Sign in to BUZZ.");
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-  const stars = snap.data()?.stars || 0;
-  if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const stars = snap.data()?.stars || 0;
 
-  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-  const buzzColor = randomColor();
+    if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
-  const newBuzz = {
-    content: txt,
-    uid: currentUser.uid,
-    chatId: currentUser.chatId,
-    timestamp: serverTimestamp(),
-    highlight: true,
-    buzzColor
-  };
-  const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
+    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+    const buzzColor = randomColor();
 
-  refs.messageInputEl.value = "";
-  showStarPopup("BUZZ sent!");
-  renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
-  scrollToBottom(refs.messagesEl);
+    const newBuzz = {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor
+    };
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
 
-  // Apply BUZZ glow
-  const msgEl = document.getElementById(docRef.id);
-  if (!msgEl) return;
-  const contentEl = msgEl.querySelector(".content") || msgEl;
-
-  contentEl.style.setProperty("--buzz-color", buzzColor);
-  contentEl.classList.add("buzz-highlight");
-  setTimeout(() => {
-    contentEl.classList.remove("buzz-highlight");
-    contentEl.style.boxShadow = "none";
-  }, 12000); // same as CSS animation
-});
+    refs.messageInputEl.value = "";
+    showStarPopup("BUZZ sent!");
+    renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
+    scrollToBottom(refs.messagesEl);
+  });
 
   /* ----------------------------
      👋 Rotating Hello Text
