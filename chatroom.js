@@ -1037,7 +1037,7 @@ replaceStarsWithSVG();
   });
 })();
 
-// Modal elements
+// ---------- Modal elements ----------
 const modal = document.getElementById("featuredHostsModal");
 const openBtn = document.getElementById("openHostsBtn");
 const closeBtn = document.querySelector(".featured-close");
@@ -1048,69 +1048,76 @@ const prevBtn = document.getElementById("prevFeaturedHost");
 const nextBtn = document.getElementById("nextFeaturedHost");
 const giftBtn = document.getElementById("featuredGiftBtn");
 
+// ---------- State ----------
 let hosts = [];
 let currentIndex = 0;
 
-// Open modal
+// ---------- Open modal ----------
 openBtn.addEventListener("click", async () => {
     await loadHosts();
-    if (hosts.length > 0) {
-        currentIndex = 0;
-        showHost(currentIndex);
-        modal.style.display = "block";
+    if (hosts.length === 0) {
+        alert("No featured hosts available!");
+        return;
     }
+    currentIndex = 0;
+    showHost(currentIndex);
+    modal.style.display = "flex"; // ensures modal is centered/flex
 });
 
-// Close modal
-closeBtn.addEventListener("click", () => {
+// ---------- Close modal ----------
+function closeModal() {
     modal.style.display = "none";
+    videoFrame.src = ""; // stop video when modal closes
+}
+closeBtn.addEventListener("click", closeModal);
+window.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
 });
 
-// Prev/Next navigation
+// ---------- Prev/Next navigation ----------
 prevBtn.addEventListener("click", () => {
-    if (hosts.length === 0) return;
+    if (!hosts.length) return;
     currentIndex = (currentIndex - 1 + hosts.length) % hosts.length;
     showHost(currentIndex);
 });
 
 nextBtn.addEventListener("click", () => {
-    if (hosts.length === 0) return;
+    if (!hosts.length) return;
     currentIndex = (currentIndex + 1) % hosts.length;
     showHost(currentIndex);
 });
 
-// Gift button
+// ---------- Gift button ----------
 giftBtn.addEventListener("click", () => {
-    if (hosts.length === 0) return;
+    if (!hosts.length) return;
     const host = hosts[currentIndex];
-    // Add your gift logic here
     alert(`Gift sent to ${host.username}`);
+    // Replace alert with actual gifting logic
 });
 
-// Fetch hosts from Firestore
+// ---------- Load hosts from Firestore ----------
 async function loadHosts() {
-    const q = query(collection(db, "featuredHosts"), orderBy("timestamp", "desc"));
-    const snapshot = await getDocs(q);
-    hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    try {
+        const q = query(collection(db, "featuredHosts"), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+        console.error("Failed to load hosts:", err);
+    }
 }
 
-// Display host info
+// ---------- Show host ----------
 function showHost(index) {
     const host = hosts[index];
     if (!host) return;
 
     usernameEl.textContent = host.username || "Unknown Host";
     videoFrame.src = host.videoURL || "";
-    
-    // Optional: highlight current host in list
+
+    // Highlight current host in the list
     if (hostListEl) {
-        hostListEl.innerHTML = hosts.map((h, i) => 
-            `<div class="${i === index ? 'active' : ''}">${h.username}</div>`
-        ).join("");
+        hostListEl.innerHTML = hosts
+            .map((h, i) => `<div class="${i === index ? "active" : ""}">${h.username}</div>`)
+            .join("");
     }
 }
-
-// Close modal when clicking outside content
-window.addEventListener("click", (e) => {
-    if (e.target === modal) modal.style.display = "none";
-});
