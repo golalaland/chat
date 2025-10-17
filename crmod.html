@@ -742,7 +742,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-btn:hover { transform: scale(1.05); }
 
-/* Modal Background */
+/* 🌟 Featured Hosts Modal */
 .featured-modal {
   display: none;
   position: fixed;
@@ -751,129 +751,103 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   top: 0;
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(10px);
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
 }
 
-/* Portrait Card Modal */
-.featured-modal-content.portrait-card {
+.featured-modal-content {
   position: relative;
-  margin: 3% auto;
+  margin: 5% auto;
   background: #111;
-  border-radius: 16px;
+  border-radius: 12px;
+  padding: 0;
   width: 90%;
-  max-width: 380px;
-  min-height: 650px;
+  max-width: 500px;
+  max-height: 90%;
   color: #fff;
-  box-shadow: 0 0 25px rgba(255,255,255,0.1);
-  overflow: hidden;
-  padding-bottom: 10px;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* Close button */
 .featured-close {
   position: absolute;
   top: 10px;
-  right: 14px;
+  right: 15px;
   color: #fff;
-  font-size: 26px;
+  font-size: 24px;
   cursor: pointer;
   z-index: 10;
 }
 
-/* Video */
-.featured-host-top iframe {
+.featured-host-video-container iframe {
   width: 100%;
-  height: 220px;
+  height: 320px; /* taller video for immersive view */
   border: none;
   border-radius: 12px 12px 0 0;
+  object-fit: cover;
 }
 
-/* Info Section */
-.featured-host-info {
+.featured-host-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 90%;
-  padding: 10px 0;
-  border-top: 1px solid rgba(255,255,255,0.1);
-}
-
-.featured-host-text {
-  display: flex;
-  flex-direction: column;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
 }
 
 .featured-host-username {
   font-weight: 600;
-  font-size: 1.2em;
+  font-size: 1.1em;
 }
 
 .featured-host-details {
-  font-size: 0.95em;
+  font-size: 0.9em;
   color: #ccc;
-  margin-top: 4px;
 }
 
-/* Social icons */
-.featured-host-socials a {
-  margin-left: 8px;
-}
-.featured-host-socials img {
-  width: 26px;
-  height: 26px;
-  opacity: 1;
-  transition: 0.3s;
-}
-.featured-host-socials a.disabled img {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-/* Gift Slider */
-#giftSliderContainer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 90%;
-  padding: 10px 0;
-}
-#giftSlider {
-  flex: 1;
-  margin-right: 10px;
-}
-#giftAmount {
-  min-width: 40px;
-  text-align: right;
-}
-
-/* Gift button */
 .featured-gift-btn {
   background: linear-gradient(135deg, #ff4081, #ff80ab);
   border: none;
   color: #fff;
-  padding: 6px 12px;
+  padding: 6px 12px; /* smaller padding */
   border-radius: 6px;
   cursor: pointer;
-  transition: 0.3s;
+  font-weight: bold;
 }
-.featured-gift-btn:hover { opacity: 0.85; }
+.featured-gift-btn:hover {
+  opacity: 0.85;
+}
 
-/* Avatar list */
+.featured-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+  width: 90%;
+}
+.featured-nav-buttons a {
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 .featured-host-list {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 0;
+  gap: 8px;
+  padding: 8px 0;
 }
 .featured-host-list img {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
@@ -883,17 +857,30 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border: 2px solid #ff4081;
 }
 
-/* Navigation */
-.featured-nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  width: 90%;
-  margin: 8px 0;
+/* Slider styling */
+#giftSlider {
+  width: 80%;
+  margin: 8px auto;
 }
-.featured-nav-buttons a {
-  color: #fff;
-  font-size: 16px;
-  text-decoration: none;
+#giftAmount {
+  display: block;
+  text-align: center;
+  margin-bottom: 6px;
+  font-weight: bold;
+  font-size: 1em;
+}
+
+/* Social icons */
+.social-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+  opacity: 1;
+  transition: 0.3s;
+}
+.social-icon.disabled {
+  opacity: 0.3;
+  pointer-events: none;
 }
 </style>
 </head>
