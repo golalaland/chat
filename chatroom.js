@@ -1037,90 +1037,99 @@ replaceStarsWithSVG();
   });
 })();
 
-// Modal elements
+// DOM Elements
 const modal = document.getElementById("featuredHostsModal");
-const openBtn = document.getElementById("openHostsBtn");
-const closeBtn = document.querySelector(".featured-close");
-const videoFrame = document.getElementById("featuredHostVideo");
+const closeBtn = modal.querySelector(".featured-close");
+const videoEl = document.getElementById("featuredHostVideo");
 const usernameEl = document.getElementById("featuredHostUsername");
-const hostListEl = document.getElementById("featuredHostList");
-const prevBtn = document.getElementById("prevFeaturedHost");
-const nextBtn = document.getElementById("nextFeaturedHost");
+const detailsEl = document.getElementById("featuredHostDetails");
 const giftBtn = document.getElementById("featuredGiftBtn");
+const hostListEl = document.getElementById("featuredHostList");
+const prevBtn = document.getElementById("prevHost");
+const nextBtn = document.getElementById("nextHost");
 
-let hosts = [];
-let currentIndex = 0;
+let featuredHosts = [];
+let currentHostIndex = 0;
+
+// Fetch hosts from Firestore
+async function loadFeaturedHosts() {
+  const hostsCol = collection(db, "users"); // adjust if your collection is different
+  const q = query(hostsCol, where("isHost", "==", true));
+  const snapshot = await getDocs(q);
+
+  featuredHosts = snapshot.docs.map(docSnap => ({
+    id: docSnap.id,
+    username: docSnap.data().chatId,
+    gender: docSnap.data().gender,
+    age: docSnap.data().age,
+    fruit: docSnap.data().fruitPick || "Unknown",
+    avatar: docSnap.data().popupPhoto || "https://i.pravatar.cc/50",
+    video: docSnap.data().videoUrl,
+    starsGifted: docSnap.data().starsGifted || 0
+  }));
+
+  populateAvatars();
+  if (featuredHosts.length > 0) openFeaturedHostModal(0);
+}
+
+// Populate avatars
+function populateAvatars() {
+  hostListEl.innerHTML = "";
+  featuredHosts.forEach((host, index) => {
+    const img = document.createElement("img");
+    img.src = host.avatar;
+    img.alt = host.username;
+    img.addEventListener("click", () => openFeaturedHostModal(index));
+    hostListEl.appendChild(img);
+  });
+}
 
 // Open modal
-openBtn.addEventListener("click", async () => {
-    await loadHosts();
-    if (hosts.length > 0) {
-        currentIndex = 0;
-        showHost(currentIndex);
-        modal.style.display = "block";
-    } else {
-        console.log("No featured hosts available.");
-        alert("No featured hosts available.");
-    }
-});
+function openFeaturedHostModal(index) {
+  currentHostIndex = index;
+  const host = featuredHosts[index];
+
+  videoEl.src = host.video;
+  usernameEl.textContent = host.username;
+  detailsEl.textContent = `${host.gender}, Age ${host.age}, Fruit: ${host.fruit}`;
+
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === index);
+  });
+
+  modal.style.display = "block";
+}
 
 // Close modal
 closeBtn.addEventListener("click", () => {
-    modal.style.display = "none";
+  modal.style.display = "none";
+  videoEl.src = "";
 });
 
-// Prev/Next navigation
-prevBtn.addEventListener("click", () => {
-    if (hosts.length === 0) return;
-    currentIndex = (currentIndex - 1 + hosts.length) % hosts.length;
-    showHost(currentIndex);
+// Navigation
+prevBtn.addEventListener("click", e => {
+  e.preventDefault();
+  const prevIndex = (currentHostIndex - 1 + featuredHosts.length) % featuredHosts.length;
+  openFeaturedHostModal(prevIndex);
+});
+nextBtn.addEventListener("click", e => {
+  e.preventDefault();
+  const nextIndex = (currentHostIndex + 1) % featuredHosts.length;
+  openFeaturedHostModal(nextIndex);
 });
 
-nextBtn.addEventListener("click", () => {
-    if (hosts.length === 0) return;
-    currentIndex = (currentIndex + 1) % hosts.length;
-    showHost(currentIndex);
+// Gift stars (updates Firestore)
+giftBtn.addEventListener("click", async () => {
+  const host = featuredHosts[currentHostIndex];
+  const hostRef = doc(db, "users", host.id);
+
+  await updateDoc(hostRef, {
+    starsGifted: increment(1)
+  });
+
+  featuredHosts[currentHostIndex].starsGifted += 1;
+  alert(`You gifted 1 star to ${host.username}! ⭐`);
 });
 
-// Gift button
-giftBtn.addEventListener("click", () => {
-    if (hosts.length === 0) return;
-    const host = hosts[currentIndex];
-    alert(`Gift sent to ${host.username}`);
-});
-
-// Fetch hosts from Firestore
-async function loadHosts() {
-    try {
-        const q = query(
-            collection(db, "featuredHosts"),
-            orderBy("createdAt", "desc") // corrected field name
-        );
-        const snapshot = await getDocs(q);
-        hosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (err) {
-        console.error("Error loading featured hosts:", err);
-        hosts = [];
-    }
-}
-
-// Display host info
-function showHost(index) {
-    const host = hosts[index];
-    if (!host) return;
-
-    usernameEl.textContent = host.username || "Unknown Host";
-    videoFrame.src = host.videoUrl || ""; // corrected field name
-
-    // Optional: highlight current host in list
-    if (hostListEl) {
-        hostListEl.innerHTML = hosts.map((h, i) => 
-            `<div class="${i === index ? 'active' : ''}">${h.username}</div>`
-        ).join("");
-    }
-}
-
-// Close modal when clicking outside content
-window.addEventListener("click", (e) => {
-    if (e.target === modal) modal.style.display = "none";
-});
+// Load hosts on page load
+loadFeaturedHosts();
