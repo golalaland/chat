@@ -1037,87 +1037,135 @@ replaceStarsWithSVG();
   });
 })();
 
-// DOM
-const openHostsBtn = document.getElementById("openHostsBtn");
+// DOM Elements
+const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
 const closeBtn = modal.querySelector(".featured-close");
+
 const hostVideo = document.getElementById("featuredHostVideo");
 const hostUsername = document.getElementById("featuredHostUsername");
 const hostDetails = document.getElementById("featuredHostDetails");
-const hostListContainer = document.getElementById("featuredHostList");
-const prevHostBtn = document.getElementById("prevHost");
-const nextHostBtn = document.getElementById("nextHost");
-const giftBtn = document.getElementById("featuredGiftBtn");
+const hostList = document.getElementById("featuredHostList");
+
 const giftSlider = document.getElementById("giftSlider");
 const giftAmountDisplay = document.getElementById("giftAmount");
+const giftBtn = document.getElementById("featuredGiftBtn");
+
+const prevHostBtn = document.getElementById("prevHost");
+const nextHostBtn = document.getElementById("nextHost");
+
 const whatsappLink = document.getElementById("whatsappLink");
 const telegramLink = document.getElementById("telegramLink");
 
 let featuredHosts = [];
 let currentIndex = 0;
 
-async function loadFeaturedHosts() {
-  const snapshot = await getDocs(collection(db, "featuredHosts"));
-  featuredHosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  if (featuredHosts.length) {
-    renderHostList();
-    showHost(0);
+// Open modal on button click
+openBtn.addEventListener("click", async () => {
+  modal.style.display = "block";
+  if (featuredHosts.length === 0) {
+    await loadFeaturedHosts();
+    renderHost(currentIndex);
+    renderAvatars();
   }
+});
+
+// Close modal
+closeBtn.addEventListener("click", () => modal.style.display = "none");
+window.addEventListener("click", e => {
+  if (e.target === modal) modal.style.display = "none";
+});
+
+// Load featured hosts from Firestore
+async function loadFeaturedHosts() {
+  const querySnapshot = await getDocs(collection(db, "featuredHosts"));
+  featuredHosts = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
 }
 
-function renderHostList() {
-  hostListContainer.innerHTML = "";
-  featuredHosts.forEach((host, i) => {
-    const img = document.createElement("img");
-    img.src = host.popupPhoto;
-    img.title = host.chatId;
-    img.classList.toggle("active", i === currentIndex);
-    img.addEventListener("click", () => showHost(i));
-    hostListContainer.appendChild(img);
-  });
-}
+// Render a host by index
+function renderHost(index) {
+  if (!featuredHosts[index]) return;
 
-function showHost(index) {
-  currentIndex = index;
   const host = featuredHosts[index];
-  if (!host) return;
 
+  // Video
   hostVideo.src = host.videoUrl;
 
+  // Username + color
   hostUsername.textContent = host.chatId;
   hostUsername.style.color = host.usernameColor || "#fff";
 
-  const age = host.age ? host.age : "N/A";
+  // Details: Age + Fruit
+  const age = host.age || "N/A";
   const fruit = host.fruitPick || "";
-  hostDetails.textContent = `Age: ${age} | ${fruit}`;
+  hostDetails.textContent = `Age: ${age} | Fruit: ${fruit}`;
 
-  // Social icons
-  if (host.whatsappLink) {
-    whatsappLink.href = host.whatsappLink;
+  // Socials
+  if (host.whatsapp) {
+    whatsappLink.href = host.whatsapp;
     whatsappLink.classList.remove("disabled");
-  } else whatsappLink.classList.add("disabled");
+  } else {
+    whatsappLink.href = "#";
+    whatsappLink.classList.add("disabled");
+  }
 
-  if (host.telegramLink) {
-    telegramLink.href = host.telegramLink;
+  if (host.telegram) {
+    telegramLink.href = host.telegram;
     telegramLink.classList.remove("disabled");
-  } else telegramLink.classList.add("disabled");
+  } else {
+    telegramLink.href = "#";
+    telegramLink.classList.add("disabled");
+  }
 
-  Array.from(hostListContainer.children).forEach((img, i) => {
+  // Highlight avatar
+  Array.from(hostList.children).forEach((img, i) => {
     img.classList.toggle("active", i === index);
   });
-
-  giftSlider.value = 1;
-  giftAmountDisplay.textContent = `1 ⭐`;
 }
 
+// Render avatars
+function renderAvatars() {
+  hostList.innerHTML = "";
+  featuredHosts.forEach((host, i) => {
+    const img = document.createElement("img");
+    img.src = host.popupPhoto;
+    img.alt = host.chatId;
+    img.classList.toggle("active", i === currentIndex);
+    img.addEventListener("click", () => {
+      currentIndex = i;
+      renderHost(currentIndex);
+    });
+    hostList.appendChild(img);
+  });
+}
+
+// Navigation buttons
+prevHostBtn.addEventListener("click", e => {
+  e.preventDefault();
+  currentIndex = (currentIndex - 1 + featuredHosts.length) % featuredHosts.length;
+  renderHost(currentIndex);
+});
+
+nextHostBtn.addEventListener("click", e => {
+  e.preventDefault();
+  currentIndex = (currentIndex + 1) % featuredHosts.length;
+  renderHost(currentIndex);
+});
+
+// Gift slider live update
 giftSlider.addEventListener("input", () => {
   giftAmountDisplay.textContent = `${giftSlider.value} ⭐`;
 });
 
+// Send gift
 giftBtn.addEventListener("click", async () => {
   const host = featuredHosts[currentIndex];
+  if (!host) return;
   const amount = parseInt(giftSlider.value);
-  if (!host || amount <= 0) return;
+  if (amount <= 0) return;
 
   const hostRef = doc(db, "featuredHosts", host.id);
   await updateDoc(hostRef, {
@@ -1127,18 +1175,3 @@ giftBtn.addEventListener("click", async () => {
 
   alert(`Sent ${amount} ⭐ to ${host.chatId}!`);
 });
-
-prevHostBtn.addEventListener("click", e => {
-  e.preventDefault();
-  showHost((currentIndex - 1 + featuredHosts.length) % featuredHosts.length);
-});
-nextHostBtn.addEventListener("click", e => {
-  e.preventDefault();
-  showHost((currentIndex + 1) % featuredHosts.length);
-});
-
-openHostsBtn.addEventListener("click", () => modal.style.display = "block");
-closeBtn.addEventListener("click", () => modal.style.display = "none");
-window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
-
-loadFeaturedHosts();
