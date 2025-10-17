@@ -742,64 +742,58 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-btn:hover { transform: scale(1.05); }
 
-/* 🌟 Featured Hosts Modal */
+/* 🌟 Featured Hosts Modal (Compact Mobile Layout) */
 .featured-modal {
   display: none;
   position: fixed;
   z-index: 9999;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   justify-content: center;
   align-items: center;
-  padding: 20px;
-  overflow-y: auto; /* ensures scroll works if content grows */
+  padding: 0;
 }
 
-/* Centered modal content — reduced by about 11% */
+/* 🔲 Compact modal card */
 .featured-modal-content {
   position: relative;
   background: #111;
-  border-radius: 16px;
-  width: 85%; /* reduced */
-  max-width: 320px; /* smaller */
+  border-radius: 18px;
+  width: 82%; /* smaller screen-inside-screen look */
+  max-width: 320px; /* tighter fit for mobile */
   color: #fff;
-  box-shadow: 0 0 30px rgba(255, 64, 129, 0.15);
-  overflow: hidden;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   animation: modalPop 0.25s ease-out;
-  margin: auto; /* ensures centering */
+  transform: translateY(0);
 }
 
-/* Close button */
+/* ❌ Close button */
 .featured-close {
   position: absolute;
-  top: 10px;
-  right: 15px;
+  top: 8px;
+  right: 12px;
   color: #fff;
-  font-size: 22px;
+  font-size: 20px;
   cursor: pointer;
-  opacity: 0.8;
+  opacity: 0.9;
   z-index: 10;
-  transition: opacity 0.2s ease;
 }
 .featured-close:hover {
   opacity: 1;
 }
 
-/* Portrait video */
+/* 🎥 Video area (smaller height for compactness) */
 .featured-host-video-container {
   width: 100%;
-  aspect-ratio: 9 / 16;
-  position: relative;
-  overflow: hidden;
+  aspect-ratio: 9 / 14; /* slightly shorter than portrait */
   background: #000;
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
 }
-
 .featured-host-video-container iframe {
   width: 100%;
   height: 100%;
@@ -807,58 +801,42 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   object-fit: cover;
 }
 
-/* Footer info */
+/* 👤 Info and actions section */
 .featured-host-footer {
   padding: 12px 14px;
   background: #1a1a1a;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.95rem;
-  line-height: 1.4;
+  text-align: center;
+  font-size: 0.9rem;
 }
 
+/* Username + Details */
 .featured-host-username {
   font-weight: 600;
-  font-size: 1.1em;
+  font-size: 1.05em;
 }
-
 .featured-host-details {
-  font-size: 0.9em;
+  font-size: 0.85em;
   opacity: 0.8;
   margin-bottom: 6px;
 }
 
-/* Socials */
-.featured-host-socials a img {
-  width: 24px;
-  height: 24px;
-  margin-right: 6px;
-  opacity: 1;
-  transition: 0.3s;
-}
-.featured-host-socials a.faded img {
-  opacity: 0.3;
-  pointer-events: none;
-}
-.featured-host-socials {
-  display: none !important;
-}
-
-/* 🎁 Gift Slider Section */
+/* 🎁 Gift slider section */
 .gift-slider-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.05); /* subtle glassy layer */
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
-  padding: 10px 12px;
-  margin-top: 10px;
+  padding: 8px 10px;
+  margin-top: 8px;
   backdrop-filter: blur(4px);
 }
 
-/* Pink-toned slider */
+/* Pink gradient slider */
 #giftSlider {
   flex: 1;
   appearance: none;
@@ -868,16 +846,13 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   outline: none;
   cursor: pointer;
 }
-
-/* Slider thumb styling */
 #giftSlider::-webkit-slider-thumb {
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #ff4da6;
   border: 2px solid #fff;
-  cursor: pointer;
   transition: 0.2s ease;
 }
 #giftSlider::-webkit-slider-thumb:hover {
@@ -886,7 +861,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 /* Gift button */
 .featured-gift-btn {
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-radius: 6px;
   background: linear-gradient(135deg, #ff4081, #ff80ab);
   border: none;
@@ -897,47 +872,43 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-gift-btn:hover {
   transform: scale(1.05);
-  background: linear-gradient(135deg, #ff4da6, #ff92c2);
 }
 
-/* Avatars */
+/* 🖼 Avatar list */
 .featured-host-list {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   padding: 8px;
 }
-
 .featured-host-list img {
-  width: 50px;
-  height: 50px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border 0.3s, transform 0.3s;
-  transform: translateY(0); /* prevent bounce */
+  transition: border 0.25s, transform 0.25s;
 }
-
 .featured-host-list img.active {
-  border: 2px solid #ff4081;
-  transform: scale(1.05); /* subtle highlight instead of bounce */
+  border: 2px solid #ff4da6;
+  transform: scale(1.05);
 }
 
-/* Nav buttons */
+/* Bottom nav buttons */
 .featured-nav-buttons {
   display: flex;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 8px 14px 14px;
+  font-size: 0.85rem;
 }
-
 .featured-nav-buttons a {
   color: #fff;
   text-decoration: none;
   font-weight: 600;
 }
 
-/* Pop animation */
+/* Animation */
 @keyframes modalPop {
   from {
     transform: scale(0.9);
@@ -947,6 +918,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* Hide socials */
+.featured-host-socials {
+  display: none !important;
 }
 </style>
 </head>
