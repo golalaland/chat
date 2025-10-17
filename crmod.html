@@ -752,20 +752,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   width: 100%;
   height: 100%;
   overflow: auto;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0,0,0,0.8);
   backdrop-filter: blur(8px);
 }
 
 .featured-modal-content {
   position: relative;
-  margin: 5% auto;
+  margin: 3% auto;
   background: #111;
   border-radius: 12px;
   padding: 0;
   width: 90%;
-  max-width: 400px; /* narrower for portrait feel */
+  max-width: 400px; /* smaller for portrait card */
   color: #fff;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 25px rgba(255,255,255,0.1);
   overflow: hidden;
 }
 
@@ -782,7 +782,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* Portrait video container */
 .featured-host-video-container {
   width: 100%;
-  aspect-ratio: 9 / 16; /* portrait ratio */
+  aspect-ratio: 9 / 16;
   position: relative;
   border-radius: 12px 12px 0 0;
   overflow: hidden;
@@ -793,10 +793,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   width: 100%;
   height: 100%;
   border: none;
-  object-fit: cover; /* fill container without black bars */
+  object-fit: cover;
 }
 
-/* Host info & footer */
 .featured-host-footer {
   padding: 12px 16px;
   background: #1a1a1a;
@@ -811,34 +810,27 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .featured-host-details {
-  font-size: 1em;
-  line-height: 1.3em;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 6px;
 }
 
 .featured-host-socials a img {
   width: 24px;
   height: 24px;
-  margin-left: 6px;
+  margin-right: 6px;
   opacity: 1;
   transition: 0.3s;
 }
-
 .featured-host-socials a.faded img {
   opacity: 0.3;
   pointer-events: none;
 }
 
-/* Gift slider & button */
 .gift-slider-container {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
 }
 
 #giftSlider {
@@ -846,14 +838,12 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .featured-gift-btn {
-  padding: 4px 8px; /* smaller */
+  padding: 4px 8px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #ff4081, #ff80ab);
+  background: linear-gradient(135deg,#ff4081,#ff80ab);
   border: none;
   color: #fff;
   cursor: pointer;
-  min-width: 70px; /* compact "GIFT 🎁" */
-  text-align: center;
 }
 
 /* Avatars list */
@@ -862,7 +852,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 8px 0;
+  padding: 8px;
 }
 
 .featured-host-list img {
@@ -878,7 +868,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border: 2px solid #ff4081;
 }
 
-/* Navigation buttons */
 .featured-nav-buttons {
   display: flex;
   justify-content: space-between;
@@ -1091,3 +1080,4 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <script type="module" src="chatroom.js"></script>
 </body>
 </html>
+
