@@ -802,21 +802,44 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 .featured-host-details {
-  font-size: 0.9em;
+  font-size: 0.85em;
+  margin-top: 2px;
   color: #ccc;
+}
+
+.gift-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gift-container input[type="range"] {
+  width: 100px;
 }
 
 .featured-gift-btn {
   background: linear-gradient(135deg, #ff4081, #ff80ab);
   border: none;
   color: #fff;
-  padding: 8px 14px;
+  padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
   transition: 0.3s;
 }
 .featured-gift-btn:hover {
   opacity: 0.85;
+}
+
+.featured-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+  padding: 0 12px;
+}
+.featured-nav-buttons a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
 }
 
 .featured-host-list {
@@ -836,27 +859,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-host-list img.active {
   border: 2px solid #ff4081;
-}
-
-.featured-nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin: 8px 12px 12px;
-}
-
-.featured-nav-link {
-  display: inline-block;
-  background: #222;
-  color: #fff;
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  transition: 0.3s;
-  cursor: pointer;
-}
-.featured-nav-link:hover {
-  background: linear-gradient(135deg, #ff4081, #ff80ab);
 }
 </style>
 </head>
@@ -891,7 +893,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <!-- 🌟 Featured Hosts Button -->
 <button id="openHostsBtn" class="featured-btn">🌟 Star Hosts 🌟</button>
 
-
 <!-- 🌟 Featured Hosts Modal -->
 <div id="featuredHostsModal" class="featured-modal">
   <div class="featured-modal-content">
@@ -905,7 +906,12 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
           <div class="featured-host-username" id="featuredHostUsername"></div>
           <div class="featured-host-details" id="featuredHostDetails"></div>
         </div>
-        <button class="featured-gift-btn" id="featuredGiftBtn">🎁 Gift</button>
+
+        <div class="gift-container">
+          <input type="range" id="giftSlider" min="1" value="1">
+          <span id="giftCount">1</span>
+          <button class="featured-gift-btn" id="featuredGiftBtn">🎁 Send</button>
+        </div>
       </div>
     </div>
 
@@ -917,10 +923,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       <a href="#" id="prevHost" class="featured-nav-link">Previous</a>
       <a href="#" id="nextHost" class="featured-nav-link">Next</a>
     </div>
-  </div>
-</div>
-
-    <div class="featured-host-list" id="featuredHostList"></div>
   </div>
 </div>
 
