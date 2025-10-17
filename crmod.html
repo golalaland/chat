@@ -367,6 +367,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .small-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border: 0;color: #000;cursor: pointer;font-weight:700;font-size:12px;text-decoration: none;transition: transform .15s, box-shadow .15s;}
 .small-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 10px rgba(255,20,147,0.3);}
 .star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
+.star-popup.visible {
+  display: block;
+  animation: popupFade 2s ease forwards;
+}
+
+@keyframes popupFade {
+  0% { opacity: 0; transform: translate(-50%, -10px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -10px); }
+}
 .onlineCount{font-size:11px;color:var(--muted);}
 #authBox{display:flex;justify-content:center;margin:12px 0;}
 .google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;}
@@ -390,6 +401,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 .room-subtitle:hover {
   color: #fff;                  /* subtle hover effect */
+}
+
+.featured-avatar {
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.featured-avatar.active {
+  border-color: #ff4081; /* pink outline */
+  transform: scale(1.05);
 }
 
 /* ---------- Overlay ---------- */
