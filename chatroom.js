@@ -1037,7 +1037,7 @@ replaceStarsWithSVG();
   });
 })();
 
-/* DOM Elements */
+/* ---------- DOM Elements ---------- */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
 const closeModal = document.querySelector(".featured-close");
@@ -1050,13 +1050,12 @@ const giftSlider = document.getElementById("giftSlider");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
-const whatsappLink = document.getElementById("whatsappLink");
-const telegramLink = document.getElementById("telegramLink");
+const socialsEl = document.querySelector(".featured-host-socials");
 
 let hosts = [];
 let currentIndex = 0;
 
-/* Fetch featured hosts */
+/* ---------- Fetch Featured Hosts ---------- */
 async function fetchFeaturedHosts() {
   const snapshot = await getDocs(collection(db, "featuredHosts"));
   hosts = snapshot.docs.map(docSnap => ({
@@ -1070,23 +1069,26 @@ async function fetchFeaturedHosts() {
   loadHost(0);
 }
 
-/* Render avatars */
+/* ---------- Render Avatars ---------- */
 function renderHostAvatars() {
   hostListEl.innerHTML = "";
   hosts.forEach((host, idx) => {
     const img = document.createElement("img");
     img.src = host.popupPhoto || "";
     img.alt = host.chatId || "Host";
+    img.classList.add("featured-avatar");
     if (idx === 0) img.classList.add("active");
+
     img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
   });
 }
 
-/* Load host */
+/* ---------- Load Host ---------- */
 function loadHost(idx) {
   currentIndex = idx;
   const host = hosts[idx];
+  if (!host) return;
 
   // 🎥 Video
   videoFrame.src = host.videoUrl || "";
@@ -1095,37 +1097,44 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Description line (instead of Age | Fruit)
+  // 💋 Description line
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const nature = host.naturePick || "chill";
-
-  // Random emoji flair
   const flair = gender === "male" ? "😎" : "💋";
-  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
-  detailsEl.textContent = textLine;
+  detailsEl.textContent = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  // Hide socials entirely (for space)
-  document.querySelector(".featured-host-socials").style.display = "none";
-
-  // 🌟 Active avatar highlight
+  // 🌟 Avatar Highlight
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
+
+  // Hide socials
+  socialsEl.style.display = "none";
 
   // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 }
 
-/* Gift slider */
+/* ---------- Gift Slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
 });
 
-/* Send gift */
+/* ---------- Show Star Popup ---------- */
+function showStarPopup(hostName, stars) {
+  const popup = document.createElement("div");
+  popup.className = "star-popup";
+  popup.innerHTML = `⭐️ +${stars} to <b>${hostName}</b>`;
+  document.body.appendChild(popup);
+  setTimeout(() => popup.classList.add("visible"), 10);
+  setTimeout(() => popup.remove(), 2200);
+}
+
+/* ---------- Send Gift ---------- */
 giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
   const giftStars = parseInt(giftSlider.value, 10);
@@ -1137,10 +1146,10 @@ giftBtn.addEventListener("click", async () => {
     starsGifted: increment(giftStars)
   });
 
-  alert(`Gifted ${giftStars} ⭐️ to ${host.chatId}`);
+  showStarPopup(host.chatId, giftStars);
 });
 
-/* Navigation */
+/* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
   e.preventDefault();
   loadHost((currentIndex - 1 + hosts.length) % hosts.length);
@@ -1150,7 +1159,7 @@ nextBtn.addEventListener("click", e => {
   loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* Modal open/close */
+/* ---------- Modal Control ---------- */
 openBtn.addEventListener("click", () => {
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
@@ -1161,5 +1170,5 @@ window.addEventListener("click", e => {
   if (e.target === modal) modal.style.display = "none";
 });
 
-/* Init */
+/* ---------- Init ---------- */
 fetchFeaturedHosts();
