@@ -1037,141 +1037,131 @@ replaceStarsWithSVG();
   });
 })();
 
-// DOM Elements
+const firebaseConfig = { /* your config here */ };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* DOM Elements */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
-const closeBtn = modal.querySelector(".featured-close");
-
-const hostVideo = document.getElementById("featuredHostVideo");
-const hostUsername = document.getElementById("featuredHostUsername");
-const hostDetails = document.getElementById("featuredHostDetails");
-const hostList = document.getElementById("featuredHostList");
-
-const giftSlider = document.getElementById("giftSlider");
-const giftAmountDisplay = document.getElementById("giftAmount");
+const closeModal = document.querySelector(".featured-close");
+const videoFrame = document.getElementById("featuredHostVideo");
+const usernameEl = document.getElementById("featuredHostUsername");
+const detailsEl = document.getElementById("featuredHostDetails");
+const hostListEl = document.getElementById("featuredHostList");
 const giftBtn = document.getElementById("featuredGiftBtn");
-
-const prevHostBtn = document.getElementById("prevHost");
-const nextHostBtn = document.getElementById("nextHost");
-
+const giftSlider = document.getElementById("giftSlider");
+const giftAmountEl = document.getElementById("giftAmount");
+const prevBtn = document.getElementById("prevHost");
+const nextBtn = document.getElementById("nextHost");
 const whatsappLink = document.getElementById("whatsappLink");
 const telegramLink = document.getElementById("telegramLink");
 
-let featuredHosts = [];
+let hosts = [];
 let currentIndex = 0;
 
-// Open modal on button click
-openBtn.addEventListener("click", async () => {
-  modal.style.display = "block";
-  if (featuredHosts.length === 0) {
-    await loadFeaturedHosts();
-    renderHost(currentIndex);
-    renderAvatars();
+/* Fetch featured hosts */
+async function fetchFeaturedHosts() {
+  const snapshot = await getDocs(collection(db, "featuredHosts"));
+  hosts = snapshot.docs.map(doc => doc.data());
+  renderHostAvatars();
+  if (hosts.length) loadHost(0);
+}
+
+/* Render avatars */
+function renderHostAvatars() {
+  hostListEl.innerHTML = "";
+  hosts.forEach((host, idx) => {
+    const img = document.createElement("img");
+    img.src = host.popupPhoto;
+    if (idx === 0) img.classList.add("active");
+    img.addEventListener("click", () => loadHost(idx));
+    hostListEl.appendChild(img);
+  });
+}
+
+/* Load host data */
+function loadHost(idx) {
+  currentIndex = idx;
+  const host = hosts[idx];
+
+  // Update iframe src
+  videoFrame.src = host.videoUrl;
+
+  // Username & color
+  usernameEl.textContent = host.chatId;
+  usernameEl.style.color = host.usernameColor || "#fff";
+
+  // Details (age & fruit)
+  const age = host.age || "";
+  const fruit = host.fruitPick || "";
+  detailsEl.textContent = `Age: ${age} | Fruit: ${fruit}`;
+
+  // Social links
+  if (host.whatsappLink) {
+    whatsappLink.href = host.whatsappLink;
+    whatsappLink.classList.remove("faded");
+  } else {
+    whatsappLink.href = "#";
+    whatsappLink.classList.add("faded");
   }
+
+  if (host.telegramLink) {
+    telegramLink.href = host.telegramLink;
+    telegramLink.classList.remove("faded");
+  } else {
+    telegramLink.href = "#";
+    telegramLink.classList.add("faded");
+  }
+
+  // Update active avatar
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === idx);
+  });
+
+  // Reset slider
+  giftSlider.value = 1;
+  giftAmountEl.textContent = "1";
+}
+
+/* Gift slider */
+giftSlider.addEventListener("input", () => {
+  giftAmountEl.textContent = giftSlider.value;
 });
 
-// Close modal
-closeBtn.addEventListener("click", () => modal.style.display = "none");
-window.addEventListener("click", e => {
+/* Send gift */
+giftBtn.addEventListener("click", async () => {
+  const host = hosts[currentIndex];
+  const giftStars = parseInt(giftSlider.value);
+
+  const hostRef = doc(db, "featuredHosts", host.chatId);
+  await updateDoc(hostRef, {
+    stars: increment(giftStars),
+    starsGifted: increment(giftStars)
+  });
+
+  alert(`Gifted ${giftStars} ⭐ to ${host.chatId}`);
+});
+
+/* Navigation */
+prevBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  const nextIndex = (currentIndex - 1 + hosts.length) % hosts.length;
+  loadHost(nextIndex);
+});
+nextBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  const nextIndex = (currentIndex + 1) % hosts.length;
+  loadHost(nextIndex);
+});
+
+/* Modal open/close */
+openBtn.addEventListener("click", () => { modal.style.display = "block"; });
+closeModal.addEventListener("click", () => { modal.style.display = "none"; });
+
+window.addEventListener("click", (e) => {
   if (e.target === modal) modal.style.display = "none";
 });
 
-// Load featured hosts from Firestore
-async function loadFeaturedHosts() {
-  const querySnapshot = await getDocs(collection(db, "featuredHosts"));
-  featuredHosts = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-}
-
-// Render a host by index
-function renderHost(index) {
-  if (!featuredHosts[index]) return;
-
-  const host = featuredHosts[index];
-
-  // Video
-  hostVideo.src = host.videoUrl;
-
-  // Username + color
-  hostUsername.textContent = host.chatId;
-  hostUsername.style.color = host.usernameColor || "#fff";
-
-  // Details: Age + Fruit
-  const age = host.age || "N/A";
-  const fruit = host.fruitPick || "";
-  hostDetails.textContent = `Age: ${age} | Fruit: ${fruit}`;
-
-  // Socials
-  if (host.whatsapp) {
-    whatsappLink.href = host.whatsapp;
-    whatsappLink.classList.remove("disabled");
-  } else {
-    whatsappLink.href = "#";
-    whatsappLink.classList.add("disabled");
-  }
-
-  if (host.telegram) {
-    telegramLink.href = host.telegram;
-    telegramLink.classList.remove("disabled");
-  } else {
-    telegramLink.href = "#";
-    telegramLink.classList.add("disabled");
-  }
-
-  // Highlight avatar
-  Array.from(hostList.children).forEach((img, i) => {
-    img.classList.toggle("active", i === index);
-  });
-}
-
-// Render avatars
-function renderAvatars() {
-  hostList.innerHTML = "";
-  featuredHosts.forEach((host, i) => {
-    const img = document.createElement("img");
-    img.src = host.popupPhoto;
-    img.alt = host.chatId;
-    img.classList.toggle("active", i === currentIndex);
-    img.addEventListener("click", () => {
-      currentIndex = i;
-      renderHost(currentIndex);
-    });
-    hostList.appendChild(img);
-  });
-}
-
-// Navigation buttons
-prevHostBtn.addEventListener("click", e => {
-  e.preventDefault();
-  currentIndex = (currentIndex - 1 + featuredHosts.length) % featuredHosts.length;
-  renderHost(currentIndex);
-});
-
-nextHostBtn.addEventListener("click", e => {
-  e.preventDefault();
-  currentIndex = (currentIndex + 1) % featuredHosts.length;
-  renderHost(currentIndex);
-});
-
-// Gift slider live update
-giftSlider.addEventListener("input", () => {
-  giftAmountDisplay.textContent = `${giftSlider.value} ⭐`;
-});
-
-// Send gift
-giftBtn.addEventListener("click", async () => {
-  const host = featuredHosts[currentIndex];
-  if (!host) return;
-  const amount = parseInt(giftSlider.value);
-  if (amount <= 0) return;
-
-  const hostRef = doc(db, "featuredHosts", host.id);
-  await updateDoc(hostRef, {
-    stars: increment(amount),
-    starsGifted: increment(amount)
-  });
-
-  alert(`Sent ${amount} ⭐ to ${host.chatId}!`);
-});
+/* Init */
+fetchFeaturedHosts();
