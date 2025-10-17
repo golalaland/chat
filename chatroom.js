@@ -1037,151 +1037,131 @@ replaceStarsWithSVG();
   });
 })();
 
-/* ------------------- DOM Elements ------------------- */
-const openHostsBtn = document.getElementById("openHostsBtn");
-const featuredModal = document.getElementById("featuredHostsModal");
-const closeModalBtn = featuredModal.querySelector(".featured-close");
+/* DOM Elements */
+const openBtn = document.getElementById("openHostsBtn");
+const modal = document.getElementById("featuredHostsModal");
+const closeModal = document.querySelector(".featured-close");
+const videoFrame = document.getElementById("featuredHostVideo");
+const usernameEl = document.getElementById("featuredHostUsername");
+const detailsEl = document.getElementById("featuredHostDetails");
+const hostListEl = document.getElementById("featuredHostList");
+const giftBtn = document.getElementById("featuredGiftBtn");
+const giftSlider = document.getElementById("giftSlider");
+const giftAmountEl = document.getElementById("giftAmount");
+const prevBtn = document.getElementById("prevHost");
+const nextBtn = document.getElementById("nextHost");
+const whatsappLink = document.getElementById("whatsappLink");
+const telegramLink = document.getElementById("telegramLink");
 
-const hostVideo = document.getElementById("featuredHostVideo");
-const hostUsername = document.getElementById("featuredHostUsername");
-const hostDetails = document.getElementById("featuredHostDetails");
-const hostList = document.getElementById("featuredHostList");
-const prevHostBtn = document.getElementById("prevHost");
-const nextHostBtn = document.getElementById("nextHost");
-const featuredGiftBtn = document.getElementById("featuredGiftBtn");
-
-/* ------------------- Gift Slider ------------------- */
-const giftSliderContainer = document.createElement("div");
-giftSliderContainer.classList.add("gift-slider-container");
-
-const giftSlider = document.createElement("input");
-giftSlider.type = "range";
-giftSlider.min = 1;
-giftSlider.max = 999;
-giftSlider.value = 1;
-giftSlider.id = "giftSlider";
-
-const sliderValueDisplay = document.createElement("span");
-sliderValueDisplay.textContent = giftSlider.value;
-
-giftSliderContainer.appendChild(giftSlider);
-giftSliderContainer.appendChild(sliderValueDisplay);
-featuredGiftBtn.parentElement.appendChild(giftSliderContainer);
-
-/* ------------------- State ------------------- */
-let featuredHostsData = [];
+let hosts = [];
 let currentIndex = 0;
 
-/* ------------------- Modal Open/Close ------------------- */
-openHostsBtn.addEventListener("click", () => {
-  featuredModal.style.display = "block";
-  loadFeaturedHosts();
-});
+/* Fetch featured hosts safely */
+async function fetchFeaturedHosts() {
+  const snapshot = await getDocs(collection(db, "featuredHosts"));
+  hosts = snapshot.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
 
-closeModalBtn.addEventListener("click", () => {
-  featuredModal.style.display = "none";
-});
+  if (!hosts.length) return;
 
-window.addEventListener("click", (e) => {
-  if (e.target === featuredModal) featuredModal.style.display = "none";
-});
-
-/* ------------------- Slider Update ------------------- */
-giftSlider.addEventListener("input", () => {
-  sliderValueDisplay.textContent = giftSlider.value;
-});
-
-/* ------------------- Navigation ------------------- */
-prevHostBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  if (!featuredHostsData.length) return;
-  currentIndex = (currentIndex - 1 + featuredHostsData.length) % featuredHostsData.length;
-  displayHost(currentIndex);
-});
-
-nextHostBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  if (!featuredHostsData.length) return;
-  currentIndex = (currentIndex + 1) % featuredHostsData.length;
-  displayHost(currentIndex);
-});
-
-/* ------------------- Firestore Load ------------------- */
-async function loadFeaturedHosts() {
-  const querySnapshot = await getDocs(collection(db, "featuredHosts"));
-  featuredHostsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
-  if (featuredHostsData.length > 0) {
-    currentIndex = 0;
-    displayHost(currentIndex);
-    populateAvatars();
-  }
+  renderHostAvatars();
+  loadHost(0);
 }
 
-/* ------------------- Display Host ------------------- */
-function displayHost(index) {
-  const host = featuredHostsData[index];
-  if (!host) return;
-
-  hostVideo.src = host.videoUrl || "";
-  hostUsername.textContent = host.chatId || "Unknown";
-  hostUsername.style.color = host.usernameColor || "#fff";
-
-  hostDetails.innerHTML = `
-    <div class="host-info">
-      ${host.age || ""}<br>
-      ${host.fruitPick || ""}
-    </div>
-    <div class="featured-host-socials">
-      <a href="${host.whatsapp || "#"}" target="_blank" class="${host.whatsapp ? "" : "faded"}">
-        <img src="whatsapp_icon.png" alt="WhatsApp"/>
-      </a>
-      <a href="${host.telegram || "#"}" target="_blank" class="${host.telegram ? "" : "faded"}">
-        <img src="telegram_icon.png" alt="Telegram"/>
-      </a>
-    </div>
-  `;
-
-  // Highlight avatar
-  Array.from(hostList.children).forEach((img, i) => {
-    img.classList.toggle("active", i === index);
-  });
-}
-
-/* ------------------- Populate Avatars ------------------- */
-function populateAvatars() {
-  hostList.innerHTML = "";
-  featuredHostsData.forEach((host, i) => {
+/* Render avatars */
+function renderHostAvatars() {
+  hostListEl.innerHTML = "";
+  hosts.forEach((host, idx) => {
     const img = document.createElement("img");
     img.src = host.popupPhoto || "";
-    img.classList.toggle("active", i === currentIndex);
-    img.addEventListener("click", () => {
-      currentIndex = i;
-      displayHost(currentIndex);
-    });
-    hostList.appendChild(img);
+    if (idx === 0) img.classList.add("active");
+    img.addEventListener("click", () => loadHost(idx));
+    hostListEl.appendChild(img);
   });
 }
 
-/* ------------------- Gift Stars ------------------- */
-featuredGiftBtn.addEventListener("click", async () => {
-  const host = featuredHostsData[currentIndex];
-  if (!host) return;
+/* Load host */
+function loadHost(idx) {
+  currentIndex = idx;
+  const host = hosts[idx];
 
-  const starsToGift = parseInt(giftSlider.value, 10);
-  const hostRef = doc(db, "featuredHosts", host.id);
+  // Video
+  videoFrame.src = host.videoUrl || "";
 
-  try {
-    await updateDoc(hostRef, {
-      stars: increment(starsToGift),
-      starsGifted: increment(starsToGift)
-    });
-    alert(`You gifted ${starsToGift} stars to ${host.chatId}`);
-  } catch (error) {
-    console.error("Error gifting stars:", error);
-    alert("Failed to gift stars. Try again.");
+  // Username
+  usernameEl.textContent = host.chatId || "";
+  usernameEl.style.color = host.usernameColor || "#fff";
+
+  // Age + Fruit
+  const age = host.age || "";
+  const fruit = host.fruitPick || "";
+  detailsEl.textContent = `Age: ${age} | Fruit: ${fruit}`;
+
+  // Social icons
+  if (host.whatsappLink) {
+    whatsappLink.href = host.whatsappLink;
+    whatsappLink.classList.remove("faded");
+  } else {
+    whatsappLink.href = "#";
+    whatsappLink.classList.add("faded");
   }
+
+  if (host.telegramLink) {
+    telegramLink.href = host.telegramLink;
+    telegramLink.classList.remove("faded");
+  } else {
+    telegramLink.href = "#";
+    telegramLink.classList.add("faded");
+  }
+
+  // Active avatar
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === idx);
+  });
+
+  // Reset slider
+  giftSlider.value = 1;
+  giftAmountEl.textContent = "1";
+}
+
+/* Gift slider */
+giftSlider.addEventListener("input", () => {
+  giftAmountEl.textContent = giftSlider.value;
 });
 
-/* ------------------- Initialize ------------------- */
-loadFeaturedHosts();
+/* Send gift */
+giftBtn.addEventListener("click", async () => {
+  const host = hosts[currentIndex];
+  const giftStars = parseInt(giftSlider.value, 10);
+  if (!host.id) return;
+
+  const hostRef = doc(db, "featuredHosts", host.id);
+  await updateDoc(hostRef, {
+    stars: increment(giftStars),
+    starsGifted: increment(giftStars)
+  });
+
+  alert(`Gifted ${giftStars} ⭐ to ${host.chatId}`);
+});
+
+/* Navigation */
+prevBtn.addEventListener("click", e => {
+  e.preventDefault();
+  loadHost((currentIndex - 1 + hosts.length) % hosts.length);
+});
+nextBtn.addEventListener("click", e => {
+  e.preventDefault();
+  loadHost((currentIndex + 1) % hosts.length);
+});
+
+/* Modal open/close */
+openBtn.addEventListener("click", () => modal.style.display = "block");
+closeModal.addEventListener("click", () => modal.style.display = "none");
+window.addEventListener("click", e => {
+  if (e.target === modal) modal.style.display = "none";
+});
+
+/* Init */
+fetchFeaturedHosts();
