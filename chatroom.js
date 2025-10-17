@@ -1037,113 +1037,124 @@ replaceStarsWithSVG();
   });
 })();
 
-/* DOM Elements */
-const openBtn = document.getElementById("openHostsBtn");
-const modal = document.getElementById("featuredHostsModal");
+const openHostsBtn = document.getElementById("openHostsBtn");
+const featuredModal = document.getElementById("featuredHostsModal");
 const closeModal = document.querySelector(".featured-close");
-const videoFrame = document.getElementById("featuredHostVideo");
-const usernameEl = document.getElementById("featuredHostUsername");
-const detailsEl = document.getElementById("featuredHostDetails");
-const hostListEl = document.getElementById("featuredHostList");
-const giftBtn = document.getElementById("featuredGiftBtn");
-const giftSlider = document.getElementById("giftSlider");
-const giftAmountEl = document.getElementById("giftAmount");
-const prevBtn = document.getElementById("prevHost");
-const nextBtn = document.getElementById("nextHost");
-const whatsappLink = document.getElementById("whatsappLink");
-const telegramLink = document.getElementById("telegramLink");
 
-let hosts = [];
+const hostVideo = document.getElementById("featuredHostVideo");
+const hostUsername = document.getElementById("featuredHostUsername");
+const hostDetails = document.getElementById("featuredHostDetails");
+const hostList = document.getElementById("featuredHostList");
+const prevHostBtn = document.getElementById("prevHost");
+const nextHostBtn = document.getElementById("nextHost");
+
+const giftSlider = document.createElement("input");
+giftSlider.type = "range";
+giftSlider.min = 1;
+giftSlider.max = 999;
+giftSlider.value = 1;
+giftSlider.id = "giftSlider";
+
+const sliderValueDisplay = document.createElement("span");
+sliderValueDisplay.textContent = giftSlider.value;
+
+const giftContainer = document.createElement("div");
+giftContainer.classList.add("gift-slider-container");
+giftContainer.appendChild(giftSlider);
+giftContainer.appendChild(sliderValueDisplay);
+
+const featuredGiftBtn = document.getElementById("featuredGiftBtn");
+document.querySelector(".featured-host-footer").appendChild(giftContainer);
+
+let featuredHostsData = [];
 let currentIndex = 0;
 
-/* Fetch featured hosts safely */
-async function fetchFeaturedHosts() {
-  const snapshot = await getDocs(collection(db, "featuredHosts"));
-  hosts = snapshot.docs.map(docSnap => ({
-    id: docSnap.id,
-    ...docSnap.data()
-  }));
-
-  if (!hosts.length) return;
-
-  renderHostAvatars();
-  loadHost(0);
-}
-
-/* Render avatars */
-function renderHostAvatars() {
-  hostListEl.innerHTML = "";
-  hosts.forEach((host, idx) => {
-    const img = document.createElement("img");
-    img.src = host.popupPhoto || "";
-    if (idx === 0) img.classList.add("active");
-    img.addEventListener("click", () => loadHost(idx));
-    hostListEl.appendChild(img);
-  });
-}
-
-/* Load host */
-function loadHost(idx) {
-  currentIndex = idx;
-  const host = hosts[idx];
-
-  // Video
-  videoFrame.src = host.videoUrl || "";
-
-  // Username
-  usernameEl.textContent = host.chatId || "";
-  usernameEl.style.color = host.usernameColor || "#fff";
-
-  // Age + Fruit
-  const age = host.age || "";
-  const fruit = host.fruitPick || "";
-  detailsEl.textContent = `Age: ${age} | Fruit: ${fruit}`;
-
-  // Social icons
-  if (host.whatsappLink) {
-    whatsappLink.href = host.whatsappLink;
-    whatsappLink.classList.remove("faded");
-  } else {
-    whatsappLink.href = "#";
-    whatsappLink.classList.add("faded");
-  }
-
-  if (host.telegramLink) {
-    telegramLink.href = host.telegramLink;
-    telegramLink.classList.remove("faded");
-  } else {
-    telegramLink.href = "#";
-    telegramLink.classList.add("faded");
-  }
-
-  // Active avatar
-  hostListEl.querySelectorAll("img").forEach((img, i) => {
-    img.classList.toggle("active", i === idx);
-  });
-
-  // Reset slider
-  giftSlider.value = 1;
-  giftAmountEl.textContent = "1";
-}
-
-/* Gift slider */
-giftSlider.addEventListener("input", () => {
-  giftAmountEl.textContent = giftSlider.value;
+// Open modal
+openHostsBtn.addEventListener("click", () => {
+  featuredModal.style.display = "block";
+  loadFeaturedHosts();
 });
 
-/* Send gift */
-giftBtn.addEventListener("click", async () => {
-  const host = hosts[currentIndex];
-  const giftStars = parseInt(giftSlider.value, 10);
-  if (!host.id) return;
+// Close modal
+closeModal.addEventListener("click", () => {
+  featuredModal.style.display = "none";
+});
 
+// Slider updates display
+giftSlider.addEventListener("input", () => {
+  sliderValueDisplay.textContent = giftSlider.value;
+});
+
+// Navigation
+prevHostBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (featuredHostsData.length === 0) return;
+  currentIndex = (currentIndex - 1 + featuredHostsData.length) % featuredHostsData.length;
+  displayHost(currentIndex);
+});
+
+nextHostBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (featuredHostsData.length === 0) return;
+  currentIndex = (currentIndex + 1) % featuredHostsData.length;
+  displayHost(currentIndex);
+});
+
+// Load featured hosts from Firestore
+async function loadFeaturedHosts() {
+  const querySnapshot = await getDocs(collection(db, "featuredHosts"));
+  featuredHostsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (featuredHostsData.length > 0) {
+    displayHost(0);
+    populateAvatars();
+  }
+}
+
+// Display a host
+function displayHost(index) {
+  const host = featuredHostsData[index];
+  hostVideo.src = host.videoUrl; // portrait fill
+  hostUsername.textContent = host.chatId;
+  hostUsername.style.color = host.usernameColor || "#fff";
+
+  hostDetails.innerHTML = `${host.age}<br>${host.fruitPick || ""}`;
+
+  // Social icons
+  let socialsHTML = '<div class="featured-host-socials">';
+  socialsHTML += `<a href="${host.whatsapp || "#"}" target="_blank" class="${host.whatsapp ? "" : "faded"}"><img src="whatsapp_icon.png" /></a>`;
+  socialsHTML += `<a href="${host.telegram || "#"}" target="_blank" class="${host.telegram ? "" : "faded"}"><img src="telegram_icon.png" /></a>`;
+  socialsHTML += '</div>';
+  hostDetails.innerHTML += socialsHTML;
+
+  // Highlight active avatar
+  Array.from(hostList.children).forEach((img, i) => img.classList.toggle("active", i === index));
+}
+
+// Populate avatars
+function populateAvatars() {
+  hostList.innerHTML = "";
+  featuredHostsData.forEach((host, i) => {
+    const img = document.createElement("img");
+    img.src = host.popupPhoto;
+    img.classList.toggle("active", i === currentIndex);
+    img.addEventListener("click", () => {
+      currentIndex = i;
+      displayHost(currentIndex);
+    });
+    hostList.appendChild(img);
+  });
+}
+
+// Gift stars
+featuredGiftBtn.addEventListener("click", async () => {
+  const host = featuredHostsData[currentIndex];
+  const starsToGift = parseInt(giftSlider.value, 10);
   const hostRef = doc(db, "featuredHosts", host.id);
   await updateDoc(hostRef, {
-    stars: increment(giftStars),
-    starsGifted: increment(giftStars)
+    stars: increment(starsToGift),
+    starsGifted: increment(starsToGift)
   });
-
-  alert(`Gifted ${giftStars} ⭐ to ${host.chatId}`);
+  alert(`You gifted ${starsToGift} stars to ${host.chatId}`);
 });
 
 /* Navigation */
