@@ -783,14 +783,21 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   z-index: 10;
 }
 
-.featured-host-video-container iframe {
+.featured-host-video-container {
   width: 100%;
-  height: 320px; /* taller video for immersive view */
-  border: none;
+  position: relative;
+  overflow: hidden;
   border-radius: 12px 12px 0 0;
-  object-fit: cover;
+  height: 420px; /* taller for immersive portrait feel */
 }
 
+.featured-host-video-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  object-fit: cover; /* fills the container, crops sides if necessary */
+  border-radius: 12px 12px 0 0;
+}
 .featured-host-footer {
   display: flex;
   justify-content: space-between;
