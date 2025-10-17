@@ -742,7 +742,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-btn:hover { transform: scale(1.05); }
 
-
 /* 🌟 Featured Hosts Modal */
 .featured-modal {
   display: none;
@@ -753,101 +752,117 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   width: 100%;
   height: 100%;
   overflow: auto;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(10px);
 }
 
 .featured-modal-content {
   position: relative;
-  margin: 5% auto;
+  margin: 3% auto;
   background: #111;
-  border-radius: 12px;
-  padding: 0;
+  border-radius: 14px;
   width: 90%;
   max-width: 500px;
   color: #fff;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 25px rgba(255,255,255,0.1);
   overflow: hidden;
+  padding-bottom: 10px;
 }
 
 .featured-close {
   position: absolute;
-  top: 10px;
-  right: 15px;
+  top: 12px;
+  right: 16px;
   color: #fff;
-  font-size: 24px;
+  font-size: 26px;
   cursor: pointer;
   z-index: 10;
 }
 
-.featured-host-video-container iframe {
+/* Video */
+.featured-host-top iframe {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16/9;
   border: none;
   border-radius: 12px 12px 0 0;
 }
 
-.featured-host-footer {
+/* Info row */
+.featured-host-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
   background: #1a1a1a;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.featured-host-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .featured-host-username {
   font-weight: 600;
-  font-size: 1.1em;
+  font-size: 1.2em;
 }
 
 .featured-host-details {
-  font-size: 0.85em;
-  margin-top: 2px;
+  font-size: 0.95em;
   color: #ccc;
+  margin-top: 4px;
 }
 
-.gift-container {
+/* Social icons */
+.featured-host-socials a {
+  margin-left: 10px;
+}
+.featured-host-socials img {
+  width: 28px;
+  height: 28px;
+  opacity: 1;
+  transition: 0.3s;
+}
+.featured-host-socials a.disabled img {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Gift slider */
+#giftSliderContainer {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+#giftSlider {
+  flex: 1;
+  margin-right: 10px;
+}
+#giftAmount {
+  min-width: 50px;
+  text-align: right;
 }
 
-.gift-container input[type="range"] {
-  width: 100px;
-}
-
+/* Gift button */
 .featured-gift-btn {
   background: linear-gradient(135deg, #ff4081, #ff80ab);
   border: none;
   color: #fff;
-  padding: 6px 10px;
+  padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
   transition: 0.3s;
 }
-.featured-gift-btn:hover {
-  opacity: 0.85;
-}
+.featured-gift-btn:hover { opacity: 0.85; }
 
-.featured-nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin: 8px 0;
-  padding: 0 12px;
-}
-.featured-nav-buttons a {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-}
-
+/* Avatar list */
 .featured-host-list {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px;
+  padding: 10px 12px;
 }
 .featured-host-list img {
   width: 50px;
@@ -859,6 +874,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-host-list img.active {
   border: 2px solid #ff4081;
+}
+
+/* Navigation */
+.featured-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 12px 10px;
+}
+.featured-nav-buttons a {
+  color: #fff;
+  font-size: 16px;
+  text-decoration: none;
 }
 </style>
 </head>
@@ -898,21 +925,29 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   <div class="featured-modal-content">
     <span class="featured-close">&times;</span>
 
-    <div class="featured-host-video-container">
+    <div class="featured-host-top">
       <iframe id="featuredHostVideo" allowfullscreen frameborder="0"></iframe>
+    </div>
 
-      <div class="featured-host-footer">
-        <div>
-          <div class="featured-host-username" id="featuredHostUsername"></div>
-          <div class="featured-host-details" id="featuredHostDetails"></div>
-        </div>
-
-        <div class="gift-container">
-          <input type="range" id="giftSlider" min="1" value="1">
-          <span id="giftCount">1</span>
-          <button class="featured-gift-btn" id="featuredGiftBtn">🎁 Send</button>
-        </div>
+    <div class="featured-host-info">
+      <div class="featured-host-text">
+        <div class="featured-host-username" id="featuredHostUsername"></div>
+        <div class="featured-host-details" id="featuredHostDetails"></div>
       </div>
+      <div class="featured-host-socials">
+        <a href="#" target="_blank" id="whatsappLink">
+          <img src="https://img.icons8.com/ios-glyphs/30/ffffff/whatsapp.png" alt="WhatsApp">
+        </a>
+        <a href="#" target="_blank" id="telegramLink">
+          <img src="https://img.icons8.com/ios-glyphs/30/ffffff/telegram-app.png" alt="Telegram">
+        </a>
+      </div>
+    </div>
+
+    <div id="giftSliderContainer">
+      <input type="range" id="giftSlider" min="1" max="999" value="1">
+      <span id="giftAmount">1 ⭐</span>
+      <button class="featured-gift-btn" id="featuredGiftBtn">🎁 Send Gift</button>
     </div>
 
     <div class="featured-host-list" id="featuredHostList">
