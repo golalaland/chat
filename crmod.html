@@ -743,8 +743,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .featured-btn:hover { transform: scale(1.05); }
 
 /* ==============================
-   🌟 Featured Hosts Modal (FULL)
-   Centered + scrollable modal content
+   🌟 Compact Featured Hosts Modal
+   (shorter video, tighter layout)
    ============================== */
 
 .featured-modal {
@@ -759,57 +759,50 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   backdrop-filter: blur(8px);
   justify-content: center;
   align-items: center;
-  padding: 20px;
-  overflow-y: auto; /* allows page-level scroll if needed (modal centered with breathing space) */
+  padding: 10px;
+  overflow-y: auto;
 }
 
-/* Centered modal content with bounded height and internal scroll */
+/* Reduced modal size & compact structure */
 .featured-modal-content {
   position: relative;
   background: #111;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 360px;            /* slightly smaller, fits phones & small desktop */
+  border-radius: 14px;
+  width: 88%;
+  max-width: 320px;
   color: #fff;
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  overflow: hidden;            /* keep rounded corners clean; internal scroll handled below */
-  max-height: calc(100vh - 60px); /* ensure it never exceeds viewport (allow room for padding) */
+  overflow: hidden;
   animation: modalPop 0.25s ease-out;
-}
-
-/* Make the inside area scrollable while keeping header/video pinned at top if you want */
-/* If you want the video to stay visible while only details scroll, you can wrap details in a scroll area.
-   But since HTML doesn't include an explicit wrapper, make the content scrollable overall: */
-.featured-modal-content {
-  overflow-y: auto; /* allows inner scrolling for content taller than max-height */
-  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+  max-height: calc(90vh - 30px);
+  overflow-y: auto;
 }
 
 /* Close button */
 .featured-close {
   position: absolute;
-  top: 10px;
-  right: 15px;
+  top: 8px;
+  right: 12px;
   color: #fff;
-  font-size: 22px;
+  font-size: 20px;
   cursor: pointer;
-  opacity: 0.9;
-  z-index: 12;
-  transition: opacity 0.18s ease;
+  opacity: 0.8;
+  z-index: 10;
+  transition: opacity 0.2s ease;
 }
 .featured-close:hover { opacity: 1; }
 
-/* Portrait video container */
+/* 🌸 Smaller Portrait video (less height but same ratio look) */
 .featured-host-video-container {
   width: 100%;
-  aspect-ratio: 9 / 16;
-  position: relative;
-  border-radius: 12px 12px 0 0;
-  overflow: hidden;
+  aspect-ratio: 9 / 13; /* reduced height */
   background: #000;
+  position: relative;
+  overflow: hidden;
   flex-shrink: 0;
+  border-radius: 14px 14px 0 0;
 }
 
 .featured-host-video-container iframe {
@@ -817,113 +810,104 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   height: 100%;
   border: none;
   object-fit: cover;
-  display: block;
 }
 
-/* Footer info area */
+/* Footer info area — tighter padding & smaller font */
 .featured-host-footer {
-  padding: 12px 16px;
+  padding: 10px 12px;
   background: #1a1a1a;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: 0.95rem;
-  line-height: 1.4;
+  gap: 6px;
+  font-size: 0.9rem;
+  line-height: 1.35;
 }
 
-/* small typographic tweaks */
+/* Text details */
 .featured-host-username {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .featured-host-details {
-  font-size: 0.9em;
-  opacity: 0.85;
-  margin-bottom: 6px;
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin-bottom: 4px;
 }
 
-/* socials */
+/* Social icons */
 .featured-host-socials {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 .featured-host-socials a img {
-  width: 24px;
-  height: 24px;
-  margin-right: 6px;
+  width: 20px;
+  height: 20px;
   opacity: 1;
   transition: 0.2s;
-  display: inline-block;
 }
 .featured-host-socials a.faded img {
   opacity: 0.3;
   pointer-events: none;
 }
 
-/* Gift slider + controls */
+/* Gift slider */
 .gift-slider-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   box-sizing: border-box;
 }
-
-/* range input gets full width inside container */
 #giftSlider {
   flex: 1;
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
+  height: 5px;
   border-radius: 999px;
   background: linear-gradient(90deg,#333,#222);
   outline: none;
 }
 
-/* featured gift button */
+/* Gift button */
 .featured-gift-btn {
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
   background: linear-gradient(135deg,#ff4081,#ff80ab);
   border: none;
   color: #fff;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
-/* Avatar list */
+/* Avatars */
 .featured-host-list {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px;
-  background: transparent;
+  gap: 6px;
+  padding: 6px;
 }
-
 .featured-host-list img {
-  width: 50px;
-  height: 50px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border 0.18s, transform 0.18s;
+  transition: border 0.2s, transform 0.2s;
 }
-.featured-host-list img:hover { transform: translateY(-4px); }
-.featured-host-list img.active {
-  border: 2px solid #ff4081;
-}
+.featured-host-list img:hover { transform: translateY(-3px); }
+.featured-host-list img.active { border: 2px solid #ff4081; }
 
-/* Nav buttons area at bottom */
+/* Nav buttons */
 .featured-nav-buttons {
   display: flex;
   justify-content: space-between;
-  padding: 8px 16px 18px;
+  padding: 6px 12px 12px;
   background: #111;
-  flex-shrink: 0;
+  font-size: 0.9rem;
 }
 .featured-nav-buttons a {
   color: #fff;
@@ -931,17 +915,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   font-weight: 600;
 }
 
-/* little responsive tuning */
-@media (min-width: 720px) {
-  .featured-modal-content {
-    max-width: 420px;
-  }
-}
-
 /* Pop animation */
 @keyframes modalPop {
-  from { transform: scale(0.96); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Slightly bigger on larger screens */
+@media (min-width: 720px) {
+  .featured-modal-content {
+    max-width: 360px;
+  }
 }
 </style>
 </head>
