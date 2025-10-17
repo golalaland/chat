@@ -801,6 +801,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   font-size: 1.1em;
 }
 
+.featured-host-details {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
 .featured-gift-btn {
   background: linear-gradient(135deg, #ff4081, #ff80ab);
   border: none;
@@ -812,20 +817,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-gift-btn:hover {
   opacity: 0.85;
-}
-
-.featured-nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin: 8px 0;
-  padding: 0 12px;
-}
-.featured-nav-buttons button {
-  background: transparent;
-  color: #fff;
-  font-size: 20px;
-  border: none;
-  cursor: pointer;
 }
 
 .featured-host-list {
@@ -847,6 +838,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border: 2px solid #ff4081;
 }
 
+.featured-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 12px 12px;
+}
+
+.featured-nav-link {
+  display: inline-block;
+  background: #222;
+  color: #fff;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: 0.3s;
+  cursor: pointer;
+}
+.featured-nav-link:hover {
+  background: linear-gradient(135deg, #ff4081, #ff80ab);
+}
 </style>
 </head>
 <body>
@@ -890,15 +901,24 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       <iframe id="featuredHostVideo" allowfullscreen frameborder="0"></iframe>
 
       <div class="featured-host-footer">
-        <div class="featured-host-username" id="featuredHostUsername"></div>
+        <div>
+          <div class="featured-host-username" id="featuredHostUsername"></div>
+          <div class="featured-host-details" id="featuredHostDetails"></div>
+        </div>
         <button class="featured-gift-btn" id="featuredGiftBtn">🎁 Gift</button>
       </div>
     </div>
 
-    <div class="featured-nav-buttons">
-      <button id="prevFeaturedHost">◀</button>
-      <button id="nextFeaturedHost">▶</button>
+    <div class="featured-host-list" id="featuredHostList">
+      <!-- Avatars inserted dynamically -->
     </div>
+
+    <div class="featured-nav-buttons">
+      <a href="#" id="prevHost" class="featured-nav-link">Previous</a>
+      <a href="#" id="nextHost" class="featured-nav-link">Next</a>
+    </div>
+  </div>
+</div>
 
     <div class="featured-host-list" id="featuredHostList"></div>
   </div>
