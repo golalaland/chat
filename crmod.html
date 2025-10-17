@@ -752,7 +752,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   backdrop-filter: blur(8px);
   justify-content: center;
   align-items: center;
-  padding: 0;
 }
 
 /* 🔲 Compact modal card */
@@ -872,6 +871,21 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 .featured-gift-btn:hover {
   transform: scale(1.05);
+}
+
+#giftAmount {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 600;
+}
+
+#giftAmount::after {
+  content: '⭐️';
+  font-size: 1.1em;
+  line-height: 0;
+  position: relative;
+  top: 1px;
 }
 
 /* 🖼 Avatar list */
