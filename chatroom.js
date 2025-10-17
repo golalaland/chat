@@ -1099,20 +1099,12 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Typewriter-style descriptor
-  detailsEl.textContent = "";
+  // 💋 Descriptor
+  const pronoun = host.gender?.toLowerCase() === "male" ? "his" : "hers";
   const ageGroup = host.age >= 30 ? "30s" : "20s";
-  const pronoun = host.gender?.toLowerCase() === "male" ? "his" : "her";
   const textLine = `A ${host.naturePick || "sexy"} ${host.gender || "male"} in ${pronoun} ${ageGroup}`;
-  let i = 0;
-  function typeWriter() {
-    if (i < textLine.length) {
-      detailsEl.textContent += textLine.charAt(i);
-      i++;
-      setTimeout(typeWriter, 50);
-    }
-  }
-  typeWriter();
+
+  detailsEl.textContent = textLine;
 
   // 🌟 Highlight active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
@@ -1121,12 +1113,12 @@ function loadHost(idx) {
 
   // Reset slider
   giftSlider.value = 1;
-  giftAmountEl.innerHTML = `<span style="font-size:0.9em; vertical-align:middle;">⭐️</span> 1`;
+  giftAmountEl.textContent = "1"; // Only number, star already on button
 }
 
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
-  giftAmountEl.innerHTML = `<span style="font-size:0.9em; vertical-align:middle;">⭐️</span> ${giftSlider.value}`;
+  giftAmountEl.textContent = giftSlider.value; // Only number updates
 });
 
 /* ---------- Send gift ---------- */
@@ -1141,9 +1133,9 @@ giftBtn.addEventListener("click", async () => {
     starsGifted: increment(giftStars)
   });
 
-  // Update slider display after gifting
-  giftAmountEl.innerHTML = `<span style="font-size:0.9em; vertical-align:middle;">⭐️</span> 1`;
+  // Reset slider and number after gifting
   giftSlider.value = 1;
+  giftAmountEl.textContent = "1";
 });
 
 /* ---------- Navigation ---------- */
