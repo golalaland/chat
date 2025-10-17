@@ -1038,98 +1038,110 @@ replaceStarsWithSVG();
 })();
 
 // DOM Elements
-const modal = document.getElementById("featuredHostsModal");
-const closeBtn = modal.querySelector(".featured-close");
-const videoEl = document.getElementById("featuredHostVideo");
+const featuredModal = document.getElementById("featuredHostsModal");
+const closeBtn = featuredModal.querySelector(".featured-close");
+const videoFrame = document.getElementById("featuredHostVideo");
 const usernameEl = document.getElementById("featuredHostUsername");
-const detailsEl = document.getElementById("featuredHostDetails");
+const giftSlider = document.getElementById("featuredGiftSlider");
+const giftCount = document.getElementById("featuredGiftCount");
 const giftBtn = document.getElementById("featuredGiftBtn");
-const hostListEl = document.getElementById("featuredHostList");
-const prevBtn = document.getElementById("prevHost");
-const nextBtn = document.getElementById("nextHost");
+const prevBtn = document.getElementById("featuredPrevBtn");
+const nextBtn = document.getElementById("featuredNextBtn");
 
+// State
 let featuredHosts = [];
 let currentHostIndex = 0;
+let userStars = 200; // replace with actual logged-in user stars if needed
 
 // Fetch hosts from Firestore
-async function loadFeaturedHosts() {
-  const hostsCol = collection(db, "users"); // adjust if your collection is different
-  const q = query(hostsCol, where("isHost", "==", true));
-  const snapshot = await getDocs(q);
-
-  featuredHosts = snapshot.docs.map(docSnap => ({
-    id: docSnap.id,
-    username: docSnap.data().chatId,
-    gender: docSnap.data().gender,
-    age: docSnap.data().age,
-    fruit: docSnap.data().fruitPick || "Unknown",
-    avatar: docSnap.data().popupPhoto || "https://i.pravatar.cc/50",
-    video: docSnap.data().videoUrl,
-    starsGifted: docSnap.data().starsGifted || 0
-  }));
-
-  populateAvatars();
-  if (featuredHosts.length > 0) openFeaturedHostModal(0);
+async function fetchFeaturedHosts() {
+  const snapshot = await getDocs(collection(db, "users"));
+  featuredHosts = snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(u => u.isHost);
 }
 
-// Populate avatars
-function populateAvatars() {
-  hostListEl.innerHTML = "";
-  featuredHosts.forEach((host, index) => {
-    const img = document.createElement("img");
-    img.src = host.avatar;
-    img.alt = host.username;
-    img.addEventListener("click", () => openFeaturedHostModal(index));
-    hostListEl.appendChild(img);
-  });
-}
-
-// Open modal
-function openFeaturedHostModal(index) {
+// Open modal for a given index
+function showHostModal(index) {
   currentHostIndex = index;
-  const host = featuredHosts[index];
+  const host = featuredHosts[currentHostIndex];
 
-  videoEl.src = host.video;
-  usernameEl.textContent = host.username;
-  detailsEl.textContent = `${host.gender}, Age ${host.age}, Fruit: ${host.fruit}`;
+  // Set video
+  videoFrame.src = host.videoUrl;
 
-  hostListEl.querySelectorAll("img").forEach((img, i) => {
-    img.classList.toggle("active", i === index);
-  });
+  // Username + fruit pick + age if available
+  usernameEl.innerHTML = `
+    <strong>${host.chatId}</strong> ${host.fruitPick || ""} 
+    ${host.age ? `• Age: ${host.age}` : ""}
+  `;
 
-  modal.style.display = "block";
+  // Reset gift slider max to user's stars
+  giftSlider.max = userStars;
+  giftSlider.value = 1;
+  giftCount.textContent = 1;
+
+  featuredModal.style.display = "block";
 }
 
 // Close modal
 closeBtn.addEventListener("click", () => {
-  modal.style.display = "none";
-  videoEl.src = "";
+  featuredModal.style.display = "none";
+});
+
+// Slider live update
+giftSlider.addEventListener("input", () => {
+  giftCount.textContent = giftSlider.value;
+});
+
+// Send gift
+giftBtn.addEventListener("click", async () => {
+  const host = featuredHosts[currentHostIndex];
+  const starsToGift = parseInt(giftSlider.value, 10);
+
+  if (starsToGift > userStars) {
+    alert("You don't have enough stars!");
+    return;
+  }
+
+  // Update Firestore
+  const hostRef = doc(db, "users", host.id);
+  await updateDoc(hostRef, {
+    starsGifted: increment(starsToGift),
+    stars: increment(starsToGift)
+  });
+
+  // Update local state
+  featuredHosts[currentHostIndex].starsGifted += starsToGift;
+  featuredHosts[currentHostIndex].stars += starsToGift;
+  userStars -= starsToGift;
+
+  alert(`You gifted ${starsToGift} ⭐ to ${host.chatId}!`);
+
+  // Reset slider
+  giftSlider.max = userStars;
+  giftSlider.value = 1;
+  giftCount.textContent = 1;
 });
 
 // Navigation
-prevBtn.addEventListener("click", e => {
-  e.preventDefault();
-  const prevIndex = (currentHostIndex - 1 + featuredHosts.length) % featuredHosts.length;
-  openFeaturedHostModal(prevIndex);
-});
-nextBtn.addEventListener("click", e => {
-  e.preventDefault();
-  const nextIndex = (currentHostIndex + 1) % featuredHosts.length;
-  openFeaturedHostModal(nextIndex);
-});
+function prevHost() {
+  currentHostIndex = (currentHostIndex - 1 + featuredHosts.length) % featuredHosts.length;
+  showHostModal(currentHostIndex);
+}
 
-// Gift stars (updates Firestore)
-giftBtn.addEventListener("click", async () => {
-  const host = featuredHosts[currentHostIndex];
-  const hostRef = doc(db, "users", host.id);
+function nextHost() {
+  currentHostIndex = (currentHostIndex + 1) % featuredHosts.length;
+  showHostModal(currentHostIndex);
+}
 
-  await updateDoc(hostRef, {
-    starsGifted: increment(1)
-  });
+prevBtn.addEventListener("click", prevHost);
+nextBtn.addEventListener("click", nextHost);
 
-  featuredHosts[currentHostIndex].starsGifted += 1;
-  alert(`You gifted 1 star to ${host.username}! ⭐`);
+// Example: Open modal on button click (replace with your own button)
+document.getElementById("openFeaturedHostsBtn").addEventListener("click", () => {
+  if (featuredHosts.length === 0) return;
+  showHostModal(0);
 });
 
-// Load hosts on page load
-loadFeaturedHosts();
+// Fetch hosts on page load
+fetchFeaturedHosts();
