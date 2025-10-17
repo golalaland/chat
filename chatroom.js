@@ -1060,12 +1060,18 @@ const telegramLink = document.getElementById("telegramLink");
 let hosts = [];
 let currentIndex = 0;
 
-/* Fetch featured hosts */
+/* Fetch featured hosts safely */
 async function fetchFeaturedHosts() {
   const snapshot = await getDocs(collection(db, "featuredHosts"));
-  hosts = snapshot.docs.map(doc => doc.data());
+  hosts = snapshot.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
+
+  if (!hosts.length) return;
+
   renderHostAvatars();
-  if (hosts.length) loadHost(0);
+  loadHost(0);
 }
 
 /* Render avatars */
@@ -1073,31 +1079,31 @@ function renderHostAvatars() {
   hostListEl.innerHTML = "";
   hosts.forEach((host, idx) => {
     const img = document.createElement("img");
-    img.src = host.popupPhoto;
+    img.src = host.popupPhoto || "";
     if (idx === 0) img.classList.add("active");
     img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
   });
 }
 
-/* Load host data */
+/* Load host */
 function loadHost(idx) {
   currentIndex = idx;
   const host = hosts[idx];
 
-  // Update iframe src
-  videoFrame.src = host.videoUrl;
+  // Video
+  videoFrame.src = host.videoUrl || "";
 
-  // Username & color
-  usernameEl.textContent = host.chatId;
+  // Username
+  usernameEl.textContent = host.chatId || "";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // Details (age & fruit)
+  // Age + Fruit
   const age = host.age || "";
   const fruit = host.fruitPick || "";
   detailsEl.textContent = `Age: ${age} | Fruit: ${fruit}`;
 
-  // Social links
+  // Social icons
   if (host.whatsappLink) {
     whatsappLink.href = host.whatsappLink;
     whatsappLink.classList.remove("faded");
@@ -1114,7 +1120,7 @@ function loadHost(idx) {
     telegramLink.classList.add("faded");
   }
 
-  // Update active avatar
+  // Active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
@@ -1132,9 +1138,10 @@ giftSlider.addEventListener("input", () => {
 /* Send gift */
 giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
-  const giftStars = parseInt(giftSlider.value);
+  const giftStars = parseInt(giftSlider.value, 10);
+  if (!host.id) return;
 
-  const hostRef = doc(db, "featuredHosts", host.chatId);
+  const hostRef = doc(db, "featuredHosts", host.id);
   await updateDoc(hostRef, {
     stars: increment(giftStars),
     starsGifted: increment(giftStars)
@@ -1144,22 +1151,19 @@ giftBtn.addEventListener("click", async () => {
 });
 
 /* Navigation */
-prevBtn.addEventListener("click", (e) => {
+prevBtn.addEventListener("click", e => {
   e.preventDefault();
-  const nextIndex = (currentIndex - 1 + hosts.length) % hosts.length;
-  loadHost(nextIndex);
+  loadHost((currentIndex - 1 + hosts.length) % hosts.length);
 });
-nextBtn.addEventListener("click", (e) => {
+nextBtn.addEventListener("click", e => {
   e.preventDefault();
-  const nextIndex = (currentIndex + 1) % hosts.length;
-  loadHost(nextIndex);
+  loadHost((currentIndex + 1) % hosts.length);
 });
 
 /* Modal open/close */
-openBtn.addEventListener("click", () => { modal.style.display = "block"; });
-closeModal.addEventListener("click", () => { modal.style.display = "none"; });
-
-window.addEventListener("click", (e) => {
+openBtn.addEventListener("click", () => modal.style.display = "block");
+closeModal.addEventListener("click", () => modal.style.display = "none");
+window.addEventListener("click", e => {
   if (e.target === modal) modal.style.display = "none";
 });
 
