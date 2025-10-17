@@ -1037,9 +1037,10 @@ replaceStarsWithSVG();
   });
 })();
 
+/* ------------------- DOM Elements ------------------- */
 const openHostsBtn = document.getElementById("openHostsBtn");
 const featuredModal = document.getElementById("featuredHostsModal");
-const closeModal = document.querySelector(".featured-close");
+const closeModalBtn = featuredModal.querySelector(".featured-close");
 
 const hostVideo = document.getElementById("featuredHostVideo");
 const hostUsername = document.getElementById("featuredHostUsername");
@@ -1047,6 +1048,11 @@ const hostDetails = document.getElementById("featuredHostDetails");
 const hostList = document.getElementById("featuredHostList");
 const prevHostBtn = document.getElementById("prevHost");
 const nextHostBtn = document.getElementById("nextHost");
+const featuredGiftBtn = document.getElementById("featuredGiftBtn");
+
+/* ------------------- Gift Slider ------------------- */
+const giftSliderContainer = document.createElement("div");
+giftSliderContainer.classList.add("gift-slider-container");
 
 const giftSlider = document.createElement("input");
 giftSlider.type = "range";
@@ -1058,84 +1064,96 @@ giftSlider.id = "giftSlider";
 const sliderValueDisplay = document.createElement("span");
 sliderValueDisplay.textContent = giftSlider.value;
 
-const giftContainer = document.createElement("div");
-giftContainer.classList.add("gift-slider-container");
-giftContainer.appendChild(giftSlider);
-giftContainer.appendChild(sliderValueDisplay);
+giftSliderContainer.appendChild(giftSlider);
+giftSliderContainer.appendChild(sliderValueDisplay);
+featuredGiftBtn.parentElement.appendChild(giftSliderContainer);
 
-const featuredGiftBtn = document.getElementById("featuredGiftBtn");
-document.querySelector(".featured-host-footer").appendChild(giftContainer);
-
+/* ------------------- State ------------------- */
 let featuredHostsData = [];
 let currentIndex = 0;
 
-// Open modal
+/* ------------------- Modal Open/Close ------------------- */
 openHostsBtn.addEventListener("click", () => {
   featuredModal.style.display = "block";
   loadFeaturedHosts();
 });
 
-// Close modal
-closeModal.addEventListener("click", () => {
+closeModalBtn.addEventListener("click", () => {
   featuredModal.style.display = "none";
 });
 
-// Slider updates display
+window.addEventListener("click", (e) => {
+  if (e.target === featuredModal) featuredModal.style.display = "none";
+});
+
+/* ------------------- Slider Update ------------------- */
 giftSlider.addEventListener("input", () => {
   sliderValueDisplay.textContent = giftSlider.value;
 });
 
-// Navigation
+/* ------------------- Navigation ------------------- */
 prevHostBtn.addEventListener("click", (e) => {
   e.preventDefault();
-  if (featuredHostsData.length === 0) return;
+  if (!featuredHostsData.length) return;
   currentIndex = (currentIndex - 1 + featuredHostsData.length) % featuredHostsData.length;
   displayHost(currentIndex);
 });
 
 nextHostBtn.addEventListener("click", (e) => {
   e.preventDefault();
-  if (featuredHostsData.length === 0) return;
+  if (!featuredHostsData.length) return;
   currentIndex = (currentIndex + 1) % featuredHostsData.length;
   displayHost(currentIndex);
 });
 
-// Load featured hosts from Firestore
+/* ------------------- Firestore Load ------------------- */
 async function loadFeaturedHosts() {
   const querySnapshot = await getDocs(collection(db, "featuredHosts"));
   featuredHostsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
   if (featuredHostsData.length > 0) {
-    displayHost(0);
+    currentIndex = 0;
+    displayHost(currentIndex);
     populateAvatars();
   }
 }
 
-// Display a host
+/* ------------------- Display Host ------------------- */
 function displayHost(index) {
   const host = featuredHostsData[index];
-  hostVideo.src = host.videoUrl; // portrait fill
-  hostUsername.textContent = host.chatId;
+  if (!host) return;
+
+  hostVideo.src = host.videoUrl || "";
+  hostUsername.textContent = host.chatId || "Unknown";
   hostUsername.style.color = host.usernameColor || "#fff";
 
-  hostDetails.innerHTML = `${host.age}<br>${host.fruitPick || ""}`;
+  hostDetails.innerHTML = `
+    <div class="host-info">
+      ${host.age || ""}<br>
+      ${host.fruitPick || ""}
+    </div>
+    <div class="featured-host-socials">
+      <a href="${host.whatsapp || "#"}" target="_blank" class="${host.whatsapp ? "" : "faded"}">
+        <img src="whatsapp_icon.png" alt="WhatsApp"/>
+      </a>
+      <a href="${host.telegram || "#"}" target="_blank" class="${host.telegram ? "" : "faded"}">
+        <img src="telegram_icon.png" alt="Telegram"/>
+      </a>
+    </div>
+  `;
 
-  // Social icons
-  let socialsHTML = '<div class="featured-host-socials">';
-  socialsHTML += `<a href="${host.whatsapp || "#"}" target="_blank" class="${host.whatsapp ? "" : "faded"}"><img src="whatsapp_icon.png" /></a>`;
-  socialsHTML += `<a href="${host.telegram || "#"}" target="_blank" class="${host.telegram ? "" : "faded"}"><img src="telegram_icon.png" /></a>`;
-  socialsHTML += '</div>';
-  hostDetails.innerHTML += socialsHTML;
-
-  // Highlight active avatar
-  Array.from(hostList.children).forEach((img, i) => img.classList.toggle("active", i === index));
+  // Highlight avatar
+  Array.from(hostList.children).forEach((img, i) => {
+    img.classList.toggle("active", i === index);
+  });
 }
 
-// Populate avatars
+/* ------------------- Populate Avatars ------------------- */
 function populateAvatars() {
   hostList.innerHTML = "";
   featuredHostsData.forEach((host, i) => {
     const img = document.createElement("img");
-    img.src = host.popupPhoto;
+    img.src = host.popupPhoto || "";
     img.classList.toggle("active", i === currentIndex);
     img.addEventListener("click", () => {
       currentIndex = i;
@@ -1145,34 +1163,25 @@ function populateAvatars() {
   });
 }
 
-// Gift stars
+/* ------------------- Gift Stars ------------------- */
 featuredGiftBtn.addEventListener("click", async () => {
   const host = featuredHostsData[currentIndex];
+  if (!host) return;
+
   const starsToGift = parseInt(giftSlider.value, 10);
   const hostRef = doc(db, "featuredHosts", host.id);
-  await updateDoc(hostRef, {
-    stars: increment(starsToGift),
-    starsGifted: increment(starsToGift)
-  });
-  alert(`You gifted ${starsToGift} stars to ${host.chatId}`);
+
+  try {
+    await updateDoc(hostRef, {
+      stars: increment(starsToGift),
+      starsGifted: increment(starsToGift)
+    });
+    alert(`You gifted ${starsToGift} stars to ${host.chatId}`);
+  } catch (error) {
+    console.error("Error gifting stars:", error);
+    alert("Failed to gift stars. Try again.");
+  }
 });
 
-/* Navigation */
-prevBtn.addEventListener("click", e => {
-  e.preventDefault();
-  loadHost((currentIndex - 1 + hosts.length) % hosts.length);
-});
-nextBtn.addEventListener("click", e => {
-  e.preventDefault();
-  loadHost((currentIndex + 1) % hosts.length);
-});
-
-/* Modal open/close */
-openBtn.addEventListener("click", () => modal.style.display = "block");
-closeModal.addEventListener("click", () => modal.style.display = "none");
-window.addEventListener("click", e => {
-  if (e.target === modal) modal.style.display = "none";
-});
-
-/* Init */
-fetchFeaturedHosts();
+/* ------------------- Initialize ------------------- */
+loadFeaturedHosts();
