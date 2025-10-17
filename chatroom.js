@@ -1099,12 +1099,26 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Descriptor
-  const pronoun = host.gender?.toLowerCase() === "male" ? "his" : "hers";
-  const ageGroup = host.age >= 30 ? "30s" : "20s";
-  const textLine = `A ${host.naturePick || "sexy"} ${host.gender || "male"} in ${pronoun} ${ageGroup}`;
+  // 💋 Description line with proper gender pronoun
+  const gender = (host.gender || "male").toLowerCase();
+  const pronoun = gender === "male" ? "his" : "hers";
+  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
+  const fruit = host.fruitPick || "🍇";
+  const nature = host.naturePick || "chill";
+  const flair = gender === "male" ? "😎" : "💋";
+  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  detailsEl.textContent = textLine;
+  // Optional: Typewriter effect
+  detailsEl.textContent = "";
+  let i = 0;
+  function typeWriter() {
+    if (i < textLine.length) {
+      detailsEl.textContent += textLine.charAt(i);
+      i++;
+      setTimeout(typeWriter, 30);
+    }
+  }
+  typeWriter();
 
   // 🌟 Highlight active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
@@ -1113,30 +1127,70 @@ function loadHost(idx) {
 
   // Reset slider
   giftSlider.value = 1;
-  giftAmountEl.textContent = "1"; // Only number, star already on button
+  giftAmountEl.textContent = "1";
 }
 
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
-  giftAmountEl.textContent = giftSlider.value; // Only number updates
+  giftAmountEl.textContent = giftSlider.value;
 });
 
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
-  const giftStars = parseInt(giftSlider.value, 10);
   if (!host?.id) return;
 
+  const giftStars = parseInt(giftSlider.value, 10);
   const hostRef = doc(db, "featuredHosts", host.id);
-  await updateDoc(hostRef, {
-    stars: increment(giftStars),
-    starsGifted: increment(giftStars)
-  });
 
-  // Reset slider and number after gifting
-  giftSlider.value = 1;
-  giftAmountEl.textContent = "1";
+  try {
+    await updateDoc(hostRef, {
+      stars: increment(giftStars),
+      starsGifted: increment(giftStars)
+    });
+
+    // Optional: floating +⭐ animation
+    showFloatingStars(host.chatId, giftStars);
+
+    // Reset slider
+    giftSlider.value = 1;
+    giftAmountEl.textContent = "1";
+  } catch (err) {
+    console.error("Error gifting stars:", err);
+  }
 });
+
+/* ---------- Optional: floating star animation ---------- */
+function showFloatingStars(hostName, stars) {
+  const popup = document.createElement("div");
+  popup.className = "floating-stars-popup";
+  popup.textContent = `+${stars}⭐`;
+  popup.style.position = "absolute";
+  popup.style.color = "#ff4da6";
+  popup.style.fontWeight = "600";
+  popup.style.fontSize = "1rem";
+  popup.style.zIndex = "10000";
+  popup.style.pointerEvents = "none";
+
+  // position near the avatar
+  const avatar = hostListEl.querySelectorAll("img")[currentIndex];
+  const rect = avatar.getBoundingClientRect();
+  popup.style.left = rect.left + rect.width / 2 + "px";
+  popup.style.top = rect.top - 20 + "px";
+
+  document.body.appendChild(popup);
+
+  // Animate
+  popup.animate(
+    [
+      { transform: "translateY(0)", opacity: 1 },
+      { transform: "translateY(-30px)", opacity: 0 }
+    ],
+    { duration: 1200, easing: "ease-out" }
+  );
+
+  setTimeout(() => popup.remove(), 1200);
+}
 
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
