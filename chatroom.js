@@ -1099,15 +1099,20 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Description line
-  const gender = (host.gender || "person").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "her";
-  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-  const fruit = host.fruitPick || "🍇";
-  const nature = host.naturePick || "chill";
-  const flair = gender === "male" ? "😎" : "💋";
-  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
-  detailsEl.textContent = textLine;
+  // 💋 Typewriter-style descriptor
+  detailsEl.textContent = "";
+  const ageGroup = host.age >= 30 ? "30s" : "20s";
+  const pronoun = host.gender?.toLowerCase() === "male" ? "his" : "her";
+  const textLine = `A ${host.naturePick || "sexy"} ${host.gender || "male"} in ${pronoun} ${ageGroup}`;
+  let i = 0;
+  function typeWriter() {
+    if (i < textLine.length) {
+      detailsEl.textContent += textLine.charAt(i);
+      i++;
+      setTimeout(typeWriter, 50);
+    }
+  }
+  typeWriter();
 
   // 🌟 Highlight active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
@@ -1116,12 +1121,12 @@ function loadHost(idx) {
 
   // Reset slider
   giftSlider.value = 1;
-  giftAmountEl.textContent = "1";
+  giftAmountEl.innerHTML = `<span style="font-size:0.9em; vertical-align:middle;">⭐️</span> 1`;
 }
 
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
-  giftAmountEl.textContent = giftSlider.value;
+  giftAmountEl.innerHTML = `<span style="font-size:0.9em; vertical-align:middle;">⭐️</span> ${giftSlider.value}`;
 });
 
 /* ---------- Send gift ---------- */
@@ -1135,6 +1140,10 @@ giftBtn.addEventListener("click", async () => {
     stars: increment(giftStars),
     starsGifted: increment(giftStars)
   });
+
+  // Update slider display after gifting
+  giftAmountEl.innerHTML = `<span style="font-size:0.9em; vertical-align:middle;">⭐️</span> 1`;
+  giftSlider.value = 1;
 });
 
 /* ---------- Navigation ---------- */
