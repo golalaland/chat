@@ -1056,7 +1056,7 @@ const telegramLink = document.getElementById("telegramLink");
 let hosts = [];
 let currentIndex = 0;
 
-/* Fetch featured hosts safely */
+/* Fetch featured hosts */
 async function fetchFeaturedHosts() {
   const snapshot = await getDocs(collection(db, "featuredHosts"));
   hosts = snapshot.docs.map(docSnap => ({
@@ -1076,6 +1076,7 @@ function renderHostAvatars() {
   hosts.forEach((host, idx) => {
     const img = document.createElement("img");
     img.src = host.popupPhoto || "";
+    img.alt = host.chatId || "Host";
     if (idx === 0) img.classList.add("active");
     img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
@@ -1087,36 +1088,29 @@ function loadHost(idx) {
   currentIndex = idx;
   const host = hosts[idx];
 
-  // Video
+  // 🎥 Video
   videoFrame.src = host.videoUrl || "";
 
-  // Username
-  usernameEl.textContent = host.chatId || "";
+  // 🪶 Username
+  usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // Age + Fruit
-  const age = host.age || "";
-  const fruit = host.fruitPick || "";
-  detailsEl.textContent = `Age: ${age} | Fruit: ${fruit}`;
+  // 💋 Description line (instead of Age | Fruit)
+  const gender = (host.gender || "person").toLowerCase();
+  const pronoun = gender === "male" ? "his" : "her";
+  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
+  const fruit = host.fruitPick || "🍇";
+  const nature = host.naturePick || "chill";
 
-  // Social icons
-  if (host.whatsappLink) {
-    whatsappLink.href = host.whatsappLink;
-    whatsappLink.classList.remove("faded");
-  } else {
-    whatsappLink.href = "#";
-    whatsappLink.classList.add("faded");
-  }
+  // Random emoji flair
+  const flair = gender === "male" ? "😎" : "💋";
+  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  detailsEl.textContent = textLine;
 
-  if (host.telegramLink) {
-    telegramLink.href = host.telegramLink;
-    telegramLink.classList.remove("faded");
-  } else {
-    telegramLink.href = "#";
-    telegramLink.classList.add("faded");
-  }
+  // Hide socials entirely (for space)
+  document.querySelector(".featured-host-socials").style.display = "none";
 
-  // Active avatar
+  // 🌟 Active avatar highlight
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
@@ -1143,7 +1137,7 @@ giftBtn.addEventListener("click", async () => {
     starsGifted: increment(giftStars)
   });
 
-  alert(`Gifted ${giftStars} ⭐ to ${host.chatId}`);
+  alert(`Gifted ${giftStars} ⭐️ to ${host.chatId}`);
 });
 
 /* Navigation */
@@ -1157,8 +1151,12 @@ nextBtn.addEventListener("click", e => {
 });
 
 /* Modal open/close */
-openBtn.addEventListener("click", () => modal.style.display = "block");
-closeModal.addEventListener("click", () => modal.style.display = "none");
+openBtn.addEventListener("click", () => {
+  modal.style.display = "flex";
+  modal.style.justifyContent = "center";
+  modal.style.alignItems = "center";
+});
+closeModal.addEventListener("click", () => (modal.style.display = "none"));
 window.addEventListener("click", e => {
   if (e.target === modal) modal.style.display = "none";
 });
