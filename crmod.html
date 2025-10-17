@@ -782,7 +782,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* Portrait video container */
 .featured-host-video-container {
   width: 100%;
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 9 / 16; /* keeps portrait */
+  max-height: 350px;    /* restrict video height to show footer & slider */
   position: relative;
   border-radius: 12px 12px 0 0;
   overflow: hidden;
@@ -793,44 +794,27 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   width: 100%;
   height: 100%;
   border: none;
-  object-fit: cover;
+  object-fit: cover; /* fills container like iPhone portrait */
 }
 
-.featured-host-footer {
-  padding: 12px 16px;
-  background: #1a1a1a;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.featured-host-username {
-  font-weight: 600;
-  font-size: 1.2em;
-}
-
-.featured-host-details {
+/* Gift button smaller */
+.featured-gift-btn {
+  padding: 4px 8px; /* already small, just keep */
   font-size: 0.9em;
-  opacity: 0.8;
-  margin-bottom: 6px;
+  border-radius: 6px;
+  background: linear-gradient(135deg,#ff4081,#ff80ab);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.featured-host-socials a img {
-  width: 24px;
-  height: 24px;
-  margin-right: 6px;
-  opacity: 1;
-  transition: 0.3s;
-}
-.featured-host-socials a.faded img {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
+/* Slider container */
 .gift-slider-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: nowrap;
 }
 
 #giftSlider {
