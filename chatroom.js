@@ -1050,24 +1050,25 @@ const giftSlider = document.getElementById("giftSlider");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
-const whatsappLink = document.getElementById("whatsappLink");
-const telegramLink = document.getElementById("telegramLink");
 
 let hosts = [];
 let currentIndex = 0;
 
-/* ---------- Fetch featured hosts ---------- */
+/* ---------- Fetch + Listen to featuredHosts ---------- */
 async function fetchFeaturedHosts() {
-  const snapshot = await getDocs(collection(db, "featuredHosts"));
-  hosts = snapshot.docs.map(docSnap => ({
-    id: docSnap.id,
-    ...docSnap.data()
-  }));
+  const q = collection(db, "featuredHosts");
 
-  if (!hosts.length) return;
+  onSnapshot(q, snapshot => {
+    hosts = snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
 
-  renderHostAvatars();
-  loadHost(0);
+    if (!hosts.length) return;
+
+    renderHostAvatars();
+    loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
+  });
 }
 
 /* ---------- Render avatars ---------- */
@@ -1077,7 +1078,9 @@ function renderHostAvatars() {
     const img = document.createElement("img");
     img.src = host.popupPhoto || "";
     img.alt = host.chatId || "Host";
-    if (idx === 0) img.classList.add("active");
+    img.classList.add("featured-avatar");
+    if (idx === currentIndex) img.classList.add("active");
+
     img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
   });
@@ -1087,6 +1090,7 @@ function renderHostAvatars() {
 function loadHost(idx) {
   currentIndex = idx;
   const host = hosts[idx];
+  if (!host) return;
 
   // 🎥 Video
   videoFrame.src = host.videoUrl || "";
@@ -1115,21 +1119,6 @@ function loadHost(idx) {
   giftAmountEl.textContent = "1";
 }
 
-/* ---------- Star popup ---------- */
-function showStarPopup(hostName, stars) {
-  const popup = document.createElement("div");
-  popup.className = "star-popup";
-  popup.textContent = `⭐️ +${stars} to ${hostName}`;
-  document.body.appendChild(popup);
-  popup.style.display = "block";
-  popup.style.opacity = "1";
-  setTimeout(() => {
-    popup.style.transition = "opacity 0.5s";
-    popup.style.opacity = "0";
-    setTimeout(() => popup.remove(), 500);
-  }, 1800);
-}
-
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
@@ -1139,15 +1128,13 @@ giftSlider.addEventListener("input", () => {
 giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
   const giftStars = parseInt(giftSlider.value, 10);
-  if (!host.id) return;
+  if (!host?.id) return;
 
   const hostRef = doc(db, "featuredHosts", host.id);
   await updateDoc(hostRef, {
     stars: increment(giftStars),
     starsGifted: increment(giftStars)
   });
-
-  showStarPopup(host.chatId, giftStars);
 });
 
 /* ---------- Navigation ---------- */
