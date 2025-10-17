@@ -1050,67 +1050,43 @@ const giftSlider = document.getElementById("giftSlider");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
-const socialsEl = document.querySelector(".featured-host-socials"); // hidden but safe
+const whatsappLink = document.getElementById("whatsappLink");
+const telegramLink = document.getElementById("telegramLink");
 
 let hosts = [];
 let currentIndex = 0;
 
-/* ---------- Fetch Featured Hosts ---------- */
+/* ---------- Fetch featured hosts ---------- */
 async function fetchFeaturedHosts() {
-  try {
-    const snapshot = await getDocs(collection(db, "featuredHosts"));
-    hosts = snapshot.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
+  const snapshot = await getDocs(collection(db, "featuredHosts"));
+  hosts = snapshot.docs.map(docSnap => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
 
-    if (!hosts.length) {
-      console.warn("⚠️ No featured hosts found in Firestore.");
-      return;
-    }
+  if (!hosts.length) return;
 
-    renderHostAvatars();
-    loadHost(0);
-  } catch (err) {
-    console.error("❌ Error fetching featured hosts:", err);
-  }
+  renderHostAvatars();
+  loadHost(0);
 }
 
-/* ---------- Render Avatars ---------- */
+/* ---------- Render avatars ---------- */
 function renderHostAvatars() {
   hostListEl.innerHTML = "";
   hosts.forEach((host, idx) => {
     const img = document.createElement("img");
     img.src = host.popupPhoto || "";
     img.alt = host.chatId || "Host";
-    img.classList.add("featured-avatar");
     if (idx === 0) img.classList.add("active");
-
-    img.addEventListener("click", () => {
-      loadHost(idx);
-      updateActiveAvatar(idx);
-    });
-
+    img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
   });
 }
 
-/* ---------- Update Active Avatar Outline ---------- */
-function updateActiveAvatar(index) {
-  const avatars = hostListEl.querySelectorAll(".featured-avatar");
-  avatars.forEach((img, i) => {
-    if (i === index) img.classList.add("active");
-    else img.classList.remove("active");
-  });
-}
-
-/* ---------- Load Host ---------- */
+/* ---------- Load host ---------- */
 function loadHost(idx) {
-  if (!hosts.length) return;
-
   currentIndex = idx;
   const host = hosts[idx];
-  if (!host) return;
 
   // 🎥 Video
   videoFrame.src = host.videoUrl || "";
@@ -1119,72 +1095,72 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Description
+  // 💋 Description line
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const nature = host.naturePick || "chill";
   const flair = gender === "male" ? "😎" : "💋";
-  detailsEl.textContent = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  detailsEl.textContent = textLine;
 
-  // 🌟 Update avatar outline
-  updateActiveAvatar(idx);
-
-  // Hide socials (safe even if CSS already hides)
-  if (socialsEl) socialsEl.style.display = "none";
+  // 🌟 Highlight active avatar
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === idx);
+  });
 
   // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 }
 
-/* ---------- Gift Slider ---------- */
+/* ---------- Star popup ---------- */
+function showStarPopup(hostName, stars) {
+  const popup = document.createElement("div");
+  popup.className = "star-popup";
+  popup.textContent = `⭐️ +${stars} to ${hostName}`;
+  document.body.appendChild(popup);
+  popup.style.display = "block";
+  popup.style.opacity = "1";
+  setTimeout(() => {
+    popup.style.transition = "opacity 0.5s";
+    popup.style.opacity = "0";
+    setTimeout(() => popup.remove(), 500);
+  }, 1800);
+}
+
+/* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
 });
 
-/* ---------- Star Popup ---------- */
-function showStarPopup(hostName, stars) {
-  const popup = document.createElement("div");
-  popup.className = "star-popup";
-  popup.innerHTML = `⭐️ +${stars} to <b>${hostName}</b>`;
-  document.body.appendChild(popup);
-  setTimeout(() => popup.classList.add("visible"), 10);
-  setTimeout(() => popup.remove(), 2200);
-}
-
-/* ---------- Send Gift ---------- */
+/* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
   const giftStars = parseInt(giftSlider.value, 10);
-  if (!host?.id) return;
+  if (!host.id) return;
 
-  try {
-    const hostRef = doc(db, "featuredHosts", host.id);
-    await updateDoc(hostRef, {
-      stars: increment(giftStars),
-      starsGifted: increment(giftStars)
-    });
-    showStarPopup(host.chatId, giftStars);
-  } catch (err) {
-    console.error("❌ Error updating gift:", err);
-  }
+  const hostRef = doc(db, "featuredHosts", host.id);
+  await updateDoc(hostRef, {
+    stars: increment(giftStars),
+    starsGifted: increment(giftStars)
+  });
+
+  showStarPopup(host.chatId, giftStars);
 });
 
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
   e.preventDefault();
-  const newIndex = (currentIndex - 1 + hosts.length) % hosts.length;
-  loadHost(newIndex);
+  loadHost((currentIndex - 1 + hosts.length) % hosts.length);
 });
 nextBtn.addEventListener("click", e => {
   e.preventDefault();
-  const newIndex = (currentIndex + 1) % hosts.length;
-  loadHost(newIndex);
+  loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* ---------- Modal Control ---------- */
+/* ---------- Modal control ---------- */
 openBtn.addEventListener("click", () => {
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
