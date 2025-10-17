@@ -1038,121 +1038,107 @@ replaceStarsWithSVG();
 })();
 
 // DOM
-const featuredModal = document.getElementById("featuredHostsModal");
-const openBtn = document.getElementById("openHostsBtn");
-const closeBtn = featuredModal.querySelector(".featured-close");
-const videoFrame = document.getElementById("featuredHostVideo");
-const usernameEl = document.getElementById("featuredHostUsername");
-const detailsEl = document.getElementById("featuredHostDetails");
+const openHostsBtn = document.getElementById("openHostsBtn");
+const modal = document.getElementById("featuredHostsModal");
+const closeBtn = modal.querySelector(".featured-close");
+const hostVideo = document.getElementById("featuredHostVideo");
+const hostUsername = document.getElementById("featuredHostUsername");
+const hostDetails = document.getElementById("featuredHostDetails");
+const hostListContainer = document.getElementById("featuredHostList");
+const prevHostBtn = document.getElementById("prevHost");
+const nextHostBtn = document.getElementById("nextHost");
 const giftBtn = document.getElementById("featuredGiftBtn");
 const giftSlider = document.getElementById("giftSlider");
-const giftCountEl = document.getElementById("giftCount");
-const hostListEl = document.getElementById("featuredHostList");
-const prevBtn = document.getElementById("prevHost");
-const nextBtn = document.getElementById("nextHost");
+const giftAmountDisplay = document.getElementById("giftAmount");
+const whatsappLink = document.getElementById("whatsappLink");
+const telegramLink = document.getElementById("telegramLink");
 
 let featuredHosts = [];
-let currentHostIndex = 0;
-let userStars = 200; // replace with actual logged-in user's stars
+let currentIndex = 0;
 
-// Fetch hosts
-async function fetchFeaturedHosts() {
-  const snapshot = await getDocs(collection(db, "users"));
-  featuredHosts = snapshot.docs
-    .map(doc => ({ id: doc.id, ...doc.data() }))
-    .filter(u => u.isHost);
-
-  renderHostAvatars();
+async function loadFeaturedHosts() {
+  const snapshot = await getDocs(collection(db, "featuredHosts"));
+  featuredHosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (featuredHosts.length) {
+    renderHostList();
+    showHost(0);
+  }
 }
 
-// Render avatars
-function renderHostAvatars() {
-  hostListEl.innerHTML = "";
-  featuredHosts.forEach((host, index) => {
+function renderHostList() {
+  hostListContainer.innerHTML = "";
+  featuredHosts.forEach((host, i) => {
     const img = document.createElement("img");
     img.src = host.popupPhoto;
-    img.alt = host.chatId;
-    img.classList.toggle("active", index === currentHostIndex);
-    img.addEventListener("click", () => showHostModal(index));
-    hostListEl.appendChild(img);
+    img.title = host.chatId;
+    img.classList.toggle("active", i === currentIndex);
+    img.addEventListener("click", () => showHost(i));
+    hostListContainer.appendChild(img);
   });
 }
 
-// Show modal
-function showHostModal(index) {
-  currentHostIndex = index;
-  const host = featuredHosts[currentHostIndex];
+function showHost(index) {
+  currentIndex = index;
+  const host = featuredHosts[index];
+  if (!host) return;
 
-  videoFrame.src = host.videoUrl;
-  usernameEl.textContent = host.chatId;
-  detailsEl.textContent = `${host.fruitPick || ""} • Age: ${host.age || "N/A"} • Stars: ${host.stars || 0}`;
+  hostVideo.src = host.videoUrl;
 
-  Array.from(hostListEl.children).forEach((img, i) => {
-    img.classList.toggle("active", i === currentHostIndex);
+  hostUsername.textContent = host.chatId;
+  hostUsername.style.color = host.usernameColor || "#fff";
+
+  const age = host.age ? host.age : "N/A";
+  const fruit = host.fruitPick || "";
+  hostDetails.textContent = `Age: ${age} | ${fruit}`;
+
+  // Social icons
+  if (host.whatsappLink) {
+    whatsappLink.href = host.whatsappLink;
+    whatsappLink.classList.remove("disabled");
+  } else whatsappLink.classList.add("disabled");
+
+  if (host.telegramLink) {
+    telegramLink.href = host.telegramLink;
+    telegramLink.classList.remove("disabled");
+  } else telegramLink.classList.add("disabled");
+
+  Array.from(hostListContainer.children).forEach((img, i) => {
+    img.classList.toggle("active", i === index);
   });
 
-  giftSlider.max = userStars;
   giftSlider.value = 1;
-  giftCountEl.textContent = 1;
-
-  featuredModal.style.display = "block";
+  giftAmountDisplay.textContent = `1 ⭐`;
 }
 
-// Update slider display
 giftSlider.addEventListener("input", () => {
-  giftCountEl.textContent = giftSlider.value;
+  giftAmountDisplay.textContent = `${giftSlider.value} ⭐`;
 });
 
-// Close modal
-closeBtn.addEventListener("click", () => featuredModal.style.display = "none");
-
-// Open modal
-openBtn.addEventListener("click", () => {
-  if (featuredHosts.length === 0) return;
-  showHostModal(0);
-});
-
-// Send gift
 giftBtn.addEventListener("click", async () => {
-  const host = featuredHosts[currentHostIndex];
-  const starsToGift = parseInt(giftSlider.value, 10);
+  const host = featuredHosts[currentIndex];
+  const amount = parseInt(giftSlider.value);
+  if (!host || amount <= 0) return;
 
-  if (starsToGift > userStars) {
-    alert("Not enough stars!");
-    return;
-  }
-
-  const hostRef = doc(db, "users", host.id);
+  const hostRef = doc(db, "featuredHosts", host.id);
   await updateDoc(hostRef, {
-    starsGifted: increment(starsToGift),
-    stars: increment(starsToGift)
+    stars: increment(amount),
+    starsGifted: increment(amount)
   });
 
-  featuredHosts[currentHostIndex].starsGifted += starsToGift;
-  featuredHosts[currentHostIndex].stars += starsToGift;
-  userStars -= starsToGift;
-
-  detailsEl.textContent = `${host.fruitPick || ""} • Age: ${host.age || "N/A"} • Stars: ${host.stars || 0}`;
-
-  giftSlider.max = userStars;
-  giftSlider.value = 1;
-  giftCountEl.textContent = 1;
-
-  alert(`You gifted ${starsToGift} ⭐ to ${host.chatId}!`);
+  alert(`Sent ${amount} ⭐ to ${host.chatId}!`);
 });
 
-// Navigation
-prevBtn.addEventListener("click", e => {
+prevHostBtn.addEventListener("click", e => {
   e.preventDefault();
-  currentHostIndex = (currentHostIndex - 1 + featuredHosts.length) % featuredHosts.length;
-  showHostModal(currentHostIndex);
+  showHost((currentIndex - 1 + featuredHosts.length) % featuredHosts.length);
 });
-
-nextBtn.addEventListener("click", e => {
+nextHostBtn.addEventListener("click", e => {
   e.preventDefault();
-  currentHostIndex = (currentHostIndex + 1) % featuredHosts.length;
-  showHostModal(currentHostIndex);
+  showHost((currentIndex + 1) % featuredHosts.length);
 });
 
-// Initial fetch
-fetchFeaturedHosts();
+openHostsBtn.addEventListener("click", () => modal.style.display = "block");
+closeBtn.addEventListener("click", () => modal.style.display = "none");
+window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
+
+loadFeaturedHosts();
