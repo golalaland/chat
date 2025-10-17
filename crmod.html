@@ -748,10 +748,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   position: fixed;
   z-index: 9999;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
   justify-content: center;
   align-items: center;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(10px);
 }
 
 /* 🔲 Compact modal card */
@@ -802,11 +802,8 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 /* 👤 Info and actions section */
 .featured-host-footer {
-  padding: 12px 14px;
+  padding: 10px 14px;
   background: #1a1a1a;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   text-align: center;
   font-size: 0.9rem;
 }
@@ -873,19 +870,22 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   transform: scale(1.05);
 }
 
-#giftAmount {
-  display: inline-flex;
+.gift-slider-container {
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#giftAmount {
   font-weight: 600;
 }
 
-#giftAmount::after {
-  content: '⭐️';
-  font-size: 1.1em;
-  line-height: 0;
-  position: relative;
-  top: 1px;
+#giftAmount + span {
+  margin-left: 3px;
+  display: inline-block;
+  transform: translateY(1px);
 }
 
 /* 🖼 Avatar list */
