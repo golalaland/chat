@@ -1037,10 +1037,6 @@ replaceStarsWithSVG();
   });
 })();
 
-const firebaseConfig = { /* your config here */ };
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
 /* DOM Elements */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
