@@ -1051,40 +1051,19 @@ const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
 
-/* ---------- Globals ---------- */
-const db = getFirestore();
 let hosts = [];
 let currentIndex = 0;
 
-/* ---------- Fetch featuredHosts + merge user info ---------- */
+/* ---------- Fetch + Listen to featuredHosts ---------- */
 async function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
-  onSnapshot(q, async snapshot => {
-    const fetched = [];
+  onSnapshot(q, snapshot => {
+    hosts = snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
 
-    // Gather all merges first
-    const mergePromises = snapshot.docs.map(async docSnap => {
-      const data = docSnap.data();
-      let merged = { id: docSnap.id, ...data };
-
-      const userId = data.userId || data.chatId;
-      if (userId) {
-        try {
-          const userRef = doc(db, "users", userId);
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) merged = { ...merged, ...userSnap.data() };
-        } catch (err) {
-          console.warn("⚠️ User merge failed:", userId, err);
-        }
-      }
-
-      fetched.push(merged);
-    });
-
-    await Promise.all(mergePromises);
-
-    hosts = fetched;
     if (!hosts.length) return;
 
     renderHostAvatars();
@@ -1095,55 +1074,58 @@ async function fetchFeaturedHosts() {
 /* ---------- Render avatars ---------- */
 function renderHostAvatars() {
   hostListEl.innerHTML = "";
-  hosts.forEach((host, i) => {
+  hosts.forEach((host, idx) => {
     const img = document.createElement("img");
     img.src = host.popupPhoto || "";
-    img.alt = host.chatId || host.username || "Host";
+    img.alt = host.chatId || "Host";
     img.classList.add("featured-avatar");
-    if (i === currentIndex) img.classList.add("active");
-    img.addEventListener("click", () => loadHost(i));
+    if (idx === currentIndex) img.classList.add("active");
+
+    img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
   });
 }
 
 /* ---------- Load host ---------- */
-function loadHost(i) {
-  currentIndex = i;
-  const host = hosts[i];
+function loadHost(idx) {
+  currentIndex = idx;
+  const host = hosts[idx];
   if (!host) return;
 
   // 🎥 Video
   videoFrame.src = host.videoUrl || "";
 
   // 🪶 Username
-  usernameEl.textContent = host.chatId || host.username || "Unknown Host";
+  usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Details
+  // 💋 Description line with proper gender pronoun
   const gender = (host.gender || "male").toLowerCase();
   const pronoun = gender === "male" ? "his" : "hers";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const nature = host.naturePick || "chill";
   const flair = gender === "male" ? "😎" : "💋";
-  const line = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
+  // Optional: Typewriter effect
   detailsEl.textContent = "";
-  let j = 0;
-  (function type() {
-    if (j < line.length) {
-      detailsEl.textContent += line.charAt(j);
-      j++;
-      setTimeout(type, 25);
+  let i = 0;
+  function typeWriter() {
+    if (i < textLine.length) {
+      detailsEl.textContent += textLine.charAt(i);
+      i++;
+      setTimeout(typeWriter, 30);
     }
-  })();
+  }
+  typeWriter();
 
-  // Active avatar highlight
-  hostListEl.querySelectorAll("img").forEach((img, n) =>
-    img.classList.toggle("active", n === i)
-  );
+  // 🌟 Highlight active avatar
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === idx);
+  });
 
-  // Reset gift
+  // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 }
@@ -1158,23 +1140,57 @@ giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
   if (!host?.id) return;
 
-  const stars = parseInt(giftSlider.value, 10);
-  const ref = doc(db, "featuredHosts", host.id);
+  const giftStars = parseInt(giftSlider.value, 10);
+  const hostRef = doc(db, "featuredHosts", host.id);
 
   try {
-    await updateDoc(ref, {
-      stars: increment(stars),
-      starsGifted: increment(stars)
+    await updateDoc(hostRef, {
+      stars: increment(giftStars),
+      starsGifted: increment(giftStars)
     });
 
-    console.log(`⭐ You gifted ${stars} stars to ${host.chatId}`);
-    alert(`You gifted ${stars}⭐ to ${host.chatId || "this host"}!`);
+    // Optional: floating +⭐ animation
+    showFloatingStars(host.chatId, giftStars);
+
+    // Reset slider
     giftSlider.value = 1;
     giftAmountEl.textContent = "1";
   } catch (err) {
-    console.error("❌ Gift failed:", err);
+    console.error("Error gifting stars:", err);
   }
 });
+
+/* ---------- Optional: floating star animation ---------- */
+function showFloatingStars(hostName, stars) {
+  const popup = document.createElement("div");
+  popup.className = "floating-stars-popup";
+  popup.textContent = `+${stars}⭐`;
+  popup.style.position = "absolute";
+  popup.style.color = "#ff4da6";
+  popup.style.fontWeight = "600";
+  popup.style.fontSize = "1rem";
+  popup.style.zIndex = "10000";
+  popup.style.pointerEvents = "none";
+
+  // position near the avatar
+  const avatar = hostListEl.querySelectorAll("img")[currentIndex];
+  const rect = avatar.getBoundingClientRect();
+  popup.style.left = rect.left + rect.width / 2 + "px";
+  popup.style.top = rect.top - 20 + "px";
+
+  document.body.appendChild(popup);
+
+  // Animate
+  popup.animate(
+    [
+      { transform: "translateY(0)", opacity: 1 },
+      { transform: "translateY(-30px)", opacity: 0 }
+    ],
+    { duration: 1200, easing: "ease-out" }
+  );
+
+  setTimeout(() => popup.remove(), 1200);
+}
 
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
