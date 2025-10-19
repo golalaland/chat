@@ -185,19 +185,23 @@ async function showGiftModal(targetUid, targetData) {
   });
 }
 
-/* ---------- Gift Alert (Floating Popup) ---------- */
-function showGiftAlert(text) {
+/* ---------- Gift Alert + Notification ---------- */
+function showGiftAlert(text, senderName) {
   const alertEl = document.getElementById("giftAlert");
   if (!alertEl) return;
 
+  // 1️⃣ Floating popup
   alertEl.textContent = text;
   alertEl.classList.add("show", "glow");
-
   createFloatingStars();
 
   setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
+
+  // 2️⃣ Update notif bell
+  pushNotification(`${senderName ? senderName + ": " : ""}${text}`);
 }
 
+/* ---------- Floating Stars ---------- */
 function createFloatingStars() {
   for (let i = 0; i < 6; i++) {
     const star = document.createElement("div");
@@ -1324,3 +1328,57 @@ window.addEventListener("click", e => {
 
 /* ---------- Init ---------- */
 fetchFeaturedHosts();
+
+const notifBell = document.getElementById("notificationBell");
+const notifDropdown = document.getElementById("notifDropdown");
+const notifCount = document.getElementById("notifCount");
+const notifList = document.getElementById("notifList");
+
+// Optional: notification sound
+const notifSound = new Audio("https://cdn.freesound.org/previews/522/522098_9947506-lq.mp3");
+
+// Toggle dropdown open/close
+notifBell.addEventListener("click", (e) => {
+  e.stopPropagation();
+  notifDropdown.style.display =
+    notifDropdown.style.display === "block" ? "none" : "block";
+  notifCount.style.display = "none"; // reset badge
+});
+
+// Close dropdown when clicking outside
+document.addEventListener("click", (e) => {
+  if (!notifBell.contains(e.target)) {
+    notifDropdown.style.display = "none";
+  }
+});
+
+// Add new notification
+function pushNotification(text) {
+  const li = document.createElement("li");
+  li.textContent = text;
+  li.classList.add("flash");
+
+  notifList.prepend(li); // latest first
+
+  // Update badge count
+  const currentCount = parseInt(notifCount.textContent) || 0;
+  notifCount.textContent = currentCount + 1;
+  notifCount.style.display = "inline-block";
+
+  // Limit list to 10 items
+  if (notifList.children.length > 10) {
+    notifList.removeChild(notifList.lastChild);
+  }
+
+  // 🔔 Animate the bell
+  notifBell.classList.add("glow");
+  setTimeout(() => notifBell.classList.remove("glow"), 800);
+
+  // 🔊 Play sound (only if allowed)
+  try {
+    notifSound.volume = 0.4;
+    notifSound.play().catch(() => {});
+  } catch (err) {
+    console.warn("Notification sound blocked or failed:", err);
+  }
+}
