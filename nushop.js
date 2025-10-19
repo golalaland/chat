@@ -421,13 +421,12 @@ try {
   console.error('Invite Reward Flow Error:', e);
 }
 
-// ✅ these below wrap up the parent try-catch for loadCurrentUser
+// ✅ Clean wrap-up of parent function
 } catch (e) {
   console.error('loadCurrentUser error', e);
 } finally {
   hideSpinner();
 }
-};
 
 /* ------------------ Host panels ------------------ */
 const updateHostPanels = () => {
