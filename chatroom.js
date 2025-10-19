@@ -1119,7 +1119,7 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || host.username || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Gender pronoun logic (strict male/female)
+  // 💋 Gender + description
   const gender = (host.gender || "male").toLowerCase();
   const pronoun = gender === "male" ? "his" : "hers";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
@@ -1169,7 +1169,8 @@ giftBtn.addEventListener("click", async () => {
       starsGifted: increment(giftStars)
     });
 
-    showFloatingStars(host.chatId, giftStars);
+    console.log(`⭐ You gifted ${giftStars} stars to ${host.chatId}`);
+    alert(`You gifted ${giftStars}⭐ to ${host.chatId || "this host"}!`);
 
     giftSlider.value = 1;
     giftAmountEl.textContent = "1";
@@ -1177,36 +1178,6 @@ giftBtn.addEventListener("click", async () => {
     console.error("Error gifting stars:", err);
   }
 });
-
-/* ---------- Floating star animation ---------- */
-function showFloatingStars(hostName, stars) {
-  const popup = document.createElement("div");
-  popup.className = "floating-stars-popup";
-  popup.textContent = `+${stars}⭐`;
-  popup.style.position = "absolute";
-  popup.style.color = "#ff4da6";
-  popup.style.fontWeight = "600";
-  popup.style.fontSize = "1rem";
-  popup.style.zIndex = "10000";
-  popup.style.pointerEvents = "none";
-
-  const avatar = hostListEl.querySelectorAll("img")[currentIndex];
-  const rect = avatar.getBoundingClientRect();
-  popup.style.left = rect.left + rect.width / 2 + "px";
-  popup.style.top = rect.top - 20 + "px";
-
-  document.body.appendChild(popup);
-
-  popup.animate(
-    [
-      { transform: "translateY(0)", opacity: 1 },
-      { transform: "translateY(-30px)", opacity: 0 }
-    ],
-    { duration: 1200, easing: "ease-out" }
-  );
-
-  setTimeout(() => popup.remove(), 1200);
-}
 
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
