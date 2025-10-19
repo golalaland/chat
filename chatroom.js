@@ -1037,7 +1037,6 @@ replaceStarsWithSVG();
   });
 })();
 
-
 /* ---------- DOM Elements ---------- */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
@@ -1056,42 +1055,41 @@ let hosts = [];
 let currentIndex = 0;
 let currentUser = null;
 
-/* ---------- Load Current User ---------- */
+/* ---------- Load Logged-In User ---------- */
 async function loadCurrentUser() {
   try {
-    const userId = localStorage.getItem("userId"); // make sure this exists
+    const userId = localStorage.getItem("userId");
     if (!userId) return;
 
-    const snap = await getDoc(doc(db, "users", userId));
-    if (snap.exists()) currentUser = { id: userId, ...snap.data() };
+    const userSnap = await getDoc(doc(db, "users", userId));
+    if (userSnap.exists()) currentUser = { id: userId, ...userSnap.data() };
   } catch (err) {
     console.error("Error loading user:", err);
   }
 }
 
-/* ---------- Fetch Featured Hosts + Merge Users ---------- */
+/* ---------- Fetch Featured Hosts & Merge User Info ---------- */
 async function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
   onSnapshot(q, async snapshot => {
-    const hostDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const rawHosts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    const mergedHosts = await Promise.all(
-      hostDocs.map(async host => {
-        const userId = host.userId || host.chatId;
-        if (!userId) return host;
-
+    const merged = await Promise.all(
+      rawHosts.map(async host => {
+        const uid = host.userId || host.chatId;
+        if (!uid) return host;
         try {
-          const userSnap = await getDoc(doc(db, "users", userId));
+          const userSnap = await getDoc(doc(db, "users", uid));
           if (userSnap.exists()) return { ...host, ...userSnap.data() };
         } catch (e) {
-          console.warn("User merge failed:", e);
+          console.warn("Merge failed for user:", e);
         }
         return host;
       })
     );
 
-    hosts = mergedHosts;
+    hosts = merged;
     if (!hosts.length) return;
 
     renderHostAvatars();
@@ -1119,29 +1117,32 @@ function loadHost(i) {
   const host = hosts[i];
   if (!host) return;
 
+  // 🎥 Load video
   videoFrame.src = host.videoUrl || "";
+
+  // 👤 Username
   usernameEl.textContent = host.chatId || "Unknown";
 
+  // 💬 Description line
   const gender = (host.gender || "male").toLowerCase();
   const pronoun = gender === "male" ? "his" : "hers";
   const ageGroup = host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const vibe = host.naturePick || "cool";
   const flair = gender === "male" ? "😎" : "💋";
-
   const line = `A ${fruit} ${vibe} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
-  detailsEl.textContent = "";
 
-  let iChar = 0;
+  detailsEl.textContent = "";
+  let idx = 0;
   (function typeWriter() {
-    if (iChar < line.length) {
-      detailsEl.textContent += line.charAt(iChar);
-      iChar++;
+    if (idx < line.length) {
+      detailsEl.textContent += line.charAt(idx);
+      idx++;
       setTimeout(typeWriter, 25);
     }
   })();
 
-  // highlight avatar
+  // ✨ Highlight avatar
   hostListEl.querySelectorAll("img").forEach((img, n) =>
     img.classList.toggle("active", n === i)
   );
@@ -1150,61 +1151,73 @@ function loadHost(i) {
   giftAmountEl.textContent = "1";
 }
 
-/* ---------- Slider ---------- */
+/* ---------- Gift Slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
 });
 
-/* ---------- Gift ---------- */
+/* ---------- Gift Function ---------- */
 giftBtn.addEventListener("click", async () => {
-  if (!currentUser) return alert("Login required!");
+  if (!currentUser) {
+    alert("Please log in to send gifts!");
+    return;
+  }
 
   const host = hosts[currentIndex];
   if (!host?.id) return;
 
-  const stars = parseInt(giftSlider.value, 10);
-  if ((currentUser.stars || 0) < stars) {
+  const starsToSend = parseInt(giftSlider.value, 10);
+  if ((currentUser.stars || 0) < starsToSend) {
     alert("Not enough stars!");
     return;
   }
 
   try {
-    await updateDoc(doc(db, "users", currentUser.id), { stars: increment(-stars) });
-    await updateDoc(doc(db, "featuredHosts", host.id), { stars: increment(stars) });
-    currentUser.stars -= stars;
-    showStarPopup(`+${stars}⭐ sent to ${host.chatId}`);
-  } catch (e) {
-    console.error("Gift failed:", e);
+    await updateDoc(doc(db, "users", currentUser.id), {
+      stars: increment(-starsToSend)
+    });
+
+    await updateDoc(doc(db, "featuredHosts", host.id), {
+      stars: increment(starsToSend),
+      starsGifted: increment(starsToSend)
+    });
+
+    currentUser.stars -= starsToSend;
+
+    showStarPopup(`+${starsToSend}⭐ sent to ${host.chatId || "Host"}`);
+  } catch (err) {
+    console.error("Gift failed:", err);
   }
 });
 
 /* ---------- Star Popup ---------- */
 function showStarPopup(text) {
-  const el = document.createElement("div");
-  el.className = "star-popup";
-  el.textContent = text;
-  el.style.display = "block";
-  document.body.appendChild(el);
+  const popup = document.createElement("div");
+  popup.className = "star-popup";
+  popup.textContent = text;
+  document.body.appendChild(popup);
+  popup.style.display = "block";
 
-  el.style.transition = "all 1s ease";
-  setTimeout(() => {
-    el.style.opacity = "0";
-    el.style.transform = "translateY(-40px)";
-  }, 50);
-  setTimeout(() => el.remove(), 1000);
+  popup.animate(
+    [
+      { transform: "translateY(0)", opacity: 1 },
+      { transform: "translateY(-40px)", opacity: 0 }
+    ],
+    { duration: 1200, easing: "ease-out" }
+  );
+
+  setTimeout(() => popup.remove(), 1200);
 }
 
 /* ---------- Navigation ---------- */
 prevBtn?.addEventListener("click", () => {
-  const i = (currentIndex - 1 + hosts.length) % hosts.length;
-  loadHost(i);
+  loadHost((currentIndex - 1 + hosts.length) % hosts.length);
 });
 nextBtn?.addEventListener("click", () => {
-  const i = (currentIndex + 1) % hosts.length;
-  loadHost(i);
+  loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* ---------- Modal ---------- */
+/* ---------- Modal Controls ---------- */
 openBtn?.addEventListener("click", () => (modal.style.display = "flex"));
 closeModal?.addEventListener("click", () => (modal.style.display = "none"));
 window.addEventListener("click", e => {
@@ -1212,4 +1225,5 @@ window.addEventListener("click", e => {
 });
 
 /* ---------- Init ---------- */
-loadCurrentUser().then(fetchFeaturedHosts);;
+await loadCurrentUser();
+await fetchFeaturedHosts();
