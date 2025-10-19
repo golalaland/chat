@@ -622,7 +622,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 /* Optional floating stars for gifting */
 .floating-star {
-  position: absolute;
+  position: fixed !important;     /* ⬅️ detached from containers */
   pointer-events: none;
   user-select: none;
   width: 8px;
@@ -630,13 +630,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   background: yellow;
   border-radius: 50%;
   opacity: 0.9;
+  z-index: 999999 !important;     /* ⬅️ float above video and overlays */
   transform: translate(var(--x,0), var(--y,0));
   animation: sparkle-float 1.2s forwards;
 }
 
 @keyframes sparkle-float {
-  0% { transform: translate(var(--x,0), var(--y,0)) scale(1); opacity: 1; }
-  100% { transform: translate(var(--x,0), calc(var(--y,0) - 20px)) scale(0.5); opacity: 0; }
+  0% {
+    transform: translate(var(--x,0), var(--y,0)) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x,0), calc(var(--y,0) - 60px)) scale(0.5);
+    opacity: 0;
+  }
 }
 
 /* ----------------------------
