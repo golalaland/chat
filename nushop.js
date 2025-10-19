@@ -328,60 +328,95 @@ const loadCurrentUser = async () => {
       updateHostPanels();
       renderShop().catch(console.error);
 
-      /* --- Invitee reward flow --- */
-      try {
-        if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
-          let inviterName = data.hostName || data.invitedBy;
+/* --- Invitee reward flow --- */
+try {
+  if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
+    let inviterName = data.hostName || data.invitedBy;
+    let inviteeStars = data.inviteeGiftStars;
 
-          try {
-            const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
-            const invSnap = await getDoc(invRef);
-            if (invSnap.exists()) {
-              const invData = invSnap.data();
-              inviterName =
-                invData.chatId ||
-                invData.hostName ||
-                (invData.email ? invData.email.split('@')[0] : inviterName);
-            }
-          } catch (err) {
-            console.warn('Could not fetch inviter details:', err);
-          }
-
-          const inviteeStars = data.inviteeGiftStars || 50;
-          showReward(
-            `You’ve been gifted +${inviteeStars}⭐️ for joining ${hostName}’s VIP Tab.`,
-            '⭐ Congratulations! ⭐️'
-          );
-
-          await updateDoc(userRef, { inviteeGiftShown: true });
-        }
-      } catch (e) {
-        console.error('Invitee reward flow error', e);
+    try {
+      // Fetch inviter details dynamically
+      const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
+      const invSnap = await getDoc(invRef);
+      if (invSnap.exists()) {
+        const invData = invSnap.data();
+        inviterName =
+          invData.chatId ||
+          invData.hostName ||
+          (invData.email ? invData.email.split('@')[0] : inviterName);
+        // Use inviter’s configured reward amount if available
+        inviteeStars = inviteeStars || invData.inviteeGiftStars;
       }
+    } catch (err) {
+      console.warn('Could not fetch inviter details:', err);
+    }
 
-      /* --- Inviter reward flow --- */
-      try {
-        const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-        const pending = friendsArr.find(f => !f.giftShown && f.email);
-        if (pending) {
-          const friendName = pending.vipName || pending.chatId || (pending.email ? pending.email.split('@')[0] : 'Friend');
-          const inviterStars = pending.giftStars || 200;
-          showReward(
-            `You’ve been gifted +${inviterStars}⭐️, ${friendName} just joined your Tab.`,
-            '⭐ Congratulations! ⭐️'
-          );
-          const updated = friendsArr.map(f => f.email === pending.email ? { ...f, giftShown: true } : f);
-          await updateDoc(userRef, { hostFriends: updated });
-        }
-      } catch (e) {
-        console.error('Inviter reward flow error', e);
-      }
+    // Fallback if none set anywhere
+    inviteeStars = inviteeStars || 50;
+
+    showReward(
+      `You’ve been gifted <b>+${inviteeStars}⭐️</b> for joining <b>${inviterName}</b>’s VIP Tab.`,
+      '⭐ Congratulations! ⭐️'
+    );
+
+    await updateDoc(userRef, {
+      inviteeGiftShown: true,
+      inviteeGiftStars: inviteeStars
     });
-  } catch (e) {
-    console.error('loadCurrentUser error', e);
-  } finally {
-    hideSpinner();
   }
+} catch (e) {
+  console.error('Invitee reward flow error', e);
+}
+
+/* --- Inviter reward flow --- */
+try {
+  const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
+  const pending = friendsArr.find(f => !f.giftShown && f.email);
+
+  if (pending) {
+    const friendName =
+      pending.vipName ||
+      pending.chatId ||
+      (pending.email ? pending.email.split('@')[0] : 'Friend');
+
+    let inviterStars = pending.giftStars;
+
+    // Fetch configurable inviter star amount
+    if (!inviterStars) {
+      try {
+        const sysRef = doc(db, 'config', 'rewards');
+        const sysSnap = await getDoc(sysRef);
+        if (sysSnap.exists()) {
+          inviterStars = sysSnap.data().inviterRewardStars;
+        }
+      } catch (err) {
+        console.warn('Could not fetch reward config:', err);
+      }
+    }
+
+    inviterStars = inviterStars || 200;
+
+    showReward(
+      `You’ve been gifted <b>+${inviterStars}⭐️</b>, <b>${friendName}</b> just joined your Tab.`,
+      '⭐ Congratulations! ⭐️'
+    );
+
+    const updated = friendsArr.map(f =>
+      f.email === pending.email ? { ...f, giftShown: true, giftStars: inviterStars } : f
+    );
+
+    await updateDoc(userRef, { hostFriends: updated });
+  }
+} catch (e) {
+  console.error('Inviter reward flow error', e);
+}
+
+});
+} catch (e) {
+  console.error('loadCurrentUser error', e);
+} finally {
+  hideSpinner();
+}
 };
 
 /* ------------------ Host panels ------------------ */
