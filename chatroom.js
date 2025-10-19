@@ -2,12 +2,15 @@
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp,
-  onSnapshot, query, orderBy, increment, getDocs, where
+  getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc,
+  serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import {
+  getAuth, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
 const firebaseConfig = {
@@ -21,9 +24,34 @@ const firebaseConfig = {
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 
+/* ---------- Initialize Firebase ---------- */
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
+const auth = getAuth(app);
+
+/* ---------- Auth State Watcher ---------- */
+let currentUser = null;
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    currentUser = user;
+    console.log("✅ Logged in as:", user.uid);
+    localStorage.setItem("userId", user.uid);
+  } else {
+    console.warn("⚠️ No logged-in user found");
+    currentUser = null;
+    localStorage.removeItem("userId");
+  }
+});
+
+/* ---------- Helper: Get current user ID ---------- */
+export function getCurrentUserId() {
+  return currentUser ? currentUser.uid : localStorage.getItem("userId");
+}
+
+/* ---------- Exports for other scripts ---------- */
+export { app, db, rtdb, auth };
 
 /* ---------- Global State ---------- */
 const ROOM_ID = "room5";
