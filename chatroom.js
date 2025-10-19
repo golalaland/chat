@@ -1051,54 +1051,39 @@ const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
 
+const db = getFirestore();
 let hosts = [];
 let currentIndex = 0;
-const db = getFirestore();
 
-/* 🔑 Replace this with actual logged-in user ID */
-const currentUserId = localStorage.getItem("currentUserId") || "demoUser";
-
-/* ---------- Fetch featuredHosts ---------- */
-function fetchFeaturedHosts() {
+/* ---------- Fetch featuredHosts + merge users ---------- */
+async function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
-  onSnapshot(q, snapshot => {
-    hosts = snapshot.docs.map(docSnap => ({
+  onSnapshot(q, async snapshot => {
+    const rawHosts = snapshot.docs.map(docSnap => ({
       id: docSnap.id,
       ...docSnap.data()
     }));
 
-    if (!hosts.length) return;
+    // Merge user info if chatId exists
+    const merged = await Promise.all(rawHosts.map(async host => {
+      if (!host.chatId) return host;
+      try {
+        const userRef = doc(db, "users", host.chatId);
+        const userSnap = await getDoc(userRef);
+        return userSnap.exists() ? { ...host, ...userSnap.data() } : host;
+      } catch (e) {
+        console.warn("Merge fail:", host.chatId, e);
+        return host;
+      }
+    }));
 
+    hosts = merged;
+
+    if (!hosts.length) return;
     renderHostAvatars();
     loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
-
-    mergeUserDataAsync();
   });
-}
-
-/* ---------- Merge user info (non-blocking) ---------- */
-async function mergeUserDataAsync() {
-  const mergeTasks = hosts.map(async (host, i) => {
-    const userId = host.userId || host.chatId;
-    if (!userId) return;
-
-    try {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        hosts[i] = { ...userData, ...host }; // user overrides base host fields
-
-        // if currently viewed host, re-render
-        if (i === currentIndex) loadHost(currentIndex);
-      }
-    } catch (e) {
-      console.warn(`⚠️ Could not merge user for ${userId}:`, e);
-    }
-  });
-
-  await Promise.allSettled(mergeTasks);
 }
 
 /* ---------- Render avatars ---------- */
@@ -1110,7 +1095,6 @@ function renderHostAvatars() {
     img.alt = host.chatId || "Host";
     img.classList.add("featured-avatar");
     if (idx === currentIndex) img.classList.add("active");
-
     img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
   });
@@ -1122,33 +1106,29 @@ function loadHost(idx) {
   const host = hosts[idx];
   if (!host) return;
 
+  // 🎥 Video
   videoFrame.src = host.videoUrl || "";
-  usernameEl.textContent = host.chatId || host.username || "Unknown Host";
+
+  // 🪶 Username
+  usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  const gender = (host.gender || "male").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "hers";
+  // 💋 Description line
+  const gender = (host.gender || "person").toLowerCase();
+  const pronoun = gender === "male" ? "his" : "her";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const nature = host.naturePick || "chill";
   const flair = gender === "male" ? "😎" : "💋";
   const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  detailsEl.textContent = textLine;
 
-  detailsEl.textContent = "";
-  let i = 0;
-  function typeWriter() {
-    if (i < textLine.length) {
-      detailsEl.textContent += textLine.charAt(i);
-      i++;
-      setTimeout(typeWriter, 25);
-    }
-  }
-  typeWriter();
-
+  // Highlight active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
 
+  // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 }
@@ -1161,45 +1141,37 @@ giftSlider.addEventListener("input", () => {
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
+  const giftStars = parseInt(giftSlider.value, 10);
   if (!host?.id) return;
 
-  const giftStars = parseInt(giftSlider.value, 10);
-  const hostRef = doc(db, "featuredHosts", host.id);
-  const senderRef = doc(db, "users", currentUserId);
+  // 🧠 Check sender balance
+  const senderId = localStorage.getItem("chatId");
+  if (!senderId) return alert("Please log in first to send gifts.");
+
+  const senderRef = doc(db, "users", senderId);
+  const senderSnap = await getDoc(senderRef);
+  const senderData = senderSnap.exists() ? senderSnap.data() : {};
+  const senderStars = senderData.stars || 0;
+
+  if (senderStars < giftStars) {
+    alert("Not enough ⭐ to gift.");
+    return;
+  }
 
   try {
-    const senderSnap = await getDoc(senderRef);
-    if (!senderSnap.exists()) {
-      alert("⚠️ Your account couldn’t be found.");
-      return;
-    }
+    // Update both host and sender
+    const hostRef = doc(db, "featuredHosts", host.id);
+    await updateDoc(hostRef, { stars: increment(giftStars) });
+    await updateDoc(senderRef, { stars: increment(-giftStars) });
 
-    const senderData = senderSnap.data();
-    const currentBalance = senderData.starsBalance || 0;
-
-    if (currentBalance < giftStars) {
-      alert(`😢 You only have ${currentBalance}⭐ — not enough to send ${giftStars}⭐.`);
-      return;
-    }
-
-    // Deduct from sender, give to host (atomic updates)
-    await Promise.all([
-      updateDoc(senderRef, { starsBalance: increment(-giftStars) }),
-      updateDoc(hostRef, {
-        stars: increment(giftStars),
-        starsGifted: increment(giftStars)
-      })
-    ]);
-
-    alert(`🎁 You gifted ${giftStars}⭐ to ${host.chatId || "this host"}!`);
-    console.log(`⭐ Gifted ${giftStars} to ${host.chatId}`);
-
-    giftSlider.value = 1;
-    giftAmountEl.textContent = "1";
+    console.log(`⭐ You gifted ${giftStars} stars to ${host.chatId}`);
+    alert(`You sent ${giftStars}⭐ to ${host.chatId}!`);
   } catch (err) {
     console.error("Gift error:", err);
-    alert("❌ Error sending gift. Please try again.");
   }
+
+  giftSlider.value = 1;
+  giftAmountEl.textContent = "1";
 });
 
 /* ---------- Navigation ---------- */
