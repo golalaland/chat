@@ -1339,5 +1339,67 @@ window.addEventListener("click", e => {
   }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+  // Elements
+  const notifBell = document.getElementById("notificationBell");
+  const notifDropdown = document.getElementById("notifDropdown");
+  const notifCount = document.getElementById("notifCount");
+  const notifList = document.getElementById("notifList");
+
+  // Audio
+  const notifSound = new Audio("https://cdn.freesound.org/previews/522/522098_9947506-lq.mp3");
+  notifSound.volume = 0.4;
+
+  // Safety check
+  if (!notifBell || !notifDropdown || !notifCount || !notifList) return;
+
+  // Toggle dropdown
+  notifBell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    notifDropdown.style.display = notifDropdown.style.display === "block" ? "none" : "block";
+    notifCount.style.display = "none"; // reset badge
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!notifBell.contains(e.target) && !notifDropdown.contains(e.target)) {
+      notifDropdown.style.display = "none";
+    }
+  });
+
+  // Sound throttle
+  let lastSoundTime = 0;
+  const SOUND_THROTTLE = 1000; // 1 second minimum between sounds
+
+  // Push notification function
+  window.pushNotification = function(text) {
+    // Create new item
+    const li = document.createElement("li");
+    li.textContent = text;
+    li.classList.add("flash");
+    notifList.prepend(li);
+
+    // Limit list to 10
+    if (notifList.children.length > 10) {
+      notifList.removeChild(notifList.lastChild);
+    }
+
+    // Update badge
+    let currentCount = parseInt(notifCount.textContent) || 0;
+    notifCount.textContent = currentCount + 1;
+    notifCount.style.display = "inline-block";
+
+    // Animate bell
+    notifBell.classList.add("glow");
+    setTimeout(() => notifBell.classList.remove("glow"), 800);
+
+    // Play sound with throttle
+    const now = Date.now();
+    if (now - lastSoundTime > SOUND_THROTTLE) {
+      notifSound.play().catch(() => {});
+      lastSoundTime = now;
+    }
+  };
+});
 /* ---------- Init ---------- */
 fetchFeaturedHosts();
