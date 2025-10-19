@@ -185,23 +185,30 @@ async function showGiftModal(targetUid, targetData) {
   });
 }
 
-/* ---------- Gift Alert + Notification ---------- */
+/* ---------- Gift Alert (Floating Popup) ---------- */
+let giftAlertTimeout;
 function showGiftAlert(text, senderName) {
   const alertEl = document.getElementById("giftAlert");
   if (!alertEl) return;
 
-  // 1️⃣ Floating popup
+  // Clear previous timeout to prevent overlap jams
+  if (giftAlertTimeout) clearTimeout(giftAlertTimeout);
+
   alertEl.textContent = text;
   alertEl.classList.add("show", "glow");
   createFloatingStars();
 
-  setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
+  giftAlertTimeout = setTimeout(() => {
+    alertEl.classList.remove("show", "glow");
+    giftAlertTimeout = null;
+  }, 4000);
 
-  // 2️⃣ Update notif bell
+  // Push bell notification safely
   pushNotification(`${senderName ? senderName + ": " : ""}${text}`);
 }
 
-/* ---------- Floating Stars ---------- */
+/* ---------- Floating Stars (Debounced) ---------- */
+let starQueue = [];
 function createFloatingStars() {
   for (let i = 0; i < 6; i++) {
     const star = document.createElement("div");
@@ -209,11 +216,17 @@ function createFloatingStars() {
     star.className = "floating-star";
     document.body.appendChild(star);
 
+    // random position & size
     star.style.left = `${50 + (Math.random() * 100 - 50)}%`;
     star.style.top = "45%";
     star.style.fontSize = `${16 + Math.random() * 16}px`;
 
-    setTimeout(() => star.remove(), 2000);
+    // queue removal to avoid DOM jam
+    starQueue.push(star);
+    setTimeout(() => {
+      star.remove();
+      starQueue = starQueue.filter(s => s !== star);
+    }, 2000);
   }
 }
 
