@@ -165,10 +165,12 @@ const showThemedMessage = (title, message, duration = 2000) => {
 function showReward(message, title = "🎉 Reward Unlocked!") {
   if (!DOM.rewardModal) return;
   DOM.rewardTitle.textContent = title;
-DOM.rewardMessage.innerHTML = message;
+  DOM.rewardMessage.innerHTML = message; // ✅ allow bold tags to render
   DOM.rewardModal.classList.remove('hidden');
   // Auto-hide after 4.5s
-  setTimeout(() => { DOM.rewardModal.classList.add('hidden'); }, 4500);
+  setTimeout(() => {
+    DOM.rewardModal.classList.add('hidden');
+  }, 4500);
 }
 
 /* ------------------ Image preview ------------------ */
