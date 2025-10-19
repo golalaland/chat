@@ -1053,43 +1053,37 @@ const nextBtn = document.getElementById("nextHost");
 
 let hosts = [];
 let currentIndex = 0;
-let currentUser = null;
+const db = getFirestore();
 
-/* ---------- Load Logged-In User ---------- */
-async function loadCurrentUser() {
-  try {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
-
-    const userSnap = await getDoc(doc(db, "users", userId));
-    if (userSnap.exists()) currentUser = { id: userId, ...userSnap.data() };
-  } catch (err) {
-    console.error("Error loading user:", err);
-  }
-}
-
-/* ---------- Fetch Featured Hosts & Merge User Info ---------- */
+/* ---------- Fetch featuredHosts + merge user info ---------- */
 async function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
   onSnapshot(q, async snapshot => {
-    const rawHosts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const fetchedHosts = [];
 
-    const merged = await Promise.all(
-      rawHosts.map(async host => {
-        const uid = host.userId || host.chatId;
-        if (!uid) return host;
-        try {
-          const userSnap = await getDoc(doc(db, "users", uid));
-          if (userSnap.exists()) return { ...host, ...userSnap.data() };
-        } catch (e) {
-          console.warn("Merge failed for user:", e);
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      let mergedData = { id: docSnap.id, ...data };
+
+      // Merge from "users" if matching userId or chatId exists
+      try {
+        const userId = data.userId || data.chatId;
+        if (userId) {
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            mergedData = { ...mergedData, ...userSnap.data() };
+          }
         }
-        return host;
-      })
-    );
+      } catch (e) {
+        console.warn("Couldn’t merge user data for:", data.chatId, e);
+      }
 
-    hosts = merged;
+      fetchedHosts.push(mergedData);
+    }
+
+    hosts = fetchedHosts;
     if (!hosts.length) return;
 
     renderHostAvatars();
@@ -1097,111 +1091,116 @@ async function fetchFeaturedHosts() {
   });
 }
 
-/* ---------- Render Avatars ---------- */
+/* ---------- Render avatars ---------- */
 function renderHostAvatars() {
   hostListEl.innerHTML = "";
-  hosts.forEach((host, i) => {
+  hosts.forEach((host, idx) => {
     const img = document.createElement("img");
-    img.src = host.popupPhoto || host.profilePic || "";
+    img.src = host.popupPhoto || "";
     img.alt = host.chatId || "Host";
     img.classList.add("featured-avatar");
-    if (i === currentIndex) img.classList.add("active");
-    img.addEventListener("click", () => loadHost(i));
+    if (idx === currentIndex) img.classList.add("active");
+
+    img.addEventListener("click", () => loadHost(idx));
     hostListEl.appendChild(img);
   });
 }
 
-/* ---------- Load Host ---------- */
-function loadHost(i) {
-  currentIndex = i;
-  const host = hosts[i];
+/* ---------- Load host ---------- */
+function loadHost(idx) {
+  currentIndex = idx;
+  const host = hosts[idx];
   if (!host) return;
 
-  // 🎥 Load video
+  // 🎥 Video
   videoFrame.src = host.videoUrl || "";
 
-  // 👤 Username
-  usernameEl.textContent = host.chatId || "Unknown";
+  // 🪶 Username
+  usernameEl.textContent = host.chatId || host.username || "Unknown Host";
+  usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💬 Description line
+  // 💋 Gender pronoun logic (strict male/female)
   const gender = (host.gender || "male").toLowerCase();
   const pronoun = gender === "male" ? "his" : "hers";
-  const ageGroup = host.age >= 30 ? "30s" : "20s";
+  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
-  const vibe = host.naturePick || "cool";
+  const nature = host.naturePick || "chill";
   const flair = gender === "male" ? "😎" : "💋";
-  const line = `A ${fruit} ${vibe} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
+  // Typewriter effect
   detailsEl.textContent = "";
-  let idx = 0;
-  (function typeWriter() {
-    if (idx < line.length) {
-      detailsEl.textContent += line.charAt(idx);
-      idx++;
-      setTimeout(typeWriter, 25);
+  let i = 0;
+  function typeWriter() {
+    if (i < textLine.length) {
+      detailsEl.textContent += textLine.charAt(i);
+      i++;
+      setTimeout(typeWriter, 30);
     }
-  })();
+  }
+  typeWriter();
 
-  // ✨ Highlight avatar
-  hostListEl.querySelectorAll("img").forEach((img, n) =>
-    img.classList.toggle("active", n === i)
-  );
+  // 🌟 Highlight active avatar
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === idx);
+  });
 
+  // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 }
 
-/* ---------- Gift Slider ---------- */
+/* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
 });
 
-/* ---------- Gift Function ---------- */
+/* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
-  if (!currentUser) {
-    alert("Please log in to send gifts!");
-    return;
-  }
-
   const host = hosts[currentIndex];
   if (!host?.id) return;
 
-  const starsToSend = parseInt(giftSlider.value, 10);
-  if ((currentUser.stars || 0) < starsToSend) {
-    alert("Not enough stars!");
-    return;
-  }
+  const giftStars = parseInt(giftSlider.value, 10);
+  const hostRef = doc(db, "featuredHosts", host.id);
 
   try {
-    await updateDoc(doc(db, "users", currentUser.id), {
-      stars: increment(-starsToSend)
+    await updateDoc(hostRef, {
+      stars: increment(giftStars),
+      starsGifted: increment(giftStars)
     });
 
-    await updateDoc(doc(db, "featuredHosts", host.id), {
-      stars: increment(starsToSend),
-      starsGifted: increment(starsToSend)
-    });
+    showFloatingStars(host.chatId, giftStars);
 
-    currentUser.stars -= starsToSend;
-
-    showStarPopup(`+${starsToSend}⭐ sent to ${host.chatId || "Host"}`);
+    giftSlider.value = 1;
+    giftAmountEl.textContent = "1";
   } catch (err) {
-    console.error("Gift failed:", err);
+    console.error("Error gifting stars:", err);
   }
 });
 
-/* ---------- Star Popup ---------- */
-function showStarPopup(text) {
+/* ---------- Floating star animation ---------- */
+function showFloatingStars(hostName, stars) {
   const popup = document.createElement("div");
-  popup.className = "star-popup";
-  popup.textContent = text;
+  popup.className = "floating-stars-popup";
+  popup.textContent = `+${stars}⭐`;
+  popup.style.position = "absolute";
+  popup.style.color = "#ff4da6";
+  popup.style.fontWeight = "600";
+  popup.style.fontSize = "1rem";
+  popup.style.zIndex = "10000";
+  popup.style.pointerEvents = "none";
+
+  const avatar = hostListEl.querySelectorAll("img")[currentIndex];
+  const rect = avatar.getBoundingClientRect();
+  popup.style.left = rect.left + rect.width / 2 + "px";
+  popup.style.top = rect.top - 20 + "px";
+
   document.body.appendChild(popup);
-  popup.style.display = "block";
 
   popup.animate(
     [
       { transform: "translateY(0)", opacity: 1 },
-      { transform: "translateY(-40px)", opacity: 0 }
+      { transform: "translateY(-30px)", opacity: 0 }
     ],
     { duration: 1200, easing: "ease-out" }
   );
@@ -1210,20 +1209,25 @@ function showStarPopup(text) {
 }
 
 /* ---------- Navigation ---------- */
-prevBtn?.addEventListener("click", () => {
+prevBtn.addEventListener("click", e => {
+  e.preventDefault();
   loadHost((currentIndex - 1 + hosts.length) % hosts.length);
 });
-nextBtn?.addEventListener("click", () => {
+nextBtn.addEventListener("click", e => {
+  e.preventDefault();
   loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* ---------- Modal Controls ---------- */
-openBtn?.addEventListener("click", () => (modal.style.display = "flex"));
-closeModal?.addEventListener("click", () => (modal.style.display = "none"));
+/* ---------- Modal control ---------- */
+openBtn.addEventListener("click", () => {
+  modal.style.display = "flex";
+  modal.style.justifyContent = "center";
+  modal.style.alignItems = "center";
+});
+closeModal.addEventListener("click", () => (modal.style.display = "none"));
 window.addEventListener("click", e => {
   if (e.target === modal) modal.style.display = "none";
 });
 
 /* ---------- Init ---------- */
-await loadCurrentUser();
-await fetchFeaturedHosts();
+fetchFeaturedHosts();
