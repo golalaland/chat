@@ -1037,6 +1037,7 @@ replaceStarsWithSVG();
   });
 })();
 
+
 /* ---------- DOM Elements ---------- */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
@@ -1053,17 +1054,49 @@ const nextBtn = document.getElementById("nextHost");
 
 let hosts = [];
 let currentIndex = 0;
+let currentUser = null;
 
-/* ---------- Fetch + Listen to featuredHosts ---------- */
+/* ---------- Load current user ---------- */
+async function loadCurrentUser() {
+  // Example: use your auth userId or session ID here
+  const userId = localStorage.getItem("userId"); // ensure you set this at login
+  if (!userId) return null;
+
+  const userSnap = await getDoc(doc(db, "users", userId));
+  if (userSnap.exists()) {
+    currentUser = { id: userId, ...userSnap.data() };
+  }
+}
+
+/* ---------- Fetch Featured Hosts + Merge with Users ---------- */
 async function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
-  onSnapshot(q, snapshot => {
-    hosts = snapshot.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
+  onSnapshot(q, async snapshot => {
+    const hostDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
+    const mergedHosts = await Promise.all(
+      hostDocs.map(async host => {
+        try {
+          const userId = host.userId || host.chatId;
+          if (!userId) return host;
+
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            return { ...host, ...userData };
+          } else {
+            return host;
+          }
+        } catch (e) {
+          console.error("Error merging user:", e);
+          return host;
+        }
+      })
+    );
+
+    hosts = mergedHosts;
     if (!hosts.length) return;
 
     renderHostAvatars();
@@ -1071,12 +1104,12 @@ async function fetchFeaturedHosts() {
   });
 }
 
-/* ---------- Render avatars ---------- */
+/* ---------- Render Avatars ---------- */
 function renderHostAvatars() {
   hostListEl.innerHTML = "";
   hosts.forEach((host, idx) => {
     const img = document.createElement("img");
-    img.src = host.popupPhoto || "";
+    img.src = host.popupPhoto || host.profilePic || "";
     img.alt = host.chatId || "Host";
     img.classList.add("featured-avatar");
     if (idx === currentIndex) img.classList.add("active");
@@ -1086,7 +1119,7 @@ function renderHostAvatars() {
   });
 }
 
-/* ---------- Load host ---------- */
+/* ---------- Load Host ---------- */
 function loadHost(idx) {
   currentIndex = idx;
   const host = hosts[idx];
@@ -1099,7 +1132,7 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Description line with proper gender pronoun
+  // 💋 Descriptor
   const gender = (host.gender || "male").toLowerCase();
   const pronoun = gender === "male" ? "his" : "hers";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
@@ -1108,17 +1141,15 @@ function loadHost(idx) {
   const flair = gender === "male" ? "😎" : "💋";
   const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  // Optional: Typewriter effect
   detailsEl.textContent = "";
   let i = 0;
-  function typeWriter() {
+  (function typeWriter() {
     if (i < textLine.length) {
       detailsEl.textContent += textLine.charAt(i);
       i++;
-      setTimeout(typeWriter, 30);
+      setTimeout(typeWriter, 25);
     }
-  }
-  typeWriter();
+  })();
 
   // 🌟 Highlight active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
@@ -1130,66 +1161,73 @@ function loadHost(idx) {
   giftAmountEl.textContent = "1";
 }
 
-/* ---------- Gift slider ---------- */
+/* ---------- Gift Slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
 });
 
-/* ---------- Send gift ---------- */
+/* ---------- Send Gift ---------- */
 giftBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    alert("Login required to send gifts!");
+    return;
+  }
+
   const host = hosts[currentIndex];
   if (!host?.id) return;
 
   const giftStars = parseInt(giftSlider.value, 10);
+  const userRef = doc(db, "users", currentUser.id);
   const hostRef = doc(db, "featuredHosts", host.id);
 
+  // 💎 Check user's available stars
+  if ((currentUser.stars || 0) < giftStars) {
+    alert("Not enough stars to send!");
+    return;
+  }
+
   try {
+    // Deduct from sender
+    await updateDoc(userRef, { stars: increment(-giftStars) });
+
+    // Add to host
     await updateDoc(hostRef, {
       stars: increment(giftStars),
       starsGifted: increment(giftStars)
     });
 
-    // Optional: floating +⭐ animation
-    showFloatingStars(host.chatId, giftStars);
+    // Update local balance
+    currentUser.stars -= giftStars;
 
-    // Reset slider
-    giftSlider.value = 1;
-    giftAmountEl.textContent = "1";
+    // Show floating popup
+    showFloatingStars(host.chatId, giftStars);
   } catch (err) {
-    console.error("Error gifting stars:", err);
+    console.error("Gift error:", err);
   }
 });
 
-/* ---------- Optional: floating star animation ---------- */
+/* ---------- Floating Star Popup ---------- */
 function showFloatingStars(hostName, stars) {
   const popup = document.createElement("div");
   popup.className = "floating-stars-popup";
-  popup.textContent = `+${stars}⭐`;
-  popup.style.position = "absolute";
+  popup.textContent = `+${stars}⭐ sent to ${hostName}`;
+  popup.style.position = "fixed";
+  popup.style.left = "50%";
+  popup.style.top = "20%";
+  popup.style.transform = "translateX(-50%)";
   popup.style.color = "#ff4da6";
-  popup.style.fontWeight = "600";
+  popup.style.fontWeight = "700";
   popup.style.fontSize = "1rem";
-  popup.style.zIndex = "10000";
-  popup.style.pointerEvents = "none";
-
-  // position near the avatar
-  const avatar = hostListEl.querySelectorAll("img")[currentIndex];
-  const rect = avatar.getBoundingClientRect();
-  popup.style.left = rect.left + rect.width / 2 + "px";
-  popup.style.top = rect.top - 20 + "px";
+  popup.style.zIndex = "9999";
+  popup.style.opacity = "1";
+  popup.style.transition = "all 0.8s ease";
 
   document.body.appendChild(popup);
-
-  // Animate
-  popup.animate(
-    [
-      { transform: "translateY(0)", opacity: 1 },
-      { transform: "translateY(-30px)", opacity: 0 }
-    ],
-    { duration: 1200, easing: "ease-out" }
-  );
-
-  setTimeout(() => popup.remove(), 1200);
+  setTimeout(() => {
+    popup.style.transform = "translate(-50%, -40px)";
+    popup.style.opacity = "0";
+  }, 100);
+  setTimeout(() => popup.remove(), 900);
 }
 
 /* ---------- Navigation ---------- */
@@ -1202,7 +1240,7 @@ nextBtn.addEventListener("click", e => {
   loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* ---------- Modal control ---------- */
+/* ---------- Modal Control ---------- */
 openBtn.addEventListener("click", () => {
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
@@ -1214,4 +1252,5 @@ window.addEventListener("click", e => {
 });
 
 /* ---------- Init ---------- */
+await loadCurrentUser();
 fetchFeaturedHosts();
