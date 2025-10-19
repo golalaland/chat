@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -960,69 +959,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .featured-host-socials {
   display: none !important;
 }
-
-.notification-bell {
-  position: relative;
-  cursor: pointer;
-  font-size: 20px;
-  user-select: none;
-  margin-left: 8px;
-}
-
-.notif-badge {
-  position: absolute;
-  top: -5px;
-  right: -6px;
-  background: red;
-  color: white;
-  font-size: 11px;
-  font-weight: bold;
-  padding: 2px 5px;
-  border-radius: 10px;
-  display: none;
-}
-
-.notif-dropdown {
-  position: absolute;
-  right: 0;
-  top: 28px;
-  background: #111;
-  border: 1px solid #333;
-  border-radius: 6px;
-  width: 240px;
-  display: none;
-  z-index: 1000;
-}
-
-.notif-header {
-  padding: 8px;
-  font-weight: bold;
-  color: #ffd700;
-  border-bottom: 1px solid #333;
-}
-
-#notifList {
-  max-height: 200px;
-  overflow-y: auto;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-#notifList li {
-  padding: 8px 10px;
-  font-size: 13px;
-  border-bottom: 1px solid #222;
-  color: #ddd;
-}
-
-#notifList li:hover {
-  background: #222;
-}
-
-.hidden {
-  display: none;
-}
 </style>
 </head>
 <body>
@@ -1156,39 +1092,28 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   <button id="sendBtn" class="send-btn">Send</button>
 </div>
     </div>
- <div class="profile" id="profileBox">
-  <div class="profile-card">
-    <div class="profile-top">
-      <div class="profile-left">
-        <div id="profileName" class="profile-name">GUEST 0000</div>
-        <div>
-          <span class="profile-label">STARS COLLECTED:</span>
-          <span class="profile-value"><span id="starCount">0</span>⭐️</span>
-        </div>
-      </div>
-      <div class="profile-actions">
-        <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
-        <button id="tipBtn" class="small-btn">💵</button>
-
-        <!-- 🔔 Notification Bell -->
-        <div class="notification-bell" id="notificationBell">
-          🔔
-          <span id="notifCount" class="notif-badge">0</span>
-          <div id="notifDropdown" class="notif-dropdown hidden">
-            <div class="notif-header">Notifications</div>
-            <ul id="notifList"></ul>
+    <div class="profile" id="profileBox">
+      <div class="profile-card">
+        <div class="profile-top">
+          <div class="profile-left">
+            <div id="profileName" class="profile-name">GUEST 0000</div>
+            <div>
+              <span class="profile-label">STARS COLLECTED:</span>
+              <span class="profile-value"><span id="starCount">0</span>⭐️</span>
+            </div>
+          </div>
+          <div class="profile-actions">
+           <a id="redeemBtn" class="small-btn" href="#" target="_blank" style="display:none">Redeem</a>
+            <button id="tipBtn" class="small-btn">💵</button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div>
-      <span class="profile-label">CASH EARNED:</span>
-      <span class="profile-value">₦<span id="cashCount">0</span></span>
+        <div>
+          <span class="profile-label">CASH EARNED:</span>
+          <span class="profile-value">₦<span id="cashCount">0</span></span>
+        </div>
     </div>
   </div>
 </div>
-
 <div class="star-popup" id="starPopup">
   <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
@@ -1239,5 +1164,3 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <script type="module" src="chatroom.js"></script>
 </body>
 </html>
-
-
