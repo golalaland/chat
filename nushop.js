@@ -420,7 +420,8 @@ try {
 } catch (e) {
   console.error('Invite Reward Flow Error:', e);
 }
-});
+
+// ✅ these below wrap up the parent try-catch for loadCurrentUser
 } catch (e) {
   console.error('loadCurrentUser error', e);
 } finally {
