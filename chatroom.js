@@ -59,7 +59,6 @@ const CHAT_COLLECTION = "messages_room5";
 const BUZZ_COST = 50;
 const SEND_COST = 1;
 
-let currentUser = null;
 let lastMessagesArray = [];
 let starInterval = null;
 let refs = {};
