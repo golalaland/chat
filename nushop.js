@@ -398,7 +398,7 @@ try {
 
       inviterStars = inviterStars || 200;
 
-      // Show popup for inviter (even if it’s from earlier)
+      // Show popup for inviter
       showReward(
         `You’ve been gifted <b>+${inviterStars}⭐️</b>, <b>${friendName}</b> just joined your Tab.`,
         '⭐ Congratulations! ⭐️'
@@ -413,7 +413,7 @@ try {
 
       await updateDoc(userRef, { hostFriends: updatedFriends });
 
-      // Optional delay between multiple pending rewards
+      // Delay between multiple pending rewards
       await new Promise(res => setTimeout(res, 1500));
     }
   }
