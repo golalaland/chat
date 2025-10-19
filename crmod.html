@@ -1,3 +1,6 @@
+
+
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -824,90 +827,75 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 }
 
 /* 👤 Info and actions section */
-/* ---------- Footer Layout ---------- */
 .featured-host-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 14px;
   padding: 10px 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #1a1a1a;
+  text-align: center;
+  font-size: 0.9rem;
 }
 
-/* ---------- Username / Details ---------- */
+/* Username + Details */
 .featured-host-username {
   font-weight: 600;
-  font-size: 14px;
-  color: var(--accent);
+  font-size: 1.05em;
 }
-
 .featured-host-details {
-  font-size: 12px;
+  font-size: 0.85em;
   opacity: 0.8;
-  margin-top: 2px;
+  margin-bottom: 6px;
 }
 
-/* ---------- Gift Container ---------- */
+/* 🎁 Gift slider section */
 .gift-slider-container {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--card);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 6px 10px;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.05);
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  backdrop-filter: blur(4px);
 }
 
-/* ---------- Slider ---------- */
-.gift-slider-container input[type="range"] {
-  width: 70px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* ---------- Gift Amount + Star ---------- */
-#giftingDisplay {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-#giftAmount {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--accent);
-}
-
-.gift-slider-container span::after {
-  content: "⭐";
-  margin-left: 2px;
-  font-size: 13px;
-  color: var(--accent);
-}
-
-/* ---------- Gift Button ---------- */
-.featured-gift-btn {
-  border: none;
+/* Pink gradient slider */
+#giftSlider {
+  flex: 1;
+  appearance: none;
+  height: 6px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ff4da6, #ff80c8);
   outline: none;
-  background: linear-gradient(90deg, var(--accent), #ff4da6);
-  color: #fff;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
   cursor: pointer;
+}
+#giftSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ff4da6;
+  border: 2px solid #fff;
   transition: 0.2s ease;
 }
+#giftSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
 
+/* Gift button */
+.featured-gift-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ff4081, #ff80ab);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
 .featured-gift-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(255, 77, 166, 0.4);
 }
 
-.featured-gift-btn:active {
-  transform: scale(0.97);
-}
 .gift-slider-container {
   display: flex;
   justify-content: center;
@@ -1030,7 +1018,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
     <!-- Number + star inline -->
     <span id="giftDisplay" style="display:inline-flex; align-items:center; gap:2px;">
-   <span id="giftAmount">1</span>
+      <span id="giftAmount">1</span>
+      <span>⭐</span>
+    </span>
 
     <!-- Button -->
     <button id="featuredGiftBtn" class="featured-gift-btn">GIFT 🎁</button>
@@ -1177,4 +1167,5 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <script type="module" src="chatroom.js"></script>
 </body>
 </html>
+
 
