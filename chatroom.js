@@ -308,25 +308,30 @@ function attachMessagesListener() {
       renderMessagesFromArray([{ id: msgId, data: msg }]);
 
       /* 💝 Detect personalized gift messages */
-      if (msg.uid === "system" && msg.highlight && msg.content?.includes("gifted")) {
+if (msg.highlight && msg.content?.includes("gifted")) {
+  // Skip if alert already shown for this message
+  if (shownGiftAlerts.has(msgId)) return;
 
-        // ⚡ Skip if alert already shown for this message
-        if (shownGiftAlerts.has(msgId)) return;
+  const myId = currentUser?.chatId?.toLowerCase();
+  if (!myId) return;
 
-        const myId = currentUser?.chatId?.toLowerCase();
-        if (!myId) return;
+  // e.g. "Nushi gifted Goll 50 ⭐️"
+  const parts = msg.content.split(" ");
+  const sender = parts[0];
+  const receiver = parts[2];
+  const amount = parts[3];
 
-        const [sender, , receiver, amount] = msg.content.split(" "); // e.g., Nushi gifted Goll 50
-        if (!sender || !receiver || !amount) return;
+  if (!sender || !receiver || !amount) return;
 
-        if (sender.toLowerCase() === myId) {
-          showGiftAlert(`You gifted ${receiver} ${amount} stars ⭐️`);
-          saveShownGift(msgId);
-        } else if (receiver.toLowerCase() === myId) {
-          showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
-          saveShownGift(msgId);
-        }
-      }
+  // 🎯 Only show once per gift, per user
+  if (sender.toLowerCase() === myId) {
+    showGiftAlert(`You gifted ${receiver} ${amount} stars ⭐️`);
+    saveShownGift(msgId);
+  } else if (receiver.toLowerCase() === myId) {
+    showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
+    saveShownGift(msgId);
+  }
+}
 
       // 🌀 Keep scroll for your own messages
       if (refs.messagesEl && msg.uid === currentUser?.uid) {
