@@ -1153,56 +1153,60 @@ giftSlider.addEventListener("input", () => {
 
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
+  console.log("🎁 Gift button clicked");
+
   const host = hosts[currentIndex];
-  if (!host?.id) return;
+  if (!host?.id) {
+    console.warn("⚠️ No host selected");
+    return;
+  }
 
   const giftStars = parseInt(giftSlider.value, 10);
-  const currentUserId = localStorage.getItem("userId"); // or however you store signed-in user ID
+  console.log("Gift stars:", giftStars);
 
+  const currentUserId = localStorage.getItem("userId");
   if (!currentUserId) {
-    console.warn("⚠️ No user logged in!");
+    console.warn("⚠️ No logged-in user found");
     return;
   }
 
   try {
-    // 🔹 Get sender data
     const senderRef = doc(db, "users", currentUserId);
     const senderSnap = await getDoc(senderRef);
 
     if (!senderSnap.exists()) {
-      console.warn("⚠️ Sender not found in users collection.");
+      console.warn("⚠️ Sender not found in users collection");
       return;
     }
 
     const senderData = senderSnap.data();
     const currentBalance = senderData.stars || 0;
+    console.log(`💫 Sender balance: ${currentBalance} stars`);
 
-    // 🔸 Check balance before sending
     if (currentBalance < giftStars) {
       console.warn(`❌ Not enough stars. You have ${currentBalance}, need ${giftStars}.`);
       return;
     }
 
-    // 🔹 Deduct from sender
-    await updateDoc(senderRef, {
-      stars: increment(-giftStars)
-    });
+    console.log("✅ Enough stars, proceeding to send...");
 
-    // 🔹 Credit to host
+    // 🔹 Deduct from sender
+    await updateDoc(senderRef, { stars: increment(-giftStars) });
+
+    // 🔹 Credit host
     const hostRef = doc(db, "featuredHosts", host.id);
     await updateDoc(hostRef, {
       stars: increment(giftStars),
       starsGifted: increment(giftStars)
     });
 
-    console.log(`🌟 Sent ${giftStars} stars to ${host.chatId || host.username}!`);
+    console.log(`🌟 Successfully sent ${giftStars} stars to ${host.chatId || host.username}`);
     giftSlider.value = 1;
     giftAmountEl.textContent = "1";
   } catch (err) {
-    console.error("Error sending stars:", err);
+    console.error("🔥 Error sending gift:", err);
   }
 });
-
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
   e.preventDefault();
