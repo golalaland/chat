@@ -1241,10 +1241,10 @@ giftBtn.addEventListener("click", async () => {
       updateDoc(hostRef, { stars: increment(giftStars), starsGifted: increment(giftStars) })
     ]);
 
-    console.log(`✅ Sent ${giftStars}⭐ to ${host.chatId}`);
+    console.log(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}`);
 
     // 🎁 Replace plain alert with a clean animated alert
-    showGiftAlert(`🎉 You sent ${giftStars}⭐ to ${host.chatId}!`);
+    showGiftAlert(`You sent ${giftStars} stars ⭐ to ${host.chatId}!`);
   } catch (err) {
     console.error("Gift sending failed:", err);
     showGiftAlert("⚠️ Something went wrong sending your stars.");
