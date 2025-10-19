@@ -1055,14 +1055,33 @@ let hosts = [];
 let currentIndex = 0;
 
 /* ---------- Fetch + Listen to featuredHosts ---------- */
+/* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
 async function fetchFeaturedHosts() {
   try {
     const q = collection(db, "featuredHosts");
-    onSnapshot(q, snapshot => {
-      hosts = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data()
-      }));
+    onSnapshot(q, async snapshot => {
+      const tempHosts = [];
+
+      for (const docSnap of snapshot.docs) {
+        const hostData = { id: docSnap.id, ...docSnap.data() };
+        let merged = { ...hostData };
+
+        if (hostData.userId || hostData.chatId) {
+          try {
+            const userRef = doc(db, "users", hostData.userId || hostData.chatId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              merged = { ...merged, ...userSnap.data() };
+            }
+          } catch (err) {
+            console.warn("⚠️ Could not fetch user for host:", hostData.userId || hostData.chatId, err);
+          }
+        }
+
+        tempHosts.push(merged);
+      }
+
+      hosts = tempHosts;
 
       if (!hosts.length) {
         console.warn("⚠️ No featured hosts found.");
