@@ -1,4 +1,3 @@
-
 /* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -29,20 +28,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
-
-/* ---------- 🔔 Notification Setup ---------- */
-if ("Notification" in window) {
-  Notification.requestPermission().then(permission => {
-    console.log("🔔 Notification permission:", permission);
-  });
-}
-
-function showBrowserNotification(title, body) {
-  if (!("Notification" in window)) return;
-  if (Notification.permission === "granted") {
-    new Notification(title, { body, icon: "/favicon.ico" });
-  }
-}
 
 /* ---------- Auth State Watcher ---------- */
 let currentUser = null;
@@ -186,29 +171,18 @@ async function showGiftModal(targetUid, targetData) {
 }
 
 /* ---------- Gift Alert (Floating Popup) ---------- */
-let giftAlertTimeout;
-function showGiftAlert(text, senderName) {
+function showGiftAlert(text) {
   const alertEl = document.getElementById("giftAlert");
   if (!alertEl) return;
 
-  // Clear previous timeout to prevent overlap jams
-  if (giftAlertTimeout) clearTimeout(giftAlertTimeout);
-
   alertEl.textContent = text;
   alertEl.classList.add("show", "glow");
+
   createFloatingStars();
 
-  giftAlertTimeout = setTimeout(() => {
-    alertEl.classList.remove("show", "glow");
-    giftAlertTimeout = null;
-  }, 4000);
-
-  // Push bell notification safely
-  pushNotification(`${senderName ? senderName + ": " : ""}${text}`);
+  setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
 }
 
-/* ---------- Floating Stars (Debounced) ---------- */
-let starQueue = [];
 function createFloatingStars() {
   for (let i = 0; i < 6; i++) {
     const star = document.createElement("div");
@@ -216,17 +190,11 @@ function createFloatingStars() {
     star.className = "floating-star";
     document.body.appendChild(star);
 
-    // random position & size
     star.style.left = `${50 + (Math.random() * 100 - 50)}%`;
     star.style.top = "45%";
     star.style.fontSize = `${16 + Math.random() * 16}px`;
 
-    // queue removal to avoid DOM jam
-    starQueue.push(star);
-    setTimeout(() => {
-      star.remove();
-      starQueue = starQueue.filter(s => s !== star);
-    }, 2000);
+    setTimeout(() => star.remove(), 2000);
   }
 }
 
@@ -264,10 +232,8 @@ function setupUsersListener() {
 }
 setupUsersListener();
 
-/* ---------- Render Messages with Notifications ---------- */
+/* ---------- Render Messages ---------- */
 let scrollPending = false;
-let unreadCount = 0; // 🔔 counter for new messages
-const notifSound = new Audio("/sounds/notify.mp3"); // add your ping sound file
 
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
@@ -282,16 +248,12 @@ function renderMessagesFromArray(messages) {
 
     const usernameEl = document.createElement("span");
     usernameEl.className = "meta";
-    usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">
-      ${m.chatId || "Guest"}
-    </span>:`;
-    usernameEl.style.color =
-      m.uid && refs.userColors?.[m.uid] ? refs.userColors[m.uid] : "#fff";
+    usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
+    usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
     usernameEl.style.marginRight = "4px";
 
     const contentEl = document.createElement("span");
-    contentEl.className =
-      m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
     contentEl.textContent = " " + (m.content || "");
 
     if (m.buzzColor) contentEl.style.background = m.buzzColor;
@@ -302,61 +264,21 @@ function renderMessagesFromArray(messages) {
 
     wrapper.append(usernameEl, contentEl);
     refs.messagesEl.appendChild(wrapper);
-
-    /* 🔔 Notifications (for messages not from current user) */
-    if (m.uid !== currentUser?.uid) {
-      unreadCount++;
-      updateBellCounter(unreadCount);
-      playNotifSound();
-
-      if (Notification.permission === "granted") {
-        const notifText = m.content?.slice(0, 100) || "New message";
-        showBrowserNotification(`${m.chatId || "Guest"}`, notifText);
-      }
-    }
   });
 
-  /* Auto-scroll logic */
+  // auto-scroll logic
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
-      const nearBottom =
-        refs.messagesEl.scrollHeight -
-        refs.messagesEl.scrollTop -
-        refs.messagesEl.clientHeight <
-        50;
-
-      if (
-        messages.some(msg => msg.data.uid === currentUser?.uid) ||
-        nearBottom
-      ) {
+      const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
+      if (messages.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-        unreadCount = 0;
-        updateBellCounter(0);
       }
       scrollPending = false;
     });
   }
 }
 
-/* ---------- 🔔 Update Bell Counter ---------- */
-function updateBellCounter(count) {
-  const bellCount = document.getElementById("bellCount");
-  if (!bellCount) return;
-
-  bellCount.textContent = count > 9 ? "9+" : count;
-  bellCount.style.display = count > 0 ? "flex" : "none";
-}
-
-/* ---------- 🔊 Play Notification Sound ---------- */
-function playNotifSound() {
-  try {
-    notifSound.currentTime = 0;
-    notifSound.play().catch(() => {});
-  } catch (e) {
-    console.warn("Sound play failed:", e);
-  }
-}
 
 /* ---------- 🔔 Messages Listener ---------- */
 function attachMessagesListener() {
@@ -1339,67 +1261,5 @@ window.addEventListener("click", e => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Elements
-  const notifBell = document.getElementById("notificationBell");
-  const notifDropdown = document.getElementById("notifDropdown");
-  const notifCount = document.getElementById("notifCount");
-  const notifList = document.getElementById("notifList");
-
-  // Audio
-  const notifSound = new Audio("https://cdn.freesound.org/previews/522/522098_9947506-lq.mp3");
-  notifSound.volume = 0.4;
-
-  // Safety check
-  if (!notifBell || !notifDropdown || !notifCount || !notifList) return;
-
-  // Toggle dropdown
-  notifBell.addEventListener("click", (e) => {
-    e.stopPropagation();
-    notifDropdown.style.display = notifDropdown.style.display === "block" ? "none" : "block";
-    notifCount.style.display = "none"; // reset badge
-  });
-
-  // Close dropdown when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!notifBell.contains(e.target) && !notifDropdown.contains(e.target)) {
-      notifDropdown.style.display = "none";
-    }
-  });
-
-  // Sound throttle
-  let lastSoundTime = 0;
-  const SOUND_THROTTLE = 1000; // 1 second minimum between sounds
-
-  // Push notification function
-  window.pushNotification = function(text) {
-    // Create new item
-    const li = document.createElement("li");
-    li.textContent = text;
-    li.classList.add("flash");
-    notifList.prepend(li);
-
-    // Limit list to 10
-    if (notifList.children.length > 10) {
-      notifList.removeChild(notifList.lastChild);
-    }
-
-    // Update badge
-    let currentCount = parseInt(notifCount.textContent) || 0;
-    notifCount.textContent = currentCount + 1;
-    notifCount.style.display = "inline-block";
-
-    // Animate bell
-    notifBell.classList.add("glow");
-    setTimeout(() => notifBell.classList.remove("glow"), 800);
-
-    // Play sound with throttle
-    const now = Date.now();
-    if (now - lastSoundTime > SOUND_THROTTLE) {
-      notifSound.play().catch(() => {});
-      lastSoundTime = now;
-    }
-  };
-});
 /* ---------- Init ---------- */
 fetchFeaturedHosts();
