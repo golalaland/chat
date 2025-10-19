@@ -320,10 +320,10 @@ function attachMessagesListener() {
         if (!sender || !receiver || !amount) return;
 
         if (sender.toLowerCase() === myId) {
-          showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
+          showGiftAlert(`You gifted ${receiver} ${amount} stars ⭐️`);
           saveShownGift(msgId);
         } else if (receiver.toLowerCase() === myId) {
-          showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
+          showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
           saveShownGift(msgId);
         }
       }
