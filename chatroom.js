@@ -1051,42 +1051,34 @@ const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
 
-const db = getFirestore();
 let hosts = [];
 let currentIndex = 0;
 
-/* ---------- Fetch featuredHosts + merge users ---------- */
+/* ---------- Fetch + Listen to featuredHosts ---------- */
 async function fetchFeaturedHosts() {
-  const q = collection(db, "featuredHosts");
+  try {
+    const q = collection(db, "featuredHosts");
+    onSnapshot(q, snapshot => {
+      hosts = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
 
-  onSnapshot(q, async snapshot => {
-    const rawHosts = snapshot.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-
-    // Merge user info if chatId exists
-    const merged = await Promise.all(rawHosts.map(async host => {
-      if (!host.chatId) return host;
-      try {
-        const userRef = doc(db, "users", host.chatId);
-        const userSnap = await getDoc(userRef);
-        return userSnap.exists() ? { ...host, ...userSnap.data() } : host;
-      } catch (e) {
-        console.warn("Merge fail:", host.chatId, e);
-        return host;
+      if (!hosts.length) {
+        console.warn("⚠️ No featured hosts found.");
+        return;
       }
-    }));
 
-    hosts = merged;
-
-    if (!hosts.length) return;
-    renderHostAvatars();
-    loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
-  });
+      console.log("✅ Loaded hosts:", hosts.length);
+      renderHostAvatars();
+      loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
+    });
+  } catch (err) {
+    console.error("❌ Error fetching hosts:", err);
+  }
 }
 
-/* ---------- Render avatars ---------- */
+/* ---------- Render Avatars ---------- */
 function renderHostAvatars() {
   hostListEl.innerHTML = "";
   hosts.forEach((host, idx) => {
@@ -1095,35 +1087,37 @@ function renderHostAvatars() {
     img.alt = host.chatId || "Host";
     img.classList.add("featured-avatar");
     if (idx === currentIndex) img.classList.add("active");
-    img.addEventListener("click", () => loadHost(idx));
+
+    img.addEventListener("click", () => {
+      loadHost(idx);
+    });
+
     hostListEl.appendChild(img);
   });
 }
 
-/* ---------- Load host ---------- */
+/* ---------- Load Host ---------- */
 function loadHost(idx) {
-  currentIndex = idx;
   const host = hosts[idx];
   if (!host) return;
 
-  // 🎥 Video
+  currentIndex = idx;
+
+  // 🎥 Load video
   videoFrame.src = host.videoUrl || "";
+  console.log("🎬 Loading host:", host.chatId || host.id);
 
-  // 🪶 Username
+  // 🧍 Username
   usernameEl.textContent = host.chatId || "Unknown Host";
-  usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Description line
+  // 💬 Description
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-  const fruit = host.fruitPick || "🍇";
-  const nature = host.naturePick || "chill";
   const flair = gender === "male" ? "😎" : "💋";
-  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
-  detailsEl.textContent = textLine;
+  detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  // Highlight active avatar
+  // Highlight avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
@@ -1140,38 +1134,23 @@ giftSlider.addEventListener("input", () => {
 
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
-  const host = hosts[currentIndex];
-  const giftStars = parseInt(giftSlider.value, 10);
-  if (!host?.id) return;
-
-  // 🧠 Check sender balance
-  const senderId = localStorage.getItem("chatId");
-  if (!senderId) return alert("Please log in first to send gifts.");
-
-  const senderRef = doc(db, "users", senderId);
-  const senderSnap = await getDoc(senderRef);
-  const senderData = senderSnap.exists() ? senderSnap.data() : {};
-  const senderStars = senderData.stars || 0;
-
-  if (senderStars < giftStars) {
-    alert("Not enough ⭐ to gift.");
-    return;
-  }
-
   try {
-    // Update both host and sender
+    const host = hosts[currentIndex];
+    const giftStars = parseInt(giftSlider.value, 10);
+    if (!host?.id) return;
+
+    console.log(`🌟 Sending ${giftStars} star(s) to ${host.chatId || host.id}`);
+
     const hostRef = doc(db, "featuredHosts", host.id);
-    await updateDoc(hostRef, { stars: increment(giftStars) });
-    await updateDoc(senderRef, { stars: increment(-giftStars) });
+    await updateDoc(hostRef, {
+      stars: increment(giftStars),
+      starsGifted: increment(giftStars)
+    });
 
-    console.log(`⭐ You gifted ${giftStars} stars to ${host.chatId}`);
-    alert(`You sent ${giftStars}⭐ to ${host.chatId}!`);
+    console.log("✅ Gift sent successfully");
   } catch (err) {
-    console.error("Gift error:", err);
+    console.error("❌ Error sending gift:", err);
   }
-
-  giftSlider.value = 1;
-  giftAmountEl.textContent = "1";
 });
 
 /* ---------- Navigation ---------- */
@@ -1179,6 +1158,7 @@ prevBtn.addEventListener("click", e => {
   e.preventDefault();
   loadHost((currentIndex - 1 + hosts.length) % hosts.length);
 });
+
 nextBtn.addEventListener("click", e => {
   e.preventDefault();
   loadHost((currentIndex + 1) % hosts.length);
@@ -1189,10 +1169,19 @@ openBtn.addEventListener("click", () => {
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
   modal.style.alignItems = "center";
+  console.log("📺 Modal opened");
 });
-closeModal.addEventListener("click", () => (modal.style.display = "none"));
+
+closeModal.addEventListener("click", () => {
+  modal.style.display = "none";
+  console.log("❎ Modal closed");
+});
+
 window.addEventListener("click", e => {
-  if (e.target === modal) modal.style.display = "none";
+  if (e.target === modal) {
+    modal.style.display = "none";
+    console.log("🪟 Modal dismissed");
+  }
 });
 
 /* ---------- Init ---------- */
