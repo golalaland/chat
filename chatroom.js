@@ -1051,39 +1051,40 @@ const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
 
+/* ---------- Globals ---------- */
+const db = getFirestore();
 let hosts = [];
 let currentIndex = 0;
-const db = getFirestore();
 
 /* ---------- Fetch featuredHosts + merge user info ---------- */
 async function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
   onSnapshot(q, async snapshot => {
-    const fetchedHosts = [];
+    const fetched = [];
 
-    for (const docSnap of snapshot.docs) {
+    // Gather all merges first
+    const mergePromises = snapshot.docs.map(async docSnap => {
       const data = docSnap.data();
-      let mergedData = { id: docSnap.id, ...data };
+      let merged = { id: docSnap.id, ...data };
 
-      // Merge from "users" if matching userId or chatId exists
-      try {
-        const userId = data.userId || data.chatId;
-        if (userId) {
+      const userId = data.userId || data.chatId;
+      if (userId) {
+        try {
           const userRef = doc(db, "users", userId);
           const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            mergedData = { ...mergedData, ...userSnap.data() };
-          }
+          if (userSnap.exists()) merged = { ...merged, ...userSnap.data() };
+        } catch (err) {
+          console.warn("⚠️ User merge failed:", userId, err);
         }
-      } catch (e) {
-        console.warn("Couldn’t merge user data for:", data.chatId, e);
       }
 
-      fetchedHosts.push(mergedData);
-    }
+      fetched.push(merged);
+    });
 
-    hosts = fetchedHosts;
+    await Promise.all(mergePromises);
+
+    hosts = fetched;
     if (!hosts.length) return;
 
     renderHostAvatars();
@@ -1094,22 +1095,21 @@ async function fetchFeaturedHosts() {
 /* ---------- Render avatars ---------- */
 function renderHostAvatars() {
   hostListEl.innerHTML = "";
-  hosts.forEach((host, idx) => {
+  hosts.forEach((host, i) => {
     const img = document.createElement("img");
     img.src = host.popupPhoto || "";
-    img.alt = host.chatId || "Host";
+    img.alt = host.chatId || host.username || "Host";
     img.classList.add("featured-avatar");
-    if (idx === currentIndex) img.classList.add("active");
-
-    img.addEventListener("click", () => loadHost(idx));
+    if (i === currentIndex) img.classList.add("active");
+    img.addEventListener("click", () => loadHost(i));
     hostListEl.appendChild(img);
   });
 }
 
 /* ---------- Load host ---------- */
-function loadHost(idx) {
-  currentIndex = idx;
-  const host = hosts[idx];
+function loadHost(i) {
+  currentIndex = i;
+  const host = hosts[i];
   if (!host) return;
 
   // 🎥 Video
@@ -1119,33 +1119,31 @@ function loadHost(idx) {
   usernameEl.textContent = host.chatId || host.username || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Gender + description
+  // 💋 Details
   const gender = (host.gender || "male").toLowerCase();
   const pronoun = gender === "male" ? "his" : "hers";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const nature = host.naturePick || "chill";
   const flair = gender === "male" ? "😎" : "💋";
-  const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  const line = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  // Typewriter effect
   detailsEl.textContent = "";
-  let i = 0;
-  function typeWriter() {
-    if (i < textLine.length) {
-      detailsEl.textContent += textLine.charAt(i);
-      i++;
-      setTimeout(typeWriter, 30);
+  let j = 0;
+  (function type() {
+    if (j < line.length) {
+      detailsEl.textContent += line.charAt(j);
+      j++;
+      setTimeout(type, 25);
     }
-  }
-  typeWriter();
+  })();
 
-  // 🌟 Highlight active avatar
-  hostListEl.querySelectorAll("img").forEach((img, i) => {
-    img.classList.toggle("active", i === idx);
-  });
+  // Active avatar highlight
+  hostListEl.querySelectorAll("img").forEach((img, n) =>
+    img.classList.toggle("active", n === i)
+  );
 
-  // Reset slider
+  // Reset gift
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 }
@@ -1160,22 +1158,21 @@ giftBtn.addEventListener("click", async () => {
   const host = hosts[currentIndex];
   if (!host?.id) return;
 
-  const giftStars = parseInt(giftSlider.value, 10);
-  const hostRef = doc(db, "featuredHosts", host.id);
+  const stars = parseInt(giftSlider.value, 10);
+  const ref = doc(db, "featuredHosts", host.id);
 
   try {
-    await updateDoc(hostRef, {
-      stars: increment(giftStars),
-      starsGifted: increment(giftStars)
+    await updateDoc(ref, {
+      stars: increment(stars),
+      starsGifted: increment(stars)
     });
 
-    console.log(`⭐ You gifted ${giftStars} stars to ${host.chatId}`);
-    alert(`You gifted ${giftStars}⭐ to ${host.chatId || "this host"}!`);
-
+    console.log(`⭐ You gifted ${stars} stars to ${host.chatId}`);
+    alert(`You gifted ${stars}⭐ to ${host.chatId || "this host"}!`);
     giftSlider.value = 1;
     giftAmountEl.textContent = "1";
   } catch (err) {
-    console.error("Error gifting stars:", err);
+    console.error("❌ Gift failed:", err);
   }
 });
 
