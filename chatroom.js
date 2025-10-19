@@ -30,6 +30,20 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
+/* ---------- 🔔 Notification Setup ---------- */
+if ("Notification" in window) {
+  Notification.requestPermission().then(permission => {
+    console.log("🔔 Notification permission:", permission);
+  });
+}
+
+function showBrowserNotification(title, body) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "granted") {
+    new Notification(title, { body, icon: "/favicon.ico" });
+  }
+}
+
 /* ---------- Auth State Watcher ---------- */
 let currentUser = null;
 
@@ -233,8 +247,10 @@ function setupUsersListener() {
 }
 setupUsersListener();
 
-/* ---------- Render Messages ---------- */
+/* ---------- Render Messages with Notifications ---------- */
 let scrollPending = false;
+let unreadCount = 0; // 🔔 counter for new messages
+const notifSound = new Audio("/sounds/notify.mp3"); // add your ping sound file
 
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
@@ -249,12 +265,16 @@ function renderMessagesFromArray(messages) {
 
     const usernameEl = document.createElement("span");
     usernameEl.className = "meta";
-    usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
-    usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
+    usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">
+      ${m.chatId || "Guest"}
+    </span>:`;
+    usernameEl.style.color =
+      m.uid && refs.userColors?.[m.uid] ? refs.userColors[m.uid] : "#fff";
     usernameEl.style.marginRight = "4px";
 
     const contentEl = document.createElement("span");
-    contentEl.className = m.highlight || m.buzzColor ? "buzz-content content" : "content";
+    contentEl.className =
+      m.highlight || m.buzzColor ? "buzz-content content" : "content";
     contentEl.textContent = " " + (m.content || "");
 
     if (m.buzzColor) contentEl.style.background = m.buzzColor;
@@ -265,21 +285,61 @@ function renderMessagesFromArray(messages) {
 
     wrapper.append(usernameEl, contentEl);
     refs.messagesEl.appendChild(wrapper);
+
+    /* 🔔 Notifications (for messages not from current user) */
+    if (m.uid !== currentUser?.uid) {
+      unreadCount++;
+      updateBellCounter(unreadCount);
+      playNotifSound();
+
+      if (Notification.permission === "granted") {
+        const notifText = m.content?.slice(0, 100) || "New message";
+        showBrowserNotification(`${m.chatId || "Guest"}`, notifText);
+      }
+    }
   });
 
-  // auto-scroll logic
+  /* Auto-scroll logic */
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
-      const nearBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight < 50;
-      if (messages.some(msg => msg.data.uid === currentUser?.uid) || nearBottom) {
+      const nearBottom =
+        refs.messagesEl.scrollHeight -
+        refs.messagesEl.scrollTop -
+        refs.messagesEl.clientHeight <
+        50;
+
+      if (
+        messages.some(msg => msg.data.uid === currentUser?.uid) ||
+        nearBottom
+      ) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+        unreadCount = 0;
+        updateBellCounter(0);
       }
       scrollPending = false;
     });
   }
 }
 
+/* ---------- 🔔 Update Bell Counter ---------- */
+function updateBellCounter(count) {
+  const bellCount = document.getElementById("bellCount");
+  if (!bellCount) return;
+
+  bellCount.textContent = count > 9 ? "9+" : count;
+  bellCount.style.display = count > 0 ? "flex" : "none";
+}
+
+/* ---------- 🔊 Play Notification Sound ---------- */
+function playNotifSound() {
+  try {
+    notifSound.currentTime = 0;
+    notifSound.play().catch(() => {});
+  } catch (e) {
+    console.warn("Sound play failed:", e);
+  }
+}
 
 /* ---------- 🔔 Messages Listener ---------- */
 function attachMessagesListener() {
