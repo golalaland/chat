@@ -1059,16 +1059,45 @@ async function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
   onSnapshot(q, snapshot => {
+    // basic featuredHosts load first (fast)
     hosts = snapshot.docs.map(docSnap => ({
       id: docSnap.id,
-      ...docSnap.data()
+      ...docSnap.data(),
+      merged: false // track merge status
     }));
 
     if (!hosts.length) return;
 
     renderHostAvatars();
     loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
+
+    // now merge user info quietly in background
+    mergeUserDataInBackground();
   });
+}
+
+/* ---------- Merge "users" info without blocking UI ---------- */
+async function mergeUserDataInBackground() {
+  const pending = hosts
+    .filter(h => !h.merged && (h.userId || h.chatId))
+    .map(async (host) => {
+      try {
+        const userId = host.userId || host.chatId;
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          Object.assign(host, userSnap.data(), { merged: true });
+        }
+      } catch (err) {
+        console.warn("User merge failed for:", host.chatId, err);
+      }
+    });
+
+  await Promise.all(pending);
+
+  // re-render avatars and current host once merges are done
+  renderHostAvatars();
+  loadHost(currentIndex);
 }
 
 /* ---------- Render avatars ---------- */
@@ -1076,7 +1105,7 @@ function renderHostAvatars() {
   hostListEl.innerHTML = "";
   hosts.forEach((host, idx) => {
     const img = document.createElement("img");
-    img.src = host.popupPhoto || "";
+    img.src = host.popupPhoto || host.profilePhoto || "";
     img.alt = host.chatId || "Host";
     img.classList.add("featured-avatar");
     if (idx === currentIndex) img.classList.add("active");
@@ -1093,13 +1122,13 @@ function loadHost(idx) {
   if (!host) return;
 
   // 🎥 Video
-  videoFrame.src = host.videoUrl || "";
+  videoFrame.src = host.videoUrl || host.introVideo || "";
 
   // 🪶 Username
-  usernameEl.textContent = host.chatId || "Unknown Host";
+  usernameEl.textContent = host.chatId || host.username || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Description line with proper gender pronoun
+  // 💋 Description
   const gender = (host.gender || "male").toLowerCase();
   const pronoun = gender === "male" ? "his" : "hers";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
@@ -1108,7 +1137,6 @@ function loadHost(idx) {
   const flair = gender === "male" ? "😎" : "💋";
   const textLine = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  // Optional: Typewriter effect
   detailsEl.textContent = "";
   let i = 0;
   function typeWriter() {
@@ -1125,7 +1153,6 @@ function loadHost(idx) {
     img.classList.toggle("active", i === idx);
   });
 
-  // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 }
@@ -1149,48 +1176,15 @@ giftBtn.addEventListener("click", async () => {
       starsGifted: increment(giftStars)
     });
 
-    // Optional: floating +⭐ animation
-    showFloatingStars(host.chatId, giftStars);
+    console.log(`⭐ You gifted ${giftStars} stars to ${host.chatId}`);
+    alert(`You gifted ${giftStars}⭐ to ${host.chatId || "this host"}!`);
 
-    // Reset slider
     giftSlider.value = 1;
     giftAmountEl.textContent = "1";
   } catch (err) {
     console.error("Error gifting stars:", err);
   }
 });
-
-/* ---------- Optional: floating star animation ---------- */
-function showFloatingStars(hostName, stars) {
-  const popup = document.createElement("div");
-  popup.className = "floating-stars-popup";
-  popup.textContent = `+${stars}⭐`;
-  popup.style.position = "absolute";
-  popup.style.color = "#ff4da6";
-  popup.style.fontWeight = "600";
-  popup.style.fontSize = "1rem";
-  popup.style.zIndex = "10000";
-  popup.style.pointerEvents = "none";
-
-  // position near the avatar
-  const avatar = hostListEl.querySelectorAll("img")[currentIndex];
-  const rect = avatar.getBoundingClientRect();
-  popup.style.left = rect.left + rect.width / 2 + "px";
-  popup.style.top = rect.top - 20 + "px";
-
-  document.body.appendChild(popup);
-
-  // Animate
-  popup.animate(
-    [
-      { transform: "translateY(0)", opacity: 1 },
-      { transform: "translateY(-30px)", opacity: 0 }
-    ],
-    { duration: 1200, easing: "ease-out" }
-  );
-
-  setTimeout(() => popup.remove(), 1200);
-}
 
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
