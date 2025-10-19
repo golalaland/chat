@@ -284,6 +284,15 @@ function renderMessagesFromArray(messages) {
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
 
+  // 💾 Load previously shown gift IDs from localStorage
+  const shownGiftAlerts = new Set(JSON.parse(localStorage.getItem("shownGiftAlerts") || "[]"));
+
+  // 💾 Save helper
+  function saveShownGift(id) {
+    shownGiftAlerts.add(id);
+    localStorage.setItem("shownGiftAlerts", JSON.stringify([...shownGiftAlerts]));
+  }
+
   onSnapshot(q, snapshot => {
     snapshot.docChanges().forEach(change => {
       if (change.type !== "added") return;
@@ -300,6 +309,10 @@ function attachMessagesListener() {
 
       /* 💝 Detect personalized gift messages */
       if (msg.uid === "system" && msg.highlight && msg.content?.includes("gifted")) {
+
+        // ⚡ Skip if alert already shown for this message
+        if (shownGiftAlerts.has(msgId)) return;
+
         const myId = currentUser?.chatId?.toLowerCase();
         if (!myId) return;
 
@@ -308,8 +321,10 @@ function attachMessagesListener() {
 
         if (sender.toLowerCase() === myId) {
           showGiftAlert(`You gifted ${receiver} ${amount} ⭐️`);
+          saveShownGift(msgId);
         } else if (receiver.toLowerCase() === myId) {
           showGiftAlert(`${sender} gifted you ${amount} ⭐️`);
+          saveShownGift(msgId);
         }
       }
 
