@@ -1127,7 +1127,7 @@ function loadHost(idx) {
   usernameEl.style.color = host.usernameColor || "#fff";
 
   const gender = (host.gender || "male").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "her";
+  const pronoun = gender === "male" ? "his" : "hers";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const nature = host.naturePick || "chill";
@@ -1224,4 +1224,4 @@ window.addEventListener("click", e => {
 });
 
 /* ---------- Init ---------- */
-fetchFeaturedHosts();;
+fetchFeaturedHosts();
