@@ -1053,17 +1053,19 @@ const nextBtn = document.getElementById("nextHost");
 
 let hosts = [];
 let currentIndex = 0;
+const db = getFirestore();
 
-/* ---------- Fetch + Listen to featuredHosts ---------- */
-async function fetchFeaturedHosts() {
+/* 🔑 Replace this with actual logged-in user ID */
+const currentUserId = localStorage.getItem("currentUserId") || "demoUser";
+
+/* ---------- Fetch featuredHosts ---------- */
+function fetchFeaturedHosts() {
   const q = collection(db, "featuredHosts");
 
   onSnapshot(q, snapshot => {
-    // basic featuredHosts load first (fast)
     hosts = snapshot.docs.map(docSnap => ({
       id: docSnap.id,
-      ...docSnap.data(),
-      merged: false // track merge status
+      ...docSnap.data()
     }));
 
     if (!hosts.length) return;
@@ -1071,33 +1073,32 @@ async function fetchFeaturedHosts() {
     renderHostAvatars();
     loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
 
-    // now merge user info quietly in background
-    mergeUserDataInBackground();
+    mergeUserDataAsync();
   });
 }
 
-/* ---------- Merge "users" info without blocking UI ---------- */
-async function mergeUserDataInBackground() {
-  const pending = hosts
-    .filter(h => !h.merged && (h.userId || h.chatId))
-    .map(async (host) => {
-      try {
-        const userId = host.userId || host.chatId;
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          Object.assign(host, userSnap.data(), { merged: true });
-        }
-      } catch (err) {
-        console.warn("User merge failed for:", host.chatId, err);
+/* ---------- Merge user info (non-blocking) ---------- */
+async function mergeUserDataAsync() {
+  const mergeTasks = hosts.map(async (host, i) => {
+    const userId = host.userId || host.chatId;
+    if (!userId) return;
+
+    try {
+      const userRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        hosts[i] = { ...userData, ...host }; // user overrides base host fields
+
+        // if currently viewed host, re-render
+        if (i === currentIndex) loadHost(currentIndex);
       }
-    });
+    } catch (e) {
+      console.warn(`⚠️ Could not merge user for ${userId}:`, e);
+    }
+  });
 
-  await Promise.all(pending);
-
-  // re-render avatars and current host once merges are done
-  renderHostAvatars();
-  loadHost(currentIndex);
+  await Promise.allSettled(mergeTasks);
 }
 
 /* ---------- Render avatars ---------- */
@@ -1105,7 +1106,7 @@ function renderHostAvatars() {
   hostListEl.innerHTML = "";
   hosts.forEach((host, idx) => {
     const img = document.createElement("img");
-    img.src = host.popupPhoto || host.profilePhoto || "";
+    img.src = host.popupPhoto || "";
     img.alt = host.chatId || "Host";
     img.classList.add("featured-avatar");
     if (idx === currentIndex) img.classList.add("active");
@@ -1121,16 +1122,12 @@ function loadHost(idx) {
   const host = hosts[idx];
   if (!host) return;
 
-  // 🎥 Video
-  videoFrame.src = host.videoUrl || host.introVideo || "";
-
-  // 🪶 Username
+  videoFrame.src = host.videoUrl || "";
   usernameEl.textContent = host.chatId || host.username || "Unknown Host";
   usernameEl.style.color = host.usernameColor || "#fff";
 
-  // 💋 Description
   const gender = (host.gender || "male").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "hers";
+  const pronoun = gender === "male" ? "his" : "her";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const fruit = host.fruitPick || "🍇";
   const nature = host.naturePick || "chill";
@@ -1143,12 +1140,11 @@ function loadHost(idx) {
     if (i < textLine.length) {
       detailsEl.textContent += textLine.charAt(i);
       i++;
-      setTimeout(typeWriter, 30);
+      setTimeout(typeWriter, 25);
     }
   }
   typeWriter();
 
-  // 🌟 Highlight active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
@@ -1169,20 +1165,40 @@ giftBtn.addEventListener("click", async () => {
 
   const giftStars = parseInt(giftSlider.value, 10);
   const hostRef = doc(db, "featuredHosts", host.id);
+  const senderRef = doc(db, "users", currentUserId);
 
   try {
-    await updateDoc(hostRef, {
-      stars: increment(giftStars),
-      starsGifted: increment(giftStars)
-    });
+    const senderSnap = await getDoc(senderRef);
+    if (!senderSnap.exists()) {
+      alert("⚠️ Your account couldn’t be found.");
+      return;
+    }
 
-    console.log(`⭐ You gifted ${giftStars} stars to ${host.chatId}`);
-    alert(`You gifted ${giftStars}⭐ to ${host.chatId || "this host"}!`);
+    const senderData = senderSnap.data();
+    const currentBalance = senderData.starsBalance || 0;
+
+    if (currentBalance < giftStars) {
+      alert(`😢 You only have ${currentBalance}⭐ — not enough to send ${giftStars}⭐.`);
+      return;
+    }
+
+    // Deduct from sender, give to host (atomic updates)
+    await Promise.all([
+      updateDoc(senderRef, { starsBalance: increment(-giftStars) }),
+      updateDoc(hostRef, {
+        stars: increment(giftStars),
+        starsGifted: increment(giftStars)
+      })
+    ]);
+
+    alert(`🎁 You gifted ${giftStars}⭐ to ${host.chatId || "this host"}!`);
+    console.log(`⭐ Gifted ${giftStars} to ${host.chatId}`);
 
     giftSlider.value = 1;
     giftAmountEl.textContent = "1";
   } catch (err) {
-    console.error("Error gifting stars:", err);
+    console.error("Gift error:", err);
+    alert("❌ Error sending gift. Please try again.");
   }
 });
 
@@ -1208,4 +1224,4 @@ window.addEventListener("click", e => {
 });
 
 /* ---------- Init ---------- */
-fetchFeaturedHosts();
+fetchFeaturedHosts();;
