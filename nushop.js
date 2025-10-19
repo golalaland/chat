@@ -330,14 +330,15 @@ const loadCurrentUser = async () => {
       updateHostPanels();
       renderShop().catch(console.error);
 
-/* --- Invitee reward flow --- */
+/* --- Invitee + Inviter Reward Flow --- */
 try {
+  // ---------------- Invitee reward ----------------
   if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
     let inviterName = data.hostName || data.invitedBy;
     let inviteeStars = data.inviteeGiftStars;
 
     try {
-      // Fetch inviter details dynamically
+      // Fetch inviter details
       const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
       const invSnap = await getDoc(invRef);
       if (invSnap.exists()) {
@@ -346,73 +347,79 @@ try {
           invData.chatId ||
           invData.hostName ||
           (invData.email ? invData.email.split('@')[0] : inviterName);
-        // Use inviter’s configured reward amount if available
+
+        // Pull inviter-defined reward amount if it exists
         inviteeStars = inviteeStars || invData.inviteeGiftStars;
       }
     } catch (err) {
       console.warn('Could not fetch inviter details:', err);
     }
 
-    // Fallback if none set anywhere
     inviteeStars = inviteeStars || 50;
 
+    // Show popup for invitee
     showReward(
       `You’ve been gifted <b>+${inviteeStars}⭐️</b> for joining <b>${inviterName}</b>’s VIP Tab.`,
       '⭐ Congratulations! ⭐️'
     );
 
+    // Mark invitee reward as shown
     await updateDoc(userRef, {
       inviteeGiftShown: true,
       inviteeGiftStars: inviteeStars
     });
   }
-} catch (e) {
-  console.error('Invitee reward flow error', e);
-}
 
-/* --- Inviter reward flow --- */
-try {
+  // ---------------- Inviter reward ----------------
   const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-  const pending = friendsArr.find(f => !f.giftShown && f.email);
+  const pendingRewards = friendsArr.filter(f => !f.giftShown && f.email);
 
-  if (pending) {
-    const friendName =
-      pending.vipName ||
-      pending.chatId ||
-      (pending.email ? pending.email.split('@')[0] : 'Friend');
+  if (pendingRewards.length > 0) {
+    for (const friend of pendingRewards) {
+      const friendName =
+        friend.vipName ||
+        friend.chatId ||
+        (friend.email ? friend.email.split('@')[0] : 'Friend');
 
-    let inviterStars = pending.giftStars;
+      let inviterStars = friend.giftStars;
 
-    // Fetch configurable inviter star amount
-    if (!inviterStars) {
-      try {
-        const sysRef = doc(db, 'config', 'rewards');
-        const sysSnap = await getDoc(sysRef);
-        if (sysSnap.exists()) {
-          inviterStars = sysSnap.data().inviterRewardStars;
+      // Optionally pull system default reward config
+      if (!inviterStars) {
+        try {
+          const sysRef = doc(db, 'config', 'rewards');
+          const sysSnap = await getDoc(sysRef);
+          if (sysSnap.exists()) {
+            inviterStars = sysSnap.data().inviterRewardStars;
+          }
+        } catch (err) {
+          console.warn('Could not fetch reward config:', err);
         }
-      } catch (err) {
-        console.warn('Could not fetch reward config:', err);
       }
+
+      inviterStars = inviterStars || 200;
+
+      // Show popup for inviter (even if it’s from earlier)
+      showReward(
+        `You’ve been gifted <b>+${inviterStars}⭐️</b>, <b>${friendName}</b> just joined your Tab.`,
+        '⭐ Congratulations! ⭐️'
+      );
+
+      // Mark this friend as rewarded
+      const updatedFriends = friendsArr.map(f =>
+        f.email === friend.email
+          ? { ...f, giftShown: true, giftStars: inviterStars }
+          : f
+      );
+
+      await updateDoc(userRef, { hostFriends: updatedFriends });
+
+      // Optional delay between multiple pending rewards
+      await new Promise(res => setTimeout(res, 1500));
     }
-
-    inviterStars = inviterStars || 200;
-
-    showReward(
-      `You’ve been gifted <b>+${inviterStars}⭐️</b>, <b>${friendName}</b> just joined your Tab.`,
-      '⭐ Congratulations! ⭐️'
-    );
-
-    const updated = friendsArr.map(f =>
-      f.email === pending.email ? { ...f, giftShown: true, giftStars: inviterStars } : f
-    );
-
-    await updateDoc(userRef, { hostFriends: updated });
   }
 } catch (e) {
-  console.error('Inviter reward flow error', e);
+  console.error('Invite Reward Flow Error:', e);
 }
-
 });
 } catch (e) {
   console.error('loadCurrentUser error', e);
