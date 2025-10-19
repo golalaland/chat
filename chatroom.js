@@ -49,6 +49,7 @@ onAuthStateChanged(auth, user => {
 export function getCurrentUserId() {
   return currentUser ? currentUser.uid : localStorage.getItem("userId");
 }
+window.currentUser = currentUser;
 
 /* ---------- Exports for other scripts ---------- */
 export { app, db, rtdb, auth };
