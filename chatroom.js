@@ -307,15 +307,11 @@ function attachMessagesListener() {
       lastMessagesArray.push({ id: msgId, data: msg });
       renderMessagesFromArray([{ id: msgId, data: msg }]);
 
-      /* 💝 Detect personalized gift messages */
+/* 💝 Detect personalized gift messages */
 if (msg.highlight && msg.content?.includes("gifted")) {
-  // Skip if alert already shown for this message
-  if (shownGiftAlerts.has(msgId)) return;
-
   const myId = currentUser?.chatId?.toLowerCase();
   if (!myId) return;
 
-  // e.g. "Nushi gifted Goll 50 ⭐️"
   const parts = msg.content.split(" ");
   const sender = parts[0];
   const receiver = parts[2];
@@ -323,16 +319,17 @@ if (msg.highlight && msg.content?.includes("gifted")) {
 
   if (!sender || !receiver || !amount) return;
 
-  // 🎯 Only show once per gift, per user
-  if (sender.toLowerCase() === myId) {
-    showGiftAlert(`You gifted ${receiver} ${amount} stars ⭐️`);
-    saveShownGift(msgId);
-  } else if (receiver.toLowerCase() === myId) {
+  // 🎯 Only receiver sees it once
+  if (receiver.toLowerCase() === myId) {
+    if (shownGiftAlerts.has(msgId)) return; // skip if seen before
+
     showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
     saveShownGift(msgId);
   }
-}
 
+  // ❌ Remove any extra popups for gifting since showGiftAlert already covers it
+  // (No need to trigger showStarPopup or similar)
+}
       // 🌀 Keep scroll for your own messages
       if (refs.messagesEl && msg.uid === currentUser?.uid) {
         refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
@@ -1205,18 +1202,19 @@ giftBtn.addEventListener("click", async () => {
     const host = hosts[currentIndex];
     if (!host?.id) {
       console.warn("⚠️ No host selected or host.id missing");
+      showGiftAlert("⚠️ No host selected.");
       return;
     }
 
     if (!currentUser) {
       console.warn("⚠️ You must be logged in to send stars");
-      alert("Please log in to send stars ⭐");
+      showGiftAlert("Please log in to send stars ⭐");
       return;
     }
 
     const giftStars = parseInt(giftSlider.value, 10);
     if (isNaN(giftStars) || giftStars <= 0) {
-      alert("Invalid star amount");
+      showGiftAlert("Invalid star amount ❌");
       return;
     }
 
@@ -1224,7 +1222,7 @@ giftBtn.addEventListener("click", async () => {
     const senderRef = doc(db, "users", currentUser.uid);
     const senderSnap = await getDoc(senderRef);
     if (!senderSnap.exists()) {
-      alert("Your user record doesn’t exist");
+      showGiftAlert("Your user record doesn’t exist ⚠️");
       return;
     }
 
@@ -1232,7 +1230,7 @@ giftBtn.addEventListener("click", async () => {
     const currentStars = senderData.stars || 0;
 
     if (currentStars < giftStars) {
-      alert(`You only have ${currentStars} ⭐ — not enough to send ${giftStars}.`);
+      showGiftAlert(`You only have ${currentStars} ⭐ — not enough to send ${giftStars}.`);
       return;
     }
 
@@ -1244,10 +1242,12 @@ giftBtn.addEventListener("click", async () => {
     ]);
 
     console.log(`✅ Sent ${giftStars}⭐ to ${host.chatId}`);
-    alert(`🎉 You sent ${giftStars}⭐ to ${host.chatId}!`);
+
+    // 🎁 Replace plain alert with a clean animated alert
+    showGiftAlert(`🎉 You sent ${giftStars}⭐ to ${host.chatId}!`);
   } catch (err) {
     console.error("Gift sending failed:", err);
-    alert("Something went wrong sending your stars.");
+    showGiftAlert("⚠️ Something went wrong sending your stars.");
   }
 });
 /* ---------- Navigation ---------- */
