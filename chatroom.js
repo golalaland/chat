@@ -1153,22 +1153,53 @@ giftSlider.addEventListener("input", () => {
 
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
+  const host = hosts[currentIndex];
+  if (!host?.id) return;
+
+  const giftStars = parseInt(giftSlider.value, 10);
+  const currentUserId = localStorage.getItem("userId"); // or however you store signed-in user ID
+
+  if (!currentUserId) {
+    console.warn("⚠️ No user logged in!");
+    return;
+  }
+
   try {
-    const host = hosts[currentIndex];
-    const giftStars = parseInt(giftSlider.value, 10);
-    if (!host?.id) return;
+    // 🔹 Get sender data
+    const senderRef = doc(db, "users", currentUserId);
+    const senderSnap = await getDoc(senderRef);
 
-    console.log(`🌟 Sending ${giftStars} star(s) to ${host.chatId || host.id}`);
+    if (!senderSnap.exists()) {
+      console.warn("⚠️ Sender not found in users collection.");
+      return;
+    }
 
+    const senderData = senderSnap.data();
+    const currentBalance = senderData.stars || 0;
+
+    // 🔸 Check balance before sending
+    if (currentBalance < giftStars) {
+      console.warn(`❌ Not enough stars. You have ${currentBalance}, need ${giftStars}.`);
+      return;
+    }
+
+    // 🔹 Deduct from sender
+    await updateDoc(senderRef, {
+      stars: increment(-giftStars)
+    });
+
+    // 🔹 Credit to host
     const hostRef = doc(db, "featuredHosts", host.id);
     await updateDoc(hostRef, {
       stars: increment(giftStars),
       starsGifted: increment(giftStars)
     });
 
-    console.log("✅ Gift sent successfully");
+    console.log(`🌟 Sent ${giftStars} stars to ${host.chatId || host.username}!`);
+    giftSlider.value = 1;
+    giftAmountEl.textContent = "1";
   } catch (err) {
-    console.error("❌ Error sending gift:", err);
+    console.error("Error sending stars:", err);
   }
 });
 
