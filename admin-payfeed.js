@@ -110,7 +110,7 @@ function showConfirmModal(title, message){
 (function installTabSwitching(){
   // expected: .tab-btn elements with data-tab matching id of .tab-content nodes
   const tabButtons = document.querySelectorAll(".tab-btn");
-  const tabContents = document.querySelectorAll(".tab-content");
+  const tabContents = document.querySelectorAll(".tab-section");
   if (!tabButtons.length || !tabContents.length) return;
 
   function hideAllContents(){
