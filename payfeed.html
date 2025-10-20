@@ -129,8 +129,8 @@
       </div>
     </div>
 
-    <!-- USERS TAB -->
-    <div id="users-section" class="card tab-section active">
+       <!-- USERS TAB -->
+    <div id="users" class="card tab-section active">
       <div class="row" style="margin-bottom:8px">
         <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected Users</button>
         <button id="copyToFeaturedBtn" class="btn btn-primary">Copy Selected → Featured</button>
@@ -162,7 +162,7 @@
     </div>
 
     <!-- WHITELIST TAB -->
-    <div id="whitelist-section" class="card tab-section hidden">
+    <div id="whitelist" class="card tab-section hidden">
       <div class="row" style="margin-bottom:8px">
         <input id="wlEmail" placeholder="Email" />
         <input id="wlPhone" placeholder="Phone" />
@@ -180,6 +180,31 @@
               <th>Email</th>
               <th>Phone</th>
               <th>Subscription</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FEATURED HOSTS TAB -->
+    <div id="featured" class="card tab-section hidden">
+      <div class="row" style="margin-bottom:8px">
+        <button id="massRemoveFeaturedBtn" class="btn btn-danger">Remove Selected Featured</button>
+        <button id="exportFeaturedCsv" class="btn">Export Featured CSV</button>
+      </div>
+
+      <div class="scroll-box">
+        <table id="featuredTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllFeatured" title="Select all featured"/></th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>popupPhoto</th>
+              <th>videoUrl</th>
+              <th>AddedAt</th>
               <th>Actions</th>
             </tr>
           </thead>
