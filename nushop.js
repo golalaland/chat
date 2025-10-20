@@ -465,17 +465,49 @@ const renderTabContent = (type) => {
         .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
         .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
     });
-  } else if (type === 'badges') {
-    const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
+} else if (type === 'myGifts') {
+  // Show loading spinner
+  DOM.tabContent.innerHTML = `<p style="text-align:center;opacity:0.7;">Loading your gifts…</p>`;
+
+  // Fetch gifts for the host
+  const giftsRef = query(
+    collection(db, "hostGifts"),
+    where("toHost", "==", currentUser.uid),
+    orderBy("timestamp", "desc")
+  );
+
+  onSnapshot(giftsRef, (snapshot) => {
+    const gifts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (!gifts.length) {
+      DOM.tabContent.innerHTML = `
+        <div style="text-align:center;opacity:0.7;margin-top:20px;">
+          No gifts yet 💝<br><small>When your invitees gift you, they’ll show up here.</small>
+        </div>
+      `;
+      return;
+    }
+
     DOM.tabContent.innerHTML = `
-      <div class="stat-block">
-        <img src="${badgeImg}" style="width:100px;height:100px;">
-        <div class="stat-value">${currentUser.hostBadge || 'Gold'}</div>
-        <div class="stat-label">Badge Status</div>
+      <div class="stat-block" style="margin-bottom:10px;">
+        <div class="stat-value">${gifts.length}</div>
+        <div class="stat-label">Gifts Received</div>
+      </div>
+      <div class="gift-list">
+        ${gifts.map(g => `
+          <div class="gift-item">
+            <img src="${g.giftImage || 'https://cdn-icons-png.flaticon.com/512/4202/4202835.png'}" class="gift-icon" />
+            <div class="gift-info">
+              <strong>${g.giftName || 'Mystery Gift'}</strong><br>
+              <small>from ${g.fromUserName || 'Anonymous'}</small><br>
+              <small style="opacity:0.6;">${g.timestamp ? new Date(g.timestamp.toDate()).toLocaleString() : ''}</small>
+            </div>
+          </div>
+        `).join('')}
       </div>
     `;
-  }
-};
+  });
+}
 /* ------------------ Friends rendering ------------------ */
 function renderFriendsList(container, friends) {
   container.innerHTML = '';
