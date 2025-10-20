@@ -422,24 +422,31 @@ try {
 };
 
 
-/* ------------------ Host panels ------------------ */
+/* ------------------ Host Panels ------------------ */
 const updateHostPanels = () => {
   if (!currentUser?.isHost) {
+    // Hide all host-related UI if not a host
     if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
     if (DOM.tabContent) DOM.tabContent.style.display = 'none';
     return;
   }
+
+  // Show host tabs and content
   if (DOM.hostTabs) DOM.hostTabs.style.display = '';
   if (DOM.tabContent) DOM.tabContent.style.display = '';
+  
+  // Default tab
   renderTabContent('vip');
 };
 
+/* ------------------ Render Tab Content ------------------ */
 const renderTabContent = (type) => {
   if (!DOM.tabContent) return;
   DOM.tabContent.innerHTML = '';
   if (!currentUser?.isHost) return;
 
   if (type === 'vip') {
+    // VIP Stats
     const vipCount = currentUser.hostVIP || 0;
     DOM.tabContent.innerHTML = `
       <div class="stat-block" style="margin-bottom:12px;">
@@ -447,7 +454,9 @@ const renderTabContent = (type) => {
         <div class="stat-label">VIPs Signed Up</div>
       </div>
     `;
+
   } else if (type === 'friends') {
+    // Friends Invited
     renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
 
     const btn = document.createElement('button');
@@ -465,49 +474,50 @@ const renderTabContent = (type) => {
         .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
         .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
     });
-} else if (type === 'myGifts') {
-  // Show loading spinner
-  DOM.tabContent.innerHTML = `<p style="text-align:center;opacity:0.7;">Loading your gifts…</p>`;
 
-  // Fetch gifts for the host
-  const giftsRef = query(
-    collection(db, "hostGifts"),
-    where("toHost", "==", currentUser.uid),
-    orderBy("timestamp", "desc")
-  );
+  } else if (type === 'myGifts') {
+    // Gifts Received Tab
+    DOM.tabContent.innerHTML = `<p style="text-align:center;opacity:0.7;">Loading your gifts…</p>`;
 
-  onSnapshot(giftsRef, (snapshot) => {
-    const gifts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const giftsRef = query(
+      collection(db, "hostGifts"),
+      where("toHost", "==", currentUser.uid),
+      orderBy("timestamp", "desc")
+    );
 
-    if (!gifts.length) {
+    onSnapshot(giftsRef, (snapshot) => {
+      const gifts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      if (!gifts.length) {
+        DOM.tabContent.innerHTML = `
+          <div style="text-align:center;opacity:0.7;margin-top:20px;">
+            No gifts yet 💝<br><small>When your invitees gift you, they’ll show up here.</small>
+          </div>
+        `;
+        return;
+      }
+
       DOM.tabContent.innerHTML = `
-        <div style="text-align:center;opacity:0.7;margin-top:20px;">
-          No gifts yet 💝<br><small>When your invitees gift you, they’ll show up here.</small>
+        <div class="stat-block" style="margin-bottom:10px;">
+          <div class="stat-value">${gifts.length}</div>
+          <div class="stat-label">Gifts Received</div>
+        </div>
+        <div class="gift-list">
+          ${gifts.map(g => `
+            <div class="gift-item">
+              <img src="${g.giftImage || 'https://cdn-icons-png.flaticon.com/512/4202/4202835.png'}" class="gift-icon" />
+              <div class="gift-info">
+                <strong>${g.giftName || 'Mystery Gift'}</strong><br>
+                <small>from ${g.fromUserName || 'Anonymous'}</small><br>
+                <small style="opacity:0.6;">${g.timestamp ? new Date(g.timestamp.toDate()).toLocaleString() : ''}</small>
+              </div>
+            </div>
+          `).join('')}
         </div>
       `;
-      return;
-    }
-
-    DOM.tabContent.innerHTML = `
-      <div class="stat-block" style="margin-bottom:10px;">
-        <div class="stat-value">${gifts.length}</div>
-        <div class="stat-label">Gifts Received</div>
-      </div>
-      <div class="gift-list">
-        ${gifts.map(g => `
-          <div class="gift-item">
-            <img src="${g.giftImage || 'https://cdn-icons-png.flaticon.com/512/4202/4202835.png'}" class="gift-icon" />
-            <div class="gift-info">
-              <strong>${g.giftName || 'Mystery Gift'}</strong><br>
-              <small>from ${g.fromUserName || 'Anonymous'}</small><br>
-              <small style="opacity:0.6;">${g.timestamp ? new Date(g.timestamp.toDate()).toLocaleString() : ''}</small>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  });
-}
+    });
+  }
+};
 /* ------------------ Friends rendering ------------------ */
 function renderFriendsList(container, friends) {
   container.innerHTML = '';
@@ -646,30 +656,46 @@ const createProductCard = (product) => {
   price.className = 'price';
   price.textContent = `${Number(product.cost) || 0} ⭐`;
 
-  // Redeem button
-  const btn = document.createElement('button');
-  btn.className = 'buy-btn';
-  btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
-  if (avail <= 0 || (product.hostOnly && currentUser && !currentUser.isHost) ||
-      (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
-    btn.disabled = true;
-  }
-  btn.addEventListener('click', () => redeemProduct(product));
+// Redeem / Gift button
+const btn = document.createElement('button');
+btn.className = 'buy-btn';
 
-  // Assemble the card
-  card.append(badge, img, title, price, btn);
+// Determine button text
+if (product.hostOnly) {
+  btn.textContent = currentUser?.isHost ? 'Redeem' : 'Host Only';
+} else if (product.giftHost) {
+  btn.textContent = 'Gift Host';
+} else {
+  btn.textContent = 'Redeem';
+}
 
-  return card;
-};
+// Disable button conditions
+if (
+  avail <= 0 || 
+  (product.hostOnly && currentUser && !currentUser.isHost) ||
+  (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)
+) {
+  btn.disabled = true;
+}
 
+btn.addEventListener('click', () => redeemProduct(product));
+
+// Assemble card
+card.append(badge, img, title, price, btn);
+return card;
+
+/* ------------------ Redeem / Gift Function ------------------ */
 const redeemProduct = async (product) => {
   if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
   if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
   if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
   if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
 
-  showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
-    // Show spinner immediately
+  const actionText = product.giftHost
+    ? `Gift "${product.name}" to your Host?`
+    : `Redeem "${product.name}" for ${product.cost} ⭐?`;
+
+  showConfirmModal('Confirm Action', actionText, async () => {
     showSpinner();
 
     try {
@@ -688,7 +714,10 @@ const redeemProduct = async (product) => {
         if (Number(uData.stars) < cost) throw new Error('Not enough stars');
         if (available <= 0) throw new Error('Out of stock');
 
+        // Deduct stars
         newStars = Number(uData.stars) - cost;
+
+        // Handle cash redemption
         if (pData.name?.toLowerCase() === 'redeem cash balance') {
           redeemedCash = Number(uData.cash) || 0;
           newCash = 0;
@@ -696,8 +725,13 @@ const redeemProduct = async (product) => {
           newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
         }
 
+        // Update user's stars & cash
         t.update(userRef, { stars: newStars, cash: newCash });
+
+        // Update product availability
         t.update(productRef, { available: available - 1 });
+
+        // Log purchase
         const purchasesCol = collection(db, 'purchases');
         t.set(doc(purchasesCol), {
           userId: currentUser.uid,
@@ -710,8 +744,28 @@ const redeemProduct = async (product) => {
           redeemedCash,
           timestamp: serverTimestamp()
         });
+
+        // Handle gifting to host
+        if (pData.giftHost && uData.invitedBy) {
+          const hostRef = doc(db, 'users', uData.invitedBy);
+          t.update(hostRef, {
+            gifts: arrayUnion({
+              productId: pData.id,
+              name: pData.name,
+              img: pData.img || '',
+              quantity: pData.hostQuantity || 1,
+              stars: pData.hostStarsReward || 0,
+              cash: pData.hostCashReward || 0,
+              fromUser: currentUser.uid,
+              timestamp: serverTimestamp()
+            }),
+            stars: increment(pData.hostStarsReward || 0),
+            cash: increment(pData.hostCashReward || 0)
+          });
+        }
       });
 
+      // Update UI
       const prevStars = parseNumberFromText(DOM.stars.textContent);
       const prevCash = parseNumberFromText(DOM.cash.textContent);
       currentUser.stars = newStars; currentUser.cash = newCash;
@@ -719,20 +773,26 @@ const redeemProduct = async (product) => {
       animateNumber(DOM.cash, prevCash, newCash);
       await renderShop();
       triggerConfetti();
-      if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
-      else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
-      else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
+
+      if (product.giftHost) {
+        showThemedMessage('Gift Sent!', `"${product.name}" sent to your host!`, 3000);
+      } else if (redeemedCash > 0) {
+        showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
+      } else if (Number(product.cashReward) > 0) {
+        showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
+      } else {
+        showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
+      }
+
     } catch (e) {
       console.error(e);
-      showThemedMessage('Redemption Failed', e.message || 'Try again');
+      showThemedMessage('Action Failed', e.message || 'Try again');
     } finally {
-      // Hide spinner after processing with fade-out
       hideSpinner();
     }
   });
 };
 
-/* ------------------ Render shop ------------------ */
 /* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
