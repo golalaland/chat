@@ -1,13 +1,15 @@
-// admin-payfeed.js (revamped, with featuredHosts support, popupPhoto & videoUrl, and consistent mass actions)
+// admin-payfeed.js
+// Revamped admin with Users / Whitelist / Featured Hosts tabs
 // Font: 乂丨乂丨
 
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where
+  getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc,
+  query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ---------- Firebase config ----------
+// ---------- Firebase config (yours) ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -30,123 +32,148 @@ const currentAdminEmailEl = document.getElementById("currentAdminEmail");
 
 const usersTableBody = document.querySelector("#usersTable tbody");
 const whitelistTableBody = document.querySelector("#whitelistTable tbody");
+const featuredTableBody = document.querySelector("#featuredTable tbody");
+
 const logoutBtn = document.getElementById("logoutBtn");
-const loaderOverlay = document.getElementById("loaderOverlay");
-const loaderText = document.getElementById("loaderText");
+const userSearch = document.getElementById("userSearch");
+const exportCurrentCsv = document.getElementById("exportCurrentCsv");
+const exportFeaturedCsv = document.getElementById("exportFeaturedCsv");
+
+const wlEmailInput = document.getElementById("wlEmail");
+const wlPhoneInput = document.getElementById("wlPhone");
+const addWhitelistBtn = document.getElementById("addWhitelistBtn");
+const wlCsvUpload = document.getElementById("wlCsvUpload");
+const cleanUpLadyToggle = document.getElementById("cleanUpLady");
 
 const massRemoveUsersBtn = document.getElementById("massRemoveUsersBtn");
 const massRemoveWhitelistBtn = document.getElementById("massRemoveWhitelistBtn");
+const massRemoveFeaturedBtn = document.getElementById("massRemoveFeaturedBtn");
 const copyToFeaturedBtn = document.getElementById("copyToFeaturedBtn");
 
-// ---------- Loader Helpers ----------
-function showLoader(text = "Processing...") {
-  loaderText.textContent = text;
-  loaderOverlay.style.display = "flex";
-}
-function hideLoader() { loaderOverlay.style.display = "none"; }
+const selectAllUsers = document.getElementById("selectAllUsers");
+const selectAllWhitelist = document.getElementById("selectAllWhitelist");
+const selectAllFeatured = document.getElementById("selectAllFeatured");
+
+const loaderOverlay = document.getElementById("loaderOverlay");
+const loaderText = document.getElementById("loaderText");
+
+// Tabs
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",(e)=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const tab = btn.dataset.tab;
+    document.querySelectorAll(".tab-section").forEach(s=>s.classList.remove("active"));
+    document.getElementById(`${tab}-section`).classList.add("active");
+    // re-export button context: exportCurrentCsv should export current visible tab except featured has its own button
+  });
+});
 
 // ---------- Helpers ----------
-function createToggleCheckbox(value) {
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.checked = !!value;
-  input.style.transform = "scale(1.2)";
-  return input;
+function showLoader(text="Processing..."){ if(loaderText) loaderText.textContent=text; loaderOverlay.style.display="flex"; }
+function hideLoader(){ loaderOverlay.style.display="none"; }
+function mkCSVName(prefix){
+  const ts = (new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-');
+  return `${prefix}_${ts}.csv`;
 }
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(v => `"${String(v ?? "")}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function sanitizeCSVCell(s){ return String(s||"").replaceAll('"',''); } // remove quotes
 
-function showConfirmModal(title, message) {
-  return new Promise(resolve => {
+function createToggleCheckbox(value){
+  const i = document.createElement("input");
+  i.type = "checkbox"; i.checked = !!value; i.style.transform="scale(1.1)";
+  return i;
+}
+function showConfirmModal(title, message){
+  return new Promise(resolve=>{
     const overlay = document.createElement("div");
-    Object.assign(overlay.style, {
-      position: "fixed", inset: "0", background: "rgba(0,0,0,0.35)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      zIndex: 3000, fontFamily: "'乂丨乂丨', monospace"
-    });
-
+    Object.assign(overlay.style,{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.5)",zIndex:4000});
     const card = document.createElement("div");
-    Object.assign(card.style, {
-      background: "#fff", padding: "18px", borderRadius: "10px",
-      minWidth: "300px", textAlign: "center", boxShadow: "0 8px 30px rgba(0,0,0,0.12)"
-    });
-
-    card.innerHTML = `
-      <h3 style="margin:0 0 8px">${title}</h3>
-      <p style="margin:0 0 14px;color:#333">${message}</p>
-      <div style="display:flex;justify-content:center;gap:10px">
-        <button class="btn btn-primary" id="confirmYes">Confirm</button>
-        <button class="btn btn-danger" id="confirmNo">Cancel</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    overlay.appendChild(card);
-    card.querySelector("#confirmYes").onclick = () => { overlay.remove(); resolve(true); };
-    card.querySelector("#confirmNo").onclick = () => { overlay.remove(); resolve(false); };
+    Object.assign(card.style,{background:"#111",padding:"16px",borderRadius:"10px",color:"#fff",minWidth:"320px",textAlign:"center"});
+    const h = document.createElement("h3"); h.textContent = title; h.style.margin="0 0 8px";
+    const p = document.createElement("p"); p.textContent = message; p.style.margin="0 0 12px"; p.style.color="#ddd";
+    const rdiv = document.createElement("div"); rdiv.style.display="flex"; rdiv.style.justifyContent="center"; rdiv.style.gap="10px";
+    const yes = document.createElement("button"); yes.className="btn btn-primary"; yes.textContent="Confirm";
+    const no = document.createElement("button"); no.className="btn btn-danger"; no.textContent="Cancel";
+    yes.onclick = ()=>{ overlay.remove(); resolve(true); };
+    no.onclick = ()=>{ overlay.remove(); resolve(false); };
+    rdiv.appendChild(yes); rdiv.appendChild(no);
+    card.appendChild(h); card.appendChild(p); card.appendChild(rdiv);
+    overlay.appendChild(card); document.body.appendChild(overlay);
   });
 }
 
 // ---------- Admin login ----------
 let currentAdmin = null;
-async function checkAdmin(emailRaw) {
-  const email = String(emailRaw || "").trim().toLowerCase();
-  if (!email) return null;
-  const snap = await getDocs(query(collection(db, "users"), where("email", "==", email)));
-  if (snap.empty) return null;
-  const data = snap.docs[0].data() || {};
-  return data.isAdmin === true ? { email, id: snap.docs[0].id } : null;
+async function checkAdmin(emailRaw){
+  const email = String(emailRaw||"").trim().toLowerCase();
+  if(!email) return null;
+  const q = query(collection(db,"users"), where("email","==",email));
+  const snap = await getDocs(q);
+  if(snap.empty) return null;
+  const d = snap.docs[0].data()||{};
+  return d.isAdmin === true ? { email, id: snap.docs[0].id } : null;
 }
 
-adminCheckBtn.addEventListener("click", async () => {
-  adminGateMsg.textContent = "";
-  const email = adminEmailInput.value.trim();
-  if (!email) return adminGateMsg.textContent = "Enter admin email";
+adminCheckBtn.addEventListener("click", async ()=>{
+  adminGateMsg.textContent="";
+  const val = adminEmailInput.value.trim();
+  if(!val){ adminGateMsg.textContent="Enter admin email"; return; }
   showLoader("Checking admin...");
-  const admin = await checkAdmin(email);
+  const a = await checkAdmin(val);
   hideLoader();
-  if (!admin) return adminGateMsg.textContent = "Not authorized";
-  currentAdmin = admin;
-  currentAdminEmailEl.textContent = admin.email;
+  if(!a){ adminGateMsg.textContent="Not authorized"; return; }
+  currentAdmin = a;
+  currentAdminEmailEl.textContent = a.email;
   adminGate.classList.add("hidden");
   adminPanel.classList.remove("hidden");
-  await loadUsers(); await loadWhitelist();
+  await loadUsers(); await loadWhitelist(); await loadFeatured();
 });
-logoutBtn.addEventListener("click", () => {
+
+logoutBtn.addEventListener("click", ()=>{
   currentAdmin = null;
   adminPanel.classList.add("hidden");
   adminGate.classList.remove("hidden");
   adminEmailInput.value = "";
 });
 
-// ---------- Load & Render Users ----------
+// ---------- Load / render users ----------
 let usersCache = [];
-async function loadUsers() {
-  try {
+async function loadUsers(){
+  try{
     usersTableBody.innerHTML = "";
-    const snap = await getDocs(collection(db, "users"));
+    const snap = await getDocs(collection(db,"users"));
     usersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderUsers(usersCache);
-  } catch (e) {
-    console.error(e);
-    usersTableBody.innerHTML = `<tr><td colspan="13" class="muted">Failed to load users.</td></tr>`;
-  }
+  }catch(e){ console.error(e); usersTableBody.innerHTML = `<tr><td colspan="14" class="muted">Failed to load users.</td></tr>`; }
 }
 
-function renderUsers(users) {
+function renderUsers(users){
   usersTableBody.innerHTML = "";
-  users.forEach(u => {
+  users.forEach(u=>{
     const tr = document.createElement("tr");
     tr.dataset.id = u.id;
-    tr.style.fontFamily = "'乂丨乂丨', monospace";
+    tr.style.fontFamily="'乂丨乂丨', monospace";
     tr.innerHTML = `
       <td><input type="checkbox" class="row-select"/></td>
-      <td>${u.email || ""}</td>
-      <td>${u.phone || ""}</td>
-      <td>${u.chatId || ""}</td>
-      <td><input type="number" min="0" value="${u.stars || 0}" style="width:60px" /></td>
-      <td><input type="number" min="0" value="${u.cash || 0}" style="width:60px" /></td>
+      <td>${sanitizeCSVCell(u.email||"")}</td>
+      <td>${sanitizeCSVCell(u.phone||"")}</td>
+      <td>${sanitizeCSVCell(u.chatId||"")}</td>
+      <td><input type="number" min="0" value="${Number(u.stars||0)}" style="width:80px"/></td>
+      <td><input type="number" min="0" value="${Number(u.cash||0)}" style="width:80px"/></td>
       <td></td><td></td><td></td><td></td>
-      <td><input type="checkbox" ${u.featuredHosts ? "checked" : ""}></td>
-      <td><input type="text" placeholder="popup photo" value="${u.popupPhoto || ""}" style="width:120px"/></td>
-      <td><input type="text" placeholder="video url" value="${u.videoUrl || ""}" style="width:120px"/></td>
+      <td><input type="checkbox" class="featured-checkbox" ${u.featuredHosts ? "checked" : ""}></td>
+      <td><input type="text" class="popup-photo" value="${sanitizeCSVCell(u.popupPhoto||"")}" style="width:140px"/></td>
+      <td><input type="text" class="video-url" value="${sanitizeCSVCell(u.videoUrl||"")}" style="width:160px"/></td>
       <td></td>
     `;
 
@@ -160,19 +187,18 @@ function renderUsers(users) {
     tr.children[8].appendChild(isHost);
     tr.children[9].appendChild(subscriptionActive);
 
-    // Actions
+    // actions cell
     const actionsTd = tr.children[13];
-    const enterBtn = document.createElement("button");
-    enterBtn.className = "btn btn-primary small"; enterBtn.textContent = "Save";
-    const removeBtn = document.createElement("button");
-    removeBtn.className = "btn btn-danger small"; removeBtn.textContent = "Del";
-    actionsTd.append(enterBtn, removeBtn);
+    const saveBtn = document.createElement("button"); saveBtn.className="btn btn-primary small"; saveBtn.textContent="Save";
+    const delBtn  = document.createElement("button"); delBtn.className="btn btn-danger small"; delBtn.textContent="Del";
+    actionsTd.append(saveBtn, delBtn);
 
-    enterBtn.onclick = async () => {
-      const confirmed = await showConfirmModal("Update user", `Apply changes for ${u.email}?`);
-      if (!confirmed) return;
-      showLoader("Updating...");
-      try {
+    // Save handler: update user and sync whitelist/featured
+    saveBtn.addEventListener("click", async ()=>{
+      const confirmed = await showConfirmModal("Save user", `Save changes for ${u.email || "(no email)"}?`);
+      if(!confirmed) return;
+      showLoader("Saving...");
+      try{
         const updates = {
           stars: Number(tr.children[4].querySelector("input").value || 0),
           cash: Number(tr.children[5].querySelector("input").value || 0),
@@ -184,126 +210,364 @@ function renderUsers(users) {
           popupPhoto: tr.children[11].querySelector("input").value.trim(),
           videoUrl: tr.children[12].querySelector("input").value.trim()
         };
-        await updateDoc(doc(db, "users", u.id), updates);
-        hideLoader();
-        alert("User updated successfully.");
-      } catch (err) {
-        console.error(err);
-        hideLoader();
-        alert("Failed to update user.");
-      }
-    };
+        // write back
+        await updateDoc(doc(db,"users",u.id), updates);
 
-    removeBtn.onclick = async () => {
-      const confirmed = await showConfirmModal("Remove user", `Delete ${u.email}?`);
-      if (!confirmed) return;
-      showLoader("Removing...");
-      try {
-        await deleteDoc(doc(db, "users", u.id));
-        hideLoader();
-        await loadUsers();
-        alert(`${u.email} removed.`);
-      } catch (err) {
-        hideLoader();
-        console.error(err);
-        alert("Failed to remove user.");
-      }
-    };
+        // sync whitelist
+        const emailKey = (u.email||"").toLowerCase();
+        if(updates.subscriptionActive){
+          await setDoc(doc(db,"whitelist",emailKey), {
+            email: emailKey,
+            phone: u.phone || "",
+            subscriptionActive: true,
+            subscriptionStartTime: Date.now()
+          }, { merge: true });
+        } else {
+          // remove from whitelist if present
+          await deleteDoc(doc(db,"whitelist",emailKey)).catch(()=>{});
+        }
+
+        // sync featuredHosts collection if featuredHosts checked
+        if(updates.featuredHosts){
+          await setDoc(doc(db,"featuredHosts",u.id), {
+            email: u.email||"",
+            phone: u.phone||"",
+            popupPhoto: updates.popupPhoto || "",
+            videoUrl: updates.videoUrl || "",
+            addedAt: Date.now()
+          }, { merge: true });
+        } else {
+          // if un-checked, remove from featuredHosts collection and ensure users.featuredHosts=false
+          await deleteDoc(doc(db,"featuredHosts",u.id)).catch(()=>{});
+        }
+
+        hideLoader(); await loadUsers(); await loadWhitelist(); await loadFeatured();
+        alert("Saved.");
+      }catch(err){ hideLoader(); console.error(err); alert("Save failed. See console."); }
+    });
+
+    // Delete handler
+    delBtn.addEventListener("click", async ()=>{
+      const confirmed = await showConfirmModal("Delete user", `Delete ${u.email || "(no email)"}?`);
+      if(!confirmed) return;
+      showLoader("Deleting...");
+      try{
+        await deleteDoc(doc(db,"users",u.id));
+        await deleteDoc(doc(db,"featuredHosts",u.id)).catch(()=>{});
+        await deleteDoc(doc(db,"whitelist",(u.email||"").toLowerCase())).catch(()=>{});
+        hideLoader(); await loadUsers(); await loadWhitelist(); await loadFeatured();
+        alert("Deleted.");
+      }catch(err){ hideLoader(); console.error(err); alert("Delete failed."); }
+    });
 
     usersTableBody.appendChild(tr);
   });
 }
 
-// ---------- Select All ----------
-const selectAllUsers = document.getElementById("selectAllUsers");
-if (selectAllUsers) {
-  selectAllUsers.addEventListener("change", () => {
-    const checked = selectAllUsers.checked;
-    usersTableBody.querySelectorAll("input.row-select").forEach(cb => cb.checked = checked);
-  });
+// ---------- search users ----------
+let searchTimeout = null;
+userSearch.addEventListener("input", ()=>{
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(()=>{
+    const q = (userSearch.value||"").toLowerCase();
+    renderUsers(usersCache.filter(u => (u.email||"").toLowerCase().includes(q) || (u.chatId||"").toLowerCase().includes(q)));
+  }, 200);
+});
+
+// ---------- whitelist load/render ----------
+async function loadWhitelist(){
+  try{
+    whitelistTableBody.innerHTML = "";
+    const snap = await getDocs(collection(db,"whitelist"));
+    snap.forEach(d => {
+      const w = d.data() || {};
+      const tr = document.createElement("tr");
+      tr.dataset.id = d.id;
+      tr.innerHTML = `
+        <td><input type="checkbox" class="row-select"/></td>
+        <td>${sanitizeCSVCell(w.email||"")}</td>
+        <td>${sanitizeCSVCell(w.phone||"")}</td>
+        <td>${w.subscriptionActive ? "Active" : "Inactive"}</td>
+        <td></td>
+      `;
+      const removeBtn = document.createElement("button");
+      removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
+      removeBtn.addEventListener("click", async ()=>{
+        const confirmed = await showConfirmModal("Remove whitelist", `Remove ${w.email}?`);
+        if(!confirmed) return;
+        showLoader("Removing...");
+        try{
+          await deleteDoc(doc(db,"whitelist",d.id));
+          hideLoader(); await loadWhitelist();
+        }catch(err){ hideLoader(); console.error(err); alert("Failed to remove."); }
+      });
+      tr.children[4].appendChild(removeBtn);
+      whitelistTableBody.appendChild(tr);
+    });
+  }catch(err){ console.error(err); whitelistTableBody.innerHTML = `<tr><td colspan="5" class="muted">Failed to load whitelist.</td></tr>`; }
 }
 
-function getCheckedRowIds() {
-  return Array.from(usersTableBody.querySelectorAll("tr"))
+// ---------- featured load/render ----------
+async function loadFeatured(){
+  try{
+    featuredTableBody.innerHTML = "";
+    const snap = await getDocs(collection(db,"featuredHosts"));
+    snap.forEach(d => {
+      const f = d.data() || {};
+      const tr = document.createElement("tr");
+      tr.dataset.id = d.id;
+      tr.innerHTML = `
+        <td><input type="checkbox" class="row-select"/></td>
+        <td>${sanitizeCSVCell(f.email||"")}</td>
+        <td>${sanitizeCSVCell(f.phone||"")}</td>
+        <td><input type="text" class="popup-photo" value="${sanitizeCSVCell(f.popupPhoto||"")}" style="width:160px"/></td>
+        <td><input type="text" class="video-url" value="${sanitizeCSVCell(f.videoUrl||"")}" style="width:160px"/></td>
+        <td>${f.addedAt ? new Date(f.addedAt).toLocaleString() : ""}</td>
+        <td></td>
+      `;
+      // actions: save and remove
+      const saveBtn = document.createElement("button"); saveBtn.className="btn btn-primary small"; saveBtn.textContent="Save";
+      const removeBtn = document.createElement("button"); removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
+      saveBtn.addEventListener("click", async ()=>{
+        const confirmed = await showConfirmModal("Save Featured", `Update featured host ${f.email||""}?`);
+        if(!confirmed) return;
+        showLoader("Saving...");
+        try{
+          const popupPhoto = tr.querySelector(".popup-photo").value.trim();
+          const videoUrl  = tr.querySelector(".video-url").value.trim();
+          await updateDoc(doc(db,"featuredHosts",d.id), { popupPhoto, videoUrl });
+          // mirror to users collection if exists
+          await updateDoc(doc(db,"users",d.id), { popupPhoto, videoUrl }).catch(()=>{});
+          hideLoader(); await loadFeatured(); await loadUsers();
+          alert("Featured updated.");
+        }catch(err){ hideLoader(); console.error(err); alert("Save failed."); }
+      });
+      removeBtn.addEventListener("click", async ()=>{
+        const confirmed = await showConfirmModal("Remove Featured", `Remove ${f.email||""} from featured hosts?`);
+        if(!confirmed) return;
+        showLoader("Removing...");
+        try{
+          await deleteDoc(doc(db,"featuredHosts",d.id));
+          await updateDoc(doc(db,"users",d.id), { featuredHosts: false }).catch(()=>{});
+          hideLoader(); await loadFeatured(); await loadUsers();
+        }catch(err){ hideLoader(); console.error(err); alert("Remove failed."); }
+      });
+      tr.children[6].append(saveBtn, removeBtn);
+      featuredTableBody.appendChild(tr);
+    });
+  }catch(err){ console.error(err); featuredTableBody.innerHTML = `<tr><td colspan="7" class="muted">Failed to load featured hosts.</td></tr>`; }
+}
+
+// ---------- Mass-select helpers ----------
+function getCheckedRowIdsFrom(tbody){
+  return Array.from(tbody.querySelectorAll("tr"))
     .filter(r => r.querySelector("input.row-select")?.checked)
     .map(r => r.dataset.id);
 }
 
-// ---------- Mass Remove ----------
-massRemoveUsersBtn.addEventListener("click", async () => {
-  const ids = getCheckedRowIds();
-  if (!ids.length) return alert("No users selected.");
-  const confirmed = await showConfirmModal("Remove Users", `Delete ${ids.length} users?`);
-  if (!confirmed) return;
-  showLoader("Removing...");
-  try {
-    for (const id of ids) await deleteDoc(doc(db, "users", id)).catch(() => {});
-    hideLoader();
-    await loadUsers();
-    selectAllUsers.checked = false;
-    alert(`${ids.length} users removed.`);
-  } catch (err) {
-    hideLoader();
-    console.error(err);
-    alert("Failed to remove users.");
-  }
+// select-all wiring
+if(selectAllUsers) selectAllUsers.addEventListener("change", ()=> {
+  const state = selectAllUsers.checked;
+  usersTableBody.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
+});
+if(selectAllWhitelist) selectAllWhitelist.addEventListener("change", ()=> {
+  const state = selectAllWhitelist.checked;
+  whitelistTableBody.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
+});
+if(selectAllFeatured) selectAllFeatured.addEventListener("change", ()=> {
+  const state = selectAllFeatured.checked;
+  featuredTableBody.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
 });
 
-// ---------- Copy Selected to Featured Hosts ----------
-copyToFeaturedBtn.addEventListener("click", async () => {
-  const ids = getCheckedRowIds();
-  if (!ids.length) return alert("No users selected.");
-  const confirmed = await showConfirmModal("Copy to Featured Hosts", `Copy ${ids.length} user(s)?`);
-  if (!confirmed) return;
+// ---------- Mass Remove Users ----------
+massRemoveUsersBtn.addEventListener("click", async ()=>{
+  const ids = getCheckedRowIdsFrom(usersTableBody);
+  if(!ids.length) return alert("No users selected.");
+  const confirmed = await showConfirmModal("Remove Users",`Delete ${ids.length} user(s)?`);
+  if(!confirmed) return;
+  showLoader("Removing users...");
+  try{
+    for(const id of ids){
+      const user = usersCache.find(u=>u.id===id);
+      await deleteDoc(doc(db,"users",id)).catch(()=>{});
+      if(user?.email) await deleteDoc(doc(db,"whitelist",user.email.toLowerCase())).catch(()=>{});
+      await deleteDoc(doc(db,"featuredHosts",id)).catch(()=>{});
+    }
+    hideLoader(); await loadUsers(); await loadWhitelist(); await loadFeatured();
+    if(selectAllUsers) selectAllUsers.checked = false;
+    alert(`${ids.length} user(s) removed.`);
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to remove selected users."); }
+});
+
+// ---------- Mass Remove Whitelist ----------
+massRemoveWhitelistBtn.addEventListener("click", async ()=>{
+  const ids = getCheckedRowIdsFrom(whitelistTableBody);
+  if(!ids.length) return alert("No whitelist selected.");
+  const confirmed = await showConfirmModal("Remove whitelist",`Delete ${ids.length} whitelist entry(s)?`);
+  if(!confirmed) return;
+  showLoader("Removing whitelist...");
+  try{
+    for(const id of ids){
+      await deleteDoc(doc(db,"whitelist",id)).catch(()=>{});
+    }
+    hideLoader(); await loadWhitelist();
+    if(selectAllWhitelist) selectAllWhitelist.checked = false;
+    alert(`${ids.length} removed.`);
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to remove selected whitelist entries."); }
+});
+
+// ---------- Mass Remove Featured ----------
+massRemoveFeaturedBtn.addEventListener("click", async ()=>{
+  const ids = getCheckedRowIdsFrom(featuredTableBody);
+  if(!ids.length) return alert("No featured hosts selected.");
+  const confirmed = await showConfirmModal("Remove Featured",`Delete ${ids.length} featured host(s)?`);
+  if(!confirmed) return;
+  showLoader("Removing featured...");
+  try{
+    for(const id of ids){
+      await deleteDoc(doc(db,"featuredHosts",id)).catch(()=>{});
+      await updateDoc(doc(db,"users",id), { featuredHosts: false }).catch(()=>{});
+    }
+    hideLoader(); await loadFeatured(); await loadUsers();
+    if(selectAllFeatured) selectAllFeatured.checked = false;
+    alert(`${ids.length} removed.`);
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to remove featured entries."); }
+});
+
+// ---------- Copy selected users to featuredHosts ----------
+copyToFeaturedBtn.addEventListener("click", async ()=>{
+  const ids = getCheckedRowIdsFrom(usersTableBody);
+  if(!ids.length) return alert("No users selected.");
+  const confirmed = await showConfirmModal("Copy to Featured", `Copy ${ids.length} user(s) to featured hosts?`);
+  if(!confirmed) return;
   showLoader("Copying...");
-  try {
-    for (const id of ids) {
-      const user = usersCache.find(u => u.id === id);
-      if (!user) continue;
-      await setDoc(doc(db, "featuredHosts", id), {
-        ...user,
-        featuredHosts: true,
+  try{
+    for(const id of ids){
+      const user = usersCache.find(u=>u.id===id);
+      if(!user) continue;
+      await setDoc(doc(db,"featuredHosts", id), {
+        email: user.email || "",
+        phone: user.phone || "",
         popupPhoto: user.popupPhoto || "",
         videoUrl: user.videoUrl || "",
-        timestamp: Date.now()
+        addedAt: Date.now()
       }, { merge: true });
+      // mark user as featured
+      await updateDoc(doc(db,"users", id), { featuredHosts: true }).catch(()=>{});
     }
-    hideLoader();
-    alert(`${ids.length} users copied to Featured Hosts.`);
-  } catch (err) {
-    hideLoader();
-    console.error("Featured copy error:", err);
-    alert("Failed to copy users to Featured Hosts.");
+    hideLoader(); await loadFeatured(); await loadUsers();
+    alert(`${ids.length} copied to featured hosts.`);
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to copy to featured hosts."); }
+});
+
+// ---------- Whitelist add / CSV import ----------
+addWhitelistBtn.addEventListener("click", async ()=>{
+  const emailRaw = (wlEmailInput.value||"").trim();
+  const phone = (wlPhoneInput.value||"").trim();
+  if(!emailRaw || !phone) return alert("Enter email & phone.");
+  const email = emailRaw.toLowerCase();
+  const confirmed = await showConfirmModal("Add whitelist", `Add ${email} to whitelist?`);
+  if(!confirmed) return;
+  showLoader("Adding...");
+  try{
+    await setDoc(doc(db,"whitelist", email), {
+      email, phone, subscriptionActive: true, subscriptionStartTime: Date.now()
+    }, { merge: true });
+    // also create/update user entry if absent (avoid duplicates)
+    const q = query(collection(db,"users"), where("email", "==", email));
+    const snap = await getDocs(q);
+    if(snap.empty){
+      await setDoc(doc(db,"users", email), { email, phone, subscriptionActive:true, subscriptionStartTime: Date.now(), subscriptionCount: 1 }, { merge: true }).catch(()=>{});
+    } else {
+      const uref = snap.docs[0].ref;
+      const data = snap.docs[0].data()||{};
+      await updateDoc(uref, { subscriptionActive:true, subscriptionStartTime: Date.now(), subscriptionCount: (data.subscriptionCount||0)+1 }).catch(()=>{});
+    }
+    hideLoader(); await loadWhitelist(); await loadUsers();
+    alert("Added to whitelist.");
+  }catch(err){ hideLoader(); console.error(err); alert("Add failed."); }
+});
+
+wlCsvUpload.addEventListener("change", async (e)=>{
+  const file = e.target.files?.[0]; if(!file) return;
+  const confirmed = await showConfirmModal("CSV Batch", "Inject CSV to whitelist?");
+  if(!confirmed){ wlCsvUpload.value=""; return; }
+  showLoader("Processing CSV...");
+  try{
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const processedEmails = [];
+    for(const line of lines){
+      // split on commas, remove surrounding quotes
+      const parts = line.split(",").map(p => p.replace(/^"(.*)"$/,"$1").trim());
+      const emailRaw = parts[0]||"";
+      const phone = parts[1]||"";
+      if(!emailRaw || !phone) continue;
+      const email = emailRaw.toLowerCase();
+      processedEmails.push(email);
+      // create or update whitelist + users
+      await setDoc(doc(db,"whitelist",email), { email, phone, subscriptionActive:true, subscriptionStartTime: Date.now() }, { merge: true });
+      const q = query(collection(db,"users"), where("email","==",email));
+      const snap = await getDocs(q);
+      if(snap.empty){
+        await setDoc(doc(db,"users", email), { email, phone, subscriptionActive:true, subscriptionStartTime: Date.now(), subscriptionCount:1 }, { merge: true }).catch(()=>{});
+      } else {
+        const uref = snap.docs[0].ref;
+        const data = snap.docs[0].data()||{};
+        await updateDoc(uref, { phone, subscriptionActive:true, subscriptionStartTime: Date.now(), subscriptionCount: (data.subscriptionCount||0)+1 }).catch(()=>{});
+      }
+    }
+
+    // cleanup option: remove whitelist entries not in CSV
+    if(cleanUpLadyToggle.checked){
+      const wsnap = await getDocs(collection(db,"whitelist"));
+      for(const docSnap of wsnap.docs){
+        const key = (docSnap.id||"").toLowerCase();
+        if(!processedEmails.includes(key)){
+          // remove from whitelist and mark user.subscriptionActive => false
+          await deleteDoc(doc(db,"whitelist", key)).catch(()=>{});
+          await updateDoc(doc(db,"users", key), { subscriptionActive: false }).catch(()=>{});
+        }
+      }
+    }
+
+    hideLoader(); await loadWhitelist(); await loadUsers();
+    alert("CSV processed.");
+  }catch(err){ hideLoader(); console.error(err); alert("CSV failed."); }
+  finally{ wlCsvUpload.value=""; }
+});
+
+// ---------- Exports ----------
+exportCurrentCsv.addEventListener("click", async ()=>{
+  // export current visible tab (users/whitelist/featured)
+  const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
+  if(activeTab === "users"){
+    const rows = [["id","email","phone","chatId","stars","cash","isVIP","isAdmin","isHost","subscriptionActive","featuredHosts","popupPhoto","videoUrl"]];
+    usersCache.forEach(u => rows.push([u.id||"", u.email||"", u.phone||"", u.chatId||"", u.stars||0, u.cash||0, !!u.isVIP, !!u.isAdmin, !!u.isHost, !!u.subscriptionActive, !!u.featuredHosts, u.popupPhoto||"", u.videoUrl||""]));
+    downloadCSV(mkCSVName("users"), rows);
+  } else if(activeTab === "whitelist"){
+    const rows = [["id","email","phone","subscriptionActive"]];
+    const snap = await getDocs(collection(db,"whitelist"));
+    snap.forEach(d => { const w = d.data()||{}; rows.push([d.id, w.email||"", w.phone||"", !!w.subscriptionActive]); });
+    downloadCSV(mkCSVName("whitelist"), rows);
+  } else {
+    // fallback to featured
+    const rows = [["id","email","phone","popupPhoto","videoUrl","addedAt"]];
+    const snap = await getDocs(collection(db,"featuredHosts"));
+    snap.forEach(d => { const f = d.data()||{}; rows.push([d.id, f.email||"", f.phone||"", f.popupPhoto||"", f.videoUrl||"", f.addedAt || ""]); });
+    downloadCSV(mkCSVName("featuredHosts"), rows);
   }
 });
 
-// ---------- Whitelist ----------
-async function loadWhitelist() {
-  try {
-    whitelistTableBody.innerHTML = "";
-    const snap = await getDocs(collection(db, "whitelist"));
-    snap.forEach(docSnap => {
-      const w = docSnap.data();
-      const tr = document.createElement("tr");
-      tr.dataset.id = docSnap.id;
-      tr.innerHTML = `
-        <td><input type="checkbox" class="row-select"/></td>
-        <td>${w.email || ""}</td>
-        <td>${w.phone || ""}</td>
-        <td>${w.subscriptionActive ? "Active" : "Inactive"}</td>
-        <td><button class="btn btn-danger small">Remove</button></td>
-      `;
-      tr.querySelector("button").onclick = async () => {
-        const confirmed = await showConfirmModal("Remove", `Remove ${w.email}?`);
-        if (!confirmed) return;
-        showLoader("Removing...");
-        await deleteDoc(doc(db, "whitelist", docSnap.id));
-        hideLoader();
-        await loadWhitelist();
-      };
-      whitelistTableBody.appendChild(tr);
-    });
-  } catch (err) {
-    whitelistTableBody.innerHTML = `<tr><td colspan="5">Failed to load whitelist.</td></tr>`;
-  }
-}
+exportFeaturedCsv.addEventListener("click", async ()=>{
+  const rows = [["id","email","phone","popupPhoto","videoUrl","addedAt"]];
+  const snap = await getDocs(collection(db,"featuredHosts"));
+  snap.forEach(d => { const f = d.data()||{}; rows.push([d.id, f.email||"", f.phone||"", f.popupPhoto||"", f.videoUrl||"", f.addedAt || ""]); });
+  downloadCSV(mkCSVName("featuredHosts"), rows);
+});
+
+// ---------- Load featured on start ----------
+async function initialLoads(){ await loadUsers(); await loadWhitelist(); await loadFeatured(); }
+initialLoads().catch(()=>{});
+
+// End of file
