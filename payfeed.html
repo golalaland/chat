@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -24,7 +23,11 @@
       color:#efefef;
     }
 
-    h2, h3 { font-family:'乂丨乂丨', monospace; margin:0; color:#fff; }
+    h2, h3 {
+      font-family:'乂丨乂丨', monospace;
+      margin:0;
+      color:#fff;
+    }
 
     .card {
       background:var(--card-bg);
@@ -32,7 +35,7 @@
       border-radius:12px;
       box-shadow:0 6px 18px rgba(0,0,0,0.6);
       margin-bottom:16px;
-      color: #e9e9ec;
+      color:#e9e9ec;
     }
 
     .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
@@ -47,8 +50,21 @@
       font-size:0.95rem;
     }
 
-    table { width:100%; border-collapse:collapse; font-family:inherit; color:inherit; }
-    th, td { padding:10px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.03); font-size:0.9rem; vertical-align:middle; }
+    table {
+      width:100%;
+      border-collapse:collapse;
+      font-family:inherit;
+      color:inherit;
+    }
+
+    th, td {
+      padding:10px;
+      text-align:left;
+      border-bottom:1px solid rgba(255,255,255,0.03);
+      font-size:0.9rem;
+      vertical-align:middle;
+    }
+
     thead th { color:var(--muted); font-weight:600; }
 
     .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 12px; font-family:inherit; }
@@ -62,42 +78,37 @@
     .hidden { display:none; }
     .actions { display:flex; gap:6px; }
 
-    .scroll-box { max-height:420px; overflow:auto; padding-right:8px; margin-top:8px; }
-    #loaderOverlay {
-      position:fixed; inset:0;
-      background:rgba(0,0,0,0.6);
-      display:flex; justify-content:center; align-items:center;
-      z-index:1000; display:none;
+    .scroll-box {
+      max-height:420px;
+      overflow:auto;
+      padding-right:8px;
+      margin-top:8px;
     }
-    #loaderOverlay .card { padding:24px; text-align:center; font-family:'乂丨乂丨', monospace; }
 
-    /* tabs */
-    .tabs { display:flex; gap:8px; margin-bottom:12px; }
-    .tab-btn { padding:8px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,0.03); background:transparent; color:inherit; }
-    .tab-btn.active { background:linear-gradient(90deg,#2a2b2e,#171718); box-shadow: inset 0 -2px 0 rgba(255,255,255,0.02); }
+    #loaderOverlay {
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.6);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:1000;
+      display:none;
+    }
 
-    /* small responsive */
+    #loaderOverlay .card {
+      padding:24px;
+      text-align:center;
+      font-family:'乂丨乂丨', monospace;
+    }
+
     @media (max-width:900px){
       .search{ width:160px }
-      table thead th:nth-child(12), table tbody td:nth-child(12),
-      table thead th:nth-child(13), table tbody td:nth-child(13) { display:none; }
+      table thead th:nth-child(12),
+      table tbody td:nth-child(12),
+      table thead th:nth-child(13),
+      table tbody td:nth-child(13) { display:none; }
     }
-.tab-section {
-  display: none;
-  opacity: 0;
-  transition: opacity 0.25s ease-in-out;
-}
-
-.tab-section.active {
-  display: block;
-  opacity: 1;
-}
-
-.tab-btn.active {
-  background: #222;
-  color: #fff;
-  border-bottom: 2px solid #ff9800;
-}
   </style>
 </head>
 <body>
@@ -119,19 +130,15 @@
         <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
       </div>
       <div class="row">
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="users">Users</button>
-          <button class="tab-btn" data-tab="whitelist">Whitelist</button>
-          <button class="tab-btn" data-tab="featured">Featured Hosts</button>
-        </div>
         <input id="userSearch" class="search small" placeholder="Search users by email or chatId"/>
         <button id="exportCurrentCsv" class="btn">Export CSV</button>
         <button id="logoutBtn" class="btn">Logout</button>
       </div>
     </div>
 
-       <!-- USERS TAB -->
-    <div id="users" class="card tab-section active">
+    <!-- USERS SECTION -->
+    <div id="usersSection" class="card">
+      <h3>Users</h3>
       <div class="row" style="margin-bottom:8px">
         <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected Users</button>
         <button id="copyToFeaturedBtn" class="btn btn-primary">Copy Selected → Featured</button>
@@ -141,7 +148,7 @@
         <table id="usersTable">
           <thead>
             <tr>
-              <th><input type="checkbox" id="selectAllUsers" title="Select all users"/></th>
+              <th><input type="checkbox" id="selectAllUsers"/></th>
               <th>Email</th>
               <th>Phone</th>
               <th>ChatId</th>
@@ -162,14 +169,17 @@
       </div>
     </div>
 
-    <!-- WHITELIST TAB -->
-  <div id="whitelist" class="card tab-section">
+    <!-- WHITELIST SECTION -->
+    <div id="whitelistSection" class="card">
+      <h3>Whitelist</h3>
       <div class="row" style="margin-bottom:8px">
         <input id="wlEmail" placeholder="Email" />
         <input id="wlPhone" placeholder="Phone" />
         <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
         <input type="file" id="wlCsvUpload" />
-        <label style="margin-left:8px"><input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼</label>
+        <label style="margin-left:8px">
+          <input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼
+        </label>
         <button id="massRemoveWhitelistBtn" class="btn btn-danger" style="margin-left:auto">Remove Selected Whitelist</button>
       </div>
 
@@ -177,7 +187,7 @@
         <table id="whitelistTable">
           <thead>
             <tr>
-              <th><input type="checkbox" id="selectAllWhitelist" title="Select all whitelist"/></th>
+              <th><input type="checkbox" id="selectAllWhitelist"/></th>
               <th>Email</th>
               <th>Phone</th>
               <th>Subscription</th>
@@ -189,8 +199,9 @@
       </div>
     </div>
 
-    <!-- FEATURED HOSTS TAB -->
-   <div id="featured" class="card tab-section">
+    <!-- FEATURED HOSTS SECTION -->
+    <div id="featuredSection" class="card">
+      <h3>Featured Hosts</h3>
       <div class="row" style="margin-bottom:8px">
         <button id="massRemoveFeaturedBtn" class="btn btn-danger">Remove Selected Featured</button>
         <button id="exportFeaturedCsv" class="btn">Export Featured CSV</button>
@@ -200,7 +211,7 @@
         <table id="featuredTable">
           <thead>
             <tr>
-              <th><input type="checkbox" id="selectAllFeatured" title="Select all featured"/></th>
+              <th><input type="checkbox" id="selectAllFeatured"/></th>
               <th>Email</th>
               <th>Phone</th>
               <th>popupPhoto</th>
@@ -213,8 +224,7 @@
         </table>
       </div>
     </div>
-
-
+  </div>
 
   <!-- Loader / Modal -->
   <div id="loaderOverlay">
