@@ -57,15 +57,36 @@ const selectAllFeatured = document.getElementById("selectAllFeatured");
 const loaderOverlay = document.getElementById("loaderOverlay");
 const loaderText = document.getElementById("loaderText");
 
-// Tabs
-document.querySelectorAll(".tab-btn").forEach(btn=>{
-  btn.addEventListener("click",(e)=>{
-    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    const tab = btn.dataset.tab;
-    document.querySelectorAll(".tab-section").forEach(s=>s.classList.remove("active"));
-    document.getElementById(`${tab}-section`).classList.add("active");
-    // re-export button context: exportCurrentCsv should export current visible tab except featured has its own button
+// ---------- Tab switching with fade (safe + functional) ----------
+document.addEventListener("DOMContentLoaded", () => {
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabContents = document.querySelectorAll(".tab-content");
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+
+      // Remove active from all buttons
+      tabButtons.forEach(b => b.classList.remove("active"));
+
+      // Fade out all contents
+      tabContents.forEach(c => {
+        c.classList.remove("active");
+        c.style.opacity = 0;
+        setTimeout(() => c.style.display = "none", 200);
+      });
+
+      // Activate clicked tab
+      btn.classList.add("active");
+
+      // Fade in target tab
+      const activeTab = document.getElementById(tab);
+      setTimeout(() => {
+        activeTab.style.display = "block";
+        setTimeout(() => activeTab.style.opacity = 1, 50);
+        activeTab.classList.add("active");
+      }, 200);
+    });
   });
 });
 
