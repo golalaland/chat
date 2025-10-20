@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ---------- DOM ----------
+// ---------- DOM (safe lookups) ----------
 const adminGate = document.getElementById("adminGate");
 const adminPanel = document.getElementById("adminPanel");
 const adminEmailInput = document.getElementById("adminEmail");
@@ -36,7 +36,7 @@ const featuredTableBody = document.querySelector("#featuredTable tbody");
 
 const logoutBtn = document.getElementById("logoutBtn");
 const userSearch = document.getElementById("userSearch");
-const exportCurrentCsv = document.getElementById("exportCurrentCsv");
+const exportCurrentCsv = document.getElementById("exportCurrentCsv") || document.getElementById("exportCsv");
 const exportFeaturedCsv = document.getElementById("exportFeaturedCsv");
 
 const wlEmailInput = document.getElementById("wlEmail");
@@ -57,42 +57,15 @@ const selectAllFeatured = document.getElementById("selectAllFeatured");
 const loaderOverlay = document.getElementById("loaderOverlay");
 const loaderText = document.getElementById("loaderText");
 
-// ---------- Tab switching with fade (safe + functional) ----------
-document.addEventListener("DOMContentLoaded", () => {
-  const tabButtons = document.querySelectorAll(".tab-btn");
-  const tabContents = document.querySelectorAll(".tab-content");
+// ---------- Utilities ----------
+function showLoader(text = "Processing...") {
+  if (loaderText) loaderText.textContent = text;
+  if (loaderOverlay) loaderOverlay.style.display = "flex";
+}
+function hideLoader() { if (loaderOverlay) loaderOverlay.style.display = "none"; }
 
-  tabButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const tab = btn.dataset.tab;
+function sanitizeCSVCell(s){ return String(s==null ? "" : s).replaceAll('"','').trim(); }
 
-      // Remove active from all buttons
-      tabButtons.forEach(b => b.classList.remove("active"));
-
-      // Fade out all contents
-      tabContents.forEach(c => {
-        c.classList.remove("active");
-        c.style.opacity = 0;
-        setTimeout(() => c.style.display = "none", 200);
-      });
-
-      // Activate clicked tab
-      btn.classList.add("active");
-
-      // Fade in target tab
-      const activeTab = document.getElementById(tab);
-      setTimeout(() => {
-        activeTab.style.display = "block";
-        setTimeout(() => activeTab.style.opacity = 1, 50);
-        activeTab.classList.add("active");
-      }, 200);
-    });
-  });
-});
-
-// ---------- Helpers ----------
-function showLoader(text="Processing..."){ if(loaderText) loaderText.textContent=text; loaderOverlay.style.display="flex"; }
-function hideLoader(){ loaderOverlay.style.display="none"; }
 function mkCSVName(prefix){
   const ts = (new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-');
   return `${prefix}_${ts}.csv`;
@@ -107,11 +80,11 @@ function downloadCSV(filename, rows){
   a.click();
   a.remove();
 }
-function sanitizeCSVCell(s){ return String(s||"").replaceAll('"',''); } // remove quotes
-
 function createToggleCheckbox(value){
   const i = document.createElement("input");
-  i.type = "checkbox"; i.checked = !!value; i.style.transform="scale(1.1)";
+  i.type = "checkbox";
+  i.checked = !!value;
+  i.style.transform = "scale(1.12)";
   return i;
 }
 function showConfirmModal(title, message){
@@ -119,19 +92,57 @@ function showConfirmModal(title, message){
     const overlay = document.createElement("div");
     Object.assign(overlay.style,{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.5)",zIndex:4000});
     const card = document.createElement("div");
-    Object.assign(card.style,{background:"#111",padding:"16px",borderRadius:"10px",color:"#fff",minWidth:"320px",textAlign:"center"});
+    Object.assign(card.style,{background:"#111",padding:"18px",borderRadius:"10px",color:"#fff",minWidth:"320px",textAlign:"center",fontFamily:"'乂丨乂丨', monospace"});
     const h = document.createElement("h3"); h.textContent = title; h.style.margin="0 0 8px";
     const p = document.createElement("p"); p.textContent = message; p.style.margin="0 0 12px"; p.style.color="#ddd";
     const rdiv = document.createElement("div"); rdiv.style.display="flex"; rdiv.style.justifyContent="center"; rdiv.style.gap="10px";
     const yes = document.createElement("button"); yes.className="btn btn-primary"; yes.textContent="Confirm";
-    const no = document.createElement("button"); no.className="btn btn-danger"; no.textContent="Cancel";
+    const no  = document.createElement("button"); no.className="btn btn-danger"; no.textContent="Cancel";
     yes.onclick = ()=>{ overlay.remove(); resolve(true); };
-    no.onclick = ()=>{ overlay.remove(); resolve(false); };
+    no.onclick  = ()=>{ overlay.remove(); resolve(false); };
     rdiv.appendChild(yes); rdiv.appendChild(no);
     card.appendChild(h); card.appendChild(p); card.appendChild(rdiv);
     overlay.appendChild(card); document.body.appendChild(overlay);
   });
 }
+
+// ---------- Tab switching with fade (fix) ----------
+(function installTabSwitching(){
+  // expected: .tab-btn elements with data-tab matching id of .tab-content nodes
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabContents = document.querySelectorAll(".tab-content");
+  if (!tabButtons.length || !tabContents.length) return;
+
+  function hideAllContents(){
+    tabContents.forEach(c => {
+      c.classList.remove("active");
+      c.style.opacity = 0;
+      c.style.display = "none";
+    });
+    tabButtons.forEach(b => b.classList.remove("active"));
+  }
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+      if (!tab) return;
+      const target = document.getElementById(tab);
+      if (!target) return;
+      hideAllContents();
+      // activate button
+      btn.classList.add("active");
+      // show content with small fade
+      target.style.display = "block";
+      target.style.opacity = 0;
+      setTimeout(()=> target.style.opacity = 1, 25);
+      target.classList.add("active");
+    });
+  });
+
+  // set initial: if any .tab-btn has .active use it, otherwise first
+  const initialBtn = document.querySelector(".tab-btn.active") || tabButtons[0];
+  if (initialBtn) initialBtn.click();
+})();
 
 // ---------- Admin login ----------
 let currentAdmin = null;
@@ -145,40 +156,48 @@ async function checkAdmin(emailRaw){
   return d.isAdmin === true ? { email, id: snap.docs[0].id } : null;
 }
 
-adminCheckBtn.addEventListener("click", async ()=>{
-  adminGateMsg.textContent="";
-  const val = adminEmailInput.value.trim();
-  if(!val){ adminGateMsg.textContent="Enter admin email"; return; }
-  showLoader("Checking admin...");
-  const a = await checkAdmin(val);
-  hideLoader();
-  if(!a){ adminGateMsg.textContent="Not authorized"; return; }
-  currentAdmin = a;
-  currentAdminEmailEl.textContent = a.email;
-  adminGate.classList.add("hidden");
-  adminPanel.classList.remove("hidden");
-  await loadUsers(); await loadWhitelist(); await loadFeatured();
-});
-
-logoutBtn.addEventListener("click", ()=>{
+if (adminCheckBtn) {
+  adminCheckBtn.addEventListener("click", async ()=>{
+    if (!adminEmailInput) return;
+    adminGateMsg.textContent="";
+    const val = adminEmailInput.value.trim();
+    if(!val){ adminGateMsg.textContent="Enter admin email"; return; }
+    showLoader("Checking admin...");
+    const a = await checkAdmin(val);
+    hideLoader();
+    if(!a){ adminGateMsg.textContent="Not authorized"; return; }
+    currentAdmin = a;
+    if (currentAdminEmailEl) currentAdminEmailEl.textContent = a.email;
+    if (adminGate) adminGate.classList.add("hidden");
+    if (adminPanel) adminPanel.classList.remove("hidden");
+    await loadUsers(); await loadWhitelist(); await loadFeatured();
+  });
+}
+if (adminEmailInput) adminEmailInput.addEventListener("keydown", e => { if (e.key === "Enter" && adminCheckBtn) adminCheckBtn.click(); });
+if (logoutBtn) logoutBtn.addEventListener("click", ()=>{
   currentAdmin = null;
-  adminPanel.classList.add("hidden");
-  adminGate.classList.remove("hidden");
-  adminEmailInput.value = "";
+  if (adminPanel) adminPanel.classList.add("hidden");
+  if (adminGate) adminGate.classList.remove("hidden");
+  if (adminEmailInput) adminEmailInput.value = "";
 });
 
-// ---------- Load / render users ----------
+// ---------- Load / Render Users ----------
 let usersCache = [];
 async function loadUsers(){
+  if (!usersTableBody) return;
   try{
     usersTableBody.innerHTML = "";
     const snap = await getDocs(collection(db,"users"));
     usersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderUsers(usersCache);
-  }catch(e){ console.error(e); usersTableBody.innerHTML = `<tr><td colspan="14" class="muted">Failed to load users.</td></tr>`; }
+  }catch(e){
+    console.error(e);
+    usersTableBody.innerHTML = `<tr><td colspan="14" class="muted">Failed to load users.</td></tr>`;
+  }
 }
 
 function renderUsers(users){
+  if (!usersTableBody) return;
   usersTableBody.innerHTML = "";
   users.forEach(u=>{
     const tr = document.createElement("tr");
@@ -208,7 +227,7 @@ function renderUsers(users){
     tr.children[8].appendChild(isHost);
     tr.children[9].appendChild(subscriptionActive);
 
-    // actions cell
+    // actions cell (last)
     const actionsTd = tr.children[13];
     const saveBtn = document.createElement("button"); saveBtn.className="btn btn-primary small"; saveBtn.textContent="Save";
     const delBtn  = document.createElement("button"); delBtn.className="btn btn-danger small"; delBtn.textContent="Del";
@@ -231,12 +250,12 @@ function renderUsers(users){
           popupPhoto: tr.children[11].querySelector("input").value.trim(),
           videoUrl: tr.children[12].querySelector("input").value.trim()
         };
-        // write back
+        // write back to users
         await updateDoc(doc(db,"users",u.id), updates);
 
         // sync whitelist
         const emailKey = (u.email||"").toLowerCase();
-        if(updates.subscriptionActive){
+        if (updates.subscriptionActive) {
           await setDoc(doc(db,"whitelist",emailKey), {
             email: emailKey,
             phone: u.phone || "",
@@ -244,12 +263,11 @@ function renderUsers(users){
             subscriptionStartTime: Date.now()
           }, { merge: true });
         } else {
-          // remove from whitelist if present
           await deleteDoc(doc(db,"whitelist",emailKey)).catch(()=>{});
         }
 
-        // sync featuredHosts collection if featuredHosts checked
-        if(updates.featuredHosts){
+        // sync featuredHosts
+        if (updates.featuredHosts) {
           await setDoc(doc(db,"featuredHosts",u.id), {
             email: u.email||"",
             phone: u.phone||"",
@@ -258,13 +276,17 @@ function renderUsers(users){
             addedAt: Date.now()
           }, { merge: true });
         } else {
-          // if un-checked, remove from featuredHosts collection and ensure users.featuredHosts=false
           await deleteDoc(doc(db,"featuredHosts",u.id)).catch(()=>{});
         }
 
-        hideLoader(); await loadUsers(); await loadWhitelist(); await loadFeatured();
+        hideLoader();
+        await loadUsers(); await loadWhitelist(); await loadFeatured();
         alert("Saved.");
-      }catch(err){ hideLoader(); console.error(err); alert("Save failed. See console."); }
+      }catch(err){
+        hideLoader();
+        console.error(err);
+        alert("Save failed. See console.");
+      }
     });
 
     // Delete handler
@@ -276,27 +298,35 @@ function renderUsers(users){
         await deleteDoc(doc(db,"users",u.id));
         await deleteDoc(doc(db,"featuredHosts",u.id)).catch(()=>{});
         await deleteDoc(doc(db,"whitelist",(u.email||"").toLowerCase())).catch(()=>{});
-        hideLoader(); await loadUsers(); await loadWhitelist(); await loadFeatured();
+        hideLoader();
+        await loadUsers(); await loadWhitelist(); await loadFeatured();
         alert("Deleted.");
-      }catch(err){ hideLoader(); console.error(err); alert("Delete failed."); }
+      }catch(err){
+        hideLoader();
+        console.error(err);
+        alert("Delete failed.");
+      }
     });
 
     usersTableBody.appendChild(tr);
   });
 }
 
-// ---------- search users ----------
-let searchTimeout = null;
-userSearch.addEventListener("input", ()=>{
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(()=>{
-    const q = (userSearch.value||"").toLowerCase();
-    renderUsers(usersCache.filter(u => (u.email||"").toLowerCase().includes(q) || (u.chatId||"").toLowerCase().includes(q)));
-  }, 200);
-});
+// ---------- Search Users ----------
+if (userSearch) {
+  let searchTimeout = null;
+  userSearch.addEventListener("input", ()=>{
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(()=>{
+      const q = (userSearch.value||"").toLowerCase();
+      renderUsers(usersCache.filter(u => (u.email||"").toLowerCase().includes(q) || (u.chatId||"").toLowerCase().includes(q)));
+    }, 200);
+  });
+}
 
-// ---------- whitelist load/render ----------
+// ---------- Load / Render Whitelist ----------
 async function loadWhitelist(){
+  if (!whitelistTableBody) return;
   try{
     whitelistTableBody.innerHTML = "";
     const snap = await getDocs(collection(db,"whitelist"));
@@ -325,11 +355,15 @@ async function loadWhitelist(){
       tr.children[4].appendChild(removeBtn);
       whitelistTableBody.appendChild(tr);
     });
-  }catch(err){ console.error(err); whitelistTableBody.innerHTML = `<tr><td colspan="5" class="muted">Failed to load whitelist.</td></tr>`; }
+  }catch(err){
+    console.error(err);
+    whitelistTableBody.innerHTML = `<tr><td colspan="5" class="muted">Failed to load whitelist.</td></tr>`;
+  }
 }
 
-// ---------- featured load/render ----------
+// ---------- Load / Render Featured ----------
 async function loadFeatured(){
+  if (!featuredTableBody) return;
   try{
     featuredTableBody.innerHTML = "";
     const snap = await getDocs(collection(db,"featuredHosts"));
@@ -346,7 +380,7 @@ async function loadFeatured(){
         <td>${f.addedAt ? new Date(f.addedAt).toLocaleString() : ""}</td>
         <td></td>
       `;
-      // actions: save and remove
+      // actions
       const saveBtn = document.createElement("button"); saveBtn.className="btn btn-primary small"; saveBtn.textContent="Save";
       const removeBtn = document.createElement("button"); removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
       saveBtn.addEventListener("click", async ()=>{
@@ -357,7 +391,6 @@ async function loadFeatured(){
           const popupPhoto = tr.querySelector(".popup-photo").value.trim();
           const videoUrl  = tr.querySelector(".video-url").value.trim();
           await updateDoc(doc(db,"featuredHosts",d.id), { popupPhoto, videoUrl });
-          // mirror to users collection if exists
           await updateDoc(doc(db,"users",d.id), { popupPhoto, videoUrl }).catch(()=>{});
           hideLoader(); await loadFeatured(); await loadUsers();
           alert("Featured updated.");
@@ -376,32 +409,36 @@ async function loadFeatured(){
       tr.children[6].append(saveBtn, removeBtn);
       featuredTableBody.appendChild(tr);
     });
-  }catch(err){ console.error(err); featuredTableBody.innerHTML = `<tr><td colspan="7" class="muted">Failed to load featured hosts.</td></tr>`; }
+  }catch(err){
+    console.error(err);
+    featuredTableBody.innerHTML = `<tr><td colspan="7" class="muted">Failed to load featured hosts.</td></tr>`;
+  }
 }
 
 // ---------- Mass-select helpers ----------
 function getCheckedRowIdsFrom(tbody){
+  if(!tbody) return [];
   return Array.from(tbody.querySelectorAll("tr"))
     .filter(r => r.querySelector("input.row-select")?.checked)
     .map(r => r.dataset.id);
 }
 
-// select-all wiring
-if(selectAllUsers) selectAllUsers.addEventListener("change", ()=> {
+// select-all wiring (safe)
+if (selectAllUsers) selectAllUsers.addEventListener("change", ()=> {
   const state = selectAllUsers.checked;
-  usersTableBody.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
+  usersTableBody?.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
 });
-if(selectAllWhitelist) selectAllWhitelist.addEventListener("change", ()=> {
+if (selectAllWhitelist) selectAllWhitelist.addEventListener("change", ()=> {
   const state = selectAllWhitelist.checked;
-  whitelistTableBody.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
+  whitelistTableBody?.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
 });
-if(selectAllFeatured) selectAllFeatured.addEventListener("change", ()=> {
+if (selectAllFeatured) selectAllFeatured.addEventListener("change", ()=> {
   const state = selectAllFeatured.checked;
-  featuredTableBody.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
+  featuredTableBody?.querySelectorAll("input.row-select").forEach(cb=>cb.checked = state);
 });
 
 // ---------- Mass Remove Users ----------
-massRemoveUsersBtn.addEventListener("click", async ()=>{
+if (massRemoveUsersBtn) massRemoveUsersBtn.addEventListener("click", async ()=>{
   const ids = getCheckedRowIdsFrom(usersTableBody);
   if(!ids.length) return alert("No users selected.");
   const confirmed = await showConfirmModal("Remove Users",`Delete ${ids.length} user(s)?`);
@@ -421,7 +458,7 @@ massRemoveUsersBtn.addEventListener("click", async ()=>{
 });
 
 // ---------- Mass Remove Whitelist ----------
-massRemoveWhitelistBtn.addEventListener("click", async ()=>{
+if (massRemoveWhitelistBtn) massRemoveWhitelistBtn.addEventListener("click", async ()=>{
   const ids = getCheckedRowIdsFrom(whitelistTableBody);
   if(!ids.length) return alert("No whitelist selected.");
   const confirmed = await showConfirmModal("Remove whitelist",`Delete ${ids.length} whitelist entry(s)?`);
@@ -438,7 +475,7 @@ massRemoveWhitelistBtn.addEventListener("click", async ()=>{
 });
 
 // ---------- Mass Remove Featured ----------
-massRemoveFeaturedBtn.addEventListener("click", async ()=>{
+if (massRemoveFeaturedBtn) massRemoveFeaturedBtn.addEventListener("click", async ()=>{
   const ids = getCheckedRowIdsFrom(featuredTableBody);
   if(!ids.length) return alert("No featured hosts selected.");
   const confirmed = await showConfirmModal("Remove Featured",`Delete ${ids.length} featured host(s)?`);
@@ -456,7 +493,7 @@ massRemoveFeaturedBtn.addEventListener("click", async ()=>{
 });
 
 // ---------- Copy selected users to featuredHosts ----------
-copyToFeaturedBtn.addEventListener("click", async ()=>{
+if (copyToFeaturedBtn) copyToFeaturedBtn.addEventListener("click", async ()=>{
   const ids = getCheckedRowIdsFrom(usersTableBody);
   if(!ids.length) return alert("No users selected.");
   const confirmed = await showConfirmModal("Copy to Featured", `Copy ${ids.length} user(s) to featured hosts?`);
@@ -473,7 +510,6 @@ copyToFeaturedBtn.addEventListener("click", async ()=>{
         videoUrl: user.videoUrl || "",
         addedAt: Date.now()
       }, { merge: true });
-      // mark user as featured
       await updateDoc(doc(db,"users", id), { featuredHosts: true }).catch(()=>{});
     }
     hideLoader(); await loadFeatured(); await loadUsers();
@@ -482,9 +518,9 @@ copyToFeaturedBtn.addEventListener("click", async ()=>{
 });
 
 // ---------- Whitelist add / CSV import ----------
-addWhitelistBtn.addEventListener("click", async ()=>{
-  const emailRaw = (wlEmailInput.value||"").trim();
-  const phone = (wlPhoneInput.value||"").trim();
+if (addWhitelistBtn) addWhitelistBtn.addEventListener("click", async ()=>{
+  const emailRaw = (wlEmailInput?.value||"").trim();
+  const phone = (wlPhoneInput?.value||"").trim();
   if(!emailRaw || !phone) return alert("Enter email & phone.");
   const email = emailRaw.toLowerCase();
   const confirmed = await showConfirmModal("Add whitelist", `Add ${email} to whitelist?`);
@@ -494,7 +530,7 @@ addWhitelistBtn.addEventListener("click", async ()=>{
     await setDoc(doc(db,"whitelist", email), {
       email, phone, subscriptionActive: true, subscriptionStartTime: Date.now()
     }, { merge: true });
-    // also create/update user entry if absent (avoid duplicates)
+    // create/update user entry
     const q = query(collection(db,"users"), where("email", "==", email));
     const snap = await getDocs(q);
     if(snap.empty){
@@ -509,7 +545,7 @@ addWhitelistBtn.addEventListener("click", async ()=>{
   }catch(err){ hideLoader(); console.error(err); alert("Add failed."); }
 });
 
-wlCsvUpload.addEventListener("change", async (e)=>{
+if (wlCsvUpload) wlCsvUpload.addEventListener("change", async (e)=>{
   const file = e.target.files?.[0]; if(!file) return;
   const confirmed = await showConfirmModal("CSV Batch", "Inject CSV to whitelist?");
   if(!confirmed){ wlCsvUpload.value=""; return; }
@@ -519,14 +555,12 @@ wlCsvUpload.addEventListener("change", async (e)=>{
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const processedEmails = [];
     for(const line of lines){
-      // split on commas, remove surrounding quotes
       const parts = line.split(",").map(p => p.replace(/^"(.*)"$/,"$1").trim());
       const emailRaw = parts[0]||"";
       const phone = parts[1]||"";
       if(!emailRaw || !phone) continue;
       const email = emailRaw.toLowerCase();
       processedEmails.push(email);
-      // create or update whitelist + users
       await setDoc(doc(db,"whitelist",email), { email, phone, subscriptionActive:true, subscriptionStartTime: Date.now() }, { merge: true });
       const q = query(collection(db,"users"), where("email","==",email));
       const snap = await getDocs(q);
@@ -539,13 +573,11 @@ wlCsvUpload.addEventListener("change", async (e)=>{
       }
     }
 
-    // cleanup option: remove whitelist entries not in CSV
-    if(cleanUpLadyToggle.checked){
+    if (cleanUpLadyToggle?.checked){
       const wsnap = await getDocs(collection(db,"whitelist"));
       for(const docSnap of wsnap.docs){
         const key = (docSnap.id||"").toLowerCase();
         if(!processedEmails.includes(key)){
-          // remove from whitelist and mark user.subscriptionActive => false
           await deleteDoc(doc(db,"whitelist", key)).catch(()=>{});
           await updateDoc(doc(db,"users", key), { subscriptionActive: false }).catch(()=>{});
         }
@@ -555,24 +587,24 @@ wlCsvUpload.addEventListener("change", async (e)=>{
     hideLoader(); await loadWhitelist(); await loadUsers();
     alert("CSV processed.");
   }catch(err){ hideLoader(); console.error(err); alert("CSV failed."); }
-  finally{ wlCsvUpload.value=""; }
+  finally{ if (wlCsvUpload) wlCsvUpload.value=""; }
 });
 
 // ---------- Exports ----------
-exportCurrentCsv.addEventListener("click", async ()=>{
-  // export current visible tab (users/whitelist/featured)
-  const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
-  if(activeTab === "users"){
+if (exportCurrentCsv) exportCurrentCsv.addEventListener("click", async ()=>{
+  // determine active tab button
+  const activeBtn = document.querySelector(".tab-btn.active");
+  const activeTab = activeBtn?.dataset?.tab || "users";
+  if (activeTab === "users"){
     const rows = [["id","email","phone","chatId","stars","cash","isVIP","isAdmin","isHost","subscriptionActive","featuredHosts","popupPhoto","videoUrl"]];
     usersCache.forEach(u => rows.push([u.id||"", u.email||"", u.phone||"", u.chatId||"", u.stars||0, u.cash||0, !!u.isVIP, !!u.isAdmin, !!u.isHost, !!u.subscriptionActive, !!u.featuredHosts, u.popupPhoto||"", u.videoUrl||""]));
     downloadCSV(mkCSVName("users"), rows);
-  } else if(activeTab === "whitelist"){
+  } else if (activeTab === "whitelist"){
     const rows = [["id","email","phone","subscriptionActive"]];
     const snap = await getDocs(collection(db,"whitelist"));
     snap.forEach(d => { const w = d.data()||{}; rows.push([d.id, w.email||"", w.phone||"", !!w.subscriptionActive]); });
     downloadCSV(mkCSVName("whitelist"), rows);
   } else {
-    // fallback to featured
     const rows = [["id","email","phone","popupPhoto","videoUrl","addedAt"]];
     const snap = await getDocs(collection(db,"featuredHosts"));
     snap.forEach(d => { const f = d.data()||{}; rows.push([d.id, f.email||"", f.phone||"", f.popupPhoto||"", f.videoUrl||"", f.addedAt || ""]); });
@@ -580,15 +612,16 @@ exportCurrentCsv.addEventListener("click", async ()=>{
   }
 });
 
-exportFeaturedCsv.addEventListener("click", async ()=>{
+if (exportFeaturedCsv) exportFeaturedCsv.addEventListener("click", async ()=>{
   const rows = [["id","email","phone","popupPhoto","videoUrl","addedAt"]];
   const snap = await getDocs(collection(db,"featuredHosts"));
   snap.forEach(d => { const f = d.data()||{}; rows.push([d.id, f.email||"", f.phone||"", f.popupPhoto||"", f.videoUrl||"", f.addedAt || ""]); });
   downloadCSV(mkCSVName("featuredHosts"), rows);
 });
 
-// ---------- Load featured on start ----------
-async function initialLoads(){ await loadUsers(); await loadWhitelist(); await loadFeatured(); }
-initialLoads().catch(()=>{});
-
-// End of file
+// ---------- initial loads ----------
+(async function initialLoads(){
+  await loadUsers().catch(()=>{});
+  await loadWhitelist().catch(()=>{});
+  await loadFeatured().catch(()=>{});
+})();
