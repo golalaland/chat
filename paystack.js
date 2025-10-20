@@ -10,13 +10,13 @@ import {
 
 /* ------------------ FIREBASE CONFIG ------------------ */
 const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.firebasestorage.app",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C"
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -28,16 +28,13 @@ export async function launchSubscription(vipUser) {
     return;
   }
 
-  // Paystack Plan Code (Create this once on your dashboard)
-  const PLAN_CODE = "PLN_grrpmsot7duff3v"; // replace with your Paystack plan code
-
-  // Generate reference
+  const PLAN_CODE = "PLN_grrpmsot7duff3v"; // Your Paystack plan code
   const reference = "SUB_" + vipUser.chatId + "_" + Date.now();
 
   const handler = PaystackPop.setup({
-    key: "pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd", // your live or test public key
+    key: "pk_test_9446fa6b81888ffce77cc94294530d761aac4ccd",
     email: vipUser.email,
-    plan: PLN_grrpmsot7duff3v,
+    plan: PLAN_CODE, // ✅ Correct usage
     ref: reference,
     label: vipUser.chatId,
     metadata: {
@@ -52,11 +49,14 @@ export async function launchSubscription(vipUser) {
     callback: async function (response) {
       console.log("✅ Subscription created:", response);
 
-      const duration = 169 * 60 * 60 * 1000; // 169 hours = ~7 days
+      const duration = 169 * 60 * 60 * 1000; // 169 hours ≈ 7 days
       const expiry = new Date(Date.now() + duration);
 
       try {
-        await updateDoc(doc(db, "users", vipUser.email), {
+        // Firestore-safe document ID for email
+        const safeEmail = vipUser.email.replace(/[.#$[\]]/g, ",");
+
+        await updateDoc(doc(db, "users", safeEmail), {
           subscriptionActive: true,
           subscriptionEnd: expiry,
           subscriptionPlanCode: PLAN_CODE,
