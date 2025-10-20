@@ -625,3 +625,19 @@ if (exportFeaturedCsv) exportFeaturedCsv.addEventListener("click", async ()=>{
   await loadWhitelist().catch(()=>{});
   await loadFeatured().catch(()=>{});
 })();
+// --- Simple tab switching ---
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    if (!tab) return;
+
+    // deactivate all
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+
+    // activate selected
+    btn.classList.add('active');
+    const section = document.getElementById(tab);
+    if (section) section.classList.add('active');
+  });
+});
