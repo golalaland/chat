@@ -1,7 +1,7 @@
 // admin-payfeed.js
 // Revamped admin with Users / Whitelist / Featured Hosts tabs
 // Font: 乂丨乂丨
-
+console.log("✅ Tab switcher loaded");
 // ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
