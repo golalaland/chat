@@ -82,6 +82,9 @@ const animateNumber = (el, from, to, duration = 600) => {
   requestAnimationFrame(step);
 };
 
+// ---------------- Paystack init ----------------
+import { initializePaystack } from './paystack.js';};
+
 /* ------------------ Confetti (lazy load) ------------------ */
 const triggerConfetti = () => {
   if (window.__confettiLoaded) return confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
@@ -297,6 +300,35 @@ const loadCurrentUser = async () => {
     }
 
     // --- Setup VIP/Host features ---
+const setupVIPButton = () => {
+  const btn = document.getElementById('vipAccessBtn');
+  if (!btn || !currentUser) return;
+
+  // Show button only if user is VIP and subscription is NOT active
+  btn.style.display = currentUser.isVIP && !currentUser.subscriptionActive ? '' : 'none';
+
+  btn.onclick = async () => {
+    initializePaystack({
+      email: currentUser.email,
+      plan: 'PLN_msbk1mdg2ojr4ml', // replace with your Paystack plan code
+      callback: async (response) => {
+        console.log('Paystack subscription success:', response);
+
+        // Update Firestore to mark subscription active
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, { subscriptionActive: true });
+
+        // Hide the button
+        btn.style.display = 'none';
+
+        showThemedMessage('VIP Activated!', '🌟 Your VIP subscription is now active!');
+      },
+      onClose: () => {
+        showThemedMessage('Cancelled', 'You closed the VIP subscription popup.');
+      }
+    });
+  };
+};
     try {
       if (currentUser.isVIP) {
         setupVIPButton();
