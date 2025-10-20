@@ -5,24 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>乂丨乂丨 Admin — Pay Feed</title>
 
+  <!-- Font / theme -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-    body {
-      font-family: '乂丨乂丨', 'Roboto', Arial, sans-serif;
-      padding: 20px;
-      background: #f7f7fb;
-      color: #111;
+    :root{
+      --charcoal-bg:#121214;
+      --card-bg: #1e1f22;
+      --muted:#a6a6ad;
+      --accent1: linear-gradient(90deg,#ff6a00,#9d00ff);
     }
 
-    h2, h3 { font-family:'乂丨乂丨', monospace; margin:0; }
+    body {
+      font-family: '乂丨乂丨', 'Roboto', Arial, sans-serif;
+      padding:20px;
+      background:#0f1012;
+      color:#efefef;
+    }
+
+    h2, h3 { font-family:'乂丨乂丨', monospace; margin:0; color:#fff; }
 
     .card {
-      background:#fff;
+      background:var(--card-bg);
       padding:16px;
       border-radius:12px;
-      box-shadow:0 6px 18px rgba(0,0,0,0.06);
+      box-shadow:0 6px 18px rgba(0,0,0,0.6);
       margin-bottom:16px;
+      color: #e9e9ec;
     }
 
     .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
@@ -30,33 +39,48 @@
     input, button, select, textarea {
       padding:8px 12px;
       border-radius:8px;
-      border:1px solid #e6e6e9;
+      border:1px solid rgba(255,255,255,0.06);
+      background:transparent;
+      color:inherit;
       font-family:inherit;
       font-size:0.95rem;
     }
 
-    table { width:100%; border-collapse:collapse; font-family:inherit; }
-    th, td { padding:10px; text-align:left; border-bottom:1px solid #f0f0f4; font-size:0.9rem; }
+    table { width:100%; border-collapse:collapse; font-family:inherit; color:inherit; }
+    th, td { padding:10px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.03); font-size:0.9rem; vertical-align:middle; }
+    thead th { color:var(--muted); font-weight:600; }
 
     .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 12px; font-family:inherit; }
-    .btn-danger { background:#ff6b6b; color:#fff; }
-    .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff; }
-    .muted { color:#888; font-size:0.85rem; }
+    .btn-danger { background:#ff6b6b; color:#111; }
+    .btn-primary { background:var(--accent1); color:#fff; }
+    .muted { color:var(--muted); font-size:0.85rem; }
     .search { width:260px; }
     .small { font-size:0.85rem; padding:4px 8px; }
-    .pill { padding:4px 10px; border-radius:999px; background:#efefef; font-family:'乂丨乂丨', monospace; }
+    .pill { padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.04); font-family:'乂丨乂丨', monospace; }
     .flex-between { display:flex; justify-content:space-between; align-items:center; }
     .hidden { display:none; }
-    .scroll-box { max-height:360px; overflow:auto; padding-right:8px; }
+    .actions { display:flex; gap:6px; }
 
+    .scroll-box { max-height:420px; overflow:auto; padding-right:8px; margin-top:8px; }
     #loaderOverlay {
       position:fixed; inset:0;
-      background:rgba(0,0,0,0.35);
+      background:rgba(0,0,0,0.6);
       display:flex; justify-content:center; align-items:center;
       z-index:1000; display:none;
     }
-
     #loaderOverlay .card { padding:24px; text-align:center; font-family:'乂丨乂丨', monospace; }
+
+    /* tabs */
+    .tabs { display:flex; gap:8px; margin-bottom:12px; }
+    .tab-btn { padding:8px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,0.03); background:transparent; color:inherit; }
+    .tab-btn.active { background:linear-gradient(90deg,#2a2b2e,#171718); box-shadow: inset 0 -2px 0 rgba(255,255,255,0.02); }
+
+    /* small responsive */
+    @media (max-width:900px){
+      .search{ width:160px }
+      table thead th:nth-child(12), table tbody td:nth-child(12),
+      table thead th:nth-child(13), table tbody td:nth-child(13) { display:none; }
+    }
   </style>
 </head>
 <body>
@@ -78,22 +102,22 @@
         <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
       </div>
       <div class="row">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="users">Users</button>
+          <button class="tab-btn" data-tab="whitelist">Whitelist</button>
+          <button class="tab-btn" data-tab="featured">Featured Hosts</button>
+        </div>
         <input id="userSearch" class="search small" placeholder="Search users by email or chatId"/>
-        <button id="exportCsv" class="btn">Export CSV</button>
+        <button id="exportCurrentCsv" class="btn">Export CSV</button>
         <button id="logoutBtn" class="btn">Logout</button>
       </div>
     </div>
 
-    <!-- Users Table -->
-    <div class="card">
-      <h3>Users</h3>
-      <div class="muted" style="margin-bottom:8px">
-        Edit stars, cash, toggles, or subscription info.
-      </div>
-
+    <!-- USERS TAB -->
+    <div id="users-section" class="card tab-section active">
       <div class="row" style="margin-bottom:8px">
         <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected Users</button>
-        <button id="copyToFeaturedBtn" class="btn btn-primary">Copy Selected to Featured Hosts</button>
+        <button id="copyToFeaturedBtn" class="btn btn-primary">Copy Selected → Featured</button>
       </div>
 
       <div class="scroll-box">
@@ -111,8 +135,8 @@
               <th>Host</th>
               <th>Subscription</th>
               <th>Featured</th>
-              <th>Popup Photo</th>
-              <th>Video URL</th>
+              <th>popupPhoto</th>
+              <th>videoUrl</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -121,22 +145,15 @@
       </div>
     </div>
 
-    <!-- Whitelist Injector -->
-    <div class="card">
-      <h3>Whitelist Injector</h3>
+    <!-- WHITELIST TAB -->
+    <div id="whitelist-section" class="card tab-section hidden">
       <div class="row" style="margin-bottom:8px">
         <input id="wlEmail" placeholder="Email" />
         <input id="wlPhone" placeholder="Phone" />
         <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
         <input type="file" id="wlCsvUpload" />
-      </div>
-
-      <div class="row" style="margin-bottom:8px">
-        <label><input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼</label>
-      </div>
-
-      <div class="row" style="margin-bottom:8px">
-        <button id="massRemoveWhitelistBtn" class="btn btn-danger">Remove Selected Whitelist</button>
+        <label style="margin-left:8px"><input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼</label>
+        <button id="massRemoveWhitelistBtn" class="btn btn-danger" style="margin-left:auto">Remove Selected Whitelist</button>
       </div>
 
       <div class="scroll-box">
@@ -147,13 +164,39 @@
               <th>Email</th>
               <th>Phone</th>
               <th>Subscription</th>
-              <th>Action</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
+
+    <!-- FEATURED HOSTS TAB -->
+    <div id="featured-section" class="card tab-section hidden">
+      <div class="row" style="margin-bottom:8px">
+        <button id="massRemoveFeaturedBtn" class="btn btn-danger">Remove Selected Featured</button>
+        <button id="exportFeaturedCsv" class="btn">Export Featured CSV</button>
+      </div>
+
+      <div class="scroll-box">
+        <table id="featuredTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllFeatured" title="Select all featured"/></th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>popupPhoto</th>
+              <th>videoUrl</th>
+              <th>AddedAt</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
   <!-- Loader / Modal -->
