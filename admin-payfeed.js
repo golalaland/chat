@@ -1,215 +1,249 @@
-// admin-payfeed.js
+// admin-payfeed.js (full)
+// Font: 乂丨乂丨
+console.log("✅ Admin panel JS loaded");
+
+// ---------- Firebase imports ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  addDoc,
-  deleteDoc,
-  serverTimestamp
+  getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc,
+  query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ------------------ FIREBASE CONFIG ------------------
+// ---------- Firebase config ----------
 const firebaseConfig = {
-  // your firebase config here
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ------------------ ELEMENTS ------------------
+// ---------- DOM ----------
 const adminGate = document.getElementById("adminGate");
 const adminPanel = document.getElementById("adminPanel");
 const adminEmailInput = document.getElementById("adminEmail");
 const adminCheckBtn = document.getElementById("adminCheckBtn");
 const adminGateMsg = document.getElementById("adminGateMsg");
-const currentAdminEmail = document.getElementById("currentAdminEmail");
+const currentAdminEmailEl = document.getElementById("currentAdminEmail");
 
 const usersTableBody = document.querySelector("#usersTable tbody");
 const whitelistTableBody = document.querySelector("#whitelistTable tbody");
 const featuredTableBody = document.querySelector("#featuredTable tbody");
 
+const logoutBtn = document.getElementById("logoutBtn");
+const userSearch = document.getElementById("userSearch");
+const exportCurrentCsv = document.getElementById("exportCurrentCsv") || document.getElementById("exportCsv");
+const exportFeaturedCsv = document.getElementById("exportFeaturedCsv");
+
+const wlEmailInput = document.getElementById("wlEmail");
+const wlPhoneInput = document.getElementById("wlPhone");
+const addWhitelistBtn = document.getElementById("addWhitelistBtn");
+const wlCsvUpload = document.getElementById("wlCsvUpload");
+const cleanUpLadyToggle = document.getElementById("cleanUpLady");
+
+const massRemoveUsersBtn = document.getElementById("massRemoveUsersBtn");
+const massRemoveWhitelistBtn = document.getElementById("massRemoveWhitelistBtn");
+const massRemoveFeaturedBtn = document.getElementById("massRemoveFeaturedBtn");
+const copyToFeaturedBtn = document.getElementById("copyToFeaturedBtn");
+
+const selectAllUsers = document.getElementById("selectAllUsers");
+const selectAllWhitelist = document.getElementById("selectAllWhitelist");
+const selectAllFeatured = document.getElementById("selectAllFeatured");
+
 const loaderOverlay = document.getElementById("loaderOverlay");
 const loaderText = document.getElementById("loaderText");
 
-const userSearch = document.getElementById("userSearch");
-
-// ------------------ LOADER ------------------
-function showLoader(msg = "Processing...") {
-  loaderText.textContent = msg;
-  loaderOverlay.style.display = "flex";
+// ---------- Utilities ----------
+function showLoader(text = "Processing...") {
+  if (loaderText) loaderText.textContent = text;
+  if (loaderOverlay) loaderOverlay.style.display = "flex";
 }
-function hideLoader() {
-  loaderOverlay.style.display = "none";
+function hideLoader() { if (loaderOverlay) loaderOverlay.style.display = "none"; }
+
+function sanitizeCSVCell(s){ return String(s==null ? "" : s).replaceAll('"','').trim(); }
+function mkCSVName(prefix){ return `${prefix}_${(new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`; }
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(v => `"${String(v ?? "")}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function createToggleCheckbox(value){
+  const i = document.createElement("input");
+  i.type = "checkbox";
+  i.checked = !!value;
+  i.style.transform = "scale(1.12)";
+  return i;
+}
+function showConfirmModal(title, message){
+  return new Promise(resolve=>{
+    const overlay = document.createElement("div");
+    Object.assign(overlay.style,{position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.5)",zIndex:4000});
+    const card = document.createElement("div");
+    Object.assign(card.style,{background:"#111",padding:"18px",borderRadius:"10px",color:"#fff",minWidth:"320px",textAlign:"center",fontFamily:"'乂丨乂丨', monospace"});
+    const h = document.createElement("h3"); h.textContent = title; h.style.margin="0 0 8px";
+    const p = document.createElement("p"); p.textContent = message; p.style.margin="0 0 12px"; p.style.color="#ddd";
+    const rdiv = document.createElement("div"); rdiv.style.display="flex"; rdiv.style.justifyContent="center"; rdiv.style.gap="10px";
+    const yes = document.createElement("button"); yes.className="btn btn-primary"; yes.textContent="Confirm";
+    const no  = document.createElement("button"); no.className="btn btn-danger"; no.textContent="Cancel";
+    yes.onclick = ()=>{ overlay.remove(); resolve(true); };
+    no.onclick  = ()=>{ overlay.remove(); resolve(false); };
+    rdiv.appendChild(yes); rdiv.appendChild(no);
+    card.appendChild(h); card.appendChild(p); card.appendChild(rdiv);
+    overlay.appendChild(card); document.body.appendChild(overlay);
+  });
 }
 
-// ------------------ ADMIN GATE ------------------
-adminCheckBtn.addEventListener("click", async () => {
-  const email = adminEmailInput.value.trim().toLowerCase();
-  if (!email) return;
-  showLoader("Checking admin...");
-  try {
-    const userDoc = await getDoc(doc(db, "users", email));
-    if (userDoc.exists() && userDoc.data().isAdmin) {
-      adminGate.style.display = "none";
-      adminPanel.classList.remove("hidden");
-      currentAdminEmail.textContent = email;
-      loadAllData();
-    } else {
-      adminGateMsg.textContent = "Not an admin";
-    }
-  } catch (e) {
-    console.error(e);
-    adminGateMsg.textContent = "Error checking admin";
-  } finally {
+// ---------- Admin login ----------
+let currentAdmin = null;
+async function checkAdmin(emailRaw){
+  const email = String(emailRaw||"").trim().toLowerCase();
+  if(!email) return null;
+  const q = query(collection(db,"users"), where("email","==",email));
+  const snap = await getDocs(q);
+  if(snap.empty) return null;
+  const d = snap.docs[0].data()||{};
+  return d.isAdmin === true ? { email, id: snap.docs[0].id } : null;
+}
+if (adminCheckBtn) {
+  adminCheckBtn.addEventListener("click", async ()=>{
+    if (!adminEmailInput) return;
+    adminGateMsg.textContent="";
+    const val = adminEmailInput.value.trim();
+    if(!val){ adminGateMsg.textContent="Enter admin email"; return; }
+    showLoader("Checking admin...");
+    const a = await checkAdmin(val);
     hideLoader();
+    if(!a){ adminGateMsg.textContent="Not authorized"; return; }
+    currentAdmin = a;
+    if (currentAdminEmailEl) currentAdminEmailEl.textContent = a.email;
+    if (adminGate) adminGate.classList.add("hidden");
+    if (adminPanel) adminPanel.classList.remove("hidden");
+    await loadUsers(); await loadWhitelist(); await loadFeatured();
+  });
+}
+if (adminEmailInput) adminEmailInput.addEventListener("keydown", e => { if (e.key === "Enter" && adminCheckBtn) adminCheckBtn.click(); });
+if (logoutBtn) logoutBtn.addEventListener("click", ()=>{
+  currentAdmin = null;
+  if (adminPanel) adminPanel.classList.add("hidden");
+  if (adminGate) adminGate.classList.remove("hidden");
+  if (adminEmailInput) adminEmailInput.value = "";
+});
+
+// ---------- Data caches ----------
+let usersCache = [];
+
+// ---------- Main Loaders ----------
+async function loadUsers(){
+  if (!usersTableBody) return;
+  try{
+    usersTableBody.innerHTML = "";
+    const snap = await getDocs(collection(db,"users"));
+    usersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderUsers(usersCache);
+  }catch(e){
+    console.error(e);
+    usersTableBody.innerHTML = `<tr><td colspan="14" class="muted">Failed to load users.</td></tr>`;
   }
-});
-
-// ------------------ LOAD DATA ------------------
-async function loadAllData() {
-  await Promise.all([loadUsers(), loadWhitelist(), loadFeatured()]);
 }
-
-// ------------------ USERS ------------------
-async function loadUsers() {
-  usersTableBody.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "users"));
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    usersTableBody.appendChild(createUserRow(docSnap.id, data));
-  });
-}
-
-function createUserRow(id, data) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td><input type="checkbox" class="userCheckbox"/></td>
-    <td>${data.email || ""}</td>
-    <td>${data.phone || ""}</td>
-    <td>${data.chatId || ""}</td>
-    <td><input type="number" class="starsInput" value="${data.stars || 0}" /></td>
-    <td><input type="number" class="cashInput" value="${data.cash || 0}" /></td>
-    <td><input type="checkbox" class="vipInput" ${data.isVIP ? "checked" : ""} /></td>
-    <td><input type="checkbox" class="adminInput" ${data.isAdmin ? "checked" : ""} /></td>
-    <td><input type="checkbox" class="hostInput" ${data.isHost ? "checked" : ""} /></td>
-    <td><input type="checkbox" class="subInput" ${data.subscriptionActive ? "checked" : ""} /></td>
-    <td><input type="checkbox" class="featuredInput" ${data.featuredHosts ? "checked" : ""} /></td>
-    <td><input type="text" class="popupPhotoInput" value="${data.popupPhoto || ""}" /></td>
-    <td><input type="text" class="videoUrlInput" value="${data.videoUrl || ""}" /></td>
-    <td><button class="btn btn-primary saveUserBtn">Save</button></td>
-  `;
-
-  tr.querySelector(".saveUserBtn").addEventListener("click", async () => {
-    showLoader("Saving user...");
-    try {
-      await updateDoc(doc(db, "users", id), {
-        stars: Number(tr.querySelector(".starsInput").value),
-        cash: Number(tr.querySelector(".cashInput").value),
-        isVIP: tr.querySelector(".vipInput").checked,
-        isAdmin: tr.querySelector(".adminInput").checked,
-        isHost: tr.querySelector(".hostInput").checked,
-        subscriptionActive: tr.querySelector(".subInput").checked,
-        featuredHosts: tr.querySelector(".featuredInput").checked,
-        popupPhoto: tr.querySelector(".popupPhotoInput").value,
-        videoUrl: tr.querySelector(".videoUrlInput").value
+async function loadWhitelist(){
+  if (!whitelistTableBody) return;
+  try{
+    whitelistTableBody.innerHTML = "";
+    const snap = await getDocs(collection(db,"whitelist"));
+    snap.forEach(d => {
+      const w = d.data() || {};
+      const tr = document.createElement("tr");
+      tr.dataset.id = d.id;
+      tr.innerHTML = `
+        <td><input type="checkbox" class="row-select"/></td>
+        <td>${sanitizeCSVCell(w.email||"")}</td>
+        <td>${sanitizeCSVCell(w.phone||"")}</td>
+        <td>${w.subscriptionActive ? "Active" : "Inactive"}</td>
+        <td></td>
+      `;
+      const removeBtn = document.createElement("button");
+      removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
+      removeBtn.addEventListener("click", async ()=>{
+        const confirmed = await showConfirmModal("Remove whitelist", `Remove ${w.email}?`);
+        if(!confirmed) return;
+        showLoader("Removing...");
+        try{
+          await deleteDoc(doc(db,"whitelist",d.id));
+          hideLoader(); await loadWhitelist();
+        }catch(err){ hideLoader(); console.error(err); alert("Failed to remove."); }
       });
-      alert("User saved!");
-    } catch (e) {
-      console.error(e);
-      alert("Error saving user");
-    } finally {
-      hideLoader();
-    }
-  });
-
-  return tr;
+      tr.children[4].appendChild(removeBtn);
+      whitelistTableBody.appendChild(tr);
+    });
+  }catch(err){
+    console.error(err);
+    whitelistTableBody.innerHTML = `<tr><td colspan="5" class="muted">Failed to load whitelist.</td></tr>`;
+  }
 }
-
-// ------------------ WHITELIST ------------------
-async function loadWhitelist() {
-  whitelistTableBody.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "whitelist"));
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    whitelistTableBody.appendChild(createWhitelistRow(docSnap.id, data));
-  });
-}
-
-function createWhitelistRow(id, data) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td><input type="checkbox" class="wlCheckbox"/></td>
-    <td>${data.email || ""}</td>
-    <td>${data.phone || ""}</td>
-    <td><input type="checkbox" class="wlSubInput" ${data.subscriptionActive ? "checked" : ""} /></td>
-    <td><button class="btn btn-primary saveWlBtn">Save</button></td>
-  `;
-  tr.querySelector(".saveWlBtn").addEventListener("click", async () => {
-    showLoader("Saving whitelist...");
-    try {
-      await updateDoc(doc(db, "whitelist", id), {
-        subscriptionActive: tr.querySelector(".wlSubInput").checked
+async function loadFeatured(){
+  if (!featuredTableBody) return;
+  try{
+    featuredTableBody.innerHTML = "";
+    const snap = await getDocs(collection(db,"featuredHosts"));
+    snap.forEach(d => {
+      const f = d.data() || {};
+      const tr = document.createElement("tr");
+      tr.dataset.id = d.id;
+      tr.innerHTML = `
+        <td><input type="checkbox" class="row-select"/></td>
+        <td>${sanitizeCSVCell(f.email||"")}</td>
+        <td>${sanitizeCSVCell(f.phone||"")}</td>
+        <td><input type="text" class="popup-photo" value="${sanitizeCSVCell(f.popupPhoto||"")}" style="width:160px"/></td>
+        <td><input type="text" class="video-url" value="${sanitizeCSVCell(f.videoUrl||"")}" style="width:160px"/></td>
+        <td>${f.addedAt ? new Date(f.addedAt).toLocaleString() : ""}</td>
+        <td></td>
+      `;
+      const saveBtn = document.createElement("button"); saveBtn.className="btn btn-primary small"; saveBtn.textContent="Save";
+      const removeBtn = document.createElement("button"); removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
+      saveBtn.addEventListener("click", async ()=>{
+        const confirmed = await showConfirmModal("Save Featured", `Update featured host ${f.email||""}?`);
+        if(!confirmed) return;
+        showLoader("Saving...");
+        try{
+          const popupPhoto = tr.querySelector(".popup-photo").value.trim();
+          const videoUrl  = tr.querySelector(".video-url").value.trim();
+          await updateDoc(doc(db,"featuredHosts",d.id), { popupPhoto, videoUrl });
+          await updateDoc(doc(db,"users",d.id), { popupPhoto, videoUrl }).catch(()=>{});
+          hideLoader(); await loadFeatured(); await loadUsers();
+          alert("Featured updated.");
+        }catch(err){ hideLoader(); console.error(err); alert("Save failed."); }
       });
-      alert("Whitelist saved!");
-    } catch (e) {
-      console.error(e);
-      alert("Error saving whitelist");
-    } finally {
-      hideLoader();
-    }
-  });
-  return tr;
-}
-
-// ------------------ FEATURED HOSTS ------------------
-async function loadFeatured() {
-  featuredTableBody.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "featuredHosts"));
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    featuredTableBody.appendChild(createFeaturedRow(docSnap.id, data));
-  });
-}
-
-function createFeaturedRow(id, data) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td><input type="checkbox" class="featuredCheckbox"/></td>
-    <td>${data.email || ""}</td>
-    <td>${data.phone || ""}</td>
-    <td><input type="text" class="popupPhotoInput" value="${data.popupPhoto || ""}" /></td>
-    <td><input type="text" class="videoUrlInput" value="${data.videoUrl || ""}" /></td>
-    <td>${data.addedAt ? new Date(data.addedAt.seconds*1000).toLocaleString() : ""}</td>
-    <td><button class="btn btn-primary saveFeaturedBtn">Save</button></td>
-  `;
-  tr.querySelector(".saveFeaturedBtn").addEventListener("click", async () => {
-    showLoader("Saving featured host...");
-    try {
-      await updateDoc(doc(db, "featuredHosts", id), {
-        popupPhoto: tr.querySelector(".popupPhotoInput").value,
-        videoUrl: tr.querySelector(".videoUrlInput").value
+      removeBtn.addEventListener("click", async ()=>{
+        const confirmed = await showConfirmModal("Remove Featured", `Remove ${f.email||""} from featured hosts?`);
+        if(!confirmed) return;
+        showLoader("Removing...");
+        try{
+          await deleteDoc(doc(db,"featuredHosts",d.id));
+          await updateDoc(doc(db,"users",d.id), { featuredHosts: false }).catch(()=>{});
+          hideLoader(); await loadFeatured(); await loadUsers();
+        }catch(err){ hideLoader(); console.error(err); alert("Remove failed."); }
       });
-      alert("Featured host saved!");
-    } catch (e) {
-      console.error(e);
-      alert("Error saving featured host");
-    } finally {
-      hideLoader();
-    }
-  });
-  return tr;
+      tr.children[6].append(saveBtn, removeBtn);
+      featuredTableBody.appendChild(tr);
+    });
+  }catch(err){
+    console.error(err);
+    featuredTableBody.innerHTML = `<tr><td colspan="7" class="muted">Failed to load featured hosts.</td></tr>`;
+  }
 }
 
-// ------------------ SEARCH ------------------
-userSearch.addEventListener("input", async () => {
-  const val = userSearch.value.toLowerCase();
-  const rows = usersTableBody.querySelectorAll("tr");
-  rows.forEach((row) => {
-    const email = row.children[1].textContent.toLowerCase();
-    const chatId = row.children[3].textContent.toLowerCase();
-    row.style.display = email.includes(val) || chatId.includes(val) ? "" : "none";
-  });
-});
+// ---------- initial loads ----------
+(async function initialLoads(){
+  await loadUsers().catch(()=>{});
+  await loadWhitelist().catch(()=>{});
+  await loadFeatured().catch(()=>{});
+})();
