@@ -5,15 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>乂丨乂丨 Admin — Pay Feed</title>
 
-  <!-- Font / theme -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
     body {
       font-family: '乂丨乂丨', 'Roboto', Arial, sans-serif;
-      padding:20px;
-      background:#f7f7fb;
-      color:#111;
+      padding: 20px;
+      background: #f7f7fb;
+      color: #111;
     }
 
     h2, h3 { font-family:'乂丨乂丨', monospace; margin:0; }
@@ -38,7 +37,7 @@
 
     table { width:100%; border-collapse:collapse; font-family:inherit; }
     th, td { padding:10px; text-align:left; border-bottom:1px solid #f0f0f4; font-size:0.9rem; }
-    
+
     .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 12px; font-family:inherit; }
     .btn-danger { background:#ff6b6b; color:#fff; }
     .btn-primary { background:linear-gradient(90deg,#ff6a00,#9d00ff); color:#fff; }
@@ -48,15 +47,15 @@
     .pill { padding:4px 10px; border-radius:999px; background:#efefef; font-family:'乂丨乂丨', monospace; }
     .flex-between { display:flex; justify-content:space-between; align-items:center; }
     .hidden { display:none; }
-    .actions { display:flex; gap:6px; }
-
     .scroll-box { max-height:360px; overflow:auto; padding-right:8px; }
+
     #loaderOverlay {
       position:fixed; inset:0;
       background:rgba(0,0,0,0.35);
       display:flex; justify-content:center; align-items:center;
       z-index:1000; display:none;
     }
+
     #loaderOverlay .card { padding:24px; text-align:center; font-family:'乂丨乂丨', monospace; }
   </style>
 </head>
@@ -85,73 +84,78 @@
       </div>
     </div>
 
-<!-- Users Table -->
-<div class="card">
-  <h3>Users</h3>
-  <div class="muted" style="margin-bottom:8px">
-    Edit stars, cash, toggles, or subscription info.
+    <!-- Users Table -->
+    <div class="card">
+      <h3>Users</h3>
+      <div class="muted" style="margin-bottom:8px">
+        Edit stars, cash, toggles, or subscription info.
+      </div>
+
+      <div class="row" style="margin-bottom:8px">
+        <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected Users</button>
+        <button id="copyToFeaturedBtn" class="btn btn-primary">Copy Selected to Featured Hosts</button>
+      </div>
+
+      <div class="scroll-box">
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllUsers" title="Select all users"/></th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>ChatId</th>
+              <th>Stars</th>
+              <th>Cash</th>
+              <th>VIP</th>
+              <th>Admin</th>
+              <th>Host</th>
+              <th>Subscription</th>
+              <th>Featured</th>
+              <th>Popup Photo</th>
+              <th>Video URL</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Whitelist Injector -->
+    <div class="card">
+      <h3>Whitelist Injector</h3>
+      <div class="row" style="margin-bottom:8px">
+        <input id="wlEmail" placeholder="Email" />
+        <input id="wlPhone" placeholder="Phone" />
+        <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
+        <input type="file" id="wlCsvUpload" />
+      </div>
+
+      <div class="row" style="margin-bottom:8px">
+        <label><input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼</label>
+      </div>
+
+      <div class="row" style="margin-bottom:8px">
+        <button id="massRemoveWhitelistBtn" class="btn btn-danger">Remove Selected Whitelist</button>
+      </div>
+
+      <div class="scroll-box">
+        <table id="whitelistTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllWhitelist" title="Select all whitelist"/></th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Subscription</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <!-- Mass Remove Button -->
-  <div class="row" style="margin-bottom:8px">
-    <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected Users</button>
-  </div>
-
-  <div class="scroll-box">
-    <table id="usersTable">
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="selectAllUsers" title="Select all users"/></th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>ChatId</th>
-          <th>Stars</th>
-          <th>Cash</th>
-          <th>VIP</th>
-          <th>Admin</th>
-          <th>Host</th>
-          <th>Subscription</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Whitelist Injector -->
-<div class="card">
-  <h3>Whitelist Injector</h3>
-  <div class="row" style="margin-bottom:8px">
-    <input id="wlEmail" placeholder="Email" />
-    <input id="wlPhone" placeholder="Phone" />
-    <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
-    <input type="file" id="wlCsvUpload" />
-  </div>
-  <div class="row" style="margin-bottom:8px">
-    <label><input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼</label>
-  </div>
-
-  <!-- Mass Remove Button for Whitelist -->
-  <div class="row" style="margin-bottom:8px">
-    <button id="massRemoveWhitelistBtn" class="btn btn-danger">Remove Selected Whitelist</button>
-  </div>
-
-  <div class="scroll-box">
-    <table id="whitelistTable">
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="selectAllWhitelist" title="Select all whitelist"/></th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Subscription</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
   <!-- Loader / Modal -->
   <div id="loaderOverlay">
     <div class="card">
