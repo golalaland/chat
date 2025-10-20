@@ -1,239 +1,92 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>乂丨乂丨 Admin — Pay Feed</title>
-
-  <!-- Font / theme -->
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-
-    :root{
-      --charcoal-bg:#121214;
-      --card-bg: #1e1f22;
-      --muted:#a6a6ad;
-      --accent1: linear-gradient(90deg,#ff6a00,#9d00ff);
-    }
-
-    body {
-      font-family: '乂丨乂丨', 'Roboto', Arial, sans-serif;
-      padding:20px;
-      background:#0f1012;
-      color:#efefef;
-    }
-
-    h2, h3 {
-      font-family:'乂丨乂丨', monospace;
-      margin:0;
-      color:#fff;
-    }
-
-    .card {
-      background:var(--card-bg);
-      padding:16px;
-      border-radius:12px;
-      box-shadow:0 6px 18px rgba(0,0,0,0.6);
-      margin-bottom:16px;
-      color:#e9e9ec;
-    }
-
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-
-    input, button, select, textarea {
-      padding:8px 12px;
-      border-radius:8px;
-      border:1px solid rgba(255,255,255,0.06);
-      background:transparent;
-      color:inherit;
-      font-family:inherit;
-      font-size:0.95rem;
-    }
-
-    table {
-      width:100%;
-      border-collapse:collapse;
-      font-family:inherit;
-      color:inherit;
-    }
-
-    th, td {
-      padding:10px;
-      text-align:left;
-      border-bottom:1px solid rgba(255,255,255,0.03);
-      font-size:0.9rem;
-      vertical-align:middle;
-    }
-
-    thead th { color:var(--muted); font-weight:600; }
-
-    .btn { cursor:pointer; border:none; border-radius:8px; padding:6px 12px; font-family:inherit; }
-    .btn-danger { background:#ff6b6b; color:#111; }
-    .btn-primary { background:var(--accent1); color:#fff; }
-    .muted { color:var(--muted); font-size:0.85rem; }
-    .search { width:260px; }
-    .small { font-size:0.85rem; padding:4px 8px; }
-    .pill { padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.04); font-family:'乂丨乂丨', monospace; }
-    .flex-between { display:flex; justify-content:space-between; align-items:center; }
-    .hidden { display:none; }
-    .actions { display:flex; gap:6px; }
-
-    .scroll-box {
-      max-height:420px;
-      overflow:auto;
-      padding-right:8px;
-      margin-top:8px;
-    }
-
-    #loaderOverlay {
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.6);
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      z-index:1000;
-      display:none;
-    }
-
-    #loaderOverlay .card {
-      padding:24px;
-      text-align:center;
-      font-family:'乂丨乂丨', monospace;
-    }
-
-    @media (max-width:900px){
-      .search{ width:160px }
-      table thead th:nth-child(12),
-      table tbody td:nth-child(12),
-      table thead th:nth-child(13),
-      table tbody td:nth-child(13) { display:none; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<style>
+body { font-family: '乂丨乂丨', monospace; background:#121212; color:#eee; margin:0; padding:0; }
+.hidden { display:none; }
+section { padding:20px; }
+table { width:100%; border-collapse: collapse; margin-top:10px; }
+table th, table td { border:1px solid #333; padding:6px; text-align:left; }
+input[type=text], input[type=number] { background:#222; color:#eee; border:1px solid #555; padding:3px; }
+button { padding:4px 8px; margin:2px; cursor:pointer; }
+.btn-primary { background:#0b79d0; color:#fff; border:none; }
+.btn-danger { background:#d00; color:#fff; border:none; }
+.btn.small { font-size:0.8rem; }
+#loaderOverlay { position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,0.7); z-index:9999; color:#fff; font-size:1.2rem; }
+</style>
 </head>
 <body>
-  <h2>乂丨乂丨 Admin — Pay Feed</h2>
 
-  <!-- Admin Gate -->
-  <div id="adminGate" class="card">
-    <div class="row">
-      <input id="adminEmail" placeholder="Admin email (use registered email)" />
-      <button id="adminCheckBtn" class="btn btn-primary">Enter Admin</button>
-      <span id="adminGateMsg" class="muted"></span>
-    </div>
-  </div>
+<div id="loaderOverlay"><span id="loaderText">Processing...</span></div>
 
-  <!-- Admin Panel -->
-  <div id="adminPanel" class="hidden">
-    <div class="card flex-between">
-      <div>
-        <strong>Current admin:</strong> <span id="currentAdminEmail" class="pill"></span>
-      </div>
-      <div class="row">
-        <input id="userSearch" class="search small" placeholder="Search users by email or chatId"/>
-        <button id="exportCurrentCsv" class="btn">Export CSV</button>
-        <button id="logoutBtn" class="btn">Logout</button>
-      </div>
-    </div>
+<!-- Admin login -->
+<section id="adminGate">
+  <h2>Admin Login</h2>
+  <input type="text" id="adminEmail" placeholder="Enter admin email" style="width:250px"/>
+  <button id="adminCheckBtn" class="btn btn-primary">Check</button>
+  <div id="adminGateMsg" style="margin-top:10px; color:#f88"></div>
+</section>
 
-    <!-- USERS SECTION -->
-    <div id="usersSection" class="card">
-      <h3>Users</h3>
-      <div class="row" style="margin-bottom:8px">
-        <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected Users</button>
-        <button id="copyToFeaturedBtn" class="btn btn-primary">Copy Selected → Featured</button>
-      </div>
+<!-- Admin panel -->
+<section id="adminPanel" class="hidden">
+  <h2>Admin Panel <button id="logoutBtn" class="btn btn-danger">Logout</button></h2>
+  <div>Current Admin: <span id="currentAdminEmail"></span></div>
 
-      <div class="scroll-box">
-        <table id="usersTable">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="selectAllUsers"/></th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>ChatId</th>
-              <th>Stars</th>
-              <th>Cash</th>
-              <th>VIP</th>
-              <th>Admin</th>
-              <th>Host</th>
-              <th>Subscription</th>
-              <th>Featured</th>
-              <th>popupPhoto</th>
-              <th>videoUrl</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+  <!-- Users -->
+  <h3>Users</h3>
+  <input type="text" id="userSearch" placeholder="Search users..." style="width:200px"/>
+  <button id="selectAllUsers" type="checkbox">Select All</button>
+  <button id="massRemoveUsersBtn" class="btn btn-danger">Remove Selected</button>
+  <button id="copyToFeaturedBtn" class="btn btn-primary">Copy to Featured</button>
+  <button id="exportCurrentCsv" class="btn btn-primary">Export CSV</button>
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th></th><th>Email</th><th>Phone</th><th>ChatId</th>
+        <th>Stars</th><th>Cash</th><th>VIP</th><th>Admin</th>
+        <th>Host</th><th>Sub Active</th><th>Featured</th><th>Popup</th>
+        <th>Video</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-    <!-- WHITELIST SECTION -->
-    <div id="whitelistSection" class="card">
-      <h3>Whitelist</h3>
-      <div class="row" style="margin-bottom:8px">
-        <input id="wlEmail" placeholder="Email" />
-        <input id="wlPhone" placeholder="Phone" />
-        <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
-        <input type="file" id="wlCsvUpload" />
-        <label style="margin-left:8px">
-          <input type="checkbox" id="cleanUpLady"/> Cleanup Lady 🧼
-        </label>
-        <button id="massRemoveWhitelistBtn" class="btn btn-danger" style="margin-left:auto">Remove Selected Whitelist</button>
-      </div>
+  <!-- Whitelist -->
+  <h3>Whitelist</h3>
+  <input type="text" id="wlEmail" placeholder="Email" style="width:180px"/>
+  <input type="text" id="wlPhone" placeholder="Phone" style="width:120px"/>
+  <button id="addWhitelistBtn" class="btn btn-primary">Add</button>
+  <input type="file" id="wlCsvUpload"/>
+  <label><input type="checkbox" id="cleanUpLady"/> Clean old whitelist</label>
+  <button id="selectAllWhitelist" type="checkbox">Select All</button>
+  <button id="massRemoveWhitelistBtn" class="btn btn-danger">Remove Selected</button>
+  <table id="whitelistTable">
+    <thead>
+      <tr>
+        <th></th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-      <div class="scroll-box">
-        <table id="whitelistTable">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="selectAllWhitelist"/></th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Subscription</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+  <!-- Featured Hosts -->
+  <h3>Featured Hosts</h3>
+  <button id="selectAllFeatured" type="checkbox">Select All</button>
+  <button id="massRemoveFeaturedBtn" class="btn btn-danger">Remove Selected</button>
+  <button id="exportFeaturedCsv" class="btn btn-primary">Export Featured CSV</button>
+  <table id="featuredTable">
+    <thead>
+      <tr>
+        <th></th><th>Email</th><th>Phone</th><th>Popup</th><th>Video</th><th>Added At</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
 
-    <!-- FEATURED HOSTS SECTION -->
-    <div id="featuredSection" class="card">
-      <h3>Featured Hosts</h3>
-      <div class="row" style="margin-bottom:8px">
-        <button id="massRemoveFeaturedBtn" class="btn btn-danger">Remove Selected Featured</button>
-        <button id="exportFeaturedCsv" class="btn">Export Featured CSV</button>
-      </div>
-
-      <div class="scroll-box">
-        <table id="featuredTable">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="selectAllFeatured"/></th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>popupPhoto</th>
-              <th>videoUrl</th>
-              <th>AddedAt</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loader / Modal -->
-  <div id="loaderOverlay">
-    <div class="card">
-      <div id="loaderText">Processing...</div>
-    </div>
-  </div>
-
-  <script type="module" src="admin-payfeed.js"></script>
+<script type="module" src="admin-payfeed.js"></script>
 </body>
 </html>
