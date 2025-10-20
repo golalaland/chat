@@ -83,7 +83,7 @@ const animateNumber = (el, from, to, duration = 600) => {
 };
 
 // ---------------- Paystack init ----------------
-import { initializePaystack } from './paystack.js';};
+import { initializePaystack } from './paystack.js';
 
 /* ------------------ Confetti (lazy load) ------------------ */
 const triggerConfetti = () => {
