@@ -620,71 +620,59 @@ const renderMyOrders = async () => {
 };
 
 /* ------------------ Shop rendering + card creation ------------------ */
-/* ------------------ Shop rendering + card creation ------------------ */
+
+// ------------------ Product Card Creation ------------------
 const createProductCard = (product) => {
   const card = document.createElement('div');
   card.className = 'product-card';
 
-  // Image (preview only)
   const img = document.createElement('img');
   img.src = product.img || 'https://via.placeholder.com/300';
   img.alt = product.name || 'Item';
   img.addEventListener('click', () => previewImage(img.src));
 
-  // Availability badge
   const badge = document.createElement('span');
   badge.className = 'availability-badge';
   const avail = Number(product.available) || 0;
   badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
   if (avail <= 0) badge.style.background = '#666';
 
-  // Title - clicking the name opens the description modal
   const title = document.createElement('h3');
   title.textContent = product.name || 'Unnamed';
   title.className = 'product-title';
   title.style.cursor = 'pointer';
-  title.addEventListener('click', () => openProductModal(product)); // <— this triggers description modal
+  title.addEventListener('click', () => openProductModal(product));
 
-  // Price
   const price = document.createElement('div');
   price.className = 'price';
   price.textContent = `${Number(product.cost) || 0} ⭐`;
 
-  // Redeem / Gift button
-const btn = document.createElement('button');
-btn.className = 'buy-btn';
+  const btn = document.createElement('button');
+  btn.className = 'buy-btn';
+  if (product.hostOnly) btn.textContent = currentUser?.isHost ? 'Redeem' : 'Host Only';
+  else if (product.giftHost) btn.textContent = 'Gift Host';
+  else btn.textContent = 'Redeem';
 
-// Determine button text
-if (product.hostOnly) {
-  btn.textContent = currentUser?.isHost ? 'Redeem' : 'Host Only';
-} else if (product.giftHost) {
-  btn.textContent = 'Gift Host';
-} else {
-  btn.textContent = 'Redeem';
-}
+  btn.disabled = avail <= 0 ||
+                 (product.hostOnly && !currentUser?.isHost) ||
+                 (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser?.cash) <= 0);
 
-// Disable button conditions
-if (avail <= 0 || 
-    (product.hostOnly && currentUser && !currentUser.isHost) ||
-    (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
-  btn.disabled = true;
-}
+  btn.addEventListener('click', () => redeemProduct(product));
 
-btn.addEventListener('click', () => redeemProduct(product));
-
-// Assemble card
-card.append(badge, img, title, price, btn);
-return card;
+  card.append(badge, img, title, price, btn);
+  return card;
+};
 
 // ------------------ Redeem / Gift Function ------------------
 const redeemProduct = async (product) => {
   if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
-  if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
-  if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
-  if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
+  if (Number(currentUser.stars) < Number(product.cost)) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
+  if (Number(product.available) <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
+  if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0)
+    return showThemedMessage('No Cash', 'You have no cash to redeem');
 
-  const actionText = product.giftHost 
-    ? `Gift "${product.name}" to your Host?` 
+  const actionText = product.giftHost
+    ? `Gift "${product.name}" to your Host?`
     : `Redeem "${product.name}" for ${product.cost} ⭐?`;
 
   showConfirmModal('Confirm Action', actionText, async () => {
@@ -703,13 +691,12 @@ const redeemProduct = async (product) => {
         const uData = uSnap.data(), pData = pSnap.data();
         const cost = Number(pData.cost) || 0;
         const available = Number(pData.available) || 0;
+
         if (Number(uData.stars) < cost) throw new Error('Not enough stars');
         if (available <= 0) throw new Error('Out of stock');
 
-        // Deduct user's stars
         newStars = Number(uData.stars) - cost;
 
-        // Handle cash redemption
         if (pData.name?.toLowerCase() === 'redeem cash balance') {
           redeemedCash = Number(uData.cash) || 0;
           newCash = 0;
@@ -717,13 +704,9 @@ const redeemProduct = async (product) => {
           newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
         }
 
-        // Update user's stars & cash
         t.update(userRef, { stars: newStars, cash: newCash });
-
-        // Update product availability
         t.update(productRef, { available: available - 1 });
 
-        // Log purchase
         const purchasesCol = collection(db, 'purchases');
         t.set(doc(purchasesCol), {
           userId: currentUser.uid,
@@ -737,7 +720,6 @@ const redeemProduct = async (product) => {
           timestamp: serverTimestamp()
         });
 
-        // Handle gifting to host
         if (pData.giftHost && uData.invitedBy) {
           const hostRef = doc(db, 'users', uData.invitedBy);
           t.update(hostRef, {
@@ -760,7 +742,8 @@ const redeemProduct = async (product) => {
       // Update UI
       const prevStars = parseNumberFromText(DOM.stars.textContent);
       const prevCash = parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars = newStars; currentUser.cash = newCash;
+      currentUser.stars = newStars;
+      currentUser.cash = newCash;
       animateNumber(DOM.stars, prevStars, newStars);
       animateNumber(DOM.cash, prevCash, newCash);
       await renderShop();
@@ -785,11 +768,53 @@ const redeemProduct = async (product) => {
   });
 };
 
+// ------------------ Product Card Creation ------------------
+const createProductCard = (product) => {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+
+  const img = document.createElement('img');
+  img.src = product.img || 'https://via.placeholder.com/300';
+  img.alt = product.name || 'Item';
+  img.addEventListener('click', () => previewImage(img.src));
+
+  const badge = document.createElement('span');
+  badge.className = 'availability-badge';
+  const avail = Number(product.available) || 0;
+  badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
+  if (avail <= 0) badge.style.background = '#666';
+
+  const title = document.createElement('h3');
+  title.textContent = product.name || 'Unnamed';
+  title.className = 'product-title';
+  title.style.cursor = 'pointer';
+  title.addEventListener('click', () => openProductModal(product));
+
+  const price = document.createElement('div');
+  price.className = 'price';
+  price.textContent = `${Number(product.cost) || 0} ⭐`;
+
+  const btn = document.createElement('button');
+  btn.className = 'buy-btn';
+  if (product.hostOnly) btn.textContent = currentUser?.isHost ? 'Redeem' : 'Host Only';
+  else if (product.giftHost) btn.textContent = 'Gift Host';
+  else btn.textContent = 'Redeem';
+
+  btn.disabled = avail <= 0 ||
+                 (product.hostOnly && !currentUser?.isHost) ||
+                 (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser?.cash) <= 0);
+
+  btn.addEventListener('click', () => redeemProduct(product));
+
+  card.append(badge, img, title, price, btn);
+  return card;
+};
+
 /* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
   showSpinner();
-  DOM.shopItems.innerHTML = '';
+  DOM.shopItems.innerHTML = ''; // clear previous items
 
   try {
     const shopSnap = await getDocs(collection(db, 'shopItems'));
@@ -799,21 +824,18 @@ const renderShop = async () => {
     }
 
     let delay = 0;
-    DOM.shopItems.innerHTML = ''; // clear
 
-    // ForEach on QuerySnapshot
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
-      // Ensure product object contains id + description (if present)
       const product = {
         id: docSnap.id,
-        name: data.name || '',
-        img: data.img || '',
+        name: data.name || 'Unnamed',
+        img: data.img || 'https://via.placeholder.com/300',
         cost: data.cost || 0,
         available: data.available || 0,
         hostOnly: data.hostOnly || false,
         cashReward: data.cashReward || 0,
-        description: data.description || data.desc || '' // support either field name
+        description: data.description || data.desc || ''
       };
 
       const card = createProductCard(product);
@@ -824,7 +846,7 @@ const renderShop = async () => {
       DOM.shopItems.appendChild(card);
     });
   } catch (e) {
-    console.error(e);
+    console.error('Shop render error:', e);
     DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
   } finally {
     hideSpinner();
