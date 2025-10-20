@@ -81,6 +81,22 @@
       table thead th:nth-child(12), table tbody td:nth-child(12),
       table thead th:nth-child(13), table tbody td:nth-child(13) { display:none; }
     }
+    .tab-content {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.tab-content.active {
+  display: block;
+  opacity: 1;
+}
+
+.tab-btn.active {
+  background: #222;
+  color: #fff;
+  border-bottom: 2px solid #ff9800;
+}
   </style>
 </head>
 <body>
