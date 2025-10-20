@@ -459,58 +459,22 @@ const renderTabContent = (type) => {
     btn.addEventListener('click', () => {
       const message = `Hey! I'm hosting on xixi live, join my tab and let’s win together 🎉 Sign up using my link: `;
       const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
-      navigator.clipboard.writeText(message + link)
+      const fullText = message + link;
+
+      navigator.clipboard.writeText(fullText)
         .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
         .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
     });
-  } else if (type === 'myGifts') {
-    renderHostGifts();
-  }
-};
-
-/* ------------------ Host Gifts ------------------ */
-const renderHostGifts = () => {
-  if (!DOM.tabContent) return;
-
-  DOM.tabContent.innerHTML = `<p style="text-align:center;opacity:0.7;">Loading your gifts…</p>`;
-
-  const giftsRef = query(
-    collection(db, "hostGifts"),
-    where("toHost", "==", currentUser.uid),
-    orderBy("timestamp", "desc")
-  );
-
-  onSnapshot(giftsRef, (snapshot) => {
-    const gifts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    if (!gifts.length) {
-      DOM.tabContent.innerHTML = `
-        <div style="text-align:center;opacity:0.7;margin-top:20px;">
-          No gifts yet 💝<br><small>When your invitees gift you, they’ll show up here.</small>
-        </div>
-      `;
-      return;
-    }
-
+  } else if (type === 'badges') {
+    const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
     DOM.tabContent.innerHTML = `
-      <div class="stat-block" style="margin-bottom:10px;">
-        <div class="stat-value">${gifts.length}</div>
-        <div class="stat-label">Gifts Received</div>
-      </div>
-      <div class="gift-list">
-        ${gifts.map(g => `
-          <div class="gift-item">
-            <img src="${g.giftImage || 'https://cdn-icons-png.flaticon.com/512/4202/4202835.png'}" class="gift-icon" />
-            <div class="gift-info">
-              <strong>${g.giftName || 'Mystery Gift'}</strong><br>
-              <small>from ${g.fromUserName || 'Anonymous'}</small><br>
-              <small style="opacity:0.6;">${g.timestamp ? new Date(g.timestamp.toDate()).toLocaleString() : ''}</small>
-            </div>
-          </div>
-        `).join('')}
+      <div class="stat-block">
+        <img src="${badgeImg}" style="width:100px;height:100px;">
+        <div class="stat-value">${currentUser.hostBadge || 'Gold'}</div>
+        <div class="stat-label">Badge Status</div>
       </div>
     `;
-  });
+  }
 };
 /* ------------------ Friends rendering ------------------ */
 function renderFriendsList(container, friends) {
@@ -620,62 +584,60 @@ const renderMyOrders = async () => {
 };
 
 /* ------------------ Shop rendering + card creation ------------------ */
-
-// ------------------ Product Card Creation ------------------
+/* ------------------ Shop rendering + card creation ------------------ */
 const createProductCard = (product) => {
   const card = document.createElement('div');
   card.className = 'product-card';
 
+  // Image (preview only)
   const img = document.createElement('img');
   img.src = product.img || 'https://via.placeholder.com/300';
   img.alt = product.name || 'Item';
   img.addEventListener('click', () => previewImage(img.src));
 
+  // Availability badge
   const badge = document.createElement('span');
   badge.className = 'availability-badge';
   const avail = Number(product.available) || 0;
   badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
   if (avail <= 0) badge.style.background = '#666';
 
+  // Title - clicking the name opens the description modal
   const title = document.createElement('h3');
   title.textContent = product.name || 'Unnamed';
   title.className = 'product-title';
   title.style.cursor = 'pointer';
-  title.addEventListener('click', () => openProductModal(product));
+  title.addEventListener('click', () => openProductModal(product)); // <— this triggers description modal
 
+  // Price
   const price = document.createElement('div');
   price.className = 'price';
   price.textContent = `${Number(product.cost) || 0} ⭐`;
 
+  // Redeem button
   const btn = document.createElement('button');
   btn.className = 'buy-btn';
-  if (product.hostOnly) btn.textContent = currentUser?.isHost ? 'Redeem' : 'Host Only';
-  else if (product.giftHost) btn.textContent = 'Gift Host';
-  else btn.textContent = 'Redeem';
-
-  btn.disabled = avail <= 0 ||
-                 (product.hostOnly && !currentUser?.isHost) ||
-                 (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser?.cash) <= 0);
-
+  btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
+  if (avail <= 0 || (product.hostOnly && currentUser && !currentUser.isHost) ||
+      (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
+    btn.disabled = true;
+  }
   btn.addEventListener('click', () => redeemProduct(product));
 
+  // Assemble the card
   card.append(badge, img, title, price, btn);
+
   return card;
 };
 
-// ------------------ Redeem / Gift Function ------------------
 const redeemProduct = async (product) => {
   if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
-  if (Number(currentUser.stars) < Number(product.cost)) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
-  if (Number(product.available) <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
-  if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0)
-    return showThemedMessage('No Cash', 'You have no cash to redeem');
+  if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
+  if (product.available <= 0) return showThemedMessage('Sold Out', 'This item is no longer available.');
+  if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
 
-  const actionText = product.giftHost
-    ? `Gift "${product.name}" to your Host?`
-    : `Redeem "${product.name}" for ${product.cost} ⭐?`;
-
-  showConfirmModal('Confirm Action', actionText, async () => {
+  showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
+    // Show spinner immediately
     showSpinner();
 
     try {
@@ -691,12 +653,10 @@ const redeemProduct = async (product) => {
         const uData = uSnap.data(), pData = pSnap.data();
         const cost = Number(pData.cost) || 0;
         const available = Number(pData.available) || 0;
-
         if (Number(uData.stars) < cost) throw new Error('Not enough stars');
         if (available <= 0) throw new Error('Out of stock');
 
         newStars = Number(uData.stars) - cost;
-
         if (pData.name?.toLowerCase() === 'redeem cash balance') {
           redeemedCash = Number(uData.cash) || 0;
           newCash = 0;
@@ -706,7 +666,6 @@ const redeemProduct = async (product) => {
 
         t.update(userRef, { stars: newStars, cash: newCash });
         t.update(productRef, { available: available - 1 });
-
         const purchasesCol = collection(db, 'purchases');
         t.set(doc(purchasesCol), {
           userId: currentUser.uid,
@@ -719,102 +678,34 @@ const redeemProduct = async (product) => {
           redeemedCash,
           timestamp: serverTimestamp()
         });
-
-        if (pData.giftHost && uData.invitedBy) {
-          const hostRef = doc(db, 'users', uData.invitedBy);
-          t.update(hostRef, {
-            gifts: arrayUnion({
-              productId: pData.id,
-              name: pData.name,
-              img: pData.img || '',
-              quantity: pData.hostQuantity || 1,
-              stars: pData.hostStarsReward || 0,
-              cash: pData.hostCashReward || 0,
-              fromUser: currentUser.uid,
-              timestamp: serverTimestamp()
-            }),
-            stars: increment(pData.hostStarsReward || 0),
-            cash: increment(pData.hostCashReward || 0)
-          });
-        }
       });
 
-      // Update UI
       const prevStars = parseNumberFromText(DOM.stars.textContent);
       const prevCash = parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars = newStars;
-      currentUser.cash = newCash;
+      currentUser.stars = newStars; currentUser.cash = newCash;
       animateNumber(DOM.stars, prevStars, newStars);
       animateNumber(DOM.cash, prevCash, newCash);
       await renderShop();
       triggerConfetti();
-
-      if (product.giftHost) {
-        showThemedMessage('Gift Sent!', `"${product.name}" sent to your host!`, 3000);
-      } else if (redeemedCash > 0) {
-        showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
-      } else if (Number(product.cashReward) > 0) {
-        showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
-      } else {
-        showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
-      }
-
+      if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
+      else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
+      else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
     } catch (e) {
       console.error(e);
-      showThemedMessage('Action Failed', e.message || 'Try again');
+      showThemedMessage('Redemption Failed', e.message || 'Try again');
     } finally {
+      // Hide spinner after processing with fade-out
       hideSpinner();
     }
   });
 };
 
-// ------------------ Product Card Creation ------------------
-const createProductCard = (product) => {
-  const card = document.createElement('div');
-  card.className = 'product-card';
-
-  const img = document.createElement('img');
-  img.src = product.img || 'https://via.placeholder.com/300';
-  img.alt = product.name || 'Item';
-  img.addEventListener('click', () => previewImage(img.src));
-
-  const badge = document.createElement('span');
-  badge.className = 'availability-badge';
-  const avail = Number(product.available) || 0;
-  badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
-  if (avail <= 0) badge.style.background = '#666';
-
-  const title = document.createElement('h3');
-  title.textContent = product.name || 'Unnamed';
-  title.className = 'product-title';
-  title.style.cursor = 'pointer';
-  title.addEventListener('click', () => openProductModal(product));
-
-  const price = document.createElement('div');
-  price.className = 'price';
-  price.textContent = `${Number(product.cost) || 0} ⭐`;
-
-  const btn = document.createElement('button');
-  btn.className = 'buy-btn';
-  if (product.hostOnly) btn.textContent = currentUser?.isHost ? 'Redeem' : 'Host Only';
-  else if (product.giftHost) btn.textContent = 'Gift Host';
-  else btn.textContent = 'Redeem';
-
-  btn.disabled = avail <= 0 ||
-                 (product.hostOnly && !currentUser?.isHost) ||
-                 (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser?.cash) <= 0);
-
-  btn.addEventListener('click', () => redeemProduct(product));
-
-  card.append(badge, img, title, price, btn);
-  return card;
-};
-
+/* ------------------ Render shop ------------------ */
 /* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
   showSpinner();
-  DOM.shopItems.innerHTML = ''; // clear previous items
+  DOM.shopItems.innerHTML = '';
 
   try {
     const shopSnap = await getDocs(collection(db, 'shopItems'));
@@ -824,18 +715,21 @@ const renderShop = async () => {
     }
 
     let delay = 0;
+    DOM.shopItems.innerHTML = ''; // clear
 
+    // ForEach on QuerySnapshot
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
+      // Ensure product object contains id + description (if present)
       const product = {
         id: docSnap.id,
-        name: data.name || 'Unnamed',
-        img: data.img || 'https://via.placeholder.com/300',
+        name: data.name || '',
+        img: data.img || '',
         cost: data.cost || 0,
         available: data.available || 0,
         hostOnly: data.hostOnly || false,
         cashReward: data.cashReward || 0,
-        description: data.description || data.desc || ''
+        description: data.description || data.desc || '' // support either field name
       };
 
       const card = createProductCard(product);
@@ -846,7 +740,7 @@ const renderShop = async () => {
       DOM.shopItems.appendChild(card);
     });
   } catch (e) {
-    console.error('Shop render error:', e);
+    console.error(e);
     DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
   } finally {
     hideSpinner();
