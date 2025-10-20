@@ -82,9 +82,6 @@ const animateNumber = (el, from, to, duration = 600) => {
   requestAnimationFrame(step);
 };
 
-// ---------------- Paystack init ----------------
-import { initializePaystack } from './paystack.js';
-
 /* ------------------ Confetti (lazy load) ------------------ */
 const triggerConfetti = () => {
   if (window.__confettiLoaded) return confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
@@ -228,30 +225,66 @@ const updateHostStats = async (newUser) => {
 /* ------------------ Current user state ------------------ */
 let currentUser = null;
 
-/* ------------------ Load current user ------------------ */
+/* ------------------ Load current user from localStorage and Firestore ------------------ */
 const loadCurrentUser = async () => {
   showSpinner();
+
   try {
-    const storedUser = getStoredUser();
-    resetUI();
+    // --- Load user from localStorage ---
+    const vipRaw = localStorage.getItem('vipUser');
+    const hostRaw = localStorage.getItem('hostUser');
+    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+
+    // --- Reset UI ---
+    if (DOM.username) DOM.username.textContent = '******';
+    if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
+    if (DOM.cash) DOM.cash.textContent = `₦0`;
+    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
+    await renderShop();
 
     if (!storedUser?.email) {
       currentUser = null;
       return;
     }
 
-    const uid = sanitizeId(storedUser.email);
+    // --- Get Firestore data ---
+    const uid = String(storedUser.email).replace(/[.#$[\]]/g, ',');
     const userRef = doc(db, 'users', uid);
-
-    // Fetch Firestore data
     const snap = await getDoc(userRef);
-    currentUser = snap.exists() ? { uid, ...snap.data() } : fallbackUser(storedUser, uid);
 
-    // Update UI
-    updateUserUI(currentUser, storedUser);
+    // --- Fallback user if not in Firestore ---
+    if (!snap.exists()) {
+      currentUser = {
+        uid,
+        stars: 0,
+        cash: 0,
+        isHost: false,
+        chatId: storedUser.displayName || storedUser.email.split('@')[0]
+      };
+      if (DOM.username) DOM.username.textContent = currentUser.chatId;
+      return;
+    }
+
+    currentUser = { uid, ...snap.data() };
+
+    // --- Update UI ---
+    if (DOM.username)
+      DOM.username.textContent =
+        currentUser.chatId ||
+        storedUser.displayName ||
+        storedUser.email.split('@')[0] ||
+        'Guest';
+
+    if (DOM.stars)
+      DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    if (DOM.cash)
+      DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+    if (DOM.hostTabs)
+      DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+
     updateHostPanels();
 
-    // Update host stats if invited
+    // --- Update host stats if invited ---
     if (currentUser?.invitedBy) {
       await updateHostStats({
         email: currentUser.email || '',
@@ -263,86 +296,39 @@ const loadCurrentUser = async () => {
       });
     }
 
-    // Setup VIP or Host features
+    // --- Setup VIP/Host features ---
     try {
-      if (currentUser.isVIP) setupVIPButton();
-      else if (currentUser.isHost) setupHostGiftListener();
+      if (currentUser.isVIP) {
+        setupVIPButton();
+      } else if (currentUser.isHost) {
+        setupHostGiftListener();
+      }
     } catch (e) {
-      console.error('VIP/Host init failed:', e);
+      console.error('Failed to initialize VIP/Host features:', e);
     }
 
-    // Listen to real-time updates
-    onSnapshot(userRef, (docSnap) => {
-      if (!docSnap.exists()) return;
-      currentUser = { uid, ...docSnap.data() };
-      updateUserUI(currentUser, storedUser);
+    // --- Subscribe to realtime updates ---
+    onSnapshot(userRef, async (docSnap) => {
+      const data = docSnap.data();
+      if (!data) return;
+      currentUser = { uid, ...data };
+
+      // Update UI live
+      if (DOM.username)
+        DOM.username.textContent =
+          currentUser.chatId ||
+          storedUser.displayName ||
+          storedUser.email.split('@')[0] ||
+          'Guest';
+      if (DOM.stars)
+        DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+      if (DOM.cash)
+        DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+      if (DOM.hostTabs)
+        DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+
       updateHostPanels();
       renderShop().catch(console.error);
-    });
-  } catch (err) {
-    console.error('loadCurrentUser error', err);
-  } finally {
-    hideSpinner();
-  }
-};
-
-/* ------------------ Helpers ------------------ */
-const getStoredUser = () => {
-  const vipRaw = localStorage.getItem('vipUser');
-  const hostRaw = localStorage.getItem('hostUser');
-  return vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-};
-
-const resetUI = () => {
-  if (DOM.username) DOM.username.textContent = '******';
-  if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
-  if (DOM.cash) DOM.cash.textContent = `₦0`;
-  if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
-  renderShop().catch(console.error);
-};
-
-const sanitizeId = (email) => String(email).replace(/[.#$[\]]/g, ',');
-
-const fallbackUser = (stored, uid) => ({
-  uid,
-  stars: 0,
-  cash: 0,
-  isHost: false,
-  chatId: stored.displayName || stored.email.split('@')[0]
-});
-
-const updateUserUI = (user, stored) => {
-  if (DOM.username)
-    DOM.username.textContent = user.chatId || stored.displayName || stored.email.split('@')[0] || 'Guest';
-  if (DOM.stars) DOM.stars.textContent = `${formatNumber(user.stars)} ⭐️`;
-  if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(user.cash)}`;
-  if (DOM.hostTabs) DOM.hostTabs.style.display = user.isHost ? '' : 'none';
-};
-
-/* ------------------ VIP Button ------------------ */
-const setupVIPButton = () => {
-  const btn = document.getElementById('vipAccessBtn');
-  if (!btn || !currentUser) return;
-
-  btn.style.display = currentUser.isVIP && !currentUser.subscriptionActive ? '' : 'none';
-
-  btn.onclick = async () => {
-    initializePaystack({
-      email: currentUser.email,
-      plan: 'PLN_msbk1mdg2ojr4ml', // replace with your Paystack plan code
-      callback: async (response) => {
-        console.log('Paystack subscription success:', response);
-        const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, { subscriptionActive: true });
-        btn.style.display = 'none';
-        showThemedMessage('VIP Activated!', '🌟 Your VIP subscription is now active!');
-      },
-      onClose: () => {
-        showThemedMessage('Cancelled', 'You closed the VIP subscription popup.');
-      }
-    });
-  };
-};
 
 /* --- Invitee reward flow --- */
 try {
