@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -229,66 +228,30 @@ const updateHostStats = async (newUser) => {
 /* ------------------ Current user state ------------------ */
 let currentUser = null;
 
-/* ------------------ Load current user from localStorage and Firestore ------------------ */
+/* ------------------ Load current user ------------------ */
 const loadCurrentUser = async () => {
   showSpinner();
-
   try {
-    // --- Load user from localStorage ---
-    const vipRaw = localStorage.getItem('vipUser');
-    const hostRaw = localStorage.getItem('hostUser');
-    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-
-    // --- Reset UI ---
-    if (DOM.username) DOM.username.textContent = '******';
-    if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
-    if (DOM.cash) DOM.cash.textContent = `₦0`;
-    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
-    await renderShop();
+    const storedUser = getStoredUser();
+    resetUI();
 
     if (!storedUser?.email) {
       currentUser = null;
       return;
     }
 
-    // --- Get Firestore data ---
-    const uid = String(storedUser.email).replace(/[.#$[\]]/g, ',');
+    const uid = sanitizeId(storedUser.email);
     const userRef = doc(db, 'users', uid);
+
+    // Fetch Firestore data
     const snap = await getDoc(userRef);
+    currentUser = snap.exists() ? { uid, ...snap.data() } : fallbackUser(storedUser, uid);
 
-    // --- Fallback user if not in Firestore ---
-    if (!snap.exists()) {
-      currentUser = {
-        uid,
-        stars: 0,
-        cash: 0,
-        isHost: false,
-        chatId: storedUser.displayName || storedUser.email.split('@')[0]
-      };
-      if (DOM.username) DOM.username.textContent = currentUser.chatId;
-      return;
-    }
-
-    currentUser = { uid, ...snap.data() };
-
-    // --- Update UI ---
-    if (DOM.username)
-      DOM.username.textContent =
-        currentUser.chatId ||
-        storedUser.displayName ||
-        storedUser.email.split('@')[0] ||
-        'Guest';
-
-    if (DOM.stars)
-      DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    if (DOM.cash)
-      DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-    if (DOM.hostTabs)
-      DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
-
+    // Update UI
+    updateUserUI(currentUser, storedUser);
     updateHostPanels();
 
-    // --- Update host stats if invited ---
+    // Update host stats if invited
     if (currentUser?.invitedBy) {
       await updateHostStats({
         email: currentUser.email || '',
@@ -300,12 +263,67 @@ const loadCurrentUser = async () => {
       });
     }
 
-    // --- Setup VIP/Host features ---
+    // Setup VIP or Host features
+    try {
+      if (currentUser.isVIP) setupVIPButton();
+      else if (currentUser.isHost) setupHostGiftListener();
+    } catch (e) {
+      console.error('VIP/Host init failed:', e);
+    }
+
+    // Listen to real-time updates
+    onSnapshot(userRef, (docSnap) => {
+      if (!docSnap.exists()) return;
+      currentUser = { uid, ...docSnap.data() };
+      updateUserUI(currentUser, storedUser);
+      updateHostPanels();
+      renderShop().catch(console.error);
+    });
+  } catch (err) {
+    console.error('loadCurrentUser error', err);
+  } finally {
+    hideSpinner();
+  }
+};
+
+/* ------------------ Helpers ------------------ */
+const getStoredUser = () => {
+  const vipRaw = localStorage.getItem('vipUser');
+  const hostRaw = localStorage.getItem('hostUser');
+  return vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+};
+
+const resetUI = () => {
+  if (DOM.username) DOM.username.textContent = '******';
+  if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
+  if (DOM.cash) DOM.cash.textContent = `₦0`;
+  if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
+  renderShop().catch(console.error);
+};
+
+const sanitizeId = (email) => String(email).replace(/[.#$[\]]/g, ',');
+
+const fallbackUser = (stored, uid) => ({
+  uid,
+  stars: 0,
+  cash: 0,
+  isHost: false,
+  chatId: stored.displayName || stored.email.split('@')[0]
+});
+
+const updateUserUI = (user, stored) => {
+  if (DOM.username)
+    DOM.username.textContent = user.chatId || stored.displayName || stored.email.split('@')[0] || 'Guest';
+  if (DOM.stars) DOM.stars.textContent = `${formatNumber(user.stars)} ⭐️`;
+  if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(user.cash)}`;
+  if (DOM.hostTabs) DOM.hostTabs.style.display = user.isHost ? '' : 'none';
+};
+
+/* ------------------ VIP Button ------------------ */
 const setupVIPButton = () => {
   const btn = document.getElementById('vipAccessBtn');
   if (!btn || !currentUser) return;
 
-  // Show button only if user is VIP and subscription is NOT active
   btn.style.display = currentUser.isVIP && !currentUser.subscriptionActive ? '' : 'none';
 
   btn.onclick = async () => {
@@ -314,14 +332,9 @@ const setupVIPButton = () => {
       plan: 'PLN_msbk1mdg2ojr4ml', // replace with your Paystack plan code
       callback: async (response) => {
         console.log('Paystack subscription success:', response);
-
-        // Update Firestore to mark subscription active
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, { subscriptionActive: true });
-
-        // Hide the button
         btn.style.display = 'none';
-
         showThemedMessage('VIP Activated!', '🌟 Your VIP subscription is now active!');
       },
       onClose: () => {
@@ -330,38 +343,6 @@ const setupVIPButton = () => {
     });
   };
 };
-    try {
-      if (currentUser.isVIP) {
-        setupVIPButton();
-      } else if (currentUser.isHost) {
-        setupHostGiftListener();
-      }
-    } catch (e) {
-      console.error('Failed to initialize VIP/Host features:', e);
-    }
-
-    // --- Subscribe to realtime updates ---
-    onSnapshot(userRef, async (docSnap) => {
-      const data = docSnap.data();
-      if (!data) return;
-      currentUser = { uid, ...data };
-
-      // Update UI live
-      if (DOM.username)
-        DOM.username.textContent =
-          currentUser.chatId ||
-          storedUser.displayName ||
-          storedUser.email.split('@')[0] ||
-          'Guest';
-      if (DOM.stars)
-        DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-      if (DOM.cash)
-        DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-      if (DOM.hostTabs)
-        DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
-
-      updateHostPanels();
-      renderShop().catch(console.error);
 
 /* --- Invitee reward flow --- */
 try {
