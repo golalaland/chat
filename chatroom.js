@@ -8,12 +8,7 @@ import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import {
-  getAuth,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence,
-  signInWithEmailAndPassword,
-  signOut
+  getAuth, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
@@ -34,17 +29,22 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
+
+
 /* ----------------------------
    🔐 Firebase Auth Persistence
 ----------------------------- */
-await setPersistence(auth, browserLocalPersistence)
+import { setPersistence, browserLocalPersistence } 
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+setPersistence(auth, browserLocalPersistence)
   .then(() => {
     console.log("✅ Firebase session will persist after reload");
   })
   .catch((error) => {
     console.error("⚠️ Persistence setup failed:", error);
   });
-
+  
 /* ---------- Auth State Watcher ---------- */
 let currentUser = null;
 
