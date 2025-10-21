@@ -8,7 +8,12 @@ import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import {
-  getAuth, onAuthStateChanged
+  getAuth,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
+  signInWithEmailAndPassword,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
@@ -32,16 +37,36 @@ const auth = getAuth(app);
 /* ----------------------------
    🔐 Firebase Auth Persistence
 ----------------------------- */
-import { setPersistence, browserLocalPersistence } 
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-setPersistence(auth, browserLocalPersistence)
+await setPersistence(auth, browserLocalPersistence)
   .then(() => {
     console.log("✅ Firebase session will persist after reload");
   })
   .catch((error) => {
     console.error("⚠️ Persistence setup failed:", error);
   });
+
+/* ---------- Auth State Watcher ---------- */
+let currentUser = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+    console.log("✅ Logged in as:", user.uid);
+    localStorage.setItem("userId", user.uid);
+  } else {
+    console.warn("⚠️ No logged-in user found");
+    currentUser = null;
+    localStorage.removeItem("userId");
+  }
+});
+
+/* ---------- Token Refresh Loop ---------- */
+setInterval(async () => {
+  if (auth.currentUser) {
+    await auth.currentUser.getIdToken(true);
+    console.log("🔁 Token refreshed (keeps session alive)");
+  }
+}, 1000 * 60 * 60 * 3); // every 3 hours
 
 /* ---------- Auth State Watcher ---------- */
 let currentUser = null;
@@ -57,13 +82,6 @@ onAuthStateChanged(auth, user => {
     localStorage.removeItem("userId");
   }
 });
-
-setInterval(async () => {
-  if (auth.currentUser) {
-    await auth.currentUser.getIdToken(true);
-    console.log("🔁 Token refreshed (keeps session alive)");
-  }
-}, 1000 * 60 * 60 * 3); // every 3 hours
 
 /* ---------- Helper: Get current user ID ---------- */
 export function getCurrentUserId() {
