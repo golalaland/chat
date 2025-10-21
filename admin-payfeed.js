@@ -353,11 +353,15 @@ if(copyToFeaturedBtn){
     try{
       for(const tr of selectedRows){
         const uid = tr.dataset.id;
-        const email = tr.children[1].textContent;
-        const phone = tr.children[2].textContent;
-        const popupPhoto = tr.querySelector(".popup-photo").value.trim();
-        const videoUrl  = tr.querySelector(".video-url").value.trim();
-        await setDoc(doc(db,"featuredHosts",uid), { email, phone, popupPhoto, videoUrl, addedAt:Date.now() });
+        const user = usersCache.find(u=>u.id === uid);
+        if(!user) continue;
+
+        // Clone all user fields dynamically
+        const dataToCopy = { ...user, addedAt: Date.now() }; 
+        // Remove fields that shouldn’t be in featuredHosts (optional)
+        delete dataToCopy.id;
+
+        await setDoc(doc(db,"featuredHosts",uid), dataToCopy);
         await updateDoc(doc(db,"users",uid), { featuredHosts:true });
       }
       hideLoader(); await loadFeatured(); await loadUsers();
