@@ -30,22 +30,26 @@ const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
 /* ---------- Auth State Watcher ---------- */
-onAuthStateChanged(auth, user => {
-  if (user) {
-    currentUser = user;
-    console.log("✅ Logged in as:", user.uid);
-    localStorage.setItem("userId", user.uid);
+document.addEventListener('DOMContentLoaded', () => {
+  const openHostsBtn = document.getElementById('openHostsBtn');
+  
+  const auth = getAuth();
+  
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUser = user;
+      console.log("✅ Logged in as:", user.uid);
+      localStorage.setItem("userId", user.uid);
 
-    // Show button when logged in
-    if (openHostsBtn) openHostsBtn.style.display = 'block';
-  } else {
-    console.warn("⚠️ No logged-in user found");
-    currentUser = null;
-    localStorage.removeItem("userId");
+      if (openHostsBtn) openHostsBtn.style.display = 'block';
+    } else {
+      console.warn("⚠️ No logged-in user found");
+      currentUser = null;
+      localStorage.removeItem("userId");
 
-    // Hide button when logged out
-    if (openHostsBtn) openHostsBtn.style.display = 'none';
-  }
+      if (openHostsBtn) openHostsBtn.style.display = 'none';
+    }
+  });
 });
 
 /* ---------- Helper: Get current user ID ---------- */
