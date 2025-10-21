@@ -1,4 +1,4 @@
-/* ---------- Imports (Firebase v10 Modular) ---------- */
+/* ---------- Imports (Firebase v10) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc,
@@ -7,7 +7,9 @@ import {
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getAuth, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
 const firebaseConfig = {
@@ -27,65 +29,6 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
-/* ---------- DOM Elements ---------- */
-const openBtn = document.getElementById("openHostsBtn");
-const modal = document.getElementById("featuredHostsModal");
-const closeModal = document.querySelector(".featured-close");
-const videoFrame = document.getElementById("featuredHostVideo");
-const usernameEl = document.getElementById("featuredHostUsername");
-const detailsEl = document.getElementById("featuredHostDetails");
-const hostListEl = document.getElementById("featuredHostList");
-const giftBtn = document.getElementById("featuredGiftBtn");
-const giftSlider = document.getElementById("giftSlider");
-const giftAmountEl = document.getElementById("giftAmount");
-const prevBtn = document.getElementById("prevHost");
-const nextBtn = document.getElementById("nextHost");
-
-let hosts = [];
-let currentIndex = 0;
-
-/* ---------- Fetch + Listen to featuredHosts + merge with users ---------- */
-async function fetchFeaturedHosts() {
-  try {
-    const q = collection(db, "featuredHosts");
-    onSnapshot(q, async snapshot => {
-      const tempHosts = [];
-
-      for (const docSnap of snapshot.docs) {
-        const hostData = { id: docSnap.id, ...docSnap.data() };
-        let merged = { ...hostData };
-
-        if (hostData.userId || hostData.chatId) {
-          try {
-            const userRef = doc(db, "users", hostData.userId || hostData.chatId);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-              merged = { ...merged, ...userSnap.data() };
-            }
-          } catch (err) {
-            console.warn("⚠️ Could not fetch user for host:", hostData.userId || hostData.chatId, err);
-          }
-        }
-
-        tempHosts.push(merged);
-      }
-
-      hosts = tempHosts;
-
-      if (!hosts.length) {
-        console.warn("⚠️ No featured hosts found.");
-        return;
-      }
-
-      console.log("✅ Loaded hosts:", hosts.length);
-      renderHostAvatars(); // Make sure you have this function defined
-      loadHost(currentIndex >= hosts.length ? 0 : currentIndex); // Make sure this function is defined
-    });
-  } catch (err) {
-    console.error("❌ Error fetching hosts:", err);
-  }
-}
-
 /* ---------- Auth State Watcher ---------- */
 let currentUser = null;
 
@@ -94,14 +37,10 @@ onAuthStateChanged(auth, user => {
     currentUser = user;
     console.log("✅ Logged in as:", user.uid);
     localStorage.setItem("userId", user.uid);
-
-    if (openBtn) openBtn.style.display = 'block';
   } else {
-    currentUser = null;
     console.warn("⚠️ No logged-in user found");
+    currentUser = null;
     localStorage.removeItem("userId");
-
-    if (openBtn) openBtn.style.display = 'none';
   }
 });
 
@@ -1142,6 +1081,65 @@ replaceStarsWithSVG();
   });
 })();
 
+/* ---------- DOM Elements ---------- */
+const openBtn = document.getElementById("openHostsBtn");
+const modal = document.getElementById("featuredHostsModal");
+const closeModal = document.querySelector(".featured-close");
+const videoFrame = document.getElementById("featuredHostVideo");
+const usernameEl = document.getElementById("featuredHostUsername");
+const detailsEl = document.getElementById("featuredHostDetails");
+const hostListEl = document.getElementById("featuredHostList");
+const giftBtn = document.getElementById("featuredGiftBtn");
+const giftSlider = document.getElementById("giftSlider");
+const giftAmountEl = document.getElementById("giftAmount");
+const prevBtn = document.getElementById("prevHost");
+const nextBtn = document.getElementById("nextHost");
+
+let hosts = [];
+let currentIndex = 0;
+
+/* ---------- Fetch + Listen to featuredHosts ---------- */
+/* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
+async function fetchFeaturedHosts() {
+  try {
+    const q = collection(db, "featuredHosts");
+    onSnapshot(q, async snapshot => {
+      const tempHosts = [];
+
+      for (const docSnap of snapshot.docs) {
+        const hostData = { id: docSnap.id, ...docSnap.data() };
+        let merged = { ...hostData };
+
+        if (hostData.userId || hostData.chatId) {
+          try {
+            const userRef = doc(db, "users", hostData.userId || hostData.chatId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              merged = { ...merged, ...userSnap.data() };
+            }
+          } catch (err) {
+            console.warn("⚠️ Could not fetch user for host:", hostData.userId || hostData.chatId, err);
+          }
+        }
+
+        tempHosts.push(merged);
+      }
+
+      hosts = tempHosts;
+
+      if (!hosts.length) {
+        console.warn("⚠️ No featured hosts found.");
+        return;
+      }
+
+      console.log("✅ Loaded hosts:", hosts.length);
+      renderHostAvatars();
+      loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
+    });
+  } catch (err) {
+    console.error("❌ Error fetching hosts:", err);
+  }
+}
 
 /* ---------- Render Avatars ---------- */
 function renderHostAvatars() {
