@@ -48,18 +48,18 @@ onAuthStateChanged(auth, user => {
 function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
   const helloText = document.getElementById("helloText");
-  const roomDesc = document.querySelector(".room-desc");
+  const roomDescText = document.querySelector(".room-desc .text"); // 👈 only text part
   const hostsBtn = document.getElementById("openHostsBtn");
 
   if (user) {
     if (subtitle) subtitle.style.display = "none";
     if (helloText) helloText.style.display = "none";
-    if (roomDesc) roomDesc.style.display = "none";
+    if (roomDescText) roomDescText.style.display = "none"; // not the container
     if (hostsBtn) hostsBtn.style.display = "block";
   } else {
     if (subtitle) subtitle.style.display = "block";
     if (helloText) helloText.style.display = "block";
-    if (roomDesc) roomDesc.style.display = "block";
+    if (roomDescText) roomDescText.style.display = "block";
     if (hostsBtn) hostsBtn.style.display = "none";
   }
 }
