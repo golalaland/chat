@@ -661,17 +661,15 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
   const helloText = document.getElementById("helloText");
-  const roomDescText = document.querySelector(".room-desc .text");
+  const roomDescText = document.querySelector(".room-desc"); // ✅ fixed
   const hostsBtn = document.getElementById("openHostsBtn");
 
   if (user) {
-    // Hide intro texts and show host button
     if (subtitle) subtitle.style.display = "none";
     if (helloText) helloText.style.display = "none";
-    if (roomDescText) roomDescText.style.display = "none";
+    if (roomDescText) roomDescText.style.display = "none"; // now works
     if (hostsBtn) hostsBtn.style.display = "block";
   } else {
-    // Restore intro texts and hide host button
     if (subtitle) subtitle.style.display = "block";
     if (helloText) helloText.style.display = "block";
     if (roomDescText) roomDescText.style.display = "block";
