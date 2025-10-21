@@ -34,13 +34,21 @@ let currentUser = null;
 
 onAuthStateChanged(auth, user => {
   if (user) {
+    // User is logged in
     currentUser = user;
     console.log("✅ Logged in as:", user.uid);
     localStorage.setItem("userId", user.uid);
+
+    // Show button when logged in
+    if (openHostsBtn) openHostsBtn.style.display = 'block';
   } else {
+    // No user is logged in
     console.warn("⚠️ No logged-in user found");
     currentUser = null;
     localStorage.removeItem("userId");
+
+    // Hide button when logged out
+    if (openHostsBtn) openHostsBtn.style.display = 'none';
   }
 });
 
