@@ -655,11 +655,42 @@ function startStarEarning(uid) {
 const todayDate = () => new Date().toISOString().split("T")[0];
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
+/* ===============================
+   🧠 UI Updates After Auth
+================================= */
+function updateUIAfterAuth(user) {
+  const subtitle = document.getElementById("roomSubtitle");
+  const helloText = document.getElementById("helloText");
+  const roomDescText = document.querySelector(".room-desc .text");
+  const hostsBtn = document.getElementById("openHostsBtn");
+
+  if (user) {
+    // Hide intro texts and show host button
+    if (subtitle) subtitle.style.display = "none";
+    if (helloText) helloText.style.display = "none";
+    if (roomDescText) roomDescText.style.display = "none";
+    if (hostsBtn) hostsBtn.style.display = "block";
+  } else {
+    // Restore intro texts and hide host button
+    if (subtitle) subtitle.style.display = "block";
+    if (helloText) helloText.style.display = "block";
+    if (roomDescText) roomDescText.style.display = "block";
+    if (hostsBtn) hostsBtn.style.display = "none";
+  }
+}
+
+/* ===============================
+   💬 Show Chat UI After Login
+================================= */
 function showChatUI(user) {
   const { authBox, sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
 
-  // Hide auth, show chat
+  // Hide login/auth elements
   document.getElementById("emailAuthWrapper")?.style?.setProperty("display", "none");
+  document.getElementById("googleSignInBtn")?.style?.setProperty("display", "none");
+  document.getElementById("vipAccessBtn")?.style?.setProperty("display", "none");
+
+  // Show chat interface
   authBox && (authBox.style.display = "none");
   sendAreaEl && (sendAreaEl.style.display = "flex");
   profileBoxEl && (profileBoxEl.style.display = "block");
@@ -672,8 +703,25 @@ function showChatUI(user) {
   if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars);
   if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash);
   if (adminControlsEl) adminControlsEl.style.display = user.isAdmin ? "flex" : "none";
+
+  // 🔹 Apply additional UI updates (hide intro, show hosts)
+  updateUIAfterAuth(user);
 }
 
+/* ===============================
+   🚪 Hide Chat UI On Logout
+================================= */
+function hideChatUI() {
+  const { authBox, sendAreaEl, profileBoxEl, adminControlsEl } = refs;
+
+  authBox && (authBox.style.display = "block");
+  sendAreaEl && (sendAreaEl.style.display = "none");
+  profileBoxEl && (profileBoxEl.style.display = "none");
+  if (adminControlsEl) adminControlsEl.style.display = "none";
+
+  // 🔹 Restore intro UI (subtitle, hello text, etc.)
+  updateUIAfterAuth(null);
+}
 
 /* =======================================
    🚀 DOMContentLoaded Bootstrap
