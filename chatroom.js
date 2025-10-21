@@ -30,6 +30,8 @@ const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
 /* ---------- Auth State Watcher ---------- */
+let currentUser = null;
+
 onAuthStateChanged(auth, user => {
   if (user) {
     currentUser = user;
@@ -40,29 +42,7 @@ onAuthStateChanged(auth, user => {
     currentUser = null;
     localStorage.removeItem("userId");
   }
-
-  // 👇🏽 Call UI update right here every time auth state changes
-  updateUIAfterAuth(user);
 });
-
-function updateUIAfterAuth(user) {
-  const subtitle = document.getElementById("roomSubtitle");
-  const helloText = document.getElementById("helloText");
-  const roomDescText = document.querySelector(".room-desc .text"); // 👈 only text part
-  const hostsBtn = document.getElementById("openHostsBtn");
-
-  if (user) {
-    if (subtitle) subtitle.style.display = "none";
-    if (helloText) helloText.style.display = "none";
-    if (roomDescText) roomDescText.style.display = "none"; // not the container
-    if (hostsBtn) hostsBtn.style.display = "block";
-  } else {
-    if (subtitle) subtitle.style.display = "block";
-    if (helloText) helloText.style.display = "block";
-    if (roomDescText) roomDescText.style.display = "block";
-    if (hostsBtn) hostsBtn.style.display = "none";
-  }
-}
 
 /* ---------- Helper: Get current user ID ---------- */
 export function getCurrentUserId() {
