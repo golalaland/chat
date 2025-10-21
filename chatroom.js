@@ -29,38 +29,6 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
-
-
-/* ----------------------------
-   🔐 Firebase Auth Persistence
------------------------------ */
-import { setPersistence, browserLocalPersistence } 
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    console.log("✅ Firebase session will persist after reload");
-  })
-  .catch((error) => {
-    console.error("⚠️ Persistence setup failed:", error);
-  });
-  
-/* ---------- Auth State Watcher ---------- */
-let currentUser = null;
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    console.log("✅ Logged in as:", user.uid);
-    localStorage.setItem("userId", user.uid);
-  } else {
-    console.warn("⚠️ No logged-in user found");
-    currentUser = null;
-    localStorage.removeItem("userId");
-  }
-});
-
-
 /* ---------- Auth State Watcher ---------- */
 let currentUser = null;
 
