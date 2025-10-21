@@ -58,6 +58,13 @@ onAuthStateChanged(auth, user => {
   }
 });
 
+setInterval(async () => {
+  if (auth.currentUser) {
+    await auth.currentUser.getIdToken(true);
+    console.log("🔁 Token refreshed (keeps session alive)");
+  }
+}, 1000 * 60 * 60 * 3); // every 3 hours
+
 /* ---------- Helper: Get current user ID ---------- */
 export function getCurrentUserId() {
   return currentUser ? currentUser.uid : localStorage.getItem("userId");
