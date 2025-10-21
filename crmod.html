@@ -1,4 +1,4 @@
-<!doctype html>
+((<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -1011,36 +1011,35 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       <iframe id="featuredHostVideo" allowfullscreen frameborder="0"></iframe>
     </div>
 
-   <div class="featured-host-footer">
-  <div>
-    <div id="featuredHostUsername" class="featured-host-username"></div>
-    <div id="featuredHostDetails" class="featured-host-details"></div>
-  </div>
+    <div class="featured-host-footer">
+      <div>
+        <div id="featuredHostUsername" class="featured-host-username"></div>
+        <div id="featuredHostDetails" class="featured-host-details"></div>
+      </div>
 
-  <div class="gift-slider-container">
-    <!-- Slider -->
-    <input type="range" id="giftSlider" min="1" max="999" value="1">
+      <!-- Social Icons -->
+      <div id="socialIcons" class="featured-host-socials" style="display:flex; gap:10px; margin:10px 0;">
+        <!-- Icons will be injected here dynamically -->
+      </div>
 
-    <!-- Number + star inline -->
-    <span id="giftDisplay" style="display:inline-flex; align-items:center; gap:2px;">
-      <span id="giftAmount">1</span>
-      <span>⭐</span>
-    </span>
+      <div class="gift-slider-container">
+        <!-- Slider -->
+        <input type="range" id="giftSlider" min="1" max="999" value="1">
 
-    <!-- Button -->
-    <button id="featuredGiftBtn" class="featured-gift-btn">GIFT 🎁</button>
-  </div>
-</div>
+        <!-- Number + star inline -->
+        <span id="giftDisplay" style="display:inline-flex; align-items:center; gap:2px;">
+          <span id="giftAmount">1</span>
+          <span>⭐</span>
+        </span>
+      </div>
 
-    <!-- Host avatars list -->
-    <div id="featuredHostList" class="featured-host-list"></div>
+      <!-- Next / Prev Buttons -->
+      <div class="featured-host-nav">
+        <button id="prevHost">Prev</button>
+        <button id="nextHost">Next</button>
+      </div>
 
-    <!-- Navigation -->
-    <div class="featured-nav-buttons">
-      <a href="#" id="prevHost" class="featured-nav-link">Previous</a>
-      <a href="#" id="nextHost" class="featured-nav-link">Next</a>
     </div>
-
   </div>
 </div>
 
