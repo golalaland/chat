@@ -1,4 +1,4 @@
-/* ---------- Imports (Firebase v10) ---------- */
+/* ---------- Imports (Firebase v10 Modular) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc,
@@ -7,9 +7,7 @@ import {
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import {
-  getAuth, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
 const firebaseConfig = {
@@ -29,7 +27,6 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
-
 /* ---------- DOM Elements ---------- */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
@@ -47,8 +44,7 @@ const nextBtn = document.getElementById("nextHost");
 let hosts = [];
 let currentIndex = 0;
 
-
-/* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
+/* ---------- Fetch + Listen to featuredHosts + merge with users ---------- */
 async function fetchFeaturedHosts() {
   try {
     const q = collection(db, "featuredHosts");
@@ -82,8 +78,8 @@ async function fetchFeaturedHosts() {
       }
 
       console.log("✅ Loaded hosts:", hosts.length);
-      renderHostAvatars();
-      loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
+      renderHostAvatars(); // Make sure you have this function defined
+      loadHost(currentIndex >= hosts.length ? 0 : currentIndex); // Make sure this function is defined
     });
   } catch (err) {
     console.error("❌ Error fetching hosts:", err);
@@ -95,21 +91,17 @@ let currentUser = null;
 
 onAuthStateChanged(auth, user => {
   if (user) {
-    // User is logged in
     currentUser = user;
     console.log("✅ Logged in as:", user.uid);
     localStorage.setItem("userId", user.uid);
 
-    // Show button when logged in
-    if (openHostsBtn) openHostsBtn.style.display = 'block';
+    if (openBtn) openBtn.style.display = 'block';
   } else {
-    // No user is logged in
-    console.warn("⚠️ No logged-in user found");
     currentUser = null;
+    console.warn("⚠️ No logged-in user found");
     localStorage.removeItem("userId");
 
-    // Hide button when logged out
-    if (openHostsBtn) openHostsBtn.style.display = 'none';
+    if (openBtn) openBtn.style.display = 'none';
   }
 });
 
