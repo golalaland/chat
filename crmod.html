@@ -971,7 +971,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 </head>
 <body>
   
- <!-- Loading Overlay (hidden by default) -->
+  <!-- Loading Overlay (hidden by default) -->
 <div id="postLoginLoader" style="display:none;">
   <div id="loadingBarWrapper">
     <div id="loadingBar"></div>
@@ -979,51 +979,32 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 </div>
 
 <audio id="buzz-sound" src="https://pixabay.com/sound-effects/buzz-01-0-07.mp3" preload="auto"></audio>
-
 <div id="appWrapper">
   <div class="app">
     <div class="brand">乂丨乂丨</div>
     <div id="greeting">✨</div>
-
     <div id="center">
-
-      <!-- 🎥 Video Container -->
-      <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
-        <div id="videoWrapper">
-          <video id="videoPlayer" muted playsinline></video>
-          <button class="arrow" id="prev">&#10094;</button>
-          <button class="arrow" id="next">&#10095;</button>
-        </div>
-      </div>
-
-      <!-- 👋 Intro Texts (these will hide after login) -->
+    <div class="video-container" style="position: relative; width: 100%; max-width: 600px; margin: auto;">
+<div id="videoWrapper">
+  <video id="videoPlayer" muted playsinline></video>
+  <button class="arrow" id="prev">&#10094;</button>
+  <button class="arrow" id="next">&#10095;</button>
+</div>
       <div id="helloText" aria-live="polite">HELLO</div>
+      <div class="room-desc">Chat. Own your vibe.
+        
+<div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
+<span id="onlineCount" class="onlineCount"></span>
 
-      <div class="room-desc">
-        <div class="text">
-          Chat. Own your vibe.
-          <div id="roomSubtitle" class="room-subtitle">
-            Sign in to Chat & Start collecting stars.
-          </div>
-        </div>
 
-        <span id="onlineCount" class="onlineCount"></span>
-      </div>
+<!-- 🌟 Featured Hosts Button -->
+<button id="openHostsBtn" class="featured-btn">🌟 Star Hosts 🌟</button>
 
-      <!-- 🌟 Featured Hosts Button -->
-      <button id="openHostsBtn" style="display:none;">🌟 Star Hosts 🌟</button>
+<!-- 🌟 Featured Hosts Modal -->
+<div id="featuredHostsModal" class="featured-modal">
+  <div class="featured-modal-content">
 
-      <!-- 🌟 Featured Hosts Modal -->
-      <div id="featuredHostsModal" class="featured-modal">
-        <div class="featured-modal-content">
-          <span class="featured-close">&times;</span>
-          <!-- ... modal content ... -->
-        </div>
-      </div>
-
-    </div> <!-- end #center -->
-  </div> <!-- end .app -->
-</div> <!-- end #appWrapper -->
+    <span class="featured-close">&times;</span>
 
     <!-- Video + Info -->
     <div class="featured-host-video-container">
