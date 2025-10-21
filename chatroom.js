@@ -1142,19 +1142,11 @@ const giftSlider = document.getElementById("giftSlider");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
-const socialIconsContainer = document.getElementById("socialIcons"); // make sure you add this div in modal
 
 let hosts = [];
 let currentIndex = 0;
 
-/* ---------- Social SVGs ---------- */
-const icons = {
-  whatsapp: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#25D366" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 2.12.626 4.084 1.707 5.733L2 22l4.414-1.707A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm5.44 14.28l-1.793.472c-.237.062-.483-.022-.635-.214l-.952-1.152a.502.502 0 0 0-.472-.19c-.36.04-1.146-.438-2.326-1.643-1.068-1.083-1.42-1.815-1.49-2.03-.07-.216-.004-.313.194-.44l1.392-1.05c.183-.138.204-.258.142-.445l-.626-1.79c-.072-.206-.192-.33-.42-.33h-2.058c-.205 0-.41.104-.593.29C7.755 6.59 6 9.04 6 12.001 6 16.42 9.582 20 14 20c2.96 0 5.41-1.755 6.17-4.21.185-.346.082-.564-.73-.51z"/></svg>`,
-  telegram: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#0088cc" viewBox="0 0 24 24"><path d="M12 0C5.372 0 0 5.372 0 12c0 5.093 3.163 9.417 7.589 11.135.554.101.756-.24.756-.534 0-.263-.01-1.142-.015-2.067-3.088.671-3.738-1.49-3.738-1.49-.505-1.283-1.233-1.625-1.233-1.625-1.009-.69.077-.676.077-.676 1.115.078 1.7 1.147 1.7 1.147.993 1.7 2.604 1.21 3.24.925.102-.72.387-1.21.705-1.487-2.465-.28-5.054-1.232-5.054-5.482 0-1.211.433-2.198 1.144-2.973-.114-.282-.496-1.415.107-2.95 0 0 .933-.3 3.06 1.138a10.73 10.73 0 0 1 2.787-.375c.947.004 1.9.128 2.787.375 2.126-1.438 3.058-1.138 3.058-1.138.606 1.535.224 2.668.11 2.95.712.775 1.143 1.762 1.143 2.973 0 4.26-2.593 5.197-5.064 5.471.397.342.75 1.018.75 2.052 0 1.482-.013 2.678-.013 3.043 0 .296.2.64.763.532C20.841 21.416 24 17.092 24 12c0-6.628-5.372-12-12-12z"/></svg>`,
-  instagram: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#C13584" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.849.07 1.366.062 2.633.344 3.608 1.32.975.976 1.257 2.242 1.32 3.608.058 1.265.07 1.645.07 4.849s-.012 3.584-.07 4.849c-.062 1.366-.345 2.633-1.32 3.608-.976.975-2.242 1.257-3.608 1.32-1.265.058-1.645.07-4.849.07s-3.584-.012-4.849-.07c-1.366-.062-2.633-.345-3.608-1.32-.975-.976-1.257-2.242-1.32-3.608-.058-1.265-.07-1.645-.07-4.849s.012-3.584.07-4.849c.062-1.366.345-2.633 1.32-3.608.976-.975 2.242-1.257 3.608-1.32C8.416 2.175 8.796 2.163 12 2.163zm0-2.163C8.741 0 8.332.012 7.052.07 5.73.127 4.602.387 3.678 1.31 2.754 2.234 2.494 3.362 2.437 4.684.012 8.332 0 8.741 0 12c0 3.259.012 3.668.07 4.948.057 1.322.317 2.45 1.24 3.374.924.924 2.052 1.184 3.374 1.24C8.332 23.988 8.741 24 12 24s3.668-.012 4.948-.07c1.322-.057 2.45-.317 3.374-1.24.924-.924 1.184-2.052 1.24-3.374C23.988 15.668 24 15.259 24 12s-.012-3.668-.07-4.948c-.057-1.322-.317-2.45-1.24-3.374-.924-.924-2.052-1.184-3.374-1.24C15.668.012 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>`,
-  tiktok: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#000000" viewBox="0 0 24 24"><path d="M12 0C5.372 0 0 5.372 0 12c0 5.302 3.438 9.8 8.205 11.387.6.111.82-.261.82-.577 0-.285-.011-1.041-.017-2.044-3.338.726-4.042-1.609-4.042-1.609-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.305-5.466-1.332-5.466-5.931 0-1.31.469-2.381 1.236-3.222-.123-.304-.536-1.527.117-3.176 0 0 1.008-.322 3.301 1.23a11.52 11.52 0 0 1 3.003-.404c1.019.005 2.046.138 3.003.404 2.291-1.552 3.297-1.23 3.297-1.23.655 1.649.242 2.872.119 3.176.77.841 1.235 1.912 1.235 3.222 0 4.609-2.804 5.624-5.475 5.922.429.369.812 1.096.812 2.209 0 1.594-.015 2.88-.015 3.272 0 .319.217.694.825.576C20.565 21.796 24 17.297 24 12c0-6.628-5.372-12-12-12z"/></svg>`
-};
-
+/* ---------- Fetch + Listen to featuredHosts ---------- */
 /* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
 async function fetchFeaturedHosts() {
   try {
@@ -1244,46 +1236,6 @@ function loadHost(idx) {
   // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
-
-  // ---------- Socials ----------
-  renderHostSocials(host);
-}
-
-/* ---------- Render Socials ---------- */
-function renderHostSocials(host) {
-  socialIconsContainer.innerHTML = ''; // clear old
-
-  if (host.whatsapp) {
-    const a = document.createElement('a');
-    a.href = `https://wa.me/${host.whatsapp}?text=${encodeURIComponent(`Hi ${host.chatId}, I’m VIPName on XiXi live & I’d like to get to know you 😊`)}`;
-    a.target = '_blank';
-    a.innerHTML = icons.whatsapp;
-    socialIconsContainer.appendChild(a);
-  }
-
-  if (host.telegram) {
-    const a = document.createElement('a');
-    a.href = `https://t.me/${host.telegram}?text=${encodeURIComponent(`Hi ${host.chatId}, I’m VIPName on XiXi live & I’d like to get to know you 😊`)}`;
-    a.target = '_blank';
-    a.innerHTML = icons.telegram;
-    socialIconsContainer.appendChild(a);
-  }
-
-  if (host.instagram) {
-    const a = document.createElement('a');
-    a.href = host.instagram;
-    a.target = '_blank';
-    a.innerHTML = icons.instagram;
-    socialIconsContainer.appendChild(a);
-  }
-
-  if (host.tiktok) {
-    const a = document.createElement('a');
-    a.href = host.tiktok;
-    a.target = '_blank';
-    a.innerHTML = icons.tiktok;
-    socialIconsContainer.appendChild(a);
-  }
 }
 
 /* ---------- Gift slider ---------- */
@@ -1291,6 +1243,7 @@ giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
 });
 
+/* ---------- Send gift ---------- */
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
   try {
@@ -1313,6 +1266,7 @@ giftBtn.addEventListener("click", async () => {
       return;
     }
 
+    // 🧾 Get sender (logged-in user)
     const senderRef = doc(db, "users", currentUser.uid);
     const senderSnap = await getDoc(senderRef);
     if (!senderSnap.exists()) {
@@ -1328,6 +1282,7 @@ giftBtn.addEventListener("click", async () => {
       return;
     }
 
+    // 🪙 Deduct from sender + add to host
     const hostRef = doc(db, "featuredHosts", host.id);
     await Promise.all([
       updateDoc(senderRef, { stars: increment(-giftStars) }),
@@ -1335,13 +1290,14 @@ giftBtn.addEventListener("click", async () => {
     ]);
 
     console.log(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}`);
+
+    // 🎁 Replace plain alert with a clean animated alert
     showGiftAlert(`You sent ${giftStars} stars ⭐ to ${host.chatId}!`);
   } catch (err) {
     console.error("Gift sending failed:", err);
     showGiftAlert("⚠️ Something went wrong sending your stars.");
   }
 });
-
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
   e.preventDefault();
