@@ -35,24 +35,7 @@ const whitelistTableBody = document.querySelector("#whitelistTable tbody");
 const featuredTableBody = document.querySelector("#featuredTable tbody");
 
 const logoutBtn = document.getElementById("logoutBtn");
-const userSearch = document.getElementById("userSearch");
-const exportCurrentCsv = document.getElementById("exportCurrentCsv") || document.getElementById("exportCsv");
-const exportFeaturedCsv = document.getElementById("exportFeaturedCsv");
-
-const wlEmailInput = document.getElementById("wlEmail");
-const wlPhoneInput = document.getElementById("wlPhone");
-const addWhitelistBtn = document.getElementById("addWhitelistBtn");
-const wlCsvUpload = document.getElementById("wlCsvUpload");
-const cleanUpLadyToggle = document.getElementById("cleanUpLady");
-
-const massRemoveUsersBtn = document.getElementById("massRemoveUsersBtn");
-const massRemoveWhitelistBtn = document.getElementById("massRemoveWhitelistBtn");
-const massRemoveFeaturedBtn = document.getElementById("massRemoveFeaturedBtn");
 const copyToFeaturedBtn = document.getElementById("copyToFeaturedBtn");
-
-const selectAllUsers = document.getElementById("selectAllUsers");
-const selectAllWhitelist = document.getElementById("selectAllWhitelist");
-const selectAllFeatured = document.getElementById("selectAllFeatured");
 
 const loaderOverlay = document.getElementById("loaderOverlay");
 const loaderText = document.getElementById("loaderText");
@@ -65,24 +48,7 @@ function showLoader(text = "Processing...") {
 function hideLoader() { if (loaderOverlay) loaderOverlay.style.display = "none"; }
 
 function sanitizeCSVCell(s){ return String(s==null ? "" : s).replaceAll('"','').trim(); }
-function mkCSVName(prefix){ return `${prefix}_${(new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`; }
-function downloadCSV(filename, rows){
-  const csv = rows.map(r => r.map(v => `"${String(v ?? "")}"`).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-function createToggleCheckbox(value){
-  const i = document.createElement("input");
-  i.type = "checkbox";
-  i.checked = !!value;
-  i.style.transform = "scale(1.12)";
-  return i;
-}
+
 function showConfirmModal(title, message){
   return new Promise(resolve=>{
     const overlay = document.createElement("div");
@@ -113,6 +79,7 @@ async function checkAdmin(emailRaw){
   const d = snap.docs[0].data()||{};
   return d.isAdmin === true ? { email, id: snap.docs[0].id } : null;
 }
+
 if (adminCheckBtn) {
   adminCheckBtn.addEventListener("click", async ()=>{
     if (!adminEmailInput) return;
@@ -127,10 +94,10 @@ if (adminCheckBtn) {
     if (currentAdminEmailEl) currentAdminEmailEl.textContent = a.email;
     if (adminGate) adminGate.classList.add("hidden");
     if (adminPanel) adminPanel.classList.remove("hidden");
-    await loadUsers(); await loadWhitelist(); await loadFeatured();
+    await loadUsers();
+    await loadFeatured();
   });
 }
-if (adminEmailInput) adminEmailInput.addEventListener("keydown", e => { if (e.key === "Enter" && adminCheckBtn) adminCheckBtn.click(); });
 if (logoutBtn) logoutBtn.addEventListener("click", ()=>{
   currentAdmin = null;
   if (adminPanel) adminPanel.classList.add("hidden");
@@ -141,54 +108,29 @@ if (logoutBtn) logoutBtn.addEventListener("click", ()=>{
 // ---------- Data caches ----------
 let usersCache = [];
 
-// ---------- Main Loaders ----------
+// ---------- Loaders ----------
 async function loadUsers(){
   if (!usersTableBody) return;
   try{
     usersTableBody.innerHTML = "";
     const snap = await getDocs(collection(db,"users"));
     usersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderUsers(usersCache);
-  }catch(e){
-    console.error(e);
-    usersTableBody.innerHTML = `<tr><td colspan="14" class="muted">Failed to load users.</td></tr>`;
-  }
-}
-async function loadWhitelist(){
-  if (!whitelistTableBody) return;
-  try{
-    whitelistTableBody.innerHTML = "";
-    const snap = await getDocs(collection(db,"whitelist"));
-    snap.forEach(d => {
-      const w = d.data() || {};
+    usersCache.forEach(u => {
       const tr = document.createElement("tr");
-      tr.dataset.id = d.id;
+      tr.dataset.id = u.id;
       tr.innerHTML = `
         <td><input type="checkbox" class="row-select"/></td>
-        <td>${sanitizeCSVCell(w.email||"")}</td>
-        <td>${sanitizeCSVCell(w.phone||"")}</td>
-        <td>${w.subscriptionActive ? "Active" : "Inactive"}</td>
-        <td></td>
+        <td>${sanitizeCSVCell(u.email||"")}</td>
+        <td>${sanitizeCSVCell(u.phone||"")}</td>
+        <td>${sanitizeCSVCell(u.fullName||"")}</td>
+        <td>${u.isHost ? "Yes" : "No"}</td>
+        <td>${u.isVIP ? "Yes" : "No"}</td>
       `;
-      const removeBtn = document.createElement("button");
-      removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
-      removeBtn.addEventListener("click", async ()=>{
-        const confirmed = await showConfirmModal("Remove whitelist", `Remove ${w.email}?`);
-        if(!confirmed) return;
-        showLoader("Removing...");
-        try{
-          await deleteDoc(doc(db,"whitelist",d.id));
-          hideLoader(); await loadWhitelist();
-        }catch(err){ hideLoader(); console.error(err); alert("Failed to remove."); }
-      });
-      tr.children[4].appendChild(removeBtn);
-      whitelistTableBody.appendChild(tr);
+      usersTableBody.appendChild(tr);
     });
-  }catch(err){
-    console.error(err);
-    whitelistTableBody.innerHTML = `<tr><td colspan="5" class="muted">Failed to load whitelist.</td></tr>`;
-  }
+  }catch(err){ console.error(err); usersTableBody.innerHTML = `<tr><td colspan="6" class="muted">Failed to load users.</td></tr>`; }
 }
+
 async function loadFeatured(){
   if (!featuredTableBody) return;
   try{
@@ -209,6 +151,7 @@ async function loadFeatured(){
       `;
       const saveBtn = document.createElement("button"); saveBtn.className="btn btn-primary small"; saveBtn.textContent="Save";
       const removeBtn = document.createElement("button"); removeBtn.className="btn btn-danger small"; removeBtn.textContent="Remove";
+
       saveBtn.addEventListener("click", async ()=>{
         const confirmed = await showConfirmModal("Save Featured", `Update featured host ${f.email||""}?`);
         if(!confirmed) return;
@@ -222,6 +165,7 @@ async function loadFeatured(){
           alert("Featured updated.");
         }catch(err){ hideLoader(); console.error(err); alert("Save failed."); }
       });
+
       removeBtn.addEventListener("click", async ()=>{
         const confirmed = await showConfirmModal("Remove Featured", `Remove ${f.email||""} from featured hosts?`);
         if(!confirmed) return;
@@ -232,18 +176,39 @@ async function loadFeatured(){
           hideLoader(); await loadFeatured(); await loadUsers();
         }catch(err){ hideLoader(); console.error(err); alert("Remove failed."); }
       });
+
       tr.children[6].append(saveBtn, removeBtn);
       featuredTableBody.appendChild(tr);
     });
-  }catch(err){
-    console.error(err);
-    featuredTableBody.innerHTML = `<tr><td colspan="7" class="muted">Failed to load featured hosts.</td></tr>`;
-  }
+  }catch(err){ console.error(err); featuredTableBody.innerHTML = `<tr><td colspan="7" class="muted">Failed to load featured hosts.</td></tr>`; }
 }
 
-// ---------- initial loads ----------
+// ---------- Copy to Featured ----------
+if(copyToFeaturedBtn){
+  copyToFeaturedBtn.addEventListener("click", async ()=>{
+    const selectedCheckboxes = Array.from(usersTableBody.querySelectorAll(".row-select:checked"));
+    if(selectedCheckboxes.length === 0){ alert("Select at least one user."); return; }
+    const confirmed = await showConfirmModal("Copy to Featured", `Copy ${selectedCheckboxes.length} user(s) to featured hosts?`);
+    if(!confirmed) return;
+    showLoader("Copying to featured...");
+    try{
+      for(const checkbox of selectedCheckboxes){
+        const tr = checkbox.closest("tr");
+        const userId = tr.dataset.id;
+        const userData = usersCache.find(u=>u.id===userId);
+        if(!userData) continue;
+        const copyData = { ...userData, addedAt: Date.now(), featuredHosts: true };
+        await setDoc(doc(db,"featuredHosts",userId), copyData, { merge: true });
+        await updateDoc(doc(db,"users",userId), { featuredHosts: true }).catch(()=>{});
+      }
+      hideLoader(); await loadFeatured(); await loadUsers();
+      alert("Selected users copied to featured hosts.");
+    }catch(err){ hideLoader(); console.error(err); alert("Failed to copy to featured."); }
+  });
+}
+
+// ---------- Initial Loads ----------
 (async function initialLoads(){
   await loadUsers().catch(()=>{});
-  await loadWhitelist().catch(()=>{});
   await loadFeatured().catch(()=>{});
 })();
