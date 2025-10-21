@@ -29,27 +29,80 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
+
+/* ---------- DOM Elements ---------- */
+const openBtn = document.getElementById("openHostsBtn");
+const modal = document.getElementById("featuredHostsModal");
+const closeModal = document.querySelector(".featured-close");
+const videoFrame = document.getElementById("featuredHostVideo");
+const usernameEl = document.getElementById("featuredHostUsername");
+const detailsEl = document.getElementById("featuredHostDetails");
+const hostListEl = document.getElementById("featuredHostList");
+const giftBtn = document.getElementById("featuredGiftBtn");
+const giftSlider = document.getElementById("giftSlider");
+const giftAmountEl = document.getElementById("giftAmount");
+const prevBtn = document.getElementById("prevHost");
+const nextBtn = document.getElementById("nextHost");
+
+let hosts = [];
+let currentIndex = 0;
+
+
+/* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
+async function fetchFeaturedHosts() {
+  try {
+    const q = collection(db, "featuredHosts");
+    onSnapshot(q, async snapshot => {
+      const tempHosts = [];
+
+      for (const docSnap of snapshot.docs) {
+        const hostData = { id: docSnap.id, ...docSnap.data() };
+        let merged = { ...hostData };
+
+        if (hostData.userId || hostData.chatId) {
+          try {
+            const userRef = doc(db, "users", hostData.userId || hostData.chatId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              merged = { ...merged, ...userSnap.data() };
+            }
+          } catch (err) {
+            console.warn("⚠️ Could not fetch user for host:", hostData.userId || hostData.chatId, err);
+          }
+        }
+
+        tempHosts.push(merged);
+      }
+
+      hosts = tempHosts;
+
+      if (!hosts.length) {
+        console.warn("⚠️ No featured hosts found.");
+        return;
+      }
+
+      console.log("✅ Loaded hosts:", hosts.length);
+      renderHostAvatars();
+      loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
+    });
+  } catch (err) {
+    console.error("❌ Error fetching hosts:", err);
+  }
+}
+
 /* ---------- Auth State Watcher ---------- */
-document.addEventListener('DOMContentLoaded', () => {
-  const openHostsBtn = document.getElementById('openHostsBtn');
-  
-  const auth = getAuth();
-  
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      currentUser = user;
-      console.log("✅ Logged in as:", user.uid);
-      localStorage.setItem("userId", user.uid);
+let currentUser = null;
 
-      if (openHostsBtn) openHostsBtn.style.display = 'block';
-    } else {
-      console.warn("⚠️ No logged-in user found");
-      currentUser = null;
-      localStorage.removeItem("userId");
-
-      if (openHostsBtn) openHostsBtn.style.display = 'none';
-    }
-  });
+onAuthStateChanged(auth, user => {
+  if (user) {
+    currentUser = user;
+    console.log("✅ Logged in as:", user.uid);
+    localStorage.setItem("userId", user.uid);
+  } else {
+    console.warn("⚠️ No logged-in user found");
+    currentUser = null;
+    localStorage.removeItem("userId");
+  }
 });
 
 /* ---------- Helper: Get current user ID ---------- */
@@ -1089,64 +1142,6 @@ replaceStarsWithSVG();
   });
 })();
 
-/* ---------- DOM Elements ---------- */
-const modal = document.getElementById("featuredHostsModal");
-const closeModal = document.querySelector(".featured-close");
-const videoFrame = document.getElementById("featuredHostVideo");
-const usernameEl = document.getElementById("featuredHostUsername");
-const detailsEl = document.getElementById("featuredHostDetails");
-const hostListEl = document.getElementById("featuredHostList");
-const giftBtn = document.getElementById("featuredGiftBtn");
-const giftSlider = document.getElementById("giftSlider");
-const giftAmountEl = document.getElementById("giftAmount");
-const prevBtn = document.getElementById("prevHost");
-const nextBtn = document.getElementById("nextHost");
-
-let hosts = [];
-let currentIndex = 0;
-
-/* ---------- Fetch + Listen to featuredHosts ---------- */
-/* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
-async function fetchFeaturedHosts() {
-  try {
-    const q = collection(db, "featuredHosts");
-    onSnapshot(q, async snapshot => {
-      const tempHosts = [];
-
-      for (const docSnap of snapshot.docs) {
-        const hostData = { id: docSnap.id, ...docSnap.data() };
-        let merged = { ...hostData };
-
-        if (hostData.userId || hostData.chatId) {
-          try {
-            const userRef = doc(db, "users", hostData.userId || hostData.chatId);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-              merged = { ...merged, ...userSnap.data() };
-            }
-          } catch (err) {
-            console.warn("⚠️ Could not fetch user for host:", hostData.userId || hostData.chatId, err);
-          }
-        }
-
-        tempHosts.push(merged);
-      }
-
-      hosts = tempHosts;
-
-      if (!hosts.length) {
-        console.warn("⚠️ No featured hosts found.");
-        return;
-      }
-
-      console.log("✅ Loaded hosts:", hosts.length);
-      renderHostAvatars();
-      loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
-    });
-  } catch (err) {
-    console.error("❌ Error fetching hosts:", err);
-  }
-}
 
 /* ---------- Render Avatars ---------- */
 function renderHostAvatars() {
