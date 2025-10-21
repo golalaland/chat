@@ -1090,7 +1090,6 @@ replaceStarsWithSVG();
 })();
 
 /* ---------- DOM Elements ---------- */
-const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
 const closeModal = document.querySelector(".featured-close");
 const videoFrame = document.getElementById("featuredHostVideo");
