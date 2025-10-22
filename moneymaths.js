@@ -1,7 +1,7 @@
 /* ---------------- Sample User Data ---------------- */
 let currentUser = {
   name: 'GUEST',
-  stars: 20,
+  stars: 200,
   cash: 0
 };
 
