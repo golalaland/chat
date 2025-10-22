@@ -1,34 +1,27 @@
-const onlineCountEl = document.getElementById('onlineCount');
-let count = 100; // starting number
+let onlineCount = 503; // starting number
+const onlineEl = document.getElementById("onlineCount");
 
-// Animate number change
-function animateCount(newCount) {
-  const duration = 1000; // animation duration in ms
-  const start = count;
-  const diff = newCount - start;
-  const startTime = performance.now();
-
-  function update(time) {
-    const elapsed = time - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    onlineCountEl.textContent = Math.floor(start + diff * progress);
-
-    if (progress < 1) {
-      requestAnimationFrame(update);
-    } else {
-      count = newCount; // update the count after animation
-    }
-  }
-
-  requestAnimationFrame(update);
+function updateDisplay() {
+  onlineEl.textContent = onlineCount;
 }
 
-// Increase +5 every 60 seconds
+// Increase by 5 every 60 seconds
 setInterval(() => {
-  animateCount(count + 5);
-}, 60000);
+  onlineCount += 5;
+  updateDisplay();
+}, 60000); // 60,000ms = 60s
 
-// Decrease -10 every 300 seconds
+// Decrease by 10 every 300 seconds
 setInterval(() => {
-  animateCount(Math.max(count - 10, 0));
-}, 300000);
+  onlineCount = Math.max(0, onlineCount - 10); // never go below 0
+  updateDisplay();
+}, 300000); // 300,000ms = 5min
+
+// Optional: allow manual adjustment
+window.adjustOnlineCount = (num) => {
+  onlineCount = Math.max(0, num);
+  updateDisplay();
+};
+
+// Initial display
+updateDisplay();
