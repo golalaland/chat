@@ -2,151 +2,123 @@
 let currentUser = {
   uid: 'guest001',
   name: 'GUEST 0000',
-  stars: 50,
+  stars: 50,  // Start with some stars so users can join
   cash: 0
 };
+
+const starCost = 10; // Stars needed to join
+
 document.getElementById('profileName').textContent = currentUser.name;
 document.getElementById('starCount').textContent = currentUser.stars;
 document.getElementById('cashCount').textContent = currentUser.cash;
 
-/* ---------------- DOM References ---------------- */
+/* ---------------- Elements ---------------- */
 const joinTrainBtn = document.getElementById('joinTrainBtn');
-const starPopup = document.getElementById('starPopup');
 const problemBoard = document.getElementById('problemBoard');
 const loadingBar = document.getElementById('loadingBar');
 const trainEmoji = document.getElementById('trainEmoji');
+const starPopup = document.getElementById('starPopup');
 const dailyPotEl = document.getElementById('dailyPot');
 
-/* ---------------- Config ---------------- */
-const starCost = 10;
-const numberOfBlocks = 8;
-const trainDuration = 39000; // 39 seconds
-const cities = ['New York', 'Tokyo', 'Paris', 'London', 'Dubai', 'Sydney', 'Berlin', 'Moscow', 'Rome', 'Toronto'];
+const NUM_BLOCKS = 8;
+let currentProblems = [];
+let loadingInterval;
+let loadingProgress = 0;
+let trainActive = false;
 
-/* ---------------- Utility ---------------- */
-function showStarPopup(text) {
+/* ---------------- Helpers ---------------- */
+function showStarPopup(text){
   starPopup.textContent = text;
-  starPopup.style.display = "block";
-  setTimeout(() => { starPopup.style.display = "none"; }, 1500);
+  starPopup.style.display = 'block';
+  setTimeout(()=>{ starPopup.style.display = 'none'; }, 1500);
 }
 
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function generateProblems(){
+  currentProblems = [];
+  problemBoard.innerHTML = '';
+  for(let i=0;i<NUM_BLOCKS;i++){
+    let a = Math.floor(Math.random()*20)+1;
+    let b = Math.floor(Math.random()*20)+1;
+    // Ensure no negative results
+    if(a < b){ [a,b] = [b,a]; }
+    currentProblems.push({a,b,ans:a+b});
+    
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'problemInput';
+    input.placeholder = `${a} + ${b}`;
+    problemBoard.appendChild(input);
+  }
 }
 
-/* ---------------- Modal Confirmation ---------------- */
-function confirmJoinTrain() {
-  const confirmed = confirm(`Joining the train costs ${starCost}⭐. Proceed?`);
-  if (!confirmed) return false;
-  if (currentUser.stars < starCost) {
+/* ---------------- Loading Bar ---------------- */
+function startLoadingBar(){
+  loadingProgress = 0;
+  loadingBar.style.width = '0%';
+  trainEmoji.style.left = '0px';
+  loadingInterval = setInterval(()=>{
+    loadingProgress++;
+    loadingBar.style.width = `${(loadingProgress/39)*100}%`;
+    trainEmoji.style.left = `${(loadingProgress/39)*100}%`;
+    if(loadingProgress >= 39){
+      clearInterval(loadingInterval);
+      trainActive = false;
+      endTrain(false); // Train left, player didn't finish
+    }
+  },1000); // 39 seconds total
+}
+
+/* ---------------- Train Logic ---------------- */
+function startTrain(){
+  if(currentUser.stars < starCost){
     showStarPopup("Not enough stars!");
-    return false;
+    return;
   }
   currentUser.stars -= starCost;
   document.getElementById('starCount').textContent = currentUser.stars;
-  return true;
+
+  generateProblems();
+  problemBoard.style.display = 'flex';
+  joinTrainBtn.textContent = 'Submit Answers';
+  joinTrainBtn.style.background = 'linear-gradient(90deg,#00FF99,#00CCFF)';
+  trainActive = true;
+  startLoadingBar();
 }
 
-/* ---------------- Train Terminal Info ---------------- */
-function createTrainTerminalInfo() {
-  const terminalDiv = document.createElement('div');
-  terminalDiv.style.textAlign = 'center';
-  terminalDiv.style.margin = '10px 0';
-  terminalDiv.style.color = '#FF8C00';
-  terminalDiv.style.fontWeight = '700';
-  terminalDiv.innerHTML = `
-    Train: Money Express 🚂<br>
-    Date & Time: ${new Date().toLocaleString()}<br>
-    Destination: ${cities[randomInt(0, cities.length - 1)]}
-  `;
-  problemBoard.prepend(terminalDiv);
-}
-
-/* ---------------- Problem Generation ---------------- */
-function generateProblems() {
-  problemBoard.innerHTML = ""; // Clear previous
-  createTrainTerminalInfo();
-
-  for (let i = 0; i < numberOfBlocks; i++) {
-    const a = randomInt(2, 12);
-    const b = randomInt(2, 12);
-    const input = document.createElement('input');
-    input.className = 'problemInput';
-    input.dataset.answer = a * b;
-    input.placeholder = `${a} x ${b}`;
-    input.type = 'text';
-    problemBoard.appendChild(input);
-  }
-
-  // Re-add Join Train button below blocks
-  const joinBtnClone = joinTrainBtn.cloneNode(true);
-  joinBtnClone.id = 'joinTrainBtnPlay';
-  problemBoard.appendChild(joinBtnClone);
-
-  joinBtnClone.addEventListener('click', () => {
-    checkAllAnswers(joinBtnClone);
-  });
-}
-
-/* ---------------- Answer Check ---------------- */
-function checkAllAnswers(btn) {
-  const inputs = problemBoard.querySelectorAll('.problemInput');
-  let allCorrect = true;
-  inputs.forEach(input => {
-    const val = parseInt(input.value);
-    if (val !== parseInt(input.dataset.answer)) allCorrect = false;
-  });
-
-  if (allCorrect) {
-    const rewardStars = numberOfBlocks * 5;
-    const rewardCash = numberOfBlocks * 50;
+/* ---------------- End Train ---------------- */
+function endTrain(success){
+  problemBoard.style.display = 'none';
+  joinTrainBtn.textContent = `Join Train (-${starCost}⭐)`;
+  joinTrainBtn.style.background = 'linear-gradient(90deg,#FF1493,#FF8C00)';
+  if(success){
+    const rewardStars = 5 * NUM_BLOCKS;
+    const rewardCash = 50 * NUM_BLOCKS;
     currentUser.stars += rewardStars;
     currentUser.cash += rewardCash;
     document.getElementById('starCount').textContent = currentUser.stars;
     document.getElementById('cashCount').textContent = currentUser.cash;
-    showStarPopup(`+${rewardStars}⭐ & ₦${rewardCash}`);
-    btn.disabled = true;
+    dailyPotEl.textContent = parseInt(dailyPotEl.textContent) + rewardCash;
+    showStarPopup(`+${rewardStars}⭐ +₦${rewardCash}`);
   } else {
-    showStarPopup("Incorrect answers! Train left without you!");
-    btn.disabled = true;
+    showStarPopup("Train left! You got nothing 😢");
   }
 }
 
-/* ---------------- Loading Animation ---------------- */
-function animateTrain() {
-  loadingBar.style.width = '0%';
-  trainEmoji.style.left = '0px';
-  const startTime = Date.now();
-
-  const interval = setInterval(() => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / trainDuration, 1);
-    loadingBar.style.width = `${progress * 100}%`;
-    trainEmoji.style.left = `${progress * (loadingBar.offsetWidth - 24)}px`;
-
-    if (progress >= 1) {
-      clearInterval(interval);
-      showStarPopup("Train has left!");
-      problemBoard.querySelectorAll('input').forEach(input => input.disabled = true);
-      const btn = problemBoard.querySelector('#joinTrainBtnPlay');
-      if (btn) btn.disabled = true;
-    }
-  }, 50);
-}
-
-/* ---------------- Daily Reward Toggle ---------------- */
-let dailyRewardNaira = true;
-dailyPotEl.addEventListener('click', () => {
-  dailyRewardNaira = !dailyRewardNaira;
-  dailyPotEl.textContent = dailyRewardNaira ? '1000' : '2.5';
-  dailyPotEl.parentElement.innerHTML = `Cash Reward Available Today: ${dailyRewardNaira ? '₦' : '$'}<span id="dailyPot">${dailyPotEl.textContent}</span>`;
-});
-
-/* ---------------- Join Train Click ---------------- */
-joinTrainBtn.addEventListener('click', () => {
-  if (!confirmJoinTrain()) return;
-  problemBoard.style.display = 'flex';
-  generateProblems();
-  animateTrain();
-  joinTrainBtn.style.display = 'none';
+/* ---------------- Button Event ---------------- */
+joinTrainBtn.addEventListener('click', ()=>{
+  if(trainActive){
+    // Validate answers
+    const inputs = document.querySelectorAll('.problemInput');
+    let correct = true;
+    inputs.forEach((inp,i)=>{
+      if(parseInt(inp.value) !== currentProblems[i].ans){
+        correct = false;
+      }
+    });
+    clearInterval(loadingInterval);
+    trainActive = false;
+    endTrain(correct);
+  } else {
+    startTrain();
+  }
 });
