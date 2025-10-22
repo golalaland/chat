@@ -1,37 +1,14 @@
- /* ---------- Imports (Firebase v10) ---------- */
-import { 
-  initializeApp 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
-  collection, 
-  addDoc, 
-  serverTimestamp, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  increment, 
-  getDocs, 
-  where,
-  runTransaction            // ✅ Added this (required for gift transactions)
+/* ---------- Imports (Firebase v10) ---------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc,
+  serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import { 
-  getDatabase, 
-  ref as rtdbRef, 
-  set as rtdbSet, 
-  onDisconnect, 
-  onValue 
+import {
+  getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-import { 
-  getAuth, 
-  onAuthStateChanged 
+import {
+  getAuth, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
@@ -86,7 +63,6 @@ let lastMessagesArray = [];
 let starInterval = null;
 let refs = {};
 
-
 /* ---------- Helpers ---------- */
 const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
 const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
@@ -106,6 +82,7 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
+/* ---------- Gift Modal---------- */
 /* ----------------------------
    ⭐ GIFT / BALLER ALERT Glow
 ----------------------------- */
@@ -167,19 +144,9 @@ async function showGiftModal(targetUid, targetData) {
 
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
     await Promise.all([
-  updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-  updateDoc(toRef, { stars: increment(amt) }),
-
-  // 🔹 Sync to featuredHosts if applicable
-  updateDoc(doc(db, "featuredHosts", targetUid), {
-    stars: increment(amt),
-    starsGifted: increment(amt) // optional if you track gifted separately
-  }).catch(() => {}),
-
-  updateDoc(doc(db, "featuredHosts", currentUser.uid), {
-    starsGifted: increment(amt)
-  }).catch(() => {})
-]);
+      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+      updateDoc(toRef, { stars: increment(amt) })
+    ]);
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
@@ -694,7 +661,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
   const helloText = document.getElementById("helloText");
-  const roomDescText = document.querySelector(".room-desc");
+  const roomDescText = document.querySelector(".room-desc .text");
   const hostsBtn = document.getElementById("openHostsBtn");
 
   if (user) {
@@ -1277,47 +1244,60 @@ giftSlider.addEventListener("input", () => {
 });
 
 /* ---------- Send gift ---------- */
+/* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
   try {
     const host = hosts[currentIndex];
-    if (!host?.id) return showGiftAlert("⚠️ No host selected.");
-    if (!currentUser) return showGiftAlert("Please log in to send stars ⭐");
+    if (!host?.id) {
+      console.warn("⚠️ No host selected or host.id missing");
+      showGiftAlert("⚠️ No host selected.");
+      return;
+    }
+
+    if (!currentUser) {
+      console.warn("⚠️ You must be logged in to send stars");
+      showGiftAlert("Please log in to send stars ⭐");
+      return;
+    }
 
     const giftStars = parseInt(giftSlider.value, 10);
-    if (isNaN(giftStars) || giftStars <= 0) return showGiftAlert("Invalid star amount ❌");
+    if (isNaN(giftStars) || giftStars <= 0) {
+      showGiftAlert("Invalid star amount ❌");
+      return;
+    }
 
+    // 🧾 Get sender (logged-in user)
     const senderRef = doc(db, "users", currentUser.uid);
-    const receiverRef = doc(db, "users", host.id);
-    const featuredReceiverRef = doc(db, "featuredHosts", host.id);
+    const senderSnap = await getDoc(senderRef);
+    if (!senderSnap.exists()) {
+      showGiftAlert("Your user record doesn’t exist ⚠️");
+      return;
+    }
 
-    await runTransaction(db, async (tx) => {
-      const senderSnap = await tx.get(senderRef);
-      const receiverSnap = await tx.get(receiverRef);
-      const featuredSnap = await tx.get(featuredReceiverRef);
+    const senderData = senderSnap.data();
+    const currentStars = senderData.stars || 0;
 
-      if (!senderSnap.exists()) throw new Error("Your user record not found.");
-      if (!receiverSnap.exists()) tx.set(receiverRef, { stars: 0, starsGifted: 0 }, { merge: true });
+    if (currentStars < giftStars) {
+      showGiftAlert(`You only have ${currentStars} ⭐ — not enough to send ${giftStars}.`);
+      return;
+    }
 
-      const senderData = senderSnap.data();
-      if ((senderData.stars || 0) < giftStars) throw new Error("Insufficient stars");
+    // 🪙 Deduct from sender + add to host
+    const hostRef = doc(db, "featuredHosts", host.id);
+    await Promise.all([
+      updateDoc(senderRef, { stars: increment(-giftStars) }),
+      updateDoc(hostRef, { stars: increment(giftStars), starsGifted: increment(giftStars) })
+    ]);
 
-      // --- USERS updates ---
-      tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
-      tx.update(receiverRef, { stars: increment(giftStars) });
+    console.log(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}`);
 
-      // --- FEATURED HOSTS updates ONLY if doc exists ---
-      if (featuredSnap.exists()) {
-        tx.update(featuredReceiverRef, { stars: increment(giftStars) });
-      }
-    });
-
-    showGiftAlert(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}!`);
+    // 🎁 Replace plain alert with a clean animated alert
+    showGiftAlert(`You sent ${giftStars} stars ⭐ to ${host.chatId}!`);
   } catch (err) {
-    console.error("❌ Gift sending failed:", err);
-    showGiftAlert(`⚠️ Something went wrong: ${err.message}`);
+    console.error("Gift sending failed:", err);
+    showGiftAlert("⚠️ Something went wrong sending your stars.");
   }
 });
-
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
   e.preventDefault();
