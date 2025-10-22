@@ -1277,18 +1277,14 @@ giftSlider.addEventListener("input", () => {
 });
 
 /* ---------- Send gift ---------- */
-/* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
   try {
     const host = hosts[currentIndex];
     if (!host?.id) {
-      console.warn("⚠️ No host selected or host.id missing");
       showGiftAlert("⚠️ No host selected.");
       return;
     }
-
     if (!currentUser) {
-      console.warn("⚠️ You must be logged in to send stars");
       showGiftAlert("Please log in to send stars ⭐");
       return;
     }
@@ -1300,54 +1296,31 @@ giftBtn.addEventListener("click", async () => {
     }
 
     const senderRef = doc(db, "users", currentUser.uid);
-    const receiverUserRef = doc(db, "users", host.id);
-    const featuredSenderRef = doc(db, "featuredHosts", currentUser.uid);
+    const receiverRef = doc(db, "users", host.id);
     const featuredReceiverRef = doc(db, "featuredHosts", host.id);
 
-    const senderSnap = await getDoc(senderRef);
-    if (!senderSnap.exists()) {
-      showGiftAlert("Your user record doesn’t exist ⚠️");
-      return;
-    }
-
-    const senderData = senderSnap.data();
-    const currentStars = senderData.stars || 0;
-
-    if (currentStars < giftStars) {
-      showGiftAlert(`You only have ${currentStars} ⭐ — not enough to send ${giftStars}.`);
-      return;
-    }
-
-    // ✅ Fully synced transaction
     await runTransaction(db, async (tx) => {
-      const fromSnap = await tx.get(senderRef);
-      const toSnap = await tx.get(receiverUserRef);
+      const senderSnap = await tx.get(senderRef);
+      const receiverSnap = await tx.get(receiverRef);
 
-      if (!toSnap.exists()) {
-        // auto-create receiver if missing
-        tx.set(receiverUserRef, { stars: 0, starsGifted: 0 }, { merge: true });
-      }
+      if (!senderSnap.exists()) throw new Error("Your user record not found.");
+      if (!receiverSnap.exists()) tx.set(receiverRef, { stars: 0, starsGifted: 0 }, { merge: true });
 
-      tx.update(senderRef, {
-        stars: increment(-giftStars),
-        starsGifted: increment(giftStars)
-      });
+      const senderData = senderSnap.data();
+      if ((senderData.stars || 0) < giftStars) throw new Error("Insufficient stars");
 
-      tx.update(receiverUserRef, {
-        stars: increment(giftStars)
-      });
+      // --- Update users only ---
+      tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
+      tx.update(receiverRef, { stars: increment(giftStars) });
 
-      // featuredHosts sync
-      tx.set(featuredSenderRef, { starsGifted: increment(giftStars) }, { merge: true });
+      // --- FEATURED HOSTS: minimal fields only ---
       tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
     });
 
-    console.log(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}`);
-
-    showGiftAlert(`You sent ${giftStars} stars ⭐ to ${host.chatId}!`);
+    showGiftAlert(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}!`);
   } catch (err) {
     console.error("❌ Gift sending failed:", err);
-    showGiftAlert("⚠️ Something went wrong sending your stars.");
+    showGiftAlert(`⚠️ Something went wrong: ${err.message}`);
   }
 });
 /* ---------- Navigation ---------- */
