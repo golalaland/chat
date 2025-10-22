@@ -312,19 +312,18 @@ submitAnswersBtn.style.opacity = '0.6';
     loadingBar.style.width = '0%';
     trainEmoji.style.left = '0px';
   }
-
-  /* ---------------- start / end train ---------------- */
-  function startTrain(){
+/* ---------------- start / end train ---------------- */
+function startTrain(){
     // ensure pot open
     if ((getStoredPot() ?? INITIAL_POT) <= 0){
-      showPopup('🚧 Station closed for today. Come back tomorrow.');
-      return;
+        showPopup('🚧 Station closed for today. Come back tomorrow.');
+        return;
     }
     // star check
     const curStars = parseInt(starCountEl.textContent,10) || 0;
     if (curStars < STAR_COST){
-      showPopup('Not enough stars to join.');
-      return;
+        showPopup('Not enough stars to join.');
+        return;
     }
     // deduct star cost
     starCountEl.textContent = (curStars - STAR_COST);
@@ -333,67 +332,76 @@ submitAnswersBtn.style.opacity = '0.6';
     trainActive = true;
     joinTrainBtn.style.display = 'none';
     generateProblems();
-    
- // show problem board + button
-problemBoard.classList.remove('hidden');
-submitAnswersBtn.classList.remove('hidden');
-submitAnswersBtn.style.display = 'block';
-submitAnswersBtn.disabled = false;
-submitAnswersBtn.style.opacity = '0.6';
 
-    // start timer & sound
+    // show problem board + button
+    problemBoard.classList.remove('hidden');
+    submitAnswersBtn.classList.remove('hidden');
+    submitAnswersBtn.style.display = 'block';
+    submitAnswersBtn.disabled = false;
+    submitAnswersBtn.style.opacity = '0.6';
+
+    // start timer & ambience sound
     startLoadingBar();
-    playAudio(SOUND_PATHS.whistle);
-  }
 
-  function endTrain(success, ticketNumber=null){
+    // play looping train whistle ambience if not already playing
+    if (!trainAmbience) {
+        trainAmbience = playAudio(SOUND_PATHS.whistle, { loop: true, volume: 0.4 });
+    }
+}
+
+function endTrain(success, ticketNumber=null){
     stopLoadingBar();
 
-  // hide problems & submit
-problemBoard.classList.add('hidden');
-submitAnswersBtn.classList.add('hidden');
-submitAnswersBtn.style.display = 'none';
+    // stop train ambience
+    if (trainAmbience) {
+        trainAmbience.pause();
+        trainAmbience = null;
+    }
+
+    // hide problems & submit
+    problemBoard.classList.add('hidden');
+    submitAnswersBtn.classList.add('hidden');
+    submitAnswersBtn.style.display = 'none';
 
     // show join again only if pot >0
     if ((getStoredPot() ?? INITIAL_POT) > 0){
-      joinTrainBtn.style.display = 'block';
-      joinTrainBtn.disabled = false;
-      joinTrainBtn.style.opacity = '1';
+        joinTrainBtn.style.display = 'block';
+        joinTrainBtn.disabled = false;
+        joinTrainBtn.style.opacity = '1';
     } else {
-      joinTrainBtn.style.display = 'block';
-      joinTrainBtn.disabled = true;
-      joinTrainBtn.style.opacity = '0.5';
+        joinTrainBtn.style.display = 'block';
+        joinTrainBtn.disabled = true;
+        joinTrainBtn.style.opacity = '0.5';
     }
 
     if (success){
-      // give rewards
-      const oldCash = parseInt(cashCountEl.textContent.replace(/,/g,''),10) || 0;
-      const newCash = oldCash + REWARD_TO_USER;
-      cashCountEl.textContent = newCash.toLocaleString();
+        // give rewards
+        const oldCash = parseInt(cashCountEl.textContent.replace(/,/g,''),10) || 0;
+        const newCash = oldCash + REWARD_TO_USER;
+        cashCountEl.textContent = newCash.toLocaleString();
 
-      const oldStars = parseInt(starCountEl.textContent,10) || 0;
-      const newStars = oldStars + STARS_PER_WIN;
-      starCountEl.textContent = newStars;
+        const oldStars = parseInt(starCountEl.textContent,10) || 0;
+        const newStars = oldStars + STARS_PER_WIN;
+        starCountEl.textContent = newStars;
 
-      // deduct pot
-      let pot = getStoredPot() ?? INITIAL_POT;
-      pot = Math.max(0, pot - DEDUCT_PER_WIN);
-      setStoredPot(pot);
+        // deduct pot
+        let pot = getStoredPot() ?? INITIAL_POT;
+        pot = Math.max(0, pot - DEDUCT_PER_WIN);
+        setStoredPot(pot);
 
-      const dest = trainDestinationEl?.textContent || 'your destination';
-      const tnum = ticketNumber || '---';
+        const dest = trainDestinationEl?.textContent || 'your destination';
+        const tnum = ticketNumber || '---';
 
-      showPopup(`🎫 You’ve secured your ${dest} train ticket number ${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
-      playAudio(SOUND_PATHS.ding);
+        showPopup(`🎫 You’ve secured your ${dest} train ticket number ${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
+        playAudio(SOUND_PATHS.ding);
 
-      maybeShowHalfwayAlert();
+        maybeShowHalfwayAlert();
 
-      if (pot <= 0) handleStationClosed();
+        if (pot <= 0) handleStationClosed();
     } else {
-      showPopup('Train left! You got nothing 😢', 2200);
+        showPopup('Train left! You missed Train! ☹️', 2200);
     }
-  }
-
+}
   /* ---------------- submit answers handler ---------------- */
   submitAnswersBtn.addEventListener('click', () => {
     if (!trainActive) return;
