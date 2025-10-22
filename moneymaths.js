@@ -1,168 +1,152 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Money Train</title>
-<link rel="icon" href="data:," />
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:#000;
-  --card:#111;
-  --accent:#FF1493;
-  --glass: rgba(255,255,255,0.03);
-  --text:#fff;
+/* ---------------- Sample User Data ---------------- */
+let currentUser = {
+  uid: 'guest001',
+  name: 'GUEST 0000',
+  stars: 50,
+  cash: 0
+};
+document.getElementById('profileName').textContent = currentUser.name;
+document.getElementById('starCount').textContent = currentUser.stars;
+document.getElementById('cashCount').textContent = currentUser.cash;
+
+/* ---------------- DOM References ---------------- */
+const joinTrainBtn = document.getElementById('joinTrainBtn');
+const starPopup = document.getElementById('starPopup');
+const problemBoard = document.getElementById('problemBoard');
+const loadingBar = document.getElementById('loadingBar');
+const trainEmoji = document.getElementById('trainEmoji');
+const dailyPotEl = document.getElementById('dailyPot');
+
+/* ---------------- Config ---------------- */
+const starCost = 10;
+const numberOfBlocks = 8;
+const trainDuration = 39000; // 39 seconds
+const cities = ['New York', 'Tokyo', 'Paris', 'London', 'Dubai', 'Sydney', 'Berlin', 'Moscow', 'Rome', 'Toronto'];
+
+/* ---------------- Utility ---------------- */
+function showStarPopup(text) {
+  starPopup.textContent = text;
+  starPopup.style.display = "block";
+  setTimeout(() => { starPopup.style.display = "none"; }, 1500);
 }
 
-html, body {
-  margin:0; padding:0;
-  height:100%;
-  font-family:'Inter', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  display:flex;
-  justify-content:center;
-  overflow-x:hidden;
-  touch-action: manipulation; /* Prevent zoom on mobile input */
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-#appWrapper {
-  width:100%; max-width:480px;
-  display:flex; flex-direction:column; height:100%;
-  position:relative;
+/* ---------------- Modal Confirmation ---------------- */
+function confirmJoinTrain() {
+  const confirmed = confirm(`Joining the train costs ${starCost}⭐. Proceed?`);
+  if (!confirmed) return false;
+  if (currentUser.stars < starCost) {
+    showStarPopup("Not enough stars!");
+    return false;
+  }
+  currentUser.stars -= starCost;
+  document.getElementById('starCount').textContent = currentUser.stars;
+  return true;
 }
 
-/* Header */
-#gameHeader {text-align:center; margin-top:10px;}
-#welcomeText {font-family:'Press Start 2P', cursive; font-size:12px; color:var(--accent);}
-#scrambleText {font-family:'Press Start 2P', cursive; font-size:22px; color:var(--accent); margin-top:2px;}
-
-/* Terminal Info */
-#terminalInfo {
-  text-align:center;
-  margin:6px 0;
-  font-size:12px;
-  border:1px solid rgba(255,255,255,0.1);
-  padding:6px;
-  border-radius:8px;
+/* ---------------- Train Terminal Info ---------------- */
+function createTrainTerminalInfo() {
+  const terminalDiv = document.createElement('div');
+  terminalDiv.style.textAlign = 'center';
+  terminalDiv.style.margin = '10px 0';
+  terminalDiv.style.color = '#FF8C00';
+  terminalDiv.style.fontWeight = '700';
+  terminalDiv.innerHTML = `
+    Train: Money Express 🚂<br>
+    Date & Time: ${new Date().toLocaleString()}<br>
+    Destination: ${cities[randomInt(0, cities.length - 1)]}
+  `;
+  problemBoard.prepend(terminalDiv);
 }
-.terminal-field {margin:2px 0;}
 
-/* Daily Cash Reward */
-#dailyReward {
-  display:flex; justify-content:center; gap:8px; align-items:center; margin:6px 0;
+/* ---------------- Problem Generation ---------------- */
+function generateProblems() {
+  problemBoard.innerHTML = ""; // Clear previous
+  createTrainTerminalInfo();
+
+  for (let i = 0; i < numberOfBlocks; i++) {
+    const a = randomInt(2, 12);
+    const b = randomInt(2, 12);
+    const input = document.createElement('input');
+    input.className = 'problemInput';
+    input.dataset.answer = a * b;
+    input.placeholder = `${a} x ${b}`;
+    input.type = 'text';
+    problemBoard.appendChild(input);
+  }
+
+  // Re-add Join Train button below blocks
+  const joinBtnClone = joinTrainBtn.cloneNode(true);
+  joinBtnClone.id = 'joinTrainBtnPlay';
+  problemBoard.appendChild(joinBtnClone);
+
+  joinBtnClone.addEventListener('click', () => {
+    checkAllAnswers(joinBtnClone);
+  });
 }
-#toggleCurrency {cursor:pointer; color:var(--accent);}
 
-/* Loading Bar */
-#loadingContainer {width:90%; max-width:480px; margin:10px auto; background:#111; border-radius:12px; overflow:hidden;}
-#loadingBar {width:0%; height:16px; background:var(--accent);}
-#trainEmoji {position:absolute; left:0; top:-8px; font-size:24px;}
+/* ---------------- Answer Check ---------------- */
+function checkAllAnswers(btn) {
+  const inputs = problemBoard.querySelectorAll('.problemInput');
+  let allCorrect = true;
+  inputs.forEach(input => {
+    const val = parseInt(input.value);
+    if (val !== parseInt(input.dataset.answer)) allCorrect = false;
+  });
 
-/* Problem Blocks */
-#problemBoard {text-align:center; margin:8px 0; display:flex; flex-wrap:wrap; justify-content:center; gap:6px;}
-.problemInput {width:60px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); background:#0e0e0e; color:#fff; text-align:center; font-weight:700; font-size:14px;}
-
-/* Buttons */
-.gameBtn {
-  display:block; margin:12px auto;
-  padding:10px 18px;
-  border-radius:999px;
-  background: linear-gradient(90deg,#FF1493,#FF8C00);
-  border:none;
-  color:var(--accent);
-  font-weight:700;
-  font-size:16px;
-  cursor:pointer;
-  animation: flicker 2s infinite alternate;
+  if (allCorrect) {
+    const rewardStars = numberOfBlocks * 5;
+    const rewardCash = numberOfBlocks * 50;
+    currentUser.stars += rewardStars;
+    currentUser.cash += rewardCash;
+    document.getElementById('starCount').textContent = currentUser.stars;
+    document.getElementById('cashCount').textContent = currentUser.cash;
+    showStarPopup(`+${rewardStars}⭐ & ₦${rewardCash}`);
+    btn.disabled = true;
+  } else {
+    showStarPopup("Incorrect answers! Train left without you!");
+    btn.disabled = true;
+  }
 }
-@keyframes flicker {0%{opacity:1;}50%{opacity:0.6;}100%{opacity:1;}}
 
-/* Profile */
-.profile {position:fixed; bottom:60px; width:100%; max-width:480px; left:0; display:flex; justify-content:center; z-index:99;}
-.profile-card {background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:6px; text-align:center;}
-.profile-name {font-weight:800; font-size:14px; color:var(--accent);}
-.profile-info {font-size:12px; color:#fff;}
+/* ---------------- Loading Animation ---------------- */
+function animateTrain() {
+  loadingBar.style.width = '0%';
+  trainEmoji.style.left = '0px';
+  const startTime = Date.now();
 
-/* Star popup */
-.star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
+  const interval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / trainDuration, 1);
+    loadingBar.style.width = `${progress * 100}%`;
+    trainEmoji.style.left = `${progress * (loadingBar.offsetWidth - 24)}px`;
 
-/* Modal */
-#confirmModal {
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  background: rgba(0,0,0,0.8);
-  display:none; justify-content:center; align-items:center;
-  z-index:1000;
+    if (progress >= 1) {
+      clearInterval(interval);
+      showStarPopup("Train has left!");
+      problemBoard.querySelectorAll('input').forEach(input => input.disabled = true);
+      const btn = problemBoard.querySelector('#joinTrainBtnPlay');
+      if (btn) btn.disabled = true;
+    }
+  }, 50);
 }
-.modal-content {
-  background:var(--card); padding:20px; border-radius:12px; text-align:center;
-}
-.modalBtn {
-  padding:10px 18px; margin:6px; border-radius:999px; border:none; cursor:pointer;
-  font-weight:700; color:#fff;
-}
-.modalBtn.confirm {background:linear-gradient(90deg,#00FF99,#00CCFF);}
-.modalBtn.cancel {background:linear-gradient(90deg,#FF1493,#FF8C00);}
-</style>
-</head>
-<body>
-<div id="appWrapper">
-  <!-- Header -->
-  <div id="gameHeader">
-    <div id="welcomeText">WELCOME TO</div>
-    <div id="scrambleText">MONEY TRAIN 🚂</div>
-  </div>
 
-  <!-- Terminal Info -->
-  <div id="terminalInfo">
-    <div class="terminal-field" id="trainName">Train: ---</div>
-    <div class="terminal-field" id="trainDateTime">Date/Time: ---</div>
-    <div class="terminal-field" id="trainDestination">Destination: ---</div>
-  </div>
+/* ---------------- Daily Reward Toggle ---------------- */
+let dailyRewardNaira = true;
+dailyPotEl.addEventListener('click', () => {
+  dailyRewardNaira = !dailyRewardNaira;
+  dailyPotEl.textContent = dailyRewardNaira ? '1000' : '2.5';
+  dailyPotEl.parentElement.innerHTML = `Cash Reward Available Today: ${dailyRewardNaira ? '₦' : '$'}<span id="dailyPot">${dailyPotEl.textContent}</span>`;
+});
 
-  <!-- Daily Reward -->
-  <div id="dailyReward">
-    <span>Cash Reward Available Today:</span>
-    <span id="dailyPot">0</span>
-    <span id="toggleCurrency">(₦)</span>
-  </div>
-
-  <!-- Loading Bar -->
-  <div id="loadingContainer">
-    <div id="loadingBar"></div>
-    <div id="trainEmoji">🚂</div>
-  </div>
-
-  <!-- Problem Blocks -->
-  <div id="problemBoard"></div>
-
-  <!-- Buttons -->
-  <button id="joinTrainBtn" class="gameBtn">Join Money Train</button>
-
-  <!-- Profile panel -->
-  <div class="profile" id="profilePanel">
-    <div class="profile-card">
-      <div class="profile-name" id="profileName">GUEST 0000</div>
-      <div class="profile-info">STARS: <span id="starCount">0</span>⭐</div>
-      <div class="profile-info">CASH: ₦<span id="cashCount">0</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- Star popup -->
-<div class="star-popup" id="starPopup">+1 ⭐</div>
-
-<!-- Join Confirmation Modal -->
-<div id="confirmModal">
-  <div class="modal-content">
-    <h3>Join the Money Train?</h3>
-    <p>This will cost <span id="modalStarCost">10</span>⭐. Are you sure?</p>
-    <button class="modalBtn confirm" id="modalConfirmBtn">Yes</button>
-    <button class="modalBtn cancel" id="modalCancelBtn">No</button>
-  </div>
-</div>
-
-<script src="moneymaths.js"></script>
-</body>
-</html>
+/* ---------------- Join Train Click ---------------- */
+joinTrainBtn.addEventListener('click', () => {
+  if (!confirmJoinTrain()) return;
+  problemBoard.style.display = 'flex';
+  generateProblems();
+  animateTrain();
+  joinTrainBtn.style.display = 'none';
+});
