@@ -1,145 +1,102 @@
-let currentUser = { uid:'guest001', name:'GUEST 0000', stars:100, cash:0 };
+/* ---------------- User & Game Config ---------------- */
+let currentUser = {
+  uid: 'guest001',
+  name: 'GUEST 0000',
+  stars: 0,
+  cash: 0,
+  isAdmin: true // toggle admin rights
+};
+
 document.getElementById('profileName').textContent = currentUser.name;
 document.getElementById('starCount').textContent = currentUser.stars;
 document.getElementById('cashCount').textContent = currentUser.cash;
 
-const MAX_ENTRIES = 53;
-const BUZZ_COST = 5;
-let REWARD_STARS = 20;
-let REWARD_CASH = 50;
-const SESSION_TIME = 60; 
-let entriesCount = 0;
-let currentSession = null;
-let cooldownTimer = null;
+let heavyMoneyMode = false;
+let sessionCount = 0;
+let maxEntries = 53;
+let currentEntries = 0;
 
-const expressionsEl = document.getElementById('expressions');
-const buzzInput = document.getElementById('buzzInput');
-const messagesEl = document.getElementById('messages');
+/* ---------------- Maths Session Generator ---------------- */
+function generateMathSession() {
+  const ops = ['+', 'x']; // no subtraction
+  const numbers = [];
+  const answers = [];
+  
+  while(numbers.length < 8){
+    let a = Math.floor(Math.random()*9)+1;
+    let b = Math.floor(Math.random()*9)+1;
+    
+    if(a === b) b = a; // same number allowed
+    let op = ops[Math.floor(Math.random()*ops.length)];
+    
+    numbers.push([a, op, b]);
+    answers.push(op==='+' ? a+b : a*b);
+  }
+  
+  // create display
+  const boardEl = document.getElementById('mathBoard');
+  boardEl.innerHTML = '';
+  numbers.forEach(([a, op, b])=>{
+    const line = document.createElement('div');
+    line.textContent = ` ${a}\n${op}${b}`;
+    line.style.whiteSpace = 'pre';
+    boardEl.appendChild(line);
+  });
+  
+  // create cumulative answer string (concatenation)
+  const cumulative = answers.join('');
+  
+  return cumulative;
+}
+
+/* ---------------- Star popup ---------------- */
 const starPopup = document.getElementById('starPopup');
-const wordMarquee = document.getElementById('wordMarquee');
-const countdownEl = document.getElementById('countdown');
-
-let HARD_MODE = false;
-
 function showStarPopup(text){
   starPopup.textContent = text;
-  starPopup.style.display = "block";
-  setTimeout(()=>starPopup.style.display="none",1500);
+  starPopup.style.display='block';
+  setTimeout(()=>{starPopup.style.display='none';},1500);
 }
 
-function getRandomInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-
-function generateSession(){
-  let problems=[], cumulative=0;
-  for(let i=0;i<8;i++){
-    let a=getRandomInt(HARD_MODE?10:1, HARD_MODE?50:20);
-    let b=getRandomInt(HARD_MODE?10:1, HARD_MODE?50:20);
-    let op = Math.random()<0.5?"+":"-";
-
-    if(op==="-" && b>a) [a,b] = [b,a]; 
-    if(op==="-" && a===b) a++; 
-    if(HARD_MODE && Math.random()<0.3) op="*";
-
-    let answer;
-    if(op==="+") answer=a+b;
-    else if(op==="-") answer=a-b;
-    else answer=a*b;
-
-    cumulative+=answer;
-    problems.push({expr:`${a} ${op} ${b}`, answer});
-  }
-
-  currentSession={problems, cumulative: cumulative.toString(), entries:0};
-  entriesCount=0;
-
-  // Right aligned
-  expressionsEl.innerHTML = problems.map(p=>p.expr.padStart(7,' ')).join("<br>");
-  countdownEl.style.display="block";
-
-  let timer=SESSION_TIME;
-  countdownEl.textContent=`Time left: ${timer}s`;
-  clearInterval(cooldownTimer);
-  cooldownTimer=setInterval(()=>{
-    timer--;
-    countdownEl.textContent=`Time left: ${timer}s`;
-    if(timer<=0){
-      clearInterval(cooldownTimer);
-      startCooldown();
-    }
-  },1000);
-}
-
-function startCooldown(minutes=5){
-  expressionsEl.innerHTML="";
-  countdownEl.style.display="block";
-  let timer=minutes*60;
-  cooldownTimer=setInterval(()=>{
-    timer--;
-    const min=Math.floor(timer/60);
-    const sec=timer%60;
-    countdownEl.textContent=`Next session in ${min}:${sec<10?'0'+sec:sec}`;
-    if(timer<=0){
-      clearInterval(cooldownTimer);
-      generateSession();
-    }
-  },1000);
-}
-
-function handleBuzz(){
-  if(entriesCount>=MAX_ENTRIES){
-    showStarPopup("Session full! Wait for next session.");
+/* ---------------- Buzz Submission ---------------- */
+document.getElementById('buzzBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('bottomInput');
+  const val = input.value.trim();
+  
+  if(!val){showStarPopup('Enter an answer!'); return;}
+  
+  if(currentEntries >= maxEntries){
+    showStarPopup('This session is over! Wait for next round.');
+    input.value='';
     return;
   }
-  if(currentUser.stars<BUZZ_COST){
-    showStarPopup("Not enough stars to buzz!");
-    return;
+  
+  if(val === currentCumulative){
+    currentEntries++;
+    currentUser.stars += 5;
+    currentUser.cash += heavyMoneyMode ? 200 : 50;
+    document.getElementById('starCount').textContent=currentUser.stars;
+    document.getElementById('cashCount').textContent=currentUser.cash;
+    showStarPopup('Correct! ⭐');
+  } else {
+    showStarPopup('Wrong!');
   }
+  input.value='';
+});
 
-  const input=buzzInput.value.trim();
-  if(!input){ showStarPopup("Enter cumulative answer!"); return; }
+/* ---------------- Rules Button ---------------- */
+document.getElementById('rulesBtn').addEventListener('click', ()=>{
+  alert("🎮 MONEY MATHS RULES:\n- Solve each vertical math in your head.\n- Concatenate the answers in order.\n- Enter full cumulative string.\n- Max 53 correct entries per session.\n- Heavy Money Mode (admin only) = bigger rewards!");
+});
 
-  currentUser.stars-=BUZZ_COST;
-  entriesCount++;
+/* ---------------- Start New Session ---------------- */
+let currentCumulative = generateMathSession();
 
-  if(input===currentSession.cumulative){
-    REWARD_STARS = HARD_MODE?50:20;
-    REWARD_CASH = HARD_MODE?200:50;
-    currentUser.stars+=REWARD_STARS;
-    currentUser.cash+=REWARD_CASH;
-    showStarPopup(`🎉 Correct! +${REWARD_STARS}⭐ & ₦${REWARD_CASH}`);
-    const span=document.createElement("span");
-    span.textContent=currentSession.problems.map(p=>p.expr).join(", ") + " = "+currentSession.cumulative;
-    wordMarquee.appendChild(span);
-  } else showStarPopup("❌ Wrong answer!");
-
-  document.getElementById('starCount').textContent=currentUser.stars;
-  document.getElementById('cashCount').textContent=currentUser.cash;
-
-  const msg=document.createElement('div');
-  msg.textContent=currentUser.name+": "+input + (input===currentSession.cumulative?" ✅":" ❌");
-  messagesEl.appendChild(msg);
-  messagesEl.scrollTop=messagesEl.scrollHeight;
-
-  buzzInput.value="";
-  if(entriesCount>=MAX_ENTRIES) startCooldown();
+function toggleHeavyMoneyMode(){
+  if(currentUser.isAdmin){
+    heavyMoneyMode = !heavyMoneyMode;
+    alert(`Heavy Money Mode: ${heavyMoneyMode ? 'ON' : 'OFF'}`);
+  }
 }
 
-document.getElementById('buzzBtn').addEventListener('click',handleBuzz);
-document.getElementById('rulesBtn').addEventListener('click',()=>{
-  alert(`🎮 Money Maths Rules:
-- 8 vertical math problems per session.
-- Input cumulative answer in one go.
-- Each buzz costs ${BUZZ_COST}⭐.
-- Correct gives stars & cash.
-- Max ${MAX_ENTRIES} correct entries per session.
-- 60 seconds per session, new session after cooldown.
-- Heavy Money mode increases difficulty & rewards.`);
-});
-
-document.getElementById('hardModeBtn').addEventListener('click',()=>{
-  HARD_MODE=!HARD_MODE;
-  alert(HARD_MODE?"💸 Heavy Money ON!":"💰 Heavy Money OFF!");
-  generateSession();
-});
-
-generateSession();
+// optional: admin can toggle by console
+window.toggleHeavyMoneyMode = toggleHeavyMoneyMode;
