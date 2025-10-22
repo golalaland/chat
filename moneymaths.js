@@ -19,7 +19,7 @@ const solveBtn = document.getElementById('solveBtn');
 const starPopup = document.getElementById('starPopup');
 const messagesEl = document.getElementById('messages');
 
-const STAR_COST = 10;
+const STAR_COST = 1;
 document.getElementById('starCost').textContent = STAR_COST;
 
 /* ---------------- Helpers ---------------- */
