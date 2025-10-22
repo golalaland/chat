@@ -2,125 +2,123 @@
 let currentUser = {
   uid: 'guest001',
   name: 'GUEST 0000',
-  stars: 50, // starting stars
+  stars: 50,  // Start with some stars so users can join
   cash: 0
 };
+
+const starCost = 10; // Stars needed to join
 
 document.getElementById('profileName').textContent = currentUser.name;
 document.getElementById('starCount').textContent = currentUser.stars;
 document.getElementById('cashCount').textContent = currentUser.cash;
 
-const starPopup = document.getElementById('starPopup');
-
-function showStarPopup(text) {
-  starPopup.textContent = text;
-  starPopup.style.display = "block";
-  setTimeout(()=>{starPopup.style.display="none";},1500);
-}
-
-/* ---------------- Variables ---------------- */
-const joinBtn = document.getElementById('joinTrainBtn');
-const starCost = parseInt(document.getElementById('starCost').textContent);
+/* ---------------- Elements ---------------- */
+const joinTrainBtn = document.getElementById('joinTrainBtn');
 const problemBoard = document.getElementById('problemBoard');
-const problemBlocksEl = document.getElementById('problemBlocks');
-const solveBtn = document.getElementById('solveBtn');
 const loadingBar = document.getElementById('loadingBar');
+const trainEmoji = document.getElementById('trainEmoji');
+const starPopup = document.getElementById('starPopup');
+const dailyPotEl = document.getElementById('dailyPot');
 
-let problems = [];
-let loadingInterval = null;
-let timeElapsed = 0;
-const loadingDuration = 39; // seconds
+const NUM_BLOCKS = 8;
+let currentProblems = [];
+let loadingInterval;
+let loadingProgress = 0;
 let trainActive = false;
 
-/* ---------------- Utility Functions ---------------- */
-function generateProblem() {
-  const a = Math.floor(Math.random() * 20) + 1;
-  const b = Math.floor(Math.random() * 20) + 1;
-  const op = Math.random() < 0.5 ? '+' : '-';
-  const answer = op === '+' ? a + b : a - b;
-  return { question: `${a} ${op} ${b}`, answer };
+/* ---------------- Helpers ---------------- */
+function showStarPopup(text){
+  starPopup.textContent = text;
+  starPopup.style.display = 'block';
+  setTimeout(()=>{ starPopup.style.display = 'none'; }, 1500);
 }
 
-function startLoadingBar() {
-  loadingBar.style.width = "0%";
-  timeElapsed = 0;
+function generateProblems(){
+  currentProblems = [];
+  problemBoard.innerHTML = '';
+  for(let i=0;i<NUM_BLOCKS;i++){
+    let a = Math.floor(Math.random()*20)+1;
+    let b = Math.floor(Math.random()*20)+1;
+    // Ensure no negative results
+    if(a < b){ [a,b] = [b,a]; }
+    currentProblems.push({a,b,ans:a+b});
+    
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'problemInput';
+    input.placeholder = `${a} + ${b}`;
+    problemBoard.appendChild(input);
+  }
+}
 
-  loadingInterval = setInterval(() => {
-    timeElapsed++;
-    const percent = (timeElapsed / loadingDuration) * 100;
-    loadingBar.style.width = `${percent}%`;
-
-    if(timeElapsed >= loadingDuration) {
+/* ---------------- Loading Bar ---------------- */
+function startLoadingBar(){
+  loadingProgress = 0;
+  loadingBar.style.width = '0%';
+  trainEmoji.style.left = '0px';
+  loadingInterval = setInterval(()=>{
+    loadingProgress++;
+    loadingBar.style.width = `${(loadingProgress/39)*100}%`;
+    trainEmoji.style.left = `${(loadingProgress/39)*100}%`;
+    if(loadingProgress >= 39){
       clearInterval(loadingInterval);
       trainActive = false;
-      problemBoard.style.display = 'none';
-      showStarPopup("🚂 Train has left! No reward!");
+      endTrain(false); // Train left, player didn't finish
     }
-  }, 1000);
+  },1000); // 39 seconds total
 }
 
-/* ---------------- Join Train ---------------- */
-joinBtn.addEventListener('click', () => {
-  if(currentUser.stars < starCost) {
+/* ---------------- Train Logic ---------------- */
+function startTrain(){
+  if(currentUser.stars < starCost){
     showStarPopup("Not enough stars!");
     return;
   }
-
-  // Deduct stars
   currentUser.stars -= starCost;
   document.getElementById('starCount').textContent = currentUser.stars;
 
-  // Generate 8 problems
-  problems = [];
-  problemBlocksEl.innerHTML = '';
-  for(let i=0;i<8;i++){
-    const p = generateProblem();
-    problems.push(p);
-
-    const input = document.createElement('input');
-    input.className = 'problemInput';
-    input.type = 'number';
-    input.placeholder = p.question;
-    problemBlocksEl.appendChild(input);
-  }
-
-  problemBoard.style.display = 'block';
+  generateProblems();
+  problemBoard.style.display = 'flex';
+  joinTrainBtn.textContent = 'Submit Answers';
+  joinTrainBtn.style.background = 'linear-gradient(90deg,#00FF99,#00CCFF)';
   trainActive = true;
   startLoadingBar();
-});
+}
 
-/* ---------------- Solve Button ---------------- */
-solveBtn.addEventListener('click', () => {
-  if(!trainActive) {
-    showStarPopup("Train is gone!");
-    return;
-  }
-
-  const inputs = document.querySelectorAll('.problemInput');
-  let allCorrect = true;
-
-  inputs.forEach((input, i) => {
-    if(parseInt(input.value) !== problems[i].answer){
-      allCorrect = false;
-    }
-  });
-
-  if(allCorrect){
-    // Reward user
-    const earnedStars = 15;
-    const earnedCash = 100;
-    currentUser.stars += earnedStars;
-    currentUser.cash += earnedCash;
+/* ---------------- End Train ---------------- */
+function endTrain(success){
+  problemBoard.style.display = 'none';
+  joinTrainBtn.textContent = `Join Train (-${starCost}⭐)`;
+  joinTrainBtn.style.background = 'linear-gradient(90deg,#FF1493,#FF8C00)';
+  if(success){
+    const rewardStars = 5 * NUM_BLOCKS;
+    const rewardCash = 50 * NUM_BLOCKS;
+    currentUser.stars += rewardStars;
+    currentUser.cash += rewardCash;
     document.getElementById('starCount').textContent = currentUser.stars;
     document.getElementById('cashCount').textContent = currentUser.cash;
-
-    showStarPopup(`+${earnedStars}⭐ +₦${earnedCash}`);
+    dailyPotEl.textContent = parseInt(dailyPotEl.textContent) + rewardCash;
+    showStarPopup(`+${rewardStars}⭐ +₦${rewardCash}`);
   } else {
-    showStarPopup("❌ Some answers are wrong!");
+    showStarPopup("Train left! You got nothing 😢");
   }
+}
 
-  clearInterval(loadingInterval);
-  trainActive = false;
-  problemBoard.style.display = 'none';
-  loadingBar.style.width = '0%';
+/* ---------------- Button Event ---------------- */
+joinTrainBtn.addEventListener('click', ()=>{
+  if(trainActive){
+    // Validate answers
+    const inputs = document.querySelectorAll('.problemInput');
+    let correct = true;
+    inputs.forEach((inp,i)=>{
+      if(parseInt(inp.value) !== currentProblems[i].ans){
+        correct = false;
+      }
+    });
+    clearInterval(loadingInterval);
+    trainActive = false;
+    endTrain(correct);
+  } else {
+    startTrain();
+  }
 });
