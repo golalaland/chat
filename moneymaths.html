@@ -205,15 +205,16 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 <div id="popup" class="star-popup">+1 ⭐</div>
 
 <script>
-/* ---------------- READY: Money Train local simulation ---------------- */
+/* ---------------- READY: Money Train local simulation (fixed submit + ticket) ---------------- */
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ------------- Config ------------- */
   const INITIAL_POT = 1000000; // ₦1,000,000 start
-  const DEDUCT_PER_WIN = 1000;  // ₦1,000 per win
+  const DEDUCT_PER_WIN = 1000;  // ₦1,000 per win (taken from pot)
   const REWARD_TO_USER = 1000;  // ₦1,000 reward to user per win
   const STARS_PER_WIN = 5 * 8;  // 40 stars (5 * NUM_BLOCKS)
   const NUM_BLOCKS = 8;
+  const STAR_COST = 10; // cost in stars to join each train (enforced)
 
   /* ------------- UI Refs ------------- */
   const joinTrainBtn = document.getElementById('joinTrainBtn');
@@ -234,9 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const profileNameEl = document.getElementById('profileName');
   const starCountEl = document.getElementById('starCount');
   const cashCountEl = document.getElementById('cashCount');
+  const trainDestinationEl = document.getElementById('trainDestination');
 
   /* ------------- Sound Hooks ------------- */
-  // Place mp3 files under /sounds/ with these exact names or leave absent (errors caught)
   function playSound(name, loop=false){
     try {
       const a = new Audio(`./sounds/${name}.mp3`);
@@ -255,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let trainActive = false;
   let currentProblems = [];
 
-  // daily pot stored in localStorage as integer
+  // storage helpers
   function getStoredPot(){
     const raw = localStorage.getItem('moneytrain_pot');
     return raw ? parseInt(raw,10) : null;
@@ -264,31 +265,17 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('moneytrain_pot', String(Math.max(0, Math.floor(v))));
     updatePotUI();
   }
+  function getHalfAlertDate(){ return localStorage.getItem('moneytrain_half_date') || null; }
+  function setHalfAlertDate(s){ localStorage.setItem('moneytrain_half_date', s); }
+  function getPotResetDay(){ return localStorage.getItem('moneytrain_reset_day') || null; }
+  function setPotResetDay(s){ localStorage.setItem('moneytrain_reset_day', s); }
 
-  // store date of last-half-alert shown so it shows once per day
-  function getHalfAlertDate(){
-    return localStorage.getItem('moneytrain_half_date') || null;
-  }
-  function setHalfAlertDate(dateStr){
-    localStorage.setItem('moneytrain_half_date', dateStr);
-  }
-
-  // store last reset day to reset pot on new day
-  function getPotResetDay(){
-    return localStorage.getItem('moneytrain_reset_day') || null;
-  }
-  function setPotResetDay(dateStr){
-    localStorage.setItem('moneytrain_reset_day', dateStr);
-  }
-
-  // initialize pot (reset at midnight if new day)
   function initializePot(){
     const today = new Date().toISOString().slice(0,10);
     const resetDay = getPotResetDay();
     if (!getStoredPot() || resetDay !== today){
       setStoredPot(INITIAL_POT);
       setPotResetDay(today);
-      // clear half-alert to allow showing again
       setHalfAlertDate('');
     }
   }
@@ -296,17 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePotUI(){
     const pot = getStoredPot() ?? INITIAL_POT;
     dailyPotEl.textContent = pot.toLocaleString();
-    // UI color/terminal messages handled elsewhere
-    // When pot hits 0, trigger closure
     if (pot <= 0){
       handleStationClosed();
     } else {
-      // if pot above 0 and closed overlay visible, reopen
-      if (!closedOverlay.classList.contains('hidden') && !isPastMidnightReset()) {
-        // if pot >0, ensure overlay hidden and join enabled
+      if (!closedOverlay.classList.contains('hidden') && !isPastMidnightReset()){
         closedOverlay.classList.add('hidden');
         joinTrainBtn.disabled = false;
-        joinTrainBtn.style.display = 'block';
+        joinTrainBtn.style.opacity = '1';
       }
     }
   }
@@ -325,15 +308,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elName) elName.textContent = name;
     if (elDate) elDate.textContent = date;
     if (elDest) elDest.textContent = dest;
-    // update modal confirm text
     if (confirmText) confirmText.textContent = `Join ${name} → ${dest}? Ready to play?`;
   }
 
-  function updateTrainTime(){
-    const now = new Date();
-    const timeEl = document.getElementById('trainTime');
-    if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-GB',{hour12:false});
-  }
+  function updateTrainTime(){ const now = new Date(); const timeEl = document.getElementById('trainTime'); if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-GB',{hour12:false}); }
 
   /* ------------- Popup helper ------------- */
   let popupTimeout = null;
@@ -356,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const shownDate = getHalfAlertDate();
     if (pot <= half && shownDate !== today){
       setHalfAlertDate(today);
-      // show popup and small terminal flicker
       showPopup('⚠️ Halfway Mined! The pot is running low — hurry!', 6000);
       const terminal = document.getElementById('trainTerminal');
       if (terminal){
@@ -368,41 +345,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ------------- Station closed / reopen countdown ------------- */
   let countdownTimer = null;
-  function timeToNextMidnight(){
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate()+1);
-    tomorrow.setHours(0,0,0,0);
-    return Math.max(0, tomorrow - now);
-  }
-  function formatHMS(ms){
-    const s = Math.floor(ms/1000);
-    const hh = String(Math.floor(s/3600)).padStart(2,'0');
-    const mm = String(Math.floor((s%3600)/60)).padStart(2,'0');
-    const ss = String(s%60).padStart(2,'0');
-    return `${hh}:${mm}:${ss}`;
-  }
+  function timeToNextMidnight(){ const now = new Date(); const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1); tomorrow.setHours(0,0,0,0); return Math.max(0, tomorrow - now); }
+  function formatHMS(ms){ const s = Math.floor(ms/1000); const hh = String(Math.floor(s/3600)).padStart(2,'0'); const mm = String(Math.floor((s%3600)/60)).padStart(2,'0'); const ss = String(s%60).padStart(2,'0'); return `${hh}:${mm}:${ss}`; }
 
   function handleStationClosed(){
-    // show overlay, disable join
     closedOverlay.classList.remove('hidden');
     joinTrainBtn.disabled = true;
     joinTrainBtn.style.display = 'block';
     joinTrainBtn.style.opacity = '0.5';
-    // start countdown
     if (countdownTimer) clearInterval(countdownTimer);
     function tick(){
       const ms = timeToNextMidnight();
       reopenCountdown.textContent = formatHMS(ms);
       if (ms <= 0){
         clearInterval(countdownTimer);
-        // reset pot at midnight
         resetPotAndReopen();
       }
     }
     tick();
     countdownTimer = setInterval(tick, 1000);
-    // play station closed sound optional
     playSound('train_depart');
   }
 
@@ -410,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setStoredPot(INITIAL_POT);
     const today = new Date().toISOString().slice(0,10);
     setPotResetDay(today);
-    setHalfAlertDate(''); // allow half alert again
+    setHalfAlertDate('');
     closedOverlay.classList.add('hidden');
     joinTrainBtn.disabled = false;
     joinTrainBtn.style.opacity = '1';
@@ -419,11 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showPopup('🔁 Pot reset! Station reopened.', 3500);
   }
 
-  function isPastMidnightReset(){
-    // If stored reset day isn't today, we're past midnight until reset runs
-    const today = new Date().toISOString().slice(0,10);
-    return getPotResetDay() !== today;
-  }
+  function isPastMidnightReset(){ const today = new Date().toISOString().slice(0,10); return getPotResetDay() !== today; }
 
   /* ------------- Problems generator ------------- */
   function generateProblems(){
@@ -473,8 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingProgress = 0;
     loadingBar.style.width = '0%';
     trainEmoji.style.left = '0px';
-    // play train start sound
-    const startAudio = playSound('train_start');
     loadingInterval = setInterval(()=>{
       loadingProgress++;
       const percent = (loadingProgress/39) * 100; // 39 seconds
@@ -483,12 +438,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (loadingProgress >= 39){
         clearInterval(loadingInterval);
         loadingInterval = null;
-        // train leaves, end with failure if still active
         if (trainActive){
           trainActive = false;
           stopLoadingBar();
-          // station leaves: play depart sound
           playSound('train_depart');
+          // if loading expired while user still solving -> fail
           endTrain(false);
         }
       }
@@ -510,48 +464,50 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // star check (you said starCost is internal but we still enforce)
-    if (parseInt(starCountEl.textContent,10) < 1){
+    // star check
+    const curStars = parseInt(starCountEl.textContent,10) || 0;
+    if (curStars < STAR_COST){
       showPopup('Not enough stars to join.');
       return;
     }
 
     // deduct star cost
-    let starVal = parseInt(starCountEl.textContent,10) || 0;
-    starVal = starVal - 1; // you can change logic; originally starCost=10 — adjust if wanted
-    starCountEl.textContent = starVal;
+    starCountEl.textContent = (curStars - STAR_COST);
+
     // set state
     trainActive = true;
-    // hide join, show problems and submit button
+
+    // UI: hide join, show problems & submit button (use direct style to avoid class conflicts)
     joinTrainBtn.style.display = 'none';
     generateProblems();
     problemBoard.classList.remove('hidden');
-    submitAnswersBtn.classList.remove('hidden');
+    submitAnswersBtn.style.display = 'block';
+
     // start loading timer + sound
     startLoadingBar();
     playSound('train_start');
   }
 
-  function endTrain(success){
+  function endTrain(success, ticketNumber=null){
     stopLoadingBar();
-    // hide UI
-    problemBoard.classList.add('hidden');
-    submitAnswersBtn.classList.add('hidden');
 
-    // show join again only if station still open
+    // hide problems & submit
+    problemBoard.classList.add('hidden');
+    submitAnswersBtn.style.display = 'none';
+
+    // show join again only if pot still > 0
     if ((getStoredPot() ?? INITIAL_POT) > 0) {
       joinTrainBtn.style.display = 'block';
       joinTrainBtn.disabled = false;
       joinTrainBtn.style.opacity = '1';
     } else {
-      joinTrainBtn.style.display = 'block'; // keep visible but disabled
+      joinTrainBtn.style.display = 'block';
       joinTrainBtn.disabled = true;
       joinTrainBtn.style.opacity = '0.5';
     }
 
     if (success){
-      // Reward user
-      // add cash and stars
+      // Reward user: update cash and stars
       const oldCash = parseInt(cashCountEl.textContent.replace(/,/g,''),10) || 0;
       const newCash = oldCash + REWARD_TO_USER;
       cashCountEl.textContent = newCash.toLocaleString();
@@ -565,33 +521,30 @@ document.addEventListener('DOMContentLoaded', () => {
       pot = Math.max(0, pot - DEDUCT_PER_WIN);
       setStoredPot(pot);
 
-      // show reward popup
-      showPopup(`💰 You earned ₦${REWARD_TO_USER.toLocaleString()}!`);
+      // ticket message: show destination and ticket number
+      const dest = trainDestinationEl?.textContent || 'your destination';
+      const tnum = ticketNumber || '---';
+      showPopup(`🎫 You’ve secured your ${dest} train ticket number ${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 6000);
       playSound('cha_ching');
 
-      // show halfway alert once per day if crossing threshold
       maybeShowHalfwayAlert();
 
-      // if pot is now empty, trigger closed behavior
-      if (pot <= 0) {
+      if (pot <= 0){
         handleStationClosed();
       }
     } else {
-      // failure
       showPopup('Train left! You got nothing 😢', 2200);
     }
   }
 
-  /* ------------- Submit handler (checks all 8 answers) ------------- */
+  /* ------------- Submit handler (checks all 8 answers + creates ticket) ------------- */
   submitAnswersBtn.addEventListener('click', () => {
-    // ensure train active
     if (!trainActive) return;
-    const inputs = Array.from(document.querySelectorAll('.problemInput'));
 
-    // check for empty fields
+    const inputs = Array.from(document.querySelectorAll('.problemInput'));
+    // check empties:
     const anyEmpty = inputs.some(inp => inp.value === '' || inp.value === null);
     if (anyEmpty){
-      // early submit popup & sound
       showPopup("You're not yet done hashing your train ticket — hurry!", 3000);
       playSound('error_bell');
       return;
@@ -605,15 +558,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isNaN(val) || val !== expected) allCorrect = false;
     });
 
+    // stop timer
     trainActive = false;
-    // stop loading and resolve
     stopLoadingBar();
 
     if (allCorrect){
-      // success flow
-      endTrain(true);
+      // build ticket number by concatenating each answer's string (in order)
+      const answers = inputs.map(inp => String(parseInt(inp.value,10)));
+      const ticketNumber = answers.join('');
+      // success flow -> we pass ticketNumber to endTrain to display message
+      endTrain(true, ticketNumber);
     } else {
-      // wrong answers: show failure & play departure
       showPopup("Some answers are incorrect — train left!", 3000);
       playSound('train_depart');
       endTrain(false);
@@ -622,22 +577,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ------------- Join button + modal wiring ------------- */
   joinTrainBtn.addEventListener('click', () => {
-    // if disabled (closed) do nothing
     if (joinTrainBtn.disabled) return;
-    // show confirm modal (confirmText is set in terminal)
     confirmModal.style.display = 'flex';
-    playSound('train_start', false); // quick start sound (non-looping)
+    playSound('train_whistle_short');
   });
-
-  confirmYes.addEventListener('click', () => {
-    confirmModal.style.display = 'none';
-    startTrain();
-  });
-
-  confirmNo.addEventListener('click', () => {
-    confirmModal.style.display = 'none';
-    // stop any short start sound if playing? we don't keep reference here
-  });
+  confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; startTrain(); });
+  confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; });
 
   /* ------------- Init & timers ------------- */
   function init(){
@@ -647,36 +592,24 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(setTrainTerminal, 60000);
     setInterval(updateTrainTime, 1000);
     updateTrainTime();
-    maybeShowHalfwayAlert(); // check once on load
-    // protect UI visibility
+    maybeShowHalfwayAlert();
     problemBoard.classList.add('hidden');
-    submitAnswersBtn.classList.add('hidden');
+    submitAnswersBtn.style.display = 'none';
 
-    // schedule midnight reset (also check every minute as fallback)
+    // schedule midnight reset
     const msToMid = timeToNextMidnight();
     setTimeout(()=>{ resetPotAndReopen(); }, msToMid + 1000);
-    setInterval(()=>{ // fallback every minute
-      if (isPastMidnightReset()){
-        resetPotAndReopen();
-      }
-    }, 60_000);
+    setInterval(()=>{ if (isPastMidnightReset()){ resetPotAndReopen(); } }, 60_000);
   }
 
   init();
 
-  // Expose some helpers for debugging
+  // Expose debug helpers
   window.moneyTrainLocal = {
     getPot: () => getStoredPot(),
     setPot: (v) => setStoredPot(v),
     resetPotAndReopen,
-    simulateWin: () => {
-      // helper: simulate success for testing (calls endTrain flow)
-      trainActive = true;
-      // fill some dummy problems so submit answers works
-      generateProblems();
-      // directly call endTrain(true) to simulate success: deduct pot and reward
-      endTrain(true);
-    }
+    simulateWin: () => { trainActive = true; generateProblems(); endTrain(true,'TEST-TICKET'); }
   };
 
 }); // DOMContentLoaded end
