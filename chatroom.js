@@ -1280,20 +1280,11 @@ giftSlider.addEventListener("input", () => {
 giftBtn.addEventListener("click", async () => {
   try {
     const host = hosts[currentIndex];
-    if (!host?.id) {
-      showGiftAlert("⚠️ No host selected.");
-      return;
-    }
-    if (!currentUser) {
-      showGiftAlert("Please log in to send stars ⭐");
-      return;
-    }
+    if (!host?.id) return showGiftAlert("⚠️ No host selected.");
+    if (!currentUser) return showGiftAlert("Please log in to send stars ⭐");
 
     const giftStars = parseInt(giftSlider.value, 10);
-    if (isNaN(giftStars) || giftStars <= 0) {
-      showGiftAlert("Invalid star amount ❌");
-      return;
-    }
+    if (isNaN(giftStars) || giftStars <= 0) return showGiftAlert("Invalid star amount ❌");
 
     const senderRef = doc(db, "users", currentUser.uid);
     const receiverRef = doc(db, "users", host.id);
@@ -1302,6 +1293,7 @@ giftBtn.addEventListener("click", async () => {
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(senderRef);
       const receiverSnap = await tx.get(receiverRef);
+      const featuredSnap = await tx.get(featuredReceiverRef);
 
       if (!senderSnap.exists()) throw new Error("Your user record not found.");
       if (!receiverSnap.exists()) tx.set(receiverRef, { stars: 0, starsGifted: 0 }, { merge: true });
@@ -1309,12 +1301,14 @@ giftBtn.addEventListener("click", async () => {
       const senderData = senderSnap.data();
       if ((senderData.stars || 0) < giftStars) throw new Error("Insufficient stars");
 
-      // --- Update users only ---
+      // --- USERS updates ---
       tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
       tx.update(receiverRef, { stars: increment(giftStars) });
 
-      // --- FEATURED HOSTS: minimal fields only ---
-      tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
+      // --- FEATURED HOSTS updates ONLY if doc exists ---
+      if (featuredSnap.exists()) {
+        tx.update(featuredReceiverRef, { stars: increment(giftStars) });
+      }
     });
 
     showGiftAlert(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}!`);
@@ -1323,6 +1317,7 @@ giftBtn.addEventListener("click", async () => {
     showGiftAlert(`⚠️ Something went wrong: ${err.message}`);
   }
 });
+
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
   e.preventDefault();
