@@ -144,9 +144,19 @@ async function showGiftModal(targetUid, targetData) {
 
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
     await Promise.all([
-      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-      updateDoc(toRef, { stars: increment(amt) })
-    ]);
+  updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+  updateDoc(toRef, { stars: increment(amt) }),
+
+  // 🔹 Sync to featuredHosts if applicable
+  updateDoc(doc(db, "featuredHosts", targetUid), {
+    stars: increment(amt),
+    starsGifted: increment(amt) // optional if you track gifted separately
+  }).catch(() => {}),
+
+  updateDoc(doc(db, "featuredHosts", currentUser.uid), {
+    starsGifted: increment(amt)
+  }).catch(() => {})
+]);
 
     showStarPopup(`You sent ${amt} ⭐️ to ${targetData.chatId}!`);
     close();
