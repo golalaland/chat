@@ -1244,6 +1244,18 @@ giftSlider.addEventListener("input", () => {
 });
 
 /* ---------- Send gift ---------- */
+// --- Gift button element ---
+const giftBtn = document.getElementById("giftBtn");
+const giftSlider = document.getElementById("giftSlider"); // input for number of stars
+const hosts = []; // Array of host objects { id, chatId }
+let currentIndex = 0; // Currently selected host index
+
+// --- Helper to show alerts ---
+function showGiftAlert(msg) {
+  alert(msg); // You can replace with custom UI
+}
+
+// --- Gift button click handler ---
 giftBtn.addEventListener("click", async () => {
   try {
     const host = hosts[currentIndex];
