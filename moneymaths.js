@@ -1,125 +1,117 @@
-/* ---------------- User Data ---------------- */
+/* ---------------- Sample User Data ---------------- */
 let currentUser = {
   uid: 'guest001',
   name: 'GUEST 0000',
-  stars: 50,
+  stars: 50,  // <-- Give some starting stars
   cash: 0
 };
-document.getElementById('profileName').textContent = currentUser.name;
-document.getElementById('starCount').textContent = currentUser.stars;
-document.getElementById('cashCount').textContent = currentUser.cash;
 
-/* ---------------- Elements ---------------- */
+// DOM references
+const profileName = document.getElementById('profileName');
+const starCount = document.getElementById('starCount');
+const cashCount = document.getElementById('cashCount');
 const joinTrainBtn = document.getElementById('joinTrainBtn');
-const loadingBar = document.getElementById('loadingBar');
-const loadingContainer = document.getElementById('loadingContainer');
 const problemBoard = document.getElementById('problemBoard');
 const problemBlocksEl = document.getElementById('problemBlocks');
+const loadingBar = document.getElementById('loadingBar');
 const solveBtn = document.getElementById('solveBtn');
 const starPopup = document.getElementById('starPopup');
 const messagesEl = document.getElementById('messages');
 
-const STAR_COST = 1;
-document.getElementById('starCost').textContent = STAR_COST;
+// Entry cost
+const entryCost = 10;
+const totalBlocks = 8;
 
-/* ---------------- Helpers ---------------- */
+// Update profile display
+function updateProfile() {
+  profileName.textContent = currentUser.name;
+  starCount.textContent = currentUser.stars;
+  cashCount.textContent = currentUser.cash;
+}
+updateProfile();
+
+// Star popup
 function showStarPopup(text) {
   starPopup.textContent = text;
   starPopup.style.display = "block";
-  setTimeout(() => { starPopup.style.display = "none"; }, 1500);
+  setTimeout(()=>{starPopup.style.display="none";},1500);
 }
 
-function getRandomMathProblem() {
-  const a = Math.floor(Math.random() * 20) + 1;
-  const b = Math.floor(Math.random() * 20) + 1;
-  const op = ['+', '-', '*'][Math.floor(Math.random() * 3)];
-  let ans;
-  if(op === '+') ans = a + b;
-  if(op === '-') ans = a - b;
-  if(op === '*') ans = a * b;
-  return {question: `${a} ${op} ${b}`, answer: ans};
-}
-
-/* ---------------- Game State ---------------- */
-let problems = [];
-let trainStarted = false;
-let trainDuration = 39000; // 39 seconds
-let loadingInterval;
-
-/* ---------------- Start Train ---------------- */
-joinTrainBtn.addEventListener('click', () => {
-  if(currentUser.stars < STAR_COST){
+/* ---------------- Join Train Logic ---------------- */
+joinTrainBtn.addEventListener('click', ()=>{
+  if(currentUser.stars < entryCost){
     showStarPopup("Not enough stars!");
     return;
   }
-  currentUser.stars -= STAR_COST;
-  document.getElementById('starCount').textContent = currentUser.stars;
 
-  // Generate 8 problems
-  problems = [];
-  problemBlocksEl.innerHTML = '';
-  for(let i=0; i<8; i++){
-    const p = getRandomMathProblem();
-    problems.push(p);
-    const inputHTML = `
-      <div style="margin:6px 0;">
-        <label>${p.question} = </label>
-        <input type="number" class="problemInput" data-index="${i}" />
-      </div>`;
-    problemBlocksEl.insertAdjacentHTML('beforeend', inputHTML);
-  }
+  currentUser.stars -= entryCost;
+  updateProfile();
 
+  // Show problem board
   problemBoard.style.display = 'block';
-  trainStarted = true;
-
-  // Start loading bar
-  let startTime = Date.now();
-  loadingInterval = setInterval(()=>{
-    let elapsed = Date.now() - startTime;
-    let percent = Math.min((elapsed / trainDuration) * 100, 100);
-    loadingBar.style.width = percent + '%';
-    if(percent >= 100){
-      clearInterval(loadingInterval);
-      trainStarted = false;
-      showStarPopup("🚂 Money Train has left!");
-    }
-  }, 100);
+  generateProblems();
+  startLoadingBar();
 });
 
-/* ---------------- Solve Button ---------------- */
-solveBtn.addEventListener('click', () => {
-  if(!trainStarted){
-    showStarPopup("Train has left!");
-    return;
+/* ---------------- Generate 8 Problem Blocks ---------------- */
+function generateProblems(){
+  problemBlocksEl.innerHTML = '';
+  for(let i=0; i<totalBlocks; i++){
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'problemInput';
+    input.dataset.answer = Math.floor(Math.random()*10 + 1); // random 1-10
+    input.placeholder = '?';
+    problemBlocksEl.appendChild(input);
   }
+}
 
+/* ---------------- Loading Bar ---------------- */
+function startLoadingBar(){
+  loadingBar.style.width = '0%';
+  let progress = 0;
+  const interval = setInterval(()=>{
+    progress += 100/39; // completes in ~39 sec
+    if(progress >= 100){
+      progress = 100;
+      clearInterval(interval);
+      checkIncomplete();
+    }
+    loadingBar.style.width = progress + '%';
+  }, 1000);
+}
+
+// Check if user didn't complete before train leaves
+function checkIncomplete(){
   const inputs = document.querySelectorAll('.problemInput');
-  let allCorrect = true;
-  inputs.forEach(input => {
-    const idx = parseInt(input.dataset.index);
-    const val = parseInt(input.value);
-    if(val !== problems[idx].answer) allCorrect = false;
+  let allFilled = Array.from(inputs).every(input=>input.value.trim() !== '');
+  if(!allFilled){
+    showStarPopup("Train has left! You get nothing!");
+    problemBoard.style.display = 'none';
+  }
+}
+
+/* ---------------- Solve Button ---------------- */
+solveBtn.addEventListener('click', ()=>{
+  const inputs = document.querySelectorAll('.problemInput');
+  let correct = true;
+
+  inputs.forEach(input=>{
+    if(input.value.trim() !== input.dataset.answer){
+      correct = false;
+    }
   });
 
-  if(allCorrect){
-    const rewardStars = 15;
-    const rewardCash = 100;
+  if(correct){
+    const rewardStars = 20;
+    const rewardCash = 200;
     currentUser.stars += rewardStars;
     currentUser.cash += rewardCash;
-    document.getElementById('starCount').textContent = currentUser.stars;
-    document.getElementById('cashCount').textContent = currentUser.cash;
     showStarPopup(`+${rewardStars}⭐ +₦${rewardCash}`);
-    const msg = document.createElement('div');
-    msg.textContent = `${currentUser.name} completed Money Train! 🚂`;
-    messagesEl.appendChild(msg);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    updateProfile();
   } else {
-    showStarPopup("❌ Some answers are wrong! Train left!");
+    showStarPopup("Incorrect! Try again next train!");
   }
 
-  // Reset board
   problemBoard.style.display = 'none';
-  loadingBar.style.width = '0%';
-  clearInterval(loadingInterval);
-  trainStarted = false;
 });
