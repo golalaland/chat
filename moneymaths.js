@@ -1,105 +1,127 @@
-/* ---------------- Sample User Data ---------------- */
-let currentUser = JSON.parse(localStorage.getItem("vipUser")) || {
+/* ---------------- User Data ---------------- */
+let currentUser = {
   uid: 'guest001',
   name: 'GUEST 0000',
-  stars: 0,
+  stars: 50,
   cash: 0
 };
 document.getElementById('profileName').textContent = currentUser.name;
 document.getElementById('starCount').textContent = currentUser.stars;
 document.getElementById('cashCount').textContent = currentUser.cash;
 
-/* ---------------- Math Game Logic ---------------- */
-const mathProblemEl = document.getElementById("mathProblem");
-const problemsMarquee = document.getElementById("problemsMarquee");
-const messagesEl = document.getElementById("messages");
-const starPopup = document.getElementById("starPopup");
+const STAR_COST = 10;
+document.getElementById('starCost').textContent = STAR_COST;
 
-let problems = [];
-let maxProblems = 5;
-let submittedAnswers = [];
+/* ---------------- Elements ---------------- */
+const joinTrainBtn = document.getElementById('joinTrainBtn');
+const loadingBar = document.getElementById('loadingBar');
+const loadingContainer = document.getElementById('loadingContainer');
+const problemBoard = document.getElementById('problemBoard');
+const problemBlocksEl = document.getElementById('problemBlocks');
+const solveBtn = document.getElementById('solveBtn');
+const starPopup = document.getElementById('starPopup');
+const messagesEl = document.getElementById('messages');
 
-// Generate random math problem
-function generateProblem() {
-  const operators = ["+", "-", "x"];
-  const a = Math.floor(Math.random()*10)+1;
-  const b = Math.floor(Math.random()*10)+1;
-  const op = operators[Math.floor(Math.random()*operators.length)];
-  let answer;
-  switch(op){
-    case "+": answer = a + b; break;
-    case "-": answer = a - b; break;
-    case "x": answer = a * b; break;
-  }
-  return { text:`${a} ${op} ${b}`, answer };
-}
-
-// Render problems
-function renderProblems() {
-  mathProblemEl.innerHTML = "";
-  problems = [];
-  submittedAnswers = [];
-  for(let i=0;i<maxProblems;i++){
-    const prob = generateProblem();
-    problems.push(prob);
-    const input = document.createElement("input");
-    input.setAttribute("type","number");
-    input.setAttribute("placeholder",prob.text);
-    mathProblemEl.appendChild(input);
-    submittedAnswers.push(input);
-  }
-}
-renderProblems();
-
-// Star popup animation
-function showStarPopup(text){
+/* ---------------- Helpers ---------------- */
+function showStarPopup(text) {
   starPopup.textContent = text;
-  starPopup.style.display="block";
-  setTimeout(()=>{starPopup.style.display="none";},1500);
+  starPopup.style.display = "block";
+  setTimeout(() => { starPopup.style.display = "none"; }, 1500);
 }
 
-// Submit answers
-document.getElementById("submitBtn").addEventListener("click",()=>{
-  let correctCount = 0;
-  submittedAnswers.forEach((input,i)=>{
-    if(Number(input.value) === problems[i].answer) correctCount++;
-  });
+function getRandomMathProblem() {
+  const a = Math.floor(Math.random() * 20) + 1;
+  const b = Math.floor(Math.random() * 20) + 1;
+  const op = ['+', '-', '*'][Math.floor(Math.random() * 3)];
+  let ans;
+  if(op === '+') ans = a + b;
+  if(op === '-') ans = a - b;
+  if(op === '*') ans = a * b;
+  return {question: `${a} ${op} ${b}`, answer: ans};
+}
 
-  if(correctCount===0){showStarPopup("No correct!"); return;}
+/* ---------------- Game State ---------------- */
+let problems = [];
+let trainStarted = false;
+let trainTimer;
+let trainDuration = 39000; // 39 seconds
+let loadingInterval;
 
-  // Update stars/cash
-  const reward = correctCount * 10;
-  currentUser.stars += reward;
-  currentUser.cash += reward;
+/* ---------------- Start Train ---------------- */
+joinTrainBtn.addEventListener('click', () => {
+  if(currentUser.stars < STAR_COST){
+    showStarPopup("Not enough stars!");
+    return;
+  }
+  currentUser.stars -= STAR_COST;
   document.getElementById('starCount').textContent = currentUser.stars;
-  document.getElementById('cashCount').textContent = currentUser.cash;
 
-  // Add to marquee
-  problems.forEach(p=>{
-    const span = document.createElement("span");
-    span.textContent = p.text+"="+p.answer;
-    problemsMarquee.appendChild(span);
-  });
+  // Generate 8 problems
+  problems = [];
+  problemBlocksEl.innerHTML = '';
+  for(let i=0; i<8; i++){
+    const p = getRandomMathProblem();
+    problems.push(p);
+    const inputHTML = `
+      <div style="margin:6px 0;">
+        <label>${p.question} = </label>
+        <input type="number" class="problemInput" data-index="${i}" />
+      </div>`;
+    problemBlocksEl.insertAdjacentHTML('beforeend', inputHTML);
+  }
 
-  // Add to messages
-  const msg = document.createElement('div');
-  msg.className = 'msg';
-  msg.textContent = currentUser.name + ": Solved "+correctCount+"/"+maxProblems;
-  messagesEl.appendChild(msg);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  problemBoard.style.display = 'block';
+  trainStarted = true;
 
-  showStarPopup(`+${reward} ⭐ & ₦${reward}`);
-
-  renderProblems(); // refresh problems
+  // Start loading bar
+  let startTime = Date.now();
+  loadingInterval = setInterval(()=>{
+    let elapsed = Date.now() - startTime;
+    let percent = Math.min((elapsed / trainDuration) * 100, 100);
+    loadingBar.style.width = percent + '%';
+    if(percent >= 100){
+      clearInterval(loadingInterval);
+      trainStarted = false;
+      showStarPopup("🚂 Money Train has left!");
+    }
+  }, 100);
 });
 
-// Marquee animation
-setInterval(()=>{
-  const firstChild = problemsMarquee.firstElementChild;
-  if(firstChild) problemsMarquee.appendChild(firstChild);
-},2000);
+/* ---------------- Solve Button ---------------- */
+solveBtn.addEventListener('click', () => {
+  if(!trainStarted){
+    showStarPopup("Train has left!");
+    return;
+  }
 
-// Rules
-document.getElementById('rulesBtn').addEventListener('click',()=>{
-  alert("🎮 Brain Join Rules:\n- Solve the math problems.\n- Each correct answer gives 10 stars & cash.\n- Problems refresh every submission.\n- First come, first solved!");
+  const inputs = document.querySelectorAll('.problemInput');
+  let allCorrect = true;
+  inputs.forEach(input => {
+    const idx = parseInt(input.dataset.index);
+    const val = parseInt(input.value);
+    if(val !== problems[idx].answer) allCorrect = false;
+  });
+
+  if(allCorrect){
+    const rewardStars = 15;
+    const rewardCash = 100;
+    currentUser.stars += rewardStars;
+    currentUser.cash += rewardCash;
+    document.getElementById('starCount').textContent = currentUser.stars;
+    document.getElementById('cashCount').textContent = currentUser.cash;
+    showStarPopup(`+${rewardStars}⭐ +₦${rewardCash}`);
+    // Log success
+    const msg = document.createElement('div');
+    msg.textContent = `${currentUser.name} completed Money Train! 🚂`;
+    messagesEl.appendChild(msg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  } else {
+    showStarPopup("❌ Some answers are wrong! Train left!");
+  }
+
+  // Reset board
+  problemBoard.style.display = 'none';
+  loadingBar.style.width = '0%';
+  clearInterval(loadingInterval);
+  trainStarted = false;
 });
