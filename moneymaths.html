@@ -3,88 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brain Join Math Game</title>
+<title>Money Train</title>
 <link rel="icon" href="data:," />
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:#000;
-  --card:#111;
-  --muted:#aaa;
-  --accent:#FF1493;
-  --glass: rgba(255,255,255,0.03);
-}
-
-body, html {margin:0; padding:0; height:100%; font-family: 'Inter', sans-serif; background: var(--bg); color:#fff; display:flex; justify-content:center;}
-#appWrapper{width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; position:relative;}
-
-/* ---------- Header ---------- */
-#gameHeader {text-align:center; margin-top:10px;}
-#welcomeText{font-family:'Press Start 2P', cursive; font-size:12px; color:var(--accent);}
-#mathText{font-family:'Press Start 2P', cursive; font-size:22px; color:var(--accent); margin-top:2px;}
-
-/* ---------- Rules ---------- */
-#rulesBtn {display:block; margin:6px auto; padding:6px 12px; border-radius:12px; background:var(--card); border:1px solid rgba(255,20,147,0.2); color:var(--accent); font-weight:700; cursor:pointer;}
-
-/* ---------- Marquee ---------- */
-#problemsMarquee {width:100%; overflow:hidden; white-space:nowrap; display:block; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1); padding:4px 0; margin-bottom:6px; color:var(--accent); font-size:12px;}
-#problemsMarquee span {margin-right:12px; display:inline-block;}
-
-/* ---------- Math Board ---------- */
-.math-board {text-align:center; margin:8px 0;}
-#mathProblem {font-family:'Press Start 2P', cursive; font-size:18px; color:#fff; display:flex; justify-content:center; gap:6px; flex-wrap:wrap;}
-.math-board input {width:60px; text-align:center; font-size:18px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); background:#111; color:#fff;}
-
-/* ---------- Messages ---------- */
-#messages {flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px;}
-
-/* ---------- Bottom Input ---------- */
-.send-area {position:fixed; bottom:0; left:0; width:100%; max-width:480px; display:flex; align-items:center; gap:8px; background:var(--card); padding:10px; border-radius:999px; box-sizing:border-box; z-index:100;}
-
-/* Buzz Button (original style retained) */
-#submitBtn {padding:10px; border-radius:999px; background:#000; border:1px solid var(--accent); color:var(--accent); font-weight:700; font-size:16px; cursor:pointer;}
-
-/* ---------- Profile Panel ---------- */
-.profile {position:fixed; bottom:60px; width:100%; max-width:480px; left:0; display:flex; justify-content:center; z-index:99;}
-.profile-card {background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:6px; text-align:center;}
-.profile-name {font-weight:800; font-size:14px; color:var(--accent);}
-.profile-info {font-size:12px; color:#fff;}
-
-/* Star popup */
-.star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
-</style>
+<link rel="stylesheet" href="moneytrain.css">
 </head>
 <body>
 <div id="appWrapper">
   <!-- Header -->
   <div id="gameHeader">
     <div id="welcomeText">WELCOME TO</div>
-    <div id="mathText">BRAIN JOIN 🧠</div>
+    <div id="scrambleText">MONEY TRAIN 🚂</div>
   </div>
 
-  <!-- Rules -->
-  <button id="rulesBtn">Rules</button>
+  <!-- Entry Stars -->
+  <div id="entryCostPanel" style="text-align:center; margin:6px 0;">
+    <button id="joinTrainBtn">Join Train (-<span id="starCost">10</span>⭐)</button>
+  </div>
 
-  <!-- Marquee for past problems -->
-  <div id="problemsMarquee"></div>
+  <!-- Loading Bar -->
+  <div id="loadingContainer" style="width:90%; max-width:480px; margin:10px auto; background:#111; border-radius:12px; overflow:hidden;">
+    <div id="loadingBar" style="width:0%; height:16px; background:var(--accent);"></div>
+  </div>
 
-  <!-- Math problems board -->
-  <div class="math-board" id="mathProblem"></div>
+  <!-- Problem Blocks -->
+  <div id="problemBoard" class="scramble-board" style="display:none;">
+    <div id="problemBlocks"></div>
+    <button id="solveBtn" class="buzz-btn">SOLVE</button>
+  </div>
 
   <!-- Messages -->
   <div id="messages"></div>
-
-  <!-- Bottom submit -->
-  <div class="send-area">
-    <button id="submitBtn">🚨 Solve!</button>
-  </div>
 
   <!-- Profile panel -->
   <div class="profile" id="profilePanel">
     <div class="profile-card">
       <div class="profile-name" id="profileName">GUEST 0000</div>
-      <div class="profile-info">STARS COLLECTED: <span id="starCount">0</span>⭐️</div>
-      <div class="profile-info">CASH EARNED: ₦<span id="cashCount">0</span></div>
+      <div class="profile-info">STARS: <span id="starCount">0</span>⭐</div>
+      <div class="profile-info">CASH: ₦<span id="cashCount">0</span></div>
     </div>
   </div>
 </div>
@@ -92,7 +48,6 @@ body, html {margin:0; padding:0; height:100%; font-family: 'Inter', sans-serif; 
 <!-- Star popup -->
 <div class="star-popup" id="starPopup">+1 ⭐</div>
 
-<!-- JS -->
-<script type="module" src="moneymaths.js"></script>
+<script src="moneytrain.js"></script>
 </body>
 </html>
