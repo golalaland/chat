@@ -9,9 +9,6 @@ document.getElementById('profileName').textContent = currentUser.name;
 document.getElementById('starCount').textContent = currentUser.stars;
 document.getElementById('cashCount').textContent = currentUser.cash;
 
-const STAR_COST = 10;
-document.getElementById('starCost').textContent = STAR_COST;
-
 /* ---------------- Elements ---------------- */
 const joinTrainBtn = document.getElementById('joinTrainBtn');
 const loadingBar = document.getElementById('loadingBar');
@@ -21,6 +18,9 @@ const problemBlocksEl = document.getElementById('problemBlocks');
 const solveBtn = document.getElementById('solveBtn');
 const starPopup = document.getElementById('starPopup');
 const messagesEl = document.getElementById('messages');
+
+const STAR_COST = 10;
+document.getElementById('starCost').textContent = STAR_COST;
 
 /* ---------------- Helpers ---------------- */
 function showStarPopup(text) {
@@ -43,7 +43,6 @@ function getRandomMathProblem() {
 /* ---------------- Game State ---------------- */
 let problems = [];
 let trainStarted = false;
-let trainTimer;
 let trainDuration = 39000; // 39 seconds
 let loadingInterval;
 
@@ -110,7 +109,6 @@ solveBtn.addEventListener('click', () => {
     document.getElementById('starCount').textContent = currentUser.stars;
     document.getElementById('cashCount').textContent = currentUser.cash;
     showStarPopup(`+${rewardStars}⭐ +₦${rewardCash}`);
-    // Log success
     const msg = document.createElement('div');
     msg.textContent = `${currentUser.name} completed Money Train! 🚂`;
     messagesEl.appendChild(msg);
