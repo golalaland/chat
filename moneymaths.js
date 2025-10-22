@@ -185,9 +185,15 @@ joinTrainBtn.replaceWith(joinTrainBtn.cloneNode(true));
 const newJoinBtn = document.getElementById('joinTrainBtn');
 
 /* Handle Join Train button */
-newJoinBtn.addEventListener('click', () => {
+/* ---------------- Button Event + Confirmation Modal ---------------- */
+const confirmModal = document.getElementById('confirmModal');
+const confirmYes = document.getElementById('confirmYes');
+const confirmNo = document.getElementById('confirmNo');
+
+/* Handle Join Train button */
+joinTrainBtn.addEventListener('click', () => {
   if (trainActive) {
-    // If train already started, handle normally
+    // If train is already running, handle "Submit Answers"
     const inputs = document.querySelectorAll('.problemInput');
     let correct = true;
     inputs.forEach((inp, i) => {
@@ -197,17 +203,18 @@ newJoinBtn.addEventListener('click', () => {
     trainActive = false;
     endTrain(correct);
   } else {
-    // Show confirmation modal first
+    // Show confirmation modal first (instead of starting immediately)
     confirmModal.style.display = 'flex';
   }
 });
 
-/* Modal choices */
+/* Modal choice: Confirm join */
 confirmYes.addEventListener('click', () => {
   confirmModal.style.display = 'none';
-  startTrain(); // existing function
+  startTrain(); // run existing function
 });
 
+/* Modal choice: Cancel */
 confirmNo.addEventListener('click', () => {
   confirmModal.style.display = 'none';
 });
