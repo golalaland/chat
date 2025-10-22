@@ -16,10 +16,6 @@
   --accent:#FF1493;
   --accent-gradient: linear-gradient(90deg,#FF1493,#FF8C00);
   --glass: rgba(255,255,255,0.03);
-}
-input, textarea, select {
-  font-size: 16px !important; /* prevents mobile zoom */
-}
 /* Base */
 body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;background:var(--bg);color:#fff;display:flex;justify-content:center;}
 #appWrapper{width:100%;max-width:480px;display:flex;flex-direction:column;height:100%;position:relative;padding-bottom:120px;}
@@ -140,29 +136,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   text-align: center;
   margin-top: 1.5em;
 }
-
-#verifyTicketBtn {
-  background: linear-gradient(90deg, #00c853, #b2ff59);
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 16px; /* prevents zoom on iOS */
-  color: #000;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.3s ease;
-}
-
-#verifyTicketBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-#verifyTicketBtn:hover:not(:disabled) {
-  transform: scale(1.05);
-}
-/* small helpers */
-.hidden { display:none !important; }
 </style>
 </head>
 <body>
@@ -200,8 +173,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
     </div>
   </div>
   
-  <audio id="trainWhistle" src="whistle.mp3" preload="auto"></audio>
-<audio id="trainDepart" src="depart.mp3" preload="auto"></audio>
 
   <!-- Daily Reward -->
   <div id="dailyReward">DAILY CASH REWARD: ₦<span id="dailyPot">1,000,000</span></div>
@@ -221,10 +192,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   <!-- Submit Answers Button (created dynamically if missing) -->
   <button id="submitAnswers" class="hidden">Submit Answers</button>
 
-<!-- 🎫 Verify Ticket Button -->
-<div class="verify-section">
-  <button id="verifyTicketBtn" disabled>Verify Ticket 🎫</button>
-</div>
 
   <!-- Profile Panel -->
   <div class="profile" id="profilePanel">
