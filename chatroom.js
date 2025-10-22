@@ -83,70 +83,6 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
-
-/* -------------------------------------------
-   GIFT FUNCTION — fully synced + transactional
----------------------------------------------- */
-async function sendGift(currentUser, targetUid, amt, db, ROOM_ID = null) {
-  const fromRef = doc(db, "users", currentUser.uid);
-  const toRef = doc(db, "users", targetUid);
-
-  // featuredHosts path: either global or under a room
-  const featuredFromRef = ROOM_ID
-    ? doc(db, `rooms/${ROOM_ID}/featuredHosts`, currentUser.uid)
-    : doc(db, "featuredHosts", currentUser.uid);
-
-  const featuredToRef = ROOM_ID
-    ? doc(db, `rooms/${ROOM_ID}/featuredHosts`, targetUid)
-    : doc(db, "featuredHosts", targetUid);
-
-  try {
-    await runTransaction(db, async (transaction) => {
-      const fromSnap = await transaction.get(fromRef);
-      const toSnap = await transaction.get(toRef);
-
-      if (!fromSnap.exists() || !toSnap.exists()) {
-        throw new Error("User not found");
-      }
-
-      const fromData = fromSnap.data();
-      if ((fromData.stars || 0) < amt) {
-        throw new Error("Insufficient stars");
-      }
-
-      // -------------------------
-      //  USERS COLLECTION UPDATE
-      // -------------------------
-      transaction.update(fromRef, {
-        stars: increment(-amt),
-        starsGifted: increment(amt)
-      });
-      transaction.update(toRef, {
-        stars: increment(amt)
-      });
-
-      // -------------------------
-      //  FEATURED HOSTS SYNC
-      // -------------------------
-      transaction.set(
-        featuredFromRef,
-        { starsGifted: increment(amt) },
-        { merge: true }
-      );
-      transaction.set(
-        featuredToRef,
-        { stars: increment(amt) },
-        { merge: true }
-      );
-    });
-
-    console.log("✨ Gift sent successfully and fully synced!");
-  } catch (err) {
-    console.error("❌ Gift failed:", err.message);
-  }
-}
-
-
 /* ----------------------------
    ⭐ GIFT / BALLER ALERT Glow
 ----------------------------- */
@@ -1340,8 +1276,11 @@ giftBtn.addEventListener("click", async () => {
       return;
     }
 
-    // 🧾 Get sender (logged-in user)
     const senderRef = doc(db, "users", currentUser.uid);
+    const receiverUserRef = doc(db, "users", host.id);
+    const featuredSenderRef = doc(db, "featuredHosts", currentUser.uid);
+    const featuredReceiverRef = doc(db, "featuredHosts", host.id);
+
     const senderSnap = await getDoc(senderRef);
     if (!senderSnap.exists()) {
       showGiftAlert("Your user record doesn’t exist ⚠️");
@@ -1356,19 +1295,35 @@ giftBtn.addEventListener("click", async () => {
       return;
     }
 
-    // 🪙 Deduct from sender + add to host
-    const hostRef = doc(db, "featuredHosts", host.id);
-    await Promise.all([
-      updateDoc(senderRef, { stars: increment(-giftStars) }),
-      updateDoc(hostRef, { stars: increment(giftStars), starsGifted: increment(giftStars) })
-    ]);
+    // ✅ Fully synced transaction
+    await runTransaction(db, async (tx) => {
+      const fromSnap = await tx.get(senderRef);
+      const toSnap = await tx.get(receiverUserRef);
+
+      if (!toSnap.exists()) {
+        // auto-create receiver if missing
+        tx.set(receiverUserRef, { stars: 0, starsGifted: 0 }, { merge: true });
+      }
+
+      tx.update(senderRef, {
+        stars: increment(-giftStars),
+        starsGifted: increment(giftStars)
+      });
+
+      tx.update(receiverUserRef, {
+        stars: increment(giftStars)
+      });
+
+      // featuredHosts sync
+      tx.set(featuredSenderRef, { starsGifted: increment(giftStars) }, { merge: true });
+      tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
+    });
 
     console.log(`✅ Sent ${giftStars} stars ⭐ to ${host.chatId}`);
 
-    // 🎁 Replace plain alert with a clean animated alert
     showGiftAlert(`You sent ${giftStars} stars ⭐ to ${host.chatId}!`);
   } catch (err) {
-    console.error("Gift sending failed:", err);
+    console.error("❌ Gift sending failed:", err);
     showGiftAlert("⚠️ Something went wrong sending your stars.");
   }
 });
