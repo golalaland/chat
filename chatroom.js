@@ -63,6 +63,68 @@ let lastMessagesArray = [];
 let starInterval = null;
 let refs = {};
 
+/* -------------------------------------------
+   GIFT FUNCTION — fully synced + transactional
+---------------------------------------------- */
+async function sendGift(currentUser, targetUid, amt, db, ROOM_ID = null) {
+  const fromRef = doc(db, "users", currentUser.uid);
+  const toRef = doc(db, "users", targetUid);
+
+  // featuredHosts path: either global or under a room
+  const featuredFromRef = ROOM_ID
+    ? doc(db, `rooms/${ROOM_ID}/featuredHosts`, currentUser.uid)
+    : doc(db, "featuredHosts", currentUser.uid);
+
+  const featuredToRef = ROOM_ID
+    ? doc(db, `rooms/${ROOM_ID}/featuredHosts`, targetUid)
+    : doc(db, "featuredHosts", targetUid);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const fromSnap = await transaction.get(fromRef);
+      const toSnap = await transaction.get(toRef);
+
+      if (!fromSnap.exists() || !toSnap.exists()) {
+        throw new Error("User not found");
+      }
+
+      const fromData = fromSnap.data();
+      if ((fromData.stars || 0) < amt) {
+        throw new Error("Insufficient stars");
+      }
+
+      // -------------------------
+      //  USERS COLLECTION UPDATE
+      // -------------------------
+      transaction.update(fromRef, {
+        stars: increment(-amt),
+        starsGifted: increment(amt)
+      });
+      transaction.update(toRef, {
+        stars: increment(amt)
+      });
+
+      // -------------------------
+      //  FEATURED HOSTS SYNC
+      // -------------------------
+      transaction.set(
+        featuredFromRef,
+        { starsGifted: increment(amt) },
+        { merge: true }
+      );
+      transaction.set(
+        featuredToRef,
+        { stars: increment(amt) },
+        { merge: true }
+      );
+    });
+
+    console.log("✨ Gift sent successfully and fully synced!");
+  } catch (err) {
+    console.error("❌ Gift failed:", err.message);
+  }
+}
+
 /* ---------- Helpers ---------- */
 const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
 const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
@@ -81,6 +143,9 @@ function showStarPopup(text) {
   popup.style.display = "block";
   setTimeout(() => popup.style.display = "none", 1700);
 }
+
+
+
 
 /* ---------- Gift Modal---------- */
 /* ----------------------------
