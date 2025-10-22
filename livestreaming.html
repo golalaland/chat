@@ -3,58 +3,200 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Go Live</title>
+<title>Brain Join Math Game</title>
+<link rel="icon" href="data:," />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-  body { margin:0; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#111; color:#fff; }
-  #localVideo { width: 100%; max-width: 480px; height: auto; border-radius:12px; background:#000; }
-  #goLiveBtn { margin-top:12px; padding:12px 20px; border:none; border-radius:999px; font-weight:700; background:linear-gradient(135deg,#FF69B4,#FF1493); color:#000; cursor:pointer; }
-  #goLiveBtn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,20,147,0.4); }
+:root {
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
+  --accent:#FF1493;
+  --glass: rgba(255,255,255,0.03);
+}
+
+body, html {margin:0; padding:0; height:100%; font-family: 'Inter', sans-serif; background: var(--bg); color:#fff; display:flex; justify-content:center;}
+#appWrapper{width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; position:relative;}
+
+/* ---------- Header ---------- */
+#gameHeader {text-align:center; margin-top:10px;}
+#welcomeText{font-family:'Press Start 2P', cursive; font-size:12px; color:var(--accent);}
+#mathText{font-family:'Press Start 2P', cursive; font-size:22px; color:var(--accent); margin-top:2px;}
+
+/* ---------- Rules ---------- */
+#rulesBtn {display:block; margin:6px auto; padding:6px 12px; border-radius:12px; background:var(--card); border:1px solid rgba(255,20,147,0.2); color:var(--accent); font-weight:700; cursor:pointer;}
+
+/* ---------- Marquee ---------- */
+#problemsMarquee {width:100%; overflow:hidden; white-space:nowrap; display:block; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1); padding:4px 0; margin-bottom:6px; color:var(--accent); font-size:12px;}
+#problemsMarquee span {margin-right:12px; display:inline-block;}
+
+/* ---------- Math Board ---------- */
+.math-board {text-align:center; margin:8px 0;}
+#mathProblem {font-family:'Press Start 2P', cursive; font-size:18px; color:#fff; display:flex; justify-content:center; gap:6px; flex-wrap:wrap;}
+.math-board input {width:60px; text-align:center; font-size:18px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); background:#111; color:#fff;}
+
+/* ---------- Messages ---------- */
+#messages {flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px;}
+
+/* ---------- Bottom Input ---------- */
+.send-area {position:fixed; bottom:0; left:0; width:100%; max-width:480px; display:flex; align-items:center; gap:8px; background:var(--card); padding:10px; border-radius:999px; box-sizing:border-box; z-index:100;}
+.send-area button {padding:10px; border-radius:999px; background:#000; border:1px solid var(--accent); color:var(--accent); font-weight:700; font-size:16px; cursor:pointer; animation: flicker 2s infinite alternate;}
+@keyframes flicker {0%{opacity:1;}50%{opacity:0.6;}100%{opacity:1;}}
+
+/* ---------- Profile Panel ---------- */
+.profile {position:fixed; bottom:60px; width:100%; max-width:480px; left:0; display:flex; justify-content:center; z-index:99;}
+.profile-card {background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:6px; text-align:center;}
+.profile-name {font-weight:800; font-size:14px; color:var(--accent);}
+.profile-info {font-size:12px; color:#fff;}
+
+/* Star popup */
+.star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
+<div id="appWrapper">
+  <!-- Header -->
+  <div id="gameHeader">
+    <div id="welcomeText">WELCOME TO</div>
+    <div id="mathText">BRAIN JOIN 🧠</div>
+  </div>
 
-<video id="localVideo" autoplay playsinline muted></video>
-<button id="goLiveBtn">Go Live</button>
+  <!-- Rules -->
+  <button id="rulesBtn">Rules</button>
 
-<script src="https://cdn.agora.io/sdk/release/AgoraRTC_N.js"></script>
-<script>
-const APP_ID = "YOUR_AGORA_APP_ID"; // replace with your Agora App ID
-const TOKEN = null; // optional for dev/testing
-const CHANNEL = "myChannel"; // same channel viewers join
+  <!-- Marquee for past problems -->
+  <div id="problemsMarquee"></div>
 
-const client = AgoraRTC.createClient({mode:"live", codec:"vp8"});
+  <!-- Math problems board -->
+  <div class="math-board" id="mathProblem"></div>
 
-let localTracks;
+  <!-- Messages -->
+  <div id="messages"></div>
 
-document.getElementById("goLiveBtn").onclick = async () => {
-  document.getElementById("goLiveBtn").disabled = true;
-  document.getElementById("goLiveBtn").innerText = "Streaming…";
+  <!-- Bottom submit -->
+  <div class="send-area">
+    <button id="submitBtn">🚨 Solve!</button>
+  </div>
 
-  // join channel
-  await client.join(APP_ID, CHANNEL, TOKEN, null);
+  <!-- Profile panel -->
+  <div class="profile" id="profilePanel">
+    <div class="profile-card">
+      <div class="profile-name" id="profileName">GUEST 0000</div>
+      <div class="profile-info">STARS COLLECTED: <span id="starCount">0</span>⭐️</div>
+      <div class="profile-info">CASH EARNED: ₦<span id="cashCount">0</span></div>
+    </div>
+  </div>
+</div>
 
-  // create microphone + camera tracks
-  localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+<!-- Star popup -->
+<div class="star-popup" id="starPopup">+1 ⭐</div>
 
-  // play video in this page (optional preview)
-  localTracks[1].play("localVideo");
-
-  // publish tracks
-  await client.publish(localTracks);
-
-  console.log("Live streaming started!");
+<script type="module">
+/* ---------------- Sample User Data ---------------- */
+let currentUser = JSON.parse(localStorage.getItem("vipUser")) || {
+  uid: 'guest001',
+  name: 'GUEST 0000',
+  stars: 0,
+  cash: 0
 };
+document.getElementById('profileName').textContent = currentUser.name;
+document.getElementById('starCount').textContent = currentUser.stars;
+document.getElementById('cashCount').textContent = currentUser.cash;
 
-// Optional: stop streaming
-async function stopStreaming() {
-  if(localTracks){
-    localTracks.forEach(track => track.stop());
-    localTracks.forEach(track => track.close());
+/* ---------------- Math Game Logic ---------------- */
+const mathProblemEl = document.getElementById("mathProblem");
+const problemsMarquee = document.getElementById("problemsMarquee");
+const messagesEl = document.getElementById("messages");
+const starPopup = document.getElementById("starPopup");
+
+let problems = [];
+let maxProblems = 5;
+let submittedAnswers = [];
+
+// Generate random math problem
+function generateProblem() {
+  const operators = ["+", "-", "x"];
+  const a = Math.floor(Math.random()*10)+1;
+  const b = Math.floor(Math.random()*10)+1;
+  const op = operators[Math.floor(Math.random()*operators.length)];
+  let answer;
+  switch(op){
+    case "+": answer = a + b; break;
+    case "-": answer = a - b; break;
+    case "x": answer = a * b; break;
   }
-  await client.leave();
-  console.log("Stopped streaming");
+  return { text:`${a} ${op} ${b}`, answer };
 }
-</script>
 
+// Render problems
+function renderProblems() {
+  mathProblemEl.innerHTML = "";
+  problems = [];
+  submittedAnswers = [];
+  for(let i=0;i<maxProblems;i++){
+    const prob = generateProblem();
+    problems.push(prob);
+    const input = document.createElement("input");
+    input.setAttribute("type","number");
+    input.setAttribute("placeholder",prob.text);
+    mathProblemEl.appendChild(input);
+    submittedAnswers.push(input);
+  }
+}
+renderProblems();
+
+// Star popup animation
+function showStarPopup(text){
+  starPopup.textContent = text;
+  starPopup.style.display="block";
+  setTimeout(()=>{starPopup.style.display="none";},1500);
+}
+
+// Submit answers
+document.getElementById("submitBtn").addEventListener("click",()=>{
+  let correctCount = 0;
+  submittedAnswers.forEach((input,i)=>{
+    if(Number(input.value) === problems[i].answer) correctCount++;
+  });
+
+  if(correctCount===0){showStarPopup("No correct!"); return;}
+
+  // Update stars/cash
+  const reward = correctCount * 10;
+  currentUser.stars += reward;
+  currentUser.cash += reward;
+  document.getElementById('starCount').textContent = currentUser.stars;
+  document.getElementById('cashCount').textContent = currentUser.cash;
+
+  // Add to marquee
+  problems.forEach(p=>{
+    const span = document.createElement("span");
+    span.textContent = p.text+"="+p.answer;
+    problemsMarquee.appendChild(span);
+  });
+
+  // Add to messages
+  const msg = document.createElement('div');
+  msg.className = 'msg';
+  msg.textContent = currentUser.name + ": Solved "+correctCount+"/"+maxProblems;
+  messagesEl.appendChild(msg);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  showStarPopup(`+${reward} ⭐ & ₦${reward}`);
+
+  renderProblems(); // refresh problems
+});
+
+// Marquee animation
+setInterval(()=>{
+  const firstChild = problemsMarquee.firstElementChild;
+  if(firstChild) problemsMarquee.appendChild(firstChild);
+},2000);
+
+// Rules
+document.getElementById('rulesBtn').addEventListener('click',()=>{
+  alert("🎮 Brain Join Rules:\n- Solve the math problems.\n- Each correct answer gives 10 stars & cash.\n- Problems refresh every submission.\n- First come, first solved!");
+});
+</script>
 </body>
 </html>
