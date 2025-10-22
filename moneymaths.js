@@ -1,137 +1,145 @@
-/* ===============================
-   Money Maths Game Script
-================================= */
+let currentUser = { uid:'guest001', name:'GUEST 0000', stars:100, cash:0 };
+document.getElementById('profileName').textContent = currentUser.name;
+document.getElementById('starCount').textContent = currentUser.stars;
+document.getElementById('cashCount').textContent = currentUser.cash;
 
-/* ---------- Firebase Imports ---------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, updateDoc, onSnapshot, increment
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-/* ---------- Firebase Config ---------- */
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MSG_ID",
-  appId: "YOUR_APP_ID",
-  databaseURL: "YOUR_DB_URL"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-/* ---------- Game State ---------- */
-let currentUser = null; // Populate this after user login
-let currentChallenge = null;
-let entriesCount = 0;
 const MAX_ENTRIES = 53;
-const BUZZ_COST = 5; // stars
-const REWARD_STARS = 20;
-const REWARD_CASH = 50;
-const CHALLENGE_INTERVAL_MS = 5000;
+const BUZZ_COST = 5;
+let REWARD_STARS = 20;
+let REWARD_CASH = 50;
+const SESSION_TIME = 60; 
+let entriesCount = 0;
+let currentSession = null;
 let cooldownTimer = null;
 
-/* ---------- Challenge Generator ---------- */
-function generateMathChallenge() {
-  const ops = ["+", "-","*"];
-  const getRandom = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
-  const exprCount = getRandom(5,8);
-  let expressions = [];
-  for(let i=0;i<exprCount;i++){
-    const a=getRandom(1,10), b=getRandom(1,10);
-    const op = ops[Math.floor(Math.random()*ops.length)];
-    expressions.push(`${a}${op}${b}`);
-  }
-  const combinedAnswer = expressions.map(exp => eval(exp)).join("");
-  return { expressions, combinedAnswer };
+const expressionsEl = document.getElementById('expressions');
+const buzzInput = document.getElementById('buzzInput');
+const messagesEl = document.getElementById('messages');
+const starPopup = document.getElementById('starPopup');
+const wordMarquee = document.getElementById('wordMarquee');
+const countdownEl = document.getElementById('countdown');
+
+let HARD_MODE = false;
+
+function showStarPopup(text){
+  starPopup.textContent = text;
+  starPopup.style.display = "block";
+  setTimeout(()=>starPopup.style.display="none",1500);
 }
 
-/* ---------- Display Challenge ---------- */
-function displayChallenge() {
-  if(!currentChallenge) return;
-  const container = document.getElementById("expressions");
-  if(!container) return;
-  container.innerHTML = currentChallenge.expressions.join(" <br> ");
-}
+function getRandomInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
-/* ---------- Start New Challenge ---------- */
-function nextChallenge() {
-  if(entriesCount >= MAX_ENTRIES) return;
-  currentChallenge = generateMathChallenge();
-  displayChallenge();
-}
+function generateSession(){
+  let problems=[], cumulative=0;
+  for(let i=0;i<8;i++){
+    let a=getRandomInt(HARD_MODE?10:1, HARD_MODE?50:20);
+    let b=getRandomInt(HARD_MODE?10:1, HARD_MODE?50:20);
+    let op = Math.random()<0.5?"+":"-";
 
-/* ---------- Buzz Submission ---------- */
-async function handleBuzzSubmission() {
-  if(!currentUser) return alert("Sign in to play Money Maths!");
-  if(entriesCount >= MAX_ENTRIES) return alert("This money has been solved, check in the next session.");
-  if((currentUser.stars || 0) < BUZZ_COST) return alert("Not enough stars to buzz!");
+    if(op==="-" && b>a) [a,b] = [b,a]; 
+    if(op==="-" && a===b) a++; 
+    if(HARD_MODE && Math.random()<0.3) op="*";
 
-  const input = document.getElementById("buzzInput").value.trim();
-  if(!input) return alert("Type your answer!");
+    let answer;
+    if(op==="+") answer=a+b;
+    else if(op==="-") answer=a-b;
+    else answer=a*b;
 
-  entriesCount++;
-  currentUser.stars -= BUZZ_COST;
-
-  // Update Firestore stars deduction
-  const userRef = doc(db, "users", currentUser.uid);
-  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-
-  if(input === currentChallenge.combinedAnswer){
-    currentUser.stars += REWARD_STARS;
-    currentUser.cash = (currentUser.cash || 0) + REWARD_CASH;
-    await updateDoc(userRef, {
-      stars: increment(REWARD_STARS),
-      cash: increment(REWARD_CASH)
-    });
-    alert(`🎉 Correct! You earned ${REWARD_STARS} ⭐️ and ₦${REWARD_CASH}`);
-  } else {
-    alert("❌ Wrong answer!");
+    cumulative+=answer;
+    problems.push({expr:`${a} ${op} ${b}`, answer});
   }
 
-  document.getElementById("buzzInput").value = "";
+  currentSession={problems, cumulative: cumulative.toString(), entries:0};
+  entriesCount=0;
 
-  if(entriesCount >= MAX_ENTRIES){
-    startCooldown();
-  }
-}
+  // Right aligned
+  expressionsEl.innerHTML = problems.map(p=>p.expr.padStart(7,' ')).join("<br>");
+  countdownEl.style.display="block";
 
-/* ---------- Cooldown ---------- */
-function startCooldown(minutes=10){
-  let timer = minutes * 60;
-  const countdownEl = document.getElementById("countdown");
-  if(!countdownEl) return;
-
-  cooldownEl = countdownEl;
-  cooldownEl.style.display = "block";
-
-  cooldownTimer = setInterval(()=>{
-    if(timer <=0){
-      clearInterval(cooldownTimer);
-      entriesCount = 0;
-      cooldownEl.style.display = "none";
-      nextChallenge();
-      return;
-    }
-    const min = Math.floor(timer/60);
-    const sec = timer%60;
-    cooldownEl.textContent = `Next session in ${min}:${sec <10?'0'+sec:sec}`;
+  let timer=SESSION_TIME;
+  countdownEl.textContent=`Time left: ${timer}s`;
+  clearInterval(cooldownTimer);
+  cooldownTimer=setInterval(()=>{
     timer--;
+    countdownEl.textContent=`Time left: ${timer}s`;
+    if(timer<=0){
+      clearInterval(cooldownTimer);
+      startCooldown();
+    }
   },1000);
 }
 
-/* ---------- Initialize Game Loop ---------- */
-function startGame(){
-  nextChallenge();
-  setInterval(nextChallenge, CHALLENGE_INTERVAL_MS);
-
-  const buzzBtn = document.getElementById("buzzBtn");
-  if(buzzBtn) buzzBtn.addEventListener("click", handleBuzzSubmission);
+function startCooldown(minutes=5){
+  expressionsEl.innerHTML="";
+  countdownEl.style.display="block";
+  let timer=minutes*60;
+  cooldownTimer=setInterval(()=>{
+    timer--;
+    const min=Math.floor(timer/60);
+    const sec=timer%60;
+    countdownEl.textContent=`Next session in ${min}:${sec<10?'0'+sec:sec}`;
+    if(timer<=0){
+      clearInterval(cooldownTimer);
+      generateSession();
+    }
+  },1000);
 }
 
-/* ---------- Export User Setup ---------- */
-export function setCurrentUser(user){
-  currentUser = user;
-  startGame();
+function handleBuzz(){
+  if(entriesCount>=MAX_ENTRIES){
+    showStarPopup("Session full! Wait for next session.");
+    return;
+  }
+  if(currentUser.stars<BUZZ_COST){
+    showStarPopup("Not enough stars to buzz!");
+    return;
+  }
+
+  const input=buzzInput.value.trim();
+  if(!input){ showStarPopup("Enter cumulative answer!"); return; }
+
+  currentUser.stars-=BUZZ_COST;
+  entriesCount++;
+
+  if(input===currentSession.cumulative){
+    REWARD_STARS = HARD_MODE?50:20;
+    REWARD_CASH = HARD_MODE?200:50;
+    currentUser.stars+=REWARD_STARS;
+    currentUser.cash+=REWARD_CASH;
+    showStarPopup(`🎉 Correct! +${REWARD_STARS}⭐ & ₦${REWARD_CASH}`);
+    const span=document.createElement("span");
+    span.textContent=currentSession.problems.map(p=>p.expr).join(", ") + " = "+currentSession.cumulative;
+    wordMarquee.appendChild(span);
+  } else showStarPopup("❌ Wrong answer!");
+
+  document.getElementById('starCount').textContent=currentUser.stars;
+  document.getElementById('cashCount').textContent=currentUser.cash;
+
+  const msg=document.createElement('div');
+  msg.textContent=currentUser.name+": "+input + (input===currentSession.cumulative?" ✅":" ❌");
+  messagesEl.appendChild(msg);
+  messagesEl.scrollTop=messagesEl.scrollHeight;
+
+  buzzInput.value="";
+  if(entriesCount>=MAX_ENTRIES) startCooldown();
 }
+
+document.getElementById('buzzBtn').addEventListener('click',handleBuzz);
+document.getElementById('rulesBtn').addEventListener('click',()=>{
+  alert(`🎮 Money Maths Rules:
+- 8 vertical math problems per session.
+- Input cumulative answer in one go.
+- Each buzz costs ${BUZZ_COST}⭐.
+- Correct gives stars & cash.
+- Max ${MAX_ENTRIES} correct entries per session.
+- 60 seconds per session, new session after cooldown.
+- Heavy Money mode increases difficulty & rewards.`);
+});
+
+document.getElementById('hardModeBtn').addEventListener('click',()=>{
+  HARD_MODE=!HARD_MODE;
+  alert(HARD_MODE?"💸 Heavy Money ON!":"💰 Heavy Money OFF!");
+  generateSession();
+});
+
+generateSession();
