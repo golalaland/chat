@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Money Train</title>
-<link rel="icon" href="data:," />
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -12,107 +11,76 @@
   --card:#111;
   --muted:#aaa;
   --accent:#FF1493;
+  --accent-gradient: linear-gradient(90deg,#FF1493,#FF8C00);
   --glass: rgba(255,255,255,0.03);
 }
 
-body, html {
-  margin:0; padding:0; height:100%; font-family: 'Inter', sans-serif;
-  background: var(--bg); color:#fff; display:flex; justify-content:center;
-}
+/* Base */
+body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:#fff;display:flex;justify-content:center;}
+#appWrapper{width:100%;max-width:480px;display:flex;flex-direction:column;height:100%;position:relative;}
 
-#appWrapper{
-  width:100%; max-width:480px; display:flex; flex-direction:column; height:100%; position:relative;
-}
+/* Header */
+#gameHeader{text-align:center;margin-top:10px;}
+#welcomeText{font-family:'Press Start 2P',cursive;font-size:12px;color:var(--accent);}
+#scrambleText{font-family:'Press Start 2P',cursive;font-size:22px;color:var(--accent);margin-top:2px;}
 
-/* ---------- Header ---------- */
-#gameHeader {text-align:center; margin-top:10px;}
-#welcomeText{font-family:'Press Start 2P', cursive; font-size:12px; color:var(--accent);}
-#scrambleText{font-family:'Press Start 2P', cursive; font-size:22px; color:var(--accent); margin-top:2px;}
+/* Join Train Button */
+#joinTrainBtn {display:block;margin:20px auto;padding:12px 20px;border-radius:20px;
+  background:linear-gradient(90deg,#FF1493,#FF8C00);color:#fff;font-weight:800;font-size:16px;
+  border:none;cursor:pointer;text-shadow:0 0 6px #fff;transition:0.3s;}
+#joinTrainBtn:hover {transform:scale(1.05);box-shadow:0 0 15px #FF1493;}
 
-/* ---------- Join Button ---------- */
-#joinTrainBtn {
-  display:block; margin:6px auto; padding:6px 12px;
-  border-radius:12px; background:var(--card);
-  border:1px solid rgba(255,20,147,0.2); color:var(--accent);
-  font-weight:700; cursor:pointer;
-}
+/* Loading Bar */
+#loadingContainer{width:90%;max-width:480px;margin:10px auto;background:#111;border-radius:12px;overflow:hidden;position:relative;}
+#loadingBar{width:0%;height:16px;background:var(--accent);}
+#trainEmoji{position:absolute;left:0;top:-8px;font-size:24px;transition:left 1s linear;}
 
-/* ---------- Loading Bar ---------- */
-#loadingContainer {
-  width:90%; max-width:480px; margin:10px auto; background:#111;
-  border-radius:12px; overflow:hidden; height:16px;
-}
-#loadingBar {width:0%; height:16px; background:var(--accent); transition: width 0.1s linear;}
+/* Daily Reward */
+#dailyReward{width:90%;max-width:480px;margin:10px auto;background:#222;border-radius:12px;padding:6px;color:var(--accent);text-align:center;font-weight:700;}
 
-/* ---------- Problem Board ---------- */
-#problemBoard {display:none; text-align:center; margin-top:10px;}
-#problemBlocks {
-  display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;
-}
-.problemInput {
-  width:60px; padding:6px; margin:4px; border-radius:6px;
-  border:1px solid rgba(255,255,255,0.2); background:#0e0e0e; color:#fff; text-align:center;
-}
+/* Problem Blocks */
+.scramble-board{text-align:center; margin:10px 0; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;}
+.problemInput{width:60px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);
+  background:#0e0e0e;color:#fff;text-align:center;font-weight:700;}
 
-/* ---------- Solve Button ---------- */
-#solveBtn {
-  margin-top:8px; padding:10px; border-radius:999px; background:#000;
-  border:1px solid var(--accent); color:var(--accent);
-  font-weight:700; font-size:16px; cursor:pointer; animation: flicker 2s infinite alternate;
-}
-@keyframes flicker {0%{opacity:1;}50%{opacity:0.6;}100%{opacity:1;}}
-
-/* ---------- Messages ---------- */
-#messages {flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px;}
-
-/* ---------- Profile Panel ---------- */
-.profile {position:fixed; bottom:60px; width:100%; max-width:480px; left:0; display:flex; justify-content:center; z-index:99;}
-.profile-card {background:var(--glass); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:6px; text-align:center;}
-.profile-name {font-weight:800; font-size:14px; color:var(--accent);}
-.profile-info {font-size:12px; color:#fff;}
+/* Profile Panel */
+.profile{position:fixed;bottom:60px;width:100%;max-width:480px;left:0;display:flex;justify-content:center;z-index:99;}
+.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:6px;text-align:center;}
+.profile-name{font-weight:800;font-size:14px;color:var(--accent);}
+.profile-info{font-size:12px;color:#fff;}
 
 /* Star popup */
-.star-popup{
-  position:fixed; left:50%; top:20%; transform:translateX(-50%);
-  background:var(--card); padding:8px 12px; border-radius:8px;
-  border:1px solid rgba(255,255,255,0.05); display:none; z-index:1000;
-  color:var(--accent); font-size:13px; text-align:center;
-}
+.star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
 <div id="appWrapper">
-
   <!-- Header -->
   <div id="gameHeader">
     <div id="welcomeText">WELCOME TO</div>
     <div id="scrambleText">MONEY TRAIN 🚂</div>
   </div>
 
-  <!-- Entry Stars -->
-  <div id="entryCostPanel">
-    <button id="joinTrainBtn">Join Train (-<span id="starCost">10</span>⭐)</button>
-  </div>
+  <!-- Daily Reward -->
+  <div id="dailyReward">Daily Benefit: ₦<span id="dailyPot">1000</span></div>
+
+  <!-- Join Train Button -->
+  <button id="joinTrainBtn">Join Train (-<span id="starCost">10</span>⭐)</button>
 
   <!-- Loading Bar -->
   <div id="loadingContainer">
     <div id="loadingBar"></div>
+    <div id="trainEmoji">🚂</div>
   </div>
 
   <!-- Problem Blocks -->
-  <div id="problemBoard">
-    <div id="problemBlocks"></div>
-    <button id="solveBtn">SOLVE</button>
-  </div>
+  <div id="problemBoard" class="scramble-board" style="display:none;"></div>
 
-  <!-- Messages -->
-  <div id="messages"></div>
-
-  <!-- Profile panel -->
+  <!-- Profile Panel -->
   <div class="profile" id="profilePanel">
     <div class="profile-card">
       <div class="profile-name" id="profileName">GUEST 0000</div>
-      <div class="profile-info">STARS: <span id="starCount">0</span>⭐</div>
+      <div class="profile-info">STARS: <span id="starCount">50</span>⭐</div>
       <div class="profile-info">CASH: ₦<span id="cashCount">0</span></div>
     </div>
   </div>
