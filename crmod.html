@@ -994,7 +994,13 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       <div class="room-desc">Chat. Own your vibe.
         
 <div id="roomSubtitle" class="room-subtitle">Sign in to Chat & Start collecting stars.</div>
-<span id="onlineCount" class="onlineCount"></span>
+<div id="onlineWrapper" style="display:flex; align-items:center; gap:6px; font-family:sans-serif; font-weight:500;">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+  <span id="onlineCount">0</span>
+</div>
 
 
 <!-- 🌟 Featured Hosts Button -->
