@@ -1300,21 +1300,17 @@ giftBtn.addEventListener("click", async () => {
     const receiverRef = doc(db, "users", host.id);
     const featuredReceiverRef = doc(db, "featuredHosts", host.id);
 
-    // ✅ Transaction to update both users + featuredHosts safely
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(senderRef);
       const receiverSnap = await tx.get(receiverRef);
 
       if (!senderSnap.exists()) throw new Error("Your user record not found.");
-      if (!receiverSnap.exists()) {
-        // Auto-create receiver user if missing
-        tx.set(receiverRef, { stars: 0, starsGifted: 0 }, { merge: true });
-      }
+      if (!receiverSnap.exists()) tx.set(receiverRef, { stars: 0, starsGifted: 0 }, { merge: true });
 
       const senderData = senderSnap.data();
       if ((senderData.stars || 0) < giftStars) throw new Error("Insufficient stars");
 
-      // --- Users updates ---
+      // --- Users updates only ---
       tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
       tx.update(receiverRef, { stars: increment(giftStars) });
 
@@ -1329,7 +1325,6 @@ giftBtn.addEventListener("click", async () => {
     showGiftAlert(`⚠️ Something went wrong: ${err.message}`);
   }
 });
-
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
   e.preventDefault();
