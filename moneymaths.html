@@ -134,6 +134,31 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   border:1px dashed #ff7a59;
 }
 
+.verify-section {
+  text-align: center;
+  margin-top: 1.5em;
+}
+
+#verifyTicketBtn {
+  background: linear-gradient(90deg, #00c853, #b2ff59);
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px; /* prevents zoom on iOS */
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.3s ease;
+}
+
+#verifyTicketBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#verifyTicketBtn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
 /* small helpers */
 .hidden { display:none !important; }
 </style>
@@ -172,6 +197,9 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
       </div>
     </div>
   </div>
+  
+  <audio id="trainWhistle" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_31cb3c7056.mp3?filename=train-whistle-117125.mp3" preload="auto"></audio>
+<audio id="trainDepart" src="https://cdn.pixabay.com/download/audio/2021/09/29/audio_9da9a23f6e.mp3?filename=train-departure-81307.mp3" preload="auto"></audio>
 
   <!-- Daily Reward -->
   <div id="dailyReward">DAILY CASH REWARD: ₦<span id="dailyPot">1,000,000</span></div>
@@ -190,6 +218,11 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 
   <!-- Submit Answers Button (created dynamically if missing) -->
   <button id="submitAnswers" class="hidden">Submit Answers</button>
+
+<!-- 🎫 Verify Ticket Button -->
+<div class="verify-section">
+  <button id="verifyTicketBtn" disabled>Verify Ticket 🎫</button>
+</div>
 
   <!-- Profile Panel -->
   <div class="profile" id="profilePanel">
@@ -423,6 +456,61 @@ document.addEventListener('DOMContentLoaded', () => {
       problemBoard.appendChild(wrapper);
     }
   }
+
+const verifyBtn = document.getElementById('verifyTicketBtn');
+const inputs = document.querySelectorAll('.problemInput');
+const whistle = document.getElementById('trainWhistle');
+const depart = document.getElementById('trainDepart');
+
+let dailyPot = 1000000; // ₦1,000,000 for local simulation
+
+inputs.forEach(inp => {
+  inp.addEventListener('input', () => {
+    const allFilled = Array.from(inputs).every(i => i.value.trim() !== '');
+    verifyBtn.disabled = !allFilled;
+  });
+});
+
+verifyBtn.addEventListener('click', () => {
+  let correct = true;
+  let ticketNumber = '';
+
+  inputs.forEach((inp, i) => {
+    const val = parseInt(inp.value);
+    ticketNumber += val;
+    if (val !== currentProblems[i].ans) correct = false;
+  });
+
+  if (!correct) {
+    showPopup("⚠️ You’re not yet done hashing your train ticket, hurry!");
+    return;
+  }
+
+  const reward = Math.floor(Math.random() * 5000) + 1000; // ₦1,000–₦6,000
+  const destination = document.getElementById('trainDestination').textContent;
+
+  // 🎵 Play whistle
+  whistle.currentTime = 0;
+  whistle.play();
+
+  setTimeout(() => {
+    showPopup(`🎫 You’ve secured your ${destination} train ticket number ${ticketNumber}! You’ve earned ₦${reward}!`);
+  }, 500);
+
+  dailyPot -= reward;
+
+  if (dailyPot <= 0) {
+    // 🎵 Train leaves sound
+    depart.currentTime = 0;
+    depart.play();
+
+    setTimeout(() => {
+      showPopup("🚫 Train Station Closed for Today! Check back tomorrow.");
+      document.getElementById('joinTrainBtn').disabled = true;
+      verifyBtn.disabled = true;
+    }, 2000);
+  }
+});
 
   /* ------------- Loading (countdown until train leaves) ------------- */
   function startLoadingBar(){
