@@ -260,9 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // show submit/verify button for gameplay and attach input watchers
-    submitAnswersBtn.style.display = 'block';
-    submitAnswersBtn.disabled = false; // visible; disabling handled below
-    submitAnswersBtn.style.opacity = '0.6';
+    submitAnswersBtn.classList.remove('hidden');
+submitAnswersBtn.style.display = 'block';
+submitAnswersBtn.disabled = false;
+submitAnswersBtn.style.opacity = '0.6';
 
     // watch inputs: only enable button when all fields are filled (not necessarily correct)
     const inputs = problemBoard.querySelectorAll('.problemInput');
@@ -332,10 +333,13 @@ document.addEventListener('DOMContentLoaded', () => {
     trainActive = true;
     joinTrainBtn.style.display = 'none';
     generateProblems();
-    problemBoard.classList.remove('hidden');
-    submitAnswersBtn.style.display = 'block';
-    submitAnswersBtn.disabled = true;
-    submitAnswersBtn.style.opacity = '0.6';
+    
+ // show problem board + button
+problemBoard.classList.remove('hidden');
+submitAnswersBtn.classList.remove('hidden');
+submitAnswersBtn.style.display = 'block';
+submitAnswersBtn.disabled = false;
+submitAnswersBtn.style.opacity = '0.6';
 
     // start timer & sound
     startLoadingBar();
@@ -345,9 +349,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function endTrain(success, ticketNumber=null){
     stopLoadingBar();
 
-    // hide problems & submit
-    problemBoard.classList.add('hidden');
-    submitAnswersBtn.style.display = 'none';
+  // hide problems & submit
+problemBoard.classList.add('hidden');
+submitAnswersBtn.classList.add('hidden');
+submitAnswersBtn.style.display = 'none';
 
     // show join again only if pot >0
     if ((getStoredPot() ?? INITIAL_POT) > 0){
