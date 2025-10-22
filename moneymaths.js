@@ -123,57 +123,91 @@ joinTrainBtn.addEventListener('click', ()=>{
   }
 });
 /* ---------------- Train Terminal Logic ---------------- */
-const trainNames = ["Money Express", "Starliner 9000", "Frenzy Rail", "Lucky Cargo", "Fortune Flyer"];
-const destinations = ["Lagos", "Accra", "Nairobi", "Cape Town", "Johannesburg", "Abuja", "Kigali", "London", "Dubai", "New York"];
+const trainNames = [
+  "Money Express",
+  "Starliner 9000",
+  "Frenzy Rail",
+  "Lucky Cargo",
+  "Fortune Flyer",
+  "Crypto Cruiser",
+  "Golden Dash",
+  "Midnight Ride"
+];
+const destinations = [
+  "Lagos",
+  "Accra",
+  "Nairobi",
+  "Cape Town",
+  "Johannesburg",
+  "Abuja",
+  "Kigali",
+  "London",
+  "Dubai",
+  "New York"
+];
 
 function setTrainTerminal() {
-  const name = trainNames[Math.floor(Math.random()*trainNames.length)];
-  const dest = destinations[Math.floor(Math.random()*destinations.length)];
+  const name = trainNames[Math.floor(Math.random() * trainNames.length)];
+  const dest = destinations[Math.floor(Math.random() * destinations.length)];
   const date = new Date().toLocaleDateString('en-GB', {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
     year: 'numeric'
   });
-  
+
   document.getElementById('trainName').textContent = name;
   document.getElementById('trainDate').textContent = date;
   document.getElementById('trainDestination').textContent = dest;
 }
 
-setTrainTerminal(); // Run at startup
+/* ⏰ Live Time Updater */
+function updateTrainTime() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-GB', { hour12: false });
+  const timeEl = document.getElementById('trainTime');
+  if (timeEl) timeEl.textContent = timeStr;
+}
+
+/* Refresh name/destination every 60s */
+setTrainTerminal();
+setInterval(setTrainTerminal, 60000);
+setInterval(updateTrainTime, 1000);
+updateTrainTime();
 
 /* ---------------- Confirmation Modal ---------------- */
 const confirmModal = document.getElementById('confirmModal');
 const confirmYes = document.getElementById('confirmYes');
 const confirmNo = document.getElementById('confirmNo');
 
-joinTrainBtn.removeEventListener('click', joinTrainBtn.onclick); // Prevent double listener if any
+/* Make sure no duplicate listeners */
+joinTrainBtn.replaceWith(joinTrainBtn.cloneNode(true));
+const newJoinBtn = document.getElementById('joinTrainBtn');
 
-joinTrainBtn.addEventListener('click', ()=>{
-  if(trainActive){
-    // If train already started, handle as normal
+/* Handle Join Train button */
+newJoinBtn.addEventListener('click', () => {
+  if (trainActive) {
+    // If train already started, handle normally
     const inputs = document.querySelectorAll('.problemInput');
     let correct = true;
-    inputs.forEach((inp,i)=>{
-      if(parseInt(inp.value) !== currentProblems[i].ans){
-        correct = false;
-      }
+    inputs.forEach((inp, i) => {
+      if (parseInt(inp.value) !== currentProblems[i].ans) correct = false;
     });
     clearInterval(loadingInterval);
     trainActive = false;
     endTrain(correct);
   } else {
-    // Show modal first
+    // Show confirmation modal first
     confirmModal.style.display = 'flex';
   }
 });
 
-confirmYes.addEventListener('click', ()=>{
+/* Modal choices */
+confirmYes.addEventListener('click', () => {
   confirmModal.style.display = 'none';
-  startTrain(); // Run your existing function
+  startTrain(); // existing function
 });
 
-confirmNo.addEventListener('click', ()=>{
+confirmNo.addEventListener('click', () => {
   confirmModal.style.display = 'none';
 });
