@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Money Train</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+
 <style>
 :root {
   --bg:#000;
@@ -16,7 +19,7 @@
 }
 
 /* Base */
-body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:#fff;display:flex;justify-content:center;}
+body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;background:var(--bg);color:#fff;display:flex;justify-content:center;}
 #appWrapper{width:100%;max-width:480px;display:flex;flex-direction:column;height:100%;position:relative;}
 
 /* Header */
@@ -31,7 +34,7 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
 #joinTrainBtn:hover {transform:scale(1.05);box-shadow:0 0 15px #FF1493;}
 
 /* Loading Bar */
-#loadingContainer{width:90%;max-width:480px;margin:10px auto;background:#111;border-radius:12px;overflow:hidden;position:relative;}
+#loadingContainer{width:90%;max-width:480px;margin:10px auto;background:#111;border-radius:12px;overflow:hidden;position:relative;display:none;}
 #loadingBar{width:0%;height:16px;background:var(--accent);}
 #trainEmoji{position:absolute;left:0;top:-8px;font-size:24px;transition:left 1s linear;}
 
@@ -43,6 +46,21 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
 .problemInput{width:60px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);
   background:#0e0e0e;color:#fff;text-align:center;font-weight:700;}
 
+/* Submit Button */
+#submitAnswers {
+  display:none;
+  margin:10px auto;
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(90deg,#FF1493,#FF8C00);
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+  transition:0.3s;
+}
+#submitAnswers:hover {transform:scale(1.05);}
+
 /* Profile Panel */
 .profile{position:fixed;bottom:60px;width:100%;max-width:480px;left:0;display:flex;justify-content:center;z-index:99;}
 .profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:6px;text-align:center;}
@@ -51,6 +69,8 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
 
 /* Star popup */
 .star-popup{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;text-align:center;}
+
+/* Confirmation Modal */
 .confirm-modal {
   position: fixed;
   top: 0; left: 0;
@@ -62,30 +82,29 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
   z-index: 9999;
   backdrop-filter: blur(4px);
 }
-
 .confirm-box {
   background: #000;
-  border: 2px solid #FF1493;
-  border-radius: 10px;
-  padding: 20px 25px;
+  border: 1.5px solid #FF1493;
+  border-radius: 12px;
+  padding: 16px 22px;
   text-align: center;
   color: white;
-  box-shadow: 0 0 20px #FF1493aa;
-  font-family: 'Press Start 2P', cursive;
-  animation: flickerBox 2s infinite;
+  box-shadow: 0 0 10px #FF149380;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  max-width: 300px;
+  width: 80%;
 }
-
-@keyframes flickerBox {
-  0%, 100% { box-shadow: 0 0 20px #FF1493aa; }
-  50% { box-shadow: 0 0 10px #FF149355; }
+.confirm-box h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #FF1493;
 }
-
 .confirm-actions {
   display: flex;
   justify-content: space-around;
   margin-top: 15px;
 }
-
 .confirm-actions button {
   padding: 8px 16px;
   border: none;
@@ -96,7 +115,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
   color: #fff;
   transition: 0.2s ease;
 }
-
 .confirm-actions button:hover {
   transform: scale(1.05);
   opacity: 0.9;
@@ -145,7 +163,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
   text-shadow: 0 0 10px #FF1493aa;
   animation: headerGlow 2.5s ease-in-out infinite alternate;
 }
-
 @keyframes headerGlow {
   from { text-shadow: 0 0 5px #FF8C00; }
   to { text-shadow: 0 0 15px #FF1493; }
@@ -162,19 +179,17 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
   justify-content: space-between;
   animation: subtleBlink 5s infinite;
 }
-
 .terminal-line span {
   color: #00FF99;
   text-shadow: 0 0 6px #00FF99;
 }
-
 @keyframes subtleBlink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.97; }
 }
-
 </style>
 </head>
+
 <body>
 <div id="appWrapper">
   <!-- Header -->
@@ -183,34 +198,32 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
     <div id="scrambleText">MONEY TRAIN 🚂</div>
   </div>
   
-<!-- 🚉 Train Terminal Display -->
-<div id="trainTerminal" class="train-terminal glass-terminal">
-  <div class="terminal-header">TRAIN TERMINAL</div>
-  <div class="terminal-line">🚂 Train Name: <span id="trainName">Money Express</span></div>
-  <div class="terminal-line">📅 Date: <span id="trainDate"></span></div>
-  <div class="terminal-line">⏰ Time: <span id="trainTime"></span></div>
-  <div class="terminal-line">📍 Destination: <span id="trainDestination"></span></div>
-</div>
+  <!-- 🚉 Train Terminal Display -->
+  <div id="trainTerminal" class="train-terminal glass-terminal">
+    <div class="terminal-header">TRAIN TERMINAL</div>
+    <div class="terminal-line">🚂 Train Name: <span id="trainName">Money Express</span></div>
+    <div class="terminal-line">📅 Date: <span id="trainDate"></span></div>
+    <div class="terminal-line">⏰ Time: <span id="trainTime"></span></div>
+    <div class="terminal-line">📍 Destination: <span id="trainDestination">Lagos Central</span></div>
+  </div>
 
-
-
-<!-- 🪩 Confirmation Modal -->
-<div id="confirmModal" class="confirm-modal">
-  <div class="confirm-box">
-    <h3>Join Train?</h3>
-    <p>It’ll cost <b>10⭐</b> to join the Money Train.</p>
-    <div class="confirm-actions">
-      <button id="confirmYes">Join</button>
-      <button id="confirmNo">Cancel</button>
+  <!-- 🪩 Confirmation Modal -->
+  <div id="confirmModal" class="confirm-modal">
+    <div class="confirm-box">
+      <h3>Join Train?</h3>
+      <p>Are you ready to play and ride the Money Train?</p>
+      <div class="confirm-actions">
+        <button id="confirmYes">Join</button>
+        <button id="confirmNo">Cancel</button>
+      </div>
     </div>
   </div>
-</div>
 
   <!-- Daily Reward -->
   <div id="dailyReward">DAILY CASH REWARD: ₦<span id="dailyPot">1,000,000</span></div>
 
-<!-- Join Train Button -->
-<button id="joinTrainBtn">PLAY</button>
+  <!-- Join Train Button -->
+  <button id="joinTrainBtn">JOIN TRAIN</button>
 
   <!-- Loading Bar -->
   <div id="loadingContainer">
@@ -220,6 +233,9 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
 
   <!-- Problem Blocks -->
   <div id="problemBoard" class="scramble-board" style="display:none;"></div>
+
+  <!-- Submit Answers Button -->
+  <button id="submitAnswers">Submit Answers</button>
 
   <!-- Profile Panel -->
   <div class="profile" id="profilePanel">
@@ -234,6 +250,91 @@ body, html {margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;backgr
 <!-- Star popup -->
 <div class="star-popup" id="starPopup">+1 ⭐</div>
 
-<script src="moneymaths.js"></script>
+<script>
+/* ------------------ Terminal Clock ------------------ */
+function updateTerminalTime() {
+  const now = new Date();
+  document.getElementById("trainDate").textContent = now.toLocaleDateString();
+  document.getElementById("trainTime").textContent = now.toLocaleTimeString();
+}
+setInterval(updateTerminalTime, 1000);
+updateTerminalTime();
+
+/* ------------------ Modal Logic ------------------ */
+const joinBtn = document.getElementById("joinTrainBtn");
+const modal = document.getElementById("confirmModal");
+const yesBtn = document.getElementById("confirmYes");
+const noBtn = document.getElementById("confirmNo");
+const loadingContainer = document.getElementById("loadingContainer");
+const loadingBar = document.getElementById("loadingBar");
+const trainEmoji = document.getElementById("trainEmoji");
+const problemBoard = document.getElementById("problemBoard");
+const submitAnswers = document.getElementById("submitAnswers");
+const cashDisplay = document.getElementById("cashCount");
+const dailyPotDisplay = document.getElementById("dailyPot");
+
+let dailyPot = 1000000;
+let minedAmount = 0;
+const mineValue = 100;
+
+joinBtn.addEventListener("click", () => {
+  modal.style.display = "flex";
+});
+noBtn.addEventListener("click", () => {
+  modal.style.display = "none";
+});
+yesBtn.addEventListener("click", () => {
+  modal.style.display = "none";
+  startTrainLoading();
+});
+
+/* ------------------ Train Loader ------------------ */
+function startTrainLoading() {
+  loadingContainer.style.display = "block";
+  let width = 0;
+  const interval = setInterval(() => {
+    width += 5;
+    loadingBar.style.width = width + "%";
+    trainEmoji.style.left = `calc(${width}% - 10px)`;
+    if (width >= 100) {
+      clearInterval(interval);
+      loadingContainer.style.display = "none";
+      startGame();
+    }
+  }, 200);
+}
+
+/* ------------------ Game Setup ------------------ */
+function startGame() {
+  problemBoard.style.display = "flex";
+  submitAnswers.style.display = "block";
+  problemBoard.innerHTML = "";
+  for (let i = 0; i < 3; i++) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.placeholder = "?";
+    input.className = "problemInput";
+    problemBoard.appendChild(input);
+  }
+}
+
+/* ------------------ Submit Logic ------------------ */
+submitAnswers.addEventListener("click", () => {
+  mineCash();
+});
+
+/* ------------------ Mining Logic ------------------ */
+function mineCash() {
+  if (minedAmount < dailyPot) {
+    minedAmount += mineValue;
+    let userCash = parseInt(cashDisplay.textContent);
+    userCash += mineValue;
+    cashDisplay.textContent = userCash.toLocaleString();
+    dailyPotDisplay.textContent = (dailyPot - minedAmount).toLocaleString();
+  } else {
+    alert("💰 Today's reward pot is empty. Come back tomorrow!");
+  }
+}
+</script>
 </body>
 </html>
