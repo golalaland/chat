@@ -16,6 +16,8 @@
   --accent:#FF1493;
   --accent-gradient: linear-gradient(90deg,#FF1493,#FF8C00);
   --glass: rgba(255,255,255,0.03);
+}
+
 /* Base */
 body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;background:var(--bg);color:#fff;display:flex;justify-content:center;}
 #appWrapper{width:100%;max-width:480px;display:flex;flex-direction:column;height:100%;position:relative;padding-bottom:120px;}
@@ -132,10 +134,8 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   border:1px dashed #ff7a59;
 }
 
-.verify-section {
-  text-align: center;
-  margin-top: 1.5em;
-}
+/* small helpers */
+.hidden { display:none !important; }
 </style>
 </head>
 <body>
@@ -172,7 +172,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
       </div>
     </div>
   </div>
-  
 
   <!-- Daily Reward -->
   <div id="dailyReward">DAILY CASH REWARD: ₦<span id="dailyPot">1,000,000</span></div>
@@ -191,7 +190,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 
   <!-- Submit Answers Button (created dynamically if missing) -->
   <button id="submitAnswers" class="hidden">Submit Answers</button>
-
 
   <!-- Profile Panel -->
   <div class="profile" id="profilePanel">
