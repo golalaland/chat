@@ -661,7 +661,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
   const helloText = document.getElementById("helloText");
-  const roomDescText = document.querySelector(".room-desc");
+  const roomDescText = document.querySelector(".room-desc .text");
   const hostsBtn = document.getElementById("openHostsBtn");
 
   if (user) {
