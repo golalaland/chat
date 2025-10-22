@@ -251,90 +251,322 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 <div class="star-popup" id="starPopup">+1 ⭐</div>
 
 <script>
-/* ------------------ Terminal Clock ------------------ */
-function updateTerminalTime() {
-  const now = new Date();
-  document.getElementById("trainDate").textContent = now.toLocaleDateString();
-  document.getElementById("trainTime").textContent = now.toLocaleTimeString();
-}
-setInterval(updateTerminalTime, 1000);
-updateTerminalTime();
+// ----- Full fixed script ----- 
+document.addEventListener('DOMContentLoaded', () => {
 
-/* ------------------ Modal Logic ------------------ */
-const joinBtn = document.getElementById("joinTrainBtn");
-const modal = document.getElementById("confirmModal");
-const yesBtn = document.getElementById("confirmYes");
-const noBtn = document.getElementById("confirmNo");
-const loadingContainer = document.getElementById("loadingContainer");
-const loadingBar = document.getElementById("loadingBar");
-const trainEmoji = document.getElementById("trainEmoji");
-const problemBoard = document.getElementById("problemBoard");
-const submitAnswers = document.getElementById("submitAnswers");
-const cashDisplay = document.getElementById("cashCount");
-const dailyPotDisplay = document.getElementById("dailyPot");
+  /* ---------------- Sample User Data ---------------- */
+  let currentUser = {
+    uid: 'guest001',        // change when real user logs in
+    name: 'GUEST 0000',
+    stars: 50,
+    cash: 0
+  };
 
-let dailyPot = 1000000;
-let minedAmount = 0;
-const mineValue = 100;
+  const starCost = 10; // internal cost
 
-joinBtn.addEventListener("click", () => {
-  modal.style.display = "flex";
-});
-noBtn.addEventListener("click", () => {
-  modal.style.display = "none";
-});
-yesBtn.addEventListener("click", () => {
-  modal.style.display = "none";
-  startTrainLoading();
-});
+  // UI refs (guarded)
+  const joinTrainBtn = document.getElementById('joinTrainBtn');
+  const problemBoard = document.getElementById('problemBoard');
+  const loadingBar = document.getElementById('loadingBar');
+  const trainEmoji = document.getElementById('trainEmoji');
+  const starPopup = document.getElementById('starPopup');
+  const dailyPotEl = document.getElementById('dailyPot');
+  const confirmModal = document.getElementById('confirmModal');
+  const confirmYes = document.getElementById('confirmYes');
+  const confirmNo = document.getElementById('confirmNo');
 
-/* ------------------ Train Loader ------------------ */
-function startTrainLoading() {
-  loadingContainer.style.display = "block";
-  let width = 0;
-  const interval = setInterval(() => {
-    width += 5;
-    loadingBar.style.width = width + "%";
-    trainEmoji.style.left = `calc(${width}% - 10px)`;
-    if (width >= 100) {
-      clearInterval(interval);
-      loadingContainer.style.display = "none";
-      startGame();
+  const profileNameEl = document.getElementById('profileName');
+  const starCountEl = document.getElementById('starCount');
+  const cashCountEl = document.getElementById('cashCount');
+
+  if (!joinTrainBtn || !problemBoard || !loadingBar || !trainEmoji || !starPopup || !dailyPotEl || !confirmModal || !confirmYes || !confirmNo) {
+    console.error('One or more required elements are missing from the DOM. Check ids.');
+    return;
+  }
+
+  // write initial profile info
+  if (profileNameEl) profileNameEl.textContent = currentUser.name;
+  if (starCountEl) starCountEl.textContent = currentUser.stars;
+  if (cashCountEl) cashCountEl.textContent = currentUser.cash;
+
+  /* ---------------- Globals ---------------- */
+  const NUM_BLOCKS = 8;
+  let currentProblems = [];
+  let loadingInterval = null;
+  let loadingProgress = 0;
+  let trainActive = false;
+
+  /* ---------------- Helpers ---------------- */
+  function showStarPopup(text){
+    starPopup.textContent = text;
+    starPopup.style.display = 'block';
+    setTimeout(()=>{ starPopup.style.display = 'none'; }, 1500);
+  }
+
+  function createOrGetSubmitButton(){
+    let btn = document.getElementById('submitAnswers');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'submitAnswers';
+      btn.textContent = 'Submit Answers';
+      // apply minimal inline style (you can keep CSS in file)
+      btn.style.display = 'none';
+      btn.style.margin = '10px auto';
+      btn.style.padding = '10px 20px';
+      btn.style.borderRadius = '10px';
+      btn.style.border = 'none';
+      btn.style.cursor = 'pointer';
+      btn.style.background = 'linear-gradient(90deg,#FF1493,#FF8C00)';
+      btn.style.color = '#fff';
+      btn.style.fontWeight = '800';
+      // append below problem board
+      problemBoard.insertAdjacentElement('afterend', btn);
     }
-  }, 200);
-}
-
-/* ------------------ Game Setup ------------------ */
-function startGame() {
-  problemBoard.style.display = "flex";
-  submitAnswers.style.display = "block";
-  problemBoard.innerHTML = "";
-  for (let i = 0; i < 3; i++) {
-    const input = document.createElement("input");
-    input.type = "number";
-    input.placeholder = "?";
-    input.className = "problemInput";
-    problemBoard.appendChild(input);
+    return btn;
   }
-}
 
-/* ------------------ Submit Logic ------------------ */
-submitAnswers.addEventListener("click", () => {
-  mineCash();
-});
+  /* ---------------- Problems ---------------- */
+  function generateProblems(){
+    currentProblems = [];
+    problemBoard.innerHTML = '';
+    for(let i=0;i<NUM_BLOCKS;i++){
+      let a = Math.floor(Math.random()*20)+1;
+      let b = Math.floor(Math.random()*20)+1;
+      if(a < b) [a,b] = [b,a];
+      currentProblems.push({a,b,ans:a+b});
 
-/* ------------------ Mining Logic ------------------ */
-function mineCash() {
-  if (minedAmount < dailyPot) {
-    minedAmount += mineValue;
-    let userCash = parseInt(cashDisplay.textContent);
-    userCash += mineValue;
-    cashDisplay.textContent = userCash.toLocaleString();
-    dailyPotDisplay.textContent = (dailyPot - minedAmount).toLocaleString();
-  } else {
-    alert("💰 Today's reward pot is empty. Come back tomorrow!");
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.gap = '6px';
+      wrapper.style.margin = '6px';
+
+      const label = document.createElement('div');
+      label.textContent = `${a} + ${b}`;
+      label.style.fontWeight = '700';
+      label.style.fontSize = '12px';
+      label.style.color = '#fff';
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'problemInput';
+      input.placeholder = '?';
+      input.style.width = '60px';
+      input.style.padding = '6px';
+      input.style.borderRadius = '6px';
+      input.style.border = '1px solid rgba(255,255,255,0.12)';
+      input.style.background = '#0e0e0e';
+      input.style.color = '#fff';
+      input.style.textAlign = 'center';
+      input.dataset.index = i;
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(input);
+      problemBoard.appendChild(wrapper);
+    }
   }
-}
+
+  /* ---------------- Loading Bar ---------------- */
+  function startLoadingBar(){
+    // show loading container if hidden
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) loadingContainer.style.display = 'block';
+
+    loadingProgress = 0;
+    loadingBar.style.width = '0%';
+    trainEmoji.style.left = '0px';
+    loadingInterval = setInterval(()=>{
+      loadingProgress++;
+      const percent = (loadingProgress/39)*100;
+      loadingBar.style.width = `${percent}%`;
+      // place emoji with small offset so it doesn't overflow container
+      trainEmoji.style.left = `calc(${percent}% - 12px)`;
+      if(loadingProgress >= 39){
+        clearInterval(loadingInterval);
+        loadingInterval = null;
+        trainActive = false;
+        endTrain(false); // train left
+      }
+    },1000);
+  }
+
+  function stopLoadingBar(){
+    if (loadingInterval) {
+      clearInterval(loadingInterval);
+      loadingInterval = null;
+    }
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) loadingContainer.style.display = 'none';
+  }
+
+  /* ---------------- Train Logic ---------------- */
+  function startTrain(){
+    // star check
+    if(currentUser.stars < starCost){
+      showStarPopup("Not enough stars!");
+      return;
+    }
+
+    // deduct star and update UI
+    currentUser.stars -= starCost;
+    if (starCountEl) starCountEl.textContent = currentUser.stars;
+
+    // prepare game UI
+    generateProblems();
+    problemBoard.style.display = 'flex';
+    // show submit button (created dynamically if missing)
+    const submitBtn = createOrGetSubmitButton();
+    submitBtn.style.display = 'block';
+
+    // hide join button to give space for gameplay
+    joinTrainBtn.style.display = 'none';
+
+    // change appearance state
+    trainActive = true;
+    // start loading bar (the timed train departure)
+    startLoadingBar();
+  }
+
+  /* ---------------- End Train ---------------- */
+  function endTrain(success){
+    stopLoadingBar();
+    problemBoard.style.display = 'none';
+    // hide submit button
+    const submitBtn = document.getElementById('submitAnswers');
+    if (submitBtn) submitBtn.style.display = 'none';
+
+    // restore join button (but hide if user is logged in and you want it hidden)
+    // If you want join button permanently hidden for logged-in users, change the condition below
+    if (currentUser.uid === 'guest001') {
+      joinTrainBtn.style.display = 'block';
+    } else {
+      // hide for logged-in users if desired:
+      joinTrainBtn.style.display = 'none';
+    }
+
+    // reset appearance
+    joinTrainBtn.textContent = 'Join Train';
+    joinTrainBtn.style.background = 'linear-gradient(90deg,#FF1493,#FF8C00)';
+
+    if(success){
+      // reward calculation consistent with old logic
+      const rewardStars = 5 * NUM_BLOCKS;
+      const rewardCash = 50 * NUM_BLOCKS;
+      currentUser.stars += rewardStars;
+      currentUser.cash += rewardCash;
+      if (starCountEl) starCountEl.textContent = currentUser.stars;
+      if (cashCountEl) cashCountEl.textContent = currentUser.cash;
+      // update daily pot element (add rewardCash to pot OR subtract depending on your desired behavior)
+      // Original code added reward to daily pot; if you want mining model instead, implement elsewhere.
+      if (dailyPotEl) dailyPotEl.textContent = parseInt(dailyPotEl.textContent) + rewardCash;
+      showStarPopup(`+${rewardStars}⭐ +₦${rewardCash}`);
+    } else {
+      showStarPopup("Train left! You got nothing 😢");
+    }
+  }
+
+  /* ---------------- Button + Modal Logic ---------------- */
+  // single listener for joinTrainBtn
+  joinTrainBtn.addEventListener('click', () => {
+    if (trainActive) {
+      // safety: should not happen because join button is hidden when trainActive; but keep fallback:
+      const inputs = document.querySelectorAll('.problemInput');
+      let correct = true;
+      inputs.forEach((inp, i) => {
+        if (parseInt(inp.value) !== currentProblems[i].ans) correct = false;
+      });
+      stopLoadingBar();
+      trainActive = false;
+      endTrain(correct);
+    } else {
+      // open modal
+      confirmModal.style.display = 'flex';
+      // optionally: populate modal with dynamic train/destination info:
+      const tn = document.getElementById('trainName')?.textContent || '';
+      const dest = document.getElementById('trainDestination')?.textContent || '';
+      const modalP = confirmModal.querySelector('p');
+      if (modalP) modalP.textContent = `Join ${tn} → ${dest}? Ready to play?`;
+    }
+  });
+
+  confirmYes.addEventListener('click', () => {
+    confirmModal.style.display = 'none';
+    startTrain();
+  });
+
+  confirmNo.addEventListener('click', () => {
+    confirmModal.style.display = 'none';
+  });
+
+  /* ---------------- Submit Answers button handling ---------------- */
+  const submitBtn = createOrGetSubmitButton();
+  submitBtn.addEventListener('click', () => {
+    // user clicks submit, validate answers
+    if (!trainActive) return;
+    const inputs = document.querySelectorAll('.problemInput');
+    let correct = true;
+    inputs.forEach((inp, i) => {
+      // if empty treat as wrong
+      const val = parseInt(inp.value);
+      if (isNaN(val) || val !== currentProblems[i].ans) correct = false;
+    });
+
+    // stop timer & end train
+    stopLoadingBar();
+    trainActive = false;
+    endTrain(correct);
+  });
+
+  /* ---------------- Train Terminal (time/name/dest) ---------------- */
+  const trainNames = ["Money Express","Starliner 9000","Frenzy Rail","Lucky Cargo","Fortune Flyer","Crypto Cruiser","Golden Dash","Midnight Ride"];
+  const destinations = ["Lagos","Accra","Nairobi","Cape Town","Johannesburg","Abuja","Kigali","London","Dubai","New York"];
+
+  function setTrainTerminal(){
+    const name = trainNames[Math.floor(Math.random()*trainNames.length)];
+    const dest = destinations[Math.floor(Math.random()*destinations.length)];
+    const date = new Date().toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+    const elName = document.getElementById('trainName');
+    const elDate = document.getElementById('trainDate');
+    const elDest = document.getElementById('trainDestination');
+    if (elName) elName.textContent = name;
+    if (elDate) elDate.textContent = date;
+    if (elDest) elDest.textContent = dest;
+  }
+
+  function updateTrainTime(){
+    const now = new Date();
+    const timeEl = document.getElementById('trainTime');
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-GB',{hour12:false});
+  }
+
+  setTrainTerminal();
+  setInterval(setTrainTerminal, 60000);
+  setInterval(updateTrainTime, 1000);
+  updateTrainTime();
+
+  /* ---------------- Hide / show join by login state ---------------- */
+  function updateJoinVisibilityByLogin(){
+    // hide join button for logged in users (you can change logic)
+    if (currentUser.uid && currentUser.uid !== 'guest001') {
+      joinTrainBtn.style.display = 'none';
+    } else {
+      joinTrainBtn.style.display = 'block';
+    }
+  }
+  updateJoinVisibilityByLogin();
+
+  // export some helpers to window for testing if needed
+  window.__moneyTrain = {
+    currentUser,
+    generateProblems,
+    startTrain,
+    endTrain,
+    setTrainTerminal,
+    updateTrainTime
+  };
+
+}); // DOMContentLoaded end
 </script>
 </body>
 </html>
