@@ -1,8 +1,8 @@
 /* ---------- Imports (Firebase v10) ---------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc,
-  serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, where
+  serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, where,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
