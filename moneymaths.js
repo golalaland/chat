@@ -1,4 +1,3 @@
-<script>
 /* ---------------- READY: Money Train local simulation (fixed submit + ticket) ---------------- */
 document.addEventListener('DOMContentLoaded', () => {
 
