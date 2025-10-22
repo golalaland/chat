@@ -1,17 +1,34 @@
-const onlineCountEl = document.getElementById("onlineCount");
+const onlineCountEl = document.getElementById('onlineCount');
+let count = 100; // starting number
 
-// Initial count
-let onlineCount = 0;
-onlineCountEl.textContent = onlineCount;
+// Animate number change
+function animateCount(newCount) {
+  const duration = 1000; // animation duration in ms
+  const start = count;
+  const diff = newCount - start;
+  const startTime = performance.now();
 
-// Function to update count manually
-function setOnlineCount(count) {
-  onlineCount = count;
-  onlineCountEl.textContent = onlineCount;
+  function update(time) {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    onlineCountEl.textContent = Math.floor(start + diff * progress);
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      count = newCount; // update the count after animation
+    }
+  }
+
+  requestAnimationFrame(update);
 }
 
-// Optional: simulate live increment
+// Increase +5 every 60 seconds
 setInterval(() => {
-  onlineCount++;
-  onlineCountEl.textContent = onlineCount;
-}, 5000); // increments every 5 seconds
+  animateCount(count + 5);
+}, 60000);
+
+// Decrease -10 every 300 seconds
+setInterval(() => {
+  animateCount(Math.max(count - 10, 0));
+}, 300000);
