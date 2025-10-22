@@ -122,3 +122,58 @@ joinTrainBtn.addEventListener('click', ()=>{
     startTrain();
   }
 });
+/* ---------------- Train Terminal Logic ---------------- */
+const trainNames = ["Money Express", "Starliner 9000", "Frenzy Rail", "Lucky Cargo", "Fortune Flyer"];
+const destinations = ["Lagos", "Accra", "Nairobi", "Cape Town", "Johannesburg", "Abuja", "Kigali", "London", "Dubai", "New York"];
+
+function setTrainTerminal() {
+  const name = trainNames[Math.floor(Math.random()*trainNames.length)];
+  const dest = destinations[Math.floor(Math.random()*destinations.length)];
+  const date = new Date().toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+  
+  document.getElementById('trainName').textContent = name;
+  document.getElementById('trainDate').textContent = date;
+  document.getElementById('trainDestination').textContent = dest;
+}
+
+setTrainTerminal(); // Run at startup
+
+/* ---------------- Confirmation Modal ---------------- */
+const confirmModal = document.getElementById('confirmModal');
+const confirmYes = document.getElementById('confirmYes');
+const confirmNo = document.getElementById('confirmNo');
+
+joinTrainBtn.removeEventListener('click', joinTrainBtn.onclick); // Prevent double listener if any
+
+joinTrainBtn.addEventListener('click', ()=>{
+  if(trainActive){
+    // If train already started, handle as normal
+    const inputs = document.querySelectorAll('.problemInput');
+    let correct = true;
+    inputs.forEach((inp,i)=>{
+      if(parseInt(inp.value) !== currentProblems[i].ans){
+        correct = false;
+      }
+    });
+    clearInterval(loadingInterval);
+    trainActive = false;
+    endTrain(correct);
+  } else {
+    // Show modal first
+    confirmModal.style.display = 'flex';
+  }
+});
+
+confirmYes.addEventListener('click', ()=>{
+  confirmModal.style.display = 'none';
+  startTrain(); // Run your existing function
+});
+
+confirmNo.addEventListener('click', ()=>{
+  confirmModal.style.display = 'none';
+});
