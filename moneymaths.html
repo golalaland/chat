@@ -197,22 +197,26 @@ input, button {
 /* small helpers */
 .hidden { display:none !important; }
 
-/* How To Play Button — smaller, gradient, backlight */
+/* How To Play Button — compact & premium */
 #howToPlayBtn {
   position: relative;
-  padding: 6px 14px; /* smaller padding */
+  padding: 6px 10px;       /* smaller, tighter padding */
+  min-width: 100px;        /* ensures button has some width but stays small */
+  max-width: 140px;        /* caps the width */
   font-size: 12px;
   font-weight: 700;
   border: none;
   border-radius: 12px;
   background: linear-gradient(145deg, #111, #222); /* black gradient */
-  color: #FF1493; /* pink font */
+  color: #FF1493;          /* pink font */
   cursor: pointer;
   overflow: hidden;
   z-index: 0;
   text-shadow: 0 0 4px #FF1493aa;
   box-shadow: 0 4px 6px rgba(255,20,147,0.3); /* subtle 3D backlight */
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: inline-block;
+  text-align: center;
 }
 
 #howToPlayBtn:hover {
