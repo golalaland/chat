@@ -86,32 +86,29 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 #loadingBar{width:0%;height:16px;background:var(--accent);}
 #trainEmoji{position:absolute;left:0;top:-8px;font-size:24px;transition:left 1s linear;}
 
-/* Daily Reward — premium gold odometer style */
 #dailyReward {
   width: 90%;
   max-width: 480px;
-  margin: 16px auto;
-  background: linear-gradient(145deg, #111, #222);
-  border-radius: 16px;
-  padding: 16px;
+  margin: 12px auto;
+  background: #1c1c1c; /* dark, slightly lighter than page */
+  border-radius: 12px;
+  padding: 12px 16px;
   text-align: center;
-  font-weight: 800;
-  font-size: 20px;
-  font-family: 'Press Start 2P', monospace;
-  color: #fff; /* label color */
-  box-shadow: 0 6px 18px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,255,255,0.05);
-  position: relative;
-  overflow: hidden;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+  border: 2px solid #FF1493; /* premium accent outline */
+  box-shadow: 0 4px 12px rgba(255,20,147,0.2); /* soft highlight */
 }
 
-/* Gold odometer number */
-#dailyPot {
+#dailyReward #dailyPot {
   display: inline-block;
-  font-size: 32px;
-  color: #FFD700; /* premium gold */
-  text-shadow: 0 0 4px #bfa000, 0 0 8px #ffd70066;
+  color: gold;
+  font-weight: 800;
+  font-size: 22px;
   letter-spacing: 1px;
-  font-weight: 900;
+  margin-left: 6px;
 }
 
 /* Problem Blocks */
@@ -332,17 +329,8 @@ input, button {
     </div>
   </div>
 
-  <div id="dailyReward">
-  DAILY CASH REWARD: ₦
-  <span id="dailyPot" class="odometer">
-    <span class="digit">1</span>
-    <span class="digit">0</span>
-    <span class="digit">0</span>
-    <span class="digit">0</span>
-    <span class="digit">0</span>
-    <span class="digit">0</span>
-    <span class="digit">0</span>
-  </span>
+<div id="dailyReward">
+  DAILY CASH REWARD: <span id="dailyPot">₦1,000,000</span>
 </div>
 
   <!-- Join Train Button -->
