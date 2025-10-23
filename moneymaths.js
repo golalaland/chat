@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -17,12 +16,12 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ---------- CONFIG ----------
-const INITIAL_POT       = 1_000_000; 
-const DEDUCT_PER_WIN    = 1_000;     
-const REWARD_TO_USER    = 1_000;     
-const STARS_PER_WIN     = 5 * 8;     
-const NUM_BLOCKS        = 8;
-const STAR_COST         = 10;
+const INITIAL_POT = 1_000_000;
+const DEDUCT_PER_WIN = 1_000;
+const REWARD_TO_USER = 1_000;
+const STARS_PER_WIN = 5 * 8;
+const NUM_BLOCKS = 8;
+const STAR_COST = 10;
 
 // ---------- UI Refs ----------
 const joinTrainBtn      = document.getElementById('joinTrainBtn');
@@ -36,9 +35,6 @@ const problemBoard      = document.getElementById('problemBoard');
 const submitAnswersBtn  = document.getElementById('submitAnswers');
 const popupEl           = document.getElementById('popup'); 
 const dailyPotEl        = document.getElementById('dailyPot');
-const closedOverlay     = document.getElementById('closedOverlay');
-const reopenCountdown   = document.getElementById('reopenCountdown');
-const confirmText       = document.getElementById('confirmText');
 
 const trainNameEl       = document.getElementById('trainName');
 const trainDateEl       = document.getElementById('trainDate');
@@ -54,6 +50,7 @@ let loadingInterval = null;
 let loadingProgress = 0;
 let trainActive = false;
 let currentProblems = [];
+let currentUser = null; // <-- auto-login user
 
 // ---------- SOUND ----------
 const SOUND_PATHS = {
@@ -74,7 +71,7 @@ function playAudio(src, opts = {}) {
   } catch(e){}
 }
 
-// ---------- Firestore helpers ----------
+// ---------- FIRESTORE HELPERS ----------
 async function getUserDoc() {
   if (!currentUser || !currentUser.uid) throw new Error("No currentUser");
   const ref = doc(db, 'moneyTrainUsers', currentUser.uid);
@@ -94,7 +91,21 @@ async function updateUserField(field, value) {
 
 async function updatePot(value) {
   await updateUserField('pot', value);
-  dailyPotEl.textContent = value.toLocaleString();
+  if(dailyPotEl) dailyPotEl.textContent = value.toLocaleString();
+}
+
+// ---------- AUTO LOGIN ----------
+async function loadCurrentUser() {
+  try {
+    const storedUserRaw = localStorage.getItem('vipUser') || localStorage.getItem('hostUser');
+    if (!storedUserRaw) return;
+    const storedUser = JSON.parse(storedUserRaw);
+    const uid = String(storedUser.email || storedUser.chatId || storedUser.displayName)
+      .replace(/[.#$[\]]/g, ',');
+    currentUser = { uid, chatId: storedUser.displayName || storedUser.email?.split('@')[0] };
+  } catch (err) {
+    console.error("Failed to load currentUser:", err);
+  }
 }
 
 // ---------- TERMINAL ----------
@@ -109,7 +120,6 @@ function setTrainTerminal(){
   if (trainNameEl) trainNameEl.textContent = name;
   if (trainDateEl) trainDateEl.textContent = date;
   if (trainDestinationEl) trainDestinationEl.textContent = dest;
-  if (confirmText) confirmText.textContent = `Join ${name} → ${dest}? Ready to play?`;
 }
 
 function updateTrainTime(){
@@ -210,7 +220,6 @@ async function endTrain(success,ticketNumber=null){
     const newPot = Math.max(0,(userData.pot||INITIAL_POT)-DEDUCT_PER_WIN);
     await updatePot(newPot);
     showPopup(`🎫 Ticket #${ticketNumber||'---'} — you earned ₦${REWARD_TO_USER.toLocaleString()}!`,4500);
-    if(newPot<=0) handleStationClosed();
   }else{
     showPopup('Train left! You got nothing 😢',2200);
   }
@@ -236,11 +245,14 @@ confirmNo.addEventListener('click',()=>{ confirmModal.style.display='none'; });
 
 // ---------- INIT ----------
 async function init(){
+  await loadCurrentUser();  // <--- make sure currentUser exists first
+  if(!currentUser){ showPopup("Login not detected!"); return; }
   const userData = await getUserDoc();
   dailyPotEl.textContent = (userData.pot||INITIAL_POT).toLocaleString();
-  if(profileNameEl) profileNameEl.textContent = profileNameEl.textContent || 'GUEST 0000';
+  if(profileNameEl) profileNameEl.textContent = profileNameEl.textContent || currentUser.chatId || 'GUEST 0000';
   if(starCountEl) starCountEl.textContent = userData.stars||'50';
   if(cashCountEl) cashCountEl.textContent = userData.cash||'0';
   setTrainTerminal(); setInterval(setTrainTerminal,60000); setInterval(updateTrainTime,1000); updateTrainTime();
 }
+
 init();
