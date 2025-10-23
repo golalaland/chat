@@ -1,4 +1,75 @@
-document.addEventListener('DOMContentLoaded', () => {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ---------------- Firebase ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ---------------- Current User ---------------- */
+let currentUser = null;
+
+/* ---------------- Load Current User ---------------- */
+const loadCurrentUserForGame = async () => {
+  try {
+    const storedUser = JSON.parse(localStorage.getItem('vipUser') || localStorage.getItem('hostUser') || '{}');
+    if (!storedUser?.email) return;
+
+    const uid = String(storedUser.email).replace(/[.#$[\]]/g, ',');
+    const userRef = doc(db, 'users', uid);
+
+    // Get initial snapshot
+    const snap = await getDoc(userRef);
+    currentUser = snap.exists() ? { uid, ...snap.data() } : {
+      uid,
+      stars: 0,
+      cash: 0,
+      chatId: storedUser.displayName || storedUser.email.split('@')[0]
+    };
+
+    // Subscribe to realtime updates
+    onSnapshot(userRef, docSnap => {
+      const data = docSnap.data();
+      if (!data) return;
+      currentUser = { uid, ...data };
+
+      // Hook: update your game UI here
+      updateGameUI(currentUser);
+    });
+  } catch (err) {
+    console.error('Error loading current user for game:', err);
+  }
+};
+
+/* ---------------- Update Game UI Hook ---------------- */
+function updateGameUI(user) {
+  // Example: replace with your game's UI updates
+  const starsEl = document.getElementById('game-stars');
+  const cashEl = document.getElementById('game-cash');
+
+  if (starsEl) starsEl.textContent = `${user.stars} ⭐️`;
+  if (cashEl) cashEl.textContent = `₦${user.cash}`;
+}
+
+/* ---------------- Initialize ---------------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadCurrentUserForGame();
+  console.log('✅ Game user loaded and synced');
+});
 
   /* ---------------- Config ---------------- */
   const INITIAL_POT       = 1_000_000; // ₦1,000,000
