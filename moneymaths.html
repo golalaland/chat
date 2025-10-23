@@ -48,22 +48,18 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 
 /* Submit Button */
 #submitAnswers {
-  background: linear-gradient(90deg, #00c853, #b2ff59);
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 16px; /* prevents zoom on iOS */
-  color: #000;
-  font-weight: 600;
-  cursor: pointer;
-  transition: hover:not(:disabled) {
-  transform: scale(1.05);
+  display:none;
+  margin:10px auto;
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(90deg,#FF1493,#FF8C00);
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+  transition:0.2s;
 }
-#submitAnswers:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
+#submitAnswers:hover {transform:scale(1.03);}
 
 /* Profile Panel */
 .profile{position:fixed;bottom:60px;width:100%;max-width:480px;left:0;display:flex;justify-content:center;z-index:99;}
