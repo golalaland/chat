@@ -1,31 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-/* ---------- Firebase Config ---------- */
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-/* ---------------- DOMContentLoaded ---------------- */
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------------- Config ---------------- */
   const INITIAL_POT       = 1_000_000; // ₦1,000,000
-  const DEDUCT_PER_WIN    = 1_000;     
-  const REWARD_TO_USER    = 1_000;     
-  const STARS_PER_WIN     = 40;        
+  const DEDUCT_PER_WIN    = 1_000;     // deduct from pot per win
+  const REWARD_TO_USER    = 1_000;     // reward to user per win
+  const STARS_PER_WIN     = 5 * 8;     // 40 stars
   const NUM_BLOCKS        = 8;
-  const STAR_COST         = 10;
+  const STAR_COST         = 10;        // cost to join (enforced)
 
   /* ---------------- UI Refs ---------------- */
   const joinTrainBtn      = document.getElementById('joinTrainBtn');
@@ -37,20 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const trainEmoji        = document.getElementById('trainEmoji');
   const problemBoard      = document.getElementById('problemBoard');
   const submitAnswersBtn  = document.getElementById('submitAnswers');
-  const popupEl           = document.getElementById('popup'); 
+  const popupEl           = document.getElementById('popup'); // your star-popup
   const dailyPotEl        = document.getElementById('dailyPot');
   const closedOverlay     = document.getElementById('closedOverlay');
   const reopenCountdown   = document.getElementById('reopenCountdown');
   const confirmText       = document.getElementById('confirmText');
+
   const trainNameEl       = document.getElementById('trainName');
   const trainDateEl       = document.getElementById('trainDate');
   const trainTimeEl       = document.getElementById('trainTime');
   const trainDestinationEl= document.getElementById('trainDestination');
+
   const profileNameEl     = document.getElementById('profileName');
   const starCountEl       = document.getElementById('starCount');
   const cashCountEl       = document.getElementById('cashCount');
 
-  /* ---------------- Sounds ---------------- */
+  /* ---------------- Sounds (change paths if desired) ---------------- */
   const SOUND_PATHS = {
     start:  './sounds/train_start.mp3',
     depart: './sounds/train_depart.mp3',
@@ -64,55 +47,64 @@ document.addEventListener('DOMContentLoaded', () => {
       const a = new Audio(src);
       a.volume = opts.volume ?? 0.8;
       if (opts.loop) a.loop = true;
-      a.play().catch(()=>{});
+      a.play().catch(()=>{/* ignore autoplay errors */});
       return a;
-    } catch(e){}
+    } catch (e) { /* ignore */ }
   }
 
-  /* ---------------- State ---------------- */
+  /* ---------------- Local state & persistence ---------------- */
   let loadingInterval = null;
   let loadingProgress = 0;
   let trainActive = false;
-  let currentProblems = [];
-  let userRef = null;
+  let currentProblems = []; // [{a,b,ans}]
+  // localStorage keys
+  const KEY_POT        = 'moneytrain_pot';
+  const KEY_RESET_DAY  = 'moneytrain_reset_day';
+  const KEY_HALF_DAY   = 'moneytrain_half_date';
 
-  /* ---------------- User Firestore Helpers ---------------- */
-  function initUserData() {
-    if (!currentUser?.uid) return;
-    userRef = doc(db, "users", currentUser.uid);
-    getDoc(userRef).then(snapshot => {
-      if (!snapshot.exists()) {
-        setDoc(userRef, {
-          cash: 0,
-          stars: 50,
-          dailyPot: INITIAL_POT,
-          lastPotReset: new Date().toISOString().slice(0,10),
-          halfAlertDate: ''
-        });
-      }
-    });
+  /* ---------------- storage helpers ---------------- */
+  function getStoredPot(){
+    const raw = localStorage.getItem(KEY_POT);
+    return raw ? parseInt(raw,10) : null;
+  }
+  function setStoredPot(v){
+    localStorage.setItem(KEY_POT, String(Math.max(0, Math.floor(v))));
+    updatePotUI();
+  }
+  function getPotResetDay(){ return localStorage.getItem(KEY_RESET_DAY) || null; }
+  function setPotResetDay(s){ localStorage.setItem(KEY_RESET_DAY, s); }
+  function getHalfAlertDate(){ return localStorage.getItem(KEY_HALF_DAY) || null; }
+  function setHalfAlertDate(s){ localStorage.setItem(KEY_HALF_DAY, s); }
 
-    // Realtime updates
-    onSnapshot(userRef, docSnap => {
-      if (!docSnap.exists()) return;
-      const data = docSnap.data();
-      if (starCountEl) starCountEl.textContent = data.stars ?? '0';
-      if (cashCountEl) cashCountEl.textContent = (data.cash ?? 0).toLocaleString();
-      if (dailyPotEl) dailyPotEl.textContent = (data.dailyPot ?? INITIAL_POT).toLocaleString();
-      if ((data.dailyPot ?? INITIAL_POT) <= 0) handleStationClosed();
-    });
+  function initializePot(){
+    const today = new Date().toISOString().slice(0,10);
+    const resetDay = getPotResetDay();
+    if (!getStoredPot() || resetDay !== today){
+      setStoredPot(INITIAL_POT);
+      setPotResetDay(today);
+      setHalfAlertDate('');
+    }
   }
 
-  async function updateUserCash(amount){ if (!userRef) return; await updateDoc(userRef,{ cash: increment(amount) }); }
-  async function updateUserStars(amount){ if (!userRef) return; await updateDoc(userRef,{ stars: increment(amount) }); }
-  async function updateUserPot(amount){ if (!userRef) return; await updateDoc(userRef,{ dailyPot: increment(amount) }); }
-  async function setHalfAlertDate(dateStr){ if (!userRef) return; await updateDoc(userRef,{ halfAlertDate: dateStr }); }
-  async function setPotResetDate(dateStr){ if (!userRef) return; await updateDoc(userRef,{ lastPotReset: dateStr }); }
+  function updatePotUI(){
+    const pot = getStoredPot() ?? INITIAL_POT;
+    dailyPotEl.textContent = pot.toLocaleString();
+    if (pot <= 0){
+      handleStationClosed();
+    } else {
+      if (!closedOverlay.classList.contains('hidden') && !isPastMidnightReset()){
+        closedOverlay.classList.add('hidden');
+        joinTrainBtn.disabled = false;
+        joinTrainBtn.style.opacity = '1';
+      }
+    }
+  }
 
-  /* ---------------- Terminal Helpers ---------------- */
+  /* ---------------- terminal helpers ---------------- */
   const trainNames = ["Money Express","Starliner 9000","Frenzy Rail","Lucky Cargo","Fortune Flyer","Crypto Cruiser","Golden Dash","Midnight Ride"];
   const destinations = ["Lagos","Accra","Nairobi","Cape Town","Johannesburg","Abuja","Kigali","London","Dubai","New York"];
 
+  // Only set terminal if not mid-game (avoid overwriting)
   function setTrainTerminal(){
     if (trainActive) return;
     const name = trainNames[Math.floor(Math.random()*trainNames.length)];
@@ -130,37 +122,41 @@ document.addEventListener('DOMContentLoaded', () => {
     trainTimeEl.textContent = now.toLocaleTimeString('en-GB',{hour12:false});
   }
 
-  /* ---------------- Popup ---------------- */
+  /* ---------------- popup helper ---------------- */
   let popupTimeout = null;
   function showPopup(text, ms=1800){
-    if (!popupEl) return;
+    if (!popupEl) {
+      console.warn('popup element not found');
+      return;
+    }
     popupEl.textContent = text;
     popupEl.style.display = 'block';
     popupEl.style.opacity = '1';
     if (popupTimeout) clearTimeout(popupTimeout);
     popupTimeout = setTimeout(()=>{
       popupEl.style.opacity = '0';
-      setTimeout(()=>{ popupEl.style.display = 'none'; },300);
+      setTimeout(()=>{ popupEl.style.display = 'none'; }, 300);
     }, ms);
   }
 
-  /* ---------------- Halfway Alert ---------------- */
-  async function maybeShowHalfwayAlert(){
-    if (!userRef) return;
-    const snapshot = await getDoc(userRef);
-    if (!snapshot.exists()) return;
-    const data = snapshot.data();
-    const pot = data.dailyPot ?? INITIAL_POT;
+  /* ---------------- halfway alert once per day ---------------- */
+  function maybeShowHalfwayAlert(){
+    const pot = getStoredPot() ?? INITIAL_POT;
     const half = Math.floor(INITIAL_POT/2);
     const today = new Date().toISOString().slice(0,10);
-    const shownDate = data.halfAlertDate ?? '';
+    const shownDate = getHalfAlertDate();
     if (pot <= half && shownDate !== today){
-      await setHalfAlertDate(today);
+      setHalfAlertDate(today);
       showPopup('⚠️ Halfway mined — pot is running low!', 4000);
+      const terminal = document.getElementById('trainTerminal');
+      if (terminal){
+        terminal.style.boxShadow = '0 0 30px rgba(255,165,0,0.28)';
+        setTimeout(()=> terminal.style.boxShadow = '', 2500);
+      }
     }
   }
 
-  /* ---------------- Station Closed / Reopen ---------------- */
+  /* ---------------- station closed / reopen countdown ---------------- */
   let countdownTimer = null;
   function timeToNextMidnight(){
     const now = new Date();
@@ -180,33 +176,42 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleStationClosed(){
     closedOverlay.classList.remove('hidden');
     joinTrainBtn.disabled = true;
+    joinTrainBtn.style.display = 'block';
     joinTrainBtn.style.opacity = '0.5';
     if (countdownTimer) clearInterval(countdownTimer);
     function tick(){
       const ms = timeToNextMidnight();
       if (reopenCountdown) reopenCountdown.textContent = formatHMS(ms);
-      if (ms <= 0){ clearInterval(countdownTimer); resetPotAndReopen(); }
+      if (ms <= 0){
+        clearInterval(countdownTimer);
+        resetPotAndReopen();
+      }
     }
     tick();
     countdownTimer = setInterval(tick, 1000);
+    playAudio(SOUND_PATHS.depart);
   }
 
-  async function resetPotAndReopen(){
-    if (!userRef) return;
-    await updateUserPot(INITIAL_POT);
-    await setPotResetDate(new Date().toISOString().slice(0,10));
-    await setHalfAlertDate('');
+  function resetPotAndReopen(){
+    setStoredPot(INITIAL_POT);
+    const today = new Date().toISOString().slice(0,10);
+    setPotResetDay(today);
+    setHalfAlertDate('');
     closedOverlay.classList.add('hidden');
     joinTrainBtn.disabled = false;
     joinTrainBtn.style.opacity = '1';
     setTrainTerminal();
+    updatePotUI();
     showPopup('🔁 Pot reset! Station reopened.', 3000);
   }
 
-  /* ---------------- Problems Generator ---------------- */
+  function isPastMidnightReset(){ return getPotResetDay() !== new Date().toISOString().slice(0,10); }
+
+  /* ---------------- problems generator ---------------- */
   function generateProblems(){
     currentProblems = [];
     problemBoard.innerHTML = '';
+    // layout: keep inline blocks as small flex columns
     for (let i=0;i<NUM_BLOCKS;i++){
       let a = Math.floor(Math.random()*20)+1;
       let b = Math.floor(Math.random()*20)+1;
@@ -245,30 +250,37 @@ document.addEventListener('DOMContentLoaded', () => {
       problemBoard.appendChild(wrapper);
     }
 
+    // show submit/verify button for gameplay and attach input watchers
     submitAnswersBtn.style.display = 'block';
-    submitAnswersBtn.disabled = true;
+    submitAnswersBtn.disabled = false; // visible; disabling handled below
     submitAnswersBtn.style.opacity = '0.6';
 
+    // watch inputs: only enable button when all fields are filled (not necessarily correct)
     const inputs = problemBoard.querySelectorAll('.problemInput');
     function checkFilled(){
       const allFilled = Array.from(inputs).every(i => i.value.trim() !== '');
       submitAnswersBtn.disabled = !allFilled;
       submitAnswersBtn.style.opacity = allFilled ? '1' : '0.6';
     }
-    inputs.forEach(inp => inp.addEventListener('input', checkFilled));
+    inputs.forEach(inp => {
+      inp.addEventListener('input', checkFilled);
+      // prevent iOS zoom by ensuring font-size set via CSS (you added earlier)
+    });
+    // initial check (in case some browser auto-fills)
     checkFilled();
   }
 
-  /* ---------------- Loading Bar ---------------- */
+  /* ---------------- loading bar ---------------- */
   function startLoadingBar(){
     loadingContainer.style.display = 'block';
     loadingProgress = 0;
     loadingBar.style.width = '0%';
     trainEmoji.style.left = '0px';
-    playAudio(SOUND_PATHS.start, true);
+    // play start sound
+    playAudio(SOUND_PATHS.start, true); // loop start chug (it will be freed - we won't keep reference)
     loadingInterval = setInterval(()=>{
       loadingProgress++;
-      const percent = (loadingProgress/39)*100;
+      const percent = (loadingProgress/39) * 100; // 39s window
       loadingBar.style.width = `${percent}%`;
       trainEmoji.style.left = `calc(${percent}% - 12px)`;
       if (loadingProgress >= 39){
@@ -277,10 +289,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (trainActive){
           trainActive = false;
           stopLoadingBar();
+          playAudio(SOUND_PATHS.depart);
           endTrain(false);
         }
       }
-    },1000);
+    }, 1000);
   }
 
   function stopLoadingBar(){
@@ -290,70 +303,162 @@ document.addEventListener('DOMContentLoaded', () => {
     trainEmoji.style.left = '0px';
   }
 
-  /* ---------------- Start / End Train ---------------- */
-  async function startTrain(){
-    if (!userRef) return;
-    const snapshot = await getDoc(userRef);
-    if (!snapshot.exists()) return;
-    const data = snapshot.data();
-    if ((data.stars ?? 0) < STAR_COST){
-      showPopup('❌ Not enough stars to join!');
-      playAudio(SOUND_PATHS.error);
+  /* ---------------- start / end train ---------------- */
+  function startTrain(){
+    // ensure pot open
+    if ((getStoredPot() ?? INITIAL_POT) <= 0){
+      showPopup('🚧 Station closed for today. Come back tomorrow.');
       return;
     }
+    // star check
+    const curStars = parseInt(starCountEl.textContent,10) || 0;
+    if (curStars < STAR_COST){
+      showPopup('Not enough stars to join.');
+      return;
+    }
+    // deduct star cost
+    starCountEl.textContent = (curStars - STAR_COST);
 
+    // state & UI
     trainActive = true;
-    await updateUserStars(-STAR_COST);
+    joinTrainBtn.style.display = 'none';
     generateProblems();
+    problemBoard.classList.remove('hidden');
+    submitAnswersBtn.style.display = 'block';
+    submitAnswersBtn.disabled = true;
+    submitAnswersBtn.style.opacity = '0.6';
+
+    // start timer & sound
     startLoadingBar();
+    playAudio(SOUND_PATHS.whistle);
   }
 
-  async function endTrain(win=true){
-    if (!win) return showPopup('⛔ Train departed empty!');
-    let correctCount = 0;
-    const inputs = problemBoard.querySelectorAll('.problemInput');
-    inputs.forEach(inp => {
-      const idx = parseInt(inp.dataset.index);
-      if (parseInt(inp.value) === currentProblems[idx].ans) correctCount++;
-    });
-    if (correctCount < NUM_BLOCKS){
-      showPopup(`❌ You solved ${correctCount}/${NUM_BLOCKS} problems! No reward.`);
+  function endTrain(success, ticketNumber=null){
+    stopLoadingBar();
+
+    // hide problems & submit
+    problemBoard.classList.add('hidden');
+    submitAnswersBtn.style.display = 'none';
+
+    // show join again only if pot >0
+    if ((getStoredPot() ?? INITIAL_POT) > 0){
+      joinTrainBtn.style.display = 'block';
+      joinTrainBtn.disabled = false;
+      joinTrainBtn.style.opacity = '1';
+    } else {
+      joinTrainBtn.style.display = 'block';
+      joinTrainBtn.disabled = true;
+      joinTrainBtn.style.opacity = '0.5';
+    }
+
+    if (success){
+      // give rewards
+      const oldCash = parseInt(cashCountEl.textContent.replace(/,/g,''),10) || 0;
+      const newCash = oldCash + REWARD_TO_USER;
+      cashCountEl.textContent = newCash.toLocaleString();
+
+      const oldStars = parseInt(starCountEl.textContent,10) || 0;
+      const newStars = oldStars + STARS_PER_WIN;
+      starCountEl.textContent = newStars;
+
+      // deduct pot
+      let pot = getStoredPot() ?? INITIAL_POT;
+      pot = Math.max(0, pot - DEDUCT_PER_WIN);
+      setStoredPot(pot);
+
+      const dest = trainDestinationEl?.textContent || 'your destination';
+      const tnum = ticketNumber || '---';
+
+      showPopup(`🎫 You’ve secured your ${dest} train ticket number ${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
+      playAudio(SOUND_PATHS.ding);
+
+      maybeShowHalfwayAlert();
+
+      if (pot <= 0) handleStationClosed();
+    } else {
+      showPopup('Train left! You got nothing 😢', 2200);
+    }
+  }
+
+  /* ---------------- submit answers handler ---------------- */
+  submitAnswersBtn.addEventListener('click', () => {
+    if (!trainActive) return;
+
+    const inputs = Array.from(document.querySelectorAll('.problemInput'));
+    // check empties:
+    const anyEmpty = inputs.some(inp => inp.value === '' || inp.value === null);
+    if (anyEmpty){
+      showPopup("You're not yet done hashing your train ticket — hurry!", 2400);
       playAudio(SOUND_PATHS.error);
       return;
     }
 
-    await updateUserCash(REWARD_TO_USER);
-    await updateUserPot(-REWARD_TO_USER);
+    // evaluate correctness
+    let allCorrect = true;
+    inputs.forEach((inp, i) => {
+      const val = parseInt(inp.value,10);
+      const expected = currentProblems[i].ans;
+      if (isNaN(val) || val !== expected) allCorrect = false;
+    });
+
+    // stop timer
+    trainActive = false;
+    stopLoadingBar();
+
+    if (allCorrect){
+      // build ticket number by concatenating each answer's string (in order)
+      const answers = inputs.map(inp => String(parseInt(inp.value,10)));
+      const ticketNumber = answers.join('');
+      endTrain(true, ticketNumber);
+    } else {
+      showPopup("Some answers are incorrect — train left!", 3000);
+      playAudio(SOUND_PATHS.depart);
+      endTrain(false);
+    }
+  });
+
+  /* ---------------- join modal wiring ---------------- */
+  joinTrainBtn.addEventListener('click', () => {
+    if (joinTrainBtn.disabled) return;
+    confirmModal.style.display = 'flex';
+    playAudio(SOUND_PATHS.whistle);
+  });
+  confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; startTrain(); });
+  confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; });
+
+  /* ---------------- init & timers ---------------- */
+  function init(){
+    // protect UI
+    initializePot();
+    updatePotUI();
+    setTrainTerminal();
+    setInterval(setTrainTerminal, 60_000);
+    setInterval(updateTrainTime, 1000);
+    updateTrainTime();
     maybeShowHalfwayAlert();
-    showPopup(`✅ All correct! You won ₦${REWARD_TO_USER.toLocaleString()}`);
-    playAudio(SOUND_PATHS.ding);
+
+    problemBoard.classList.add('hidden');
+    submitAnswersBtn.style.display = 'none';
+
+    // schedule midnight reset (and fallback)
+    const msToMid = timeToNextMidnight();
+    setTimeout(()=> resetPotAndReopen(), msToMid + 1000);
+    setInterval(()=> { if (isPastMidnightReset()) resetPotAndReopen(); }, 60_000);
+
+    // initial profile UI if present
+    if (profileNameEl) profileNameEl.textContent = profileNameEl.textContent || 'GUEST 0000';
+    if (starCountEl) starCountEl.textContent = starCountEl.textContent || '50';
+    if (cashCountEl) cashCountEl.textContent = cashCountEl.textContent || '0';
   }
 
-  /* ---------------- Button Events ---------------- */
-  if (joinTrainBtn){
-    joinTrainBtn.addEventListener('click', ()=> confirmModal.classList.remove('hidden'));
-  }
-  if (confirmYes){
-    confirmYes.addEventListener('click', ()=>{
-      confirmModal.classList.add('hidden');
-      startTrain();
-    });
-  }
-  if (confirmNo){
-    confirmNo.addEventListener('click', ()=>{
-      confirmModal.classList.add('hidden');
-    });
-  }
+  init();
 
-  if (submitAnswersBtn){
-    submitAnswersBtn.addEventListener('click', ()=>{
-      endTrain(true);
-    });
-  }
+  /* ---------------- Expose debug helpers ---------------- */
+  window.moneyTrainLocal = {
+    getPot: () => getStoredPot(),
+    setPot: (v) => setStoredPot(v),
+    resetPotAndReopen,
+    simulateWin: () => { trainActive = true; generateProblems(); endTrain(true,'TEST-TICKET'); }
+  };
 
-  /* ---------------- Initialize ---------------- */
-  setTrainTerminal();
-  initUserData();
-  updateTrainTime();
-  setInterval(updateTrainTime, 1000);
-});
+}); // DOMContentLoaded end
