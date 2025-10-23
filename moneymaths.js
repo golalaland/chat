@@ -464,25 +464,29 @@ if (profileNameEl) {
     }
   }
 
-  /* ---------------- start / end train (modified to use Firestore) ---------------- */
+  /* ---------------- start / end train (streamlined + Firestore + UI polish) ---------------- */
+
 async function startTrain() {
-  // ensure pot open
-  if ((getStoredPot() ?? INITIAL_POT) <= 0) {
+  const howToPlayBtn = document.getElementById('howToPlayBtn');
+
+  // --- Prechecks ---
+  const pot = getStoredPot() ?? INITIAL_POT;
+  if (pot <= 0) {
     showPopup('🚧 Station closed for today. Come back tomorrow.');
     return;
   }
 
-  // star check - get from currentUser if present, otherwise from UI
+  // Get current stars (prefer from user profile)
   const curStars = currentUser?.stars != null
     ? Number(currentUser.stars)
-    : (parseInt(starCountEl?.textContent || '0', 10) || 0);
+    : parseInt(starCountEl?.textContent || '0', 10) || 0;
 
   if (curStars < STAR_COST) {
     showPopup('Not enough stars to join.');
     return;
   }
 
-  // deduct star cost in Firestore (atomic)
+  // --- Attempt Firestore deduction ---
   const deductResult = await tryDeductStarsForJoin(STAR_COST);
   if (!deductResult.ok) {
     showPopup(deductResult.message || 'Not enough stars.');
@@ -490,18 +494,17 @@ async function startTrain() {
     return;
   }
 
-  // update UI optimistically
+  // --- Update UI optimistically ---
   if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
+  if (joinTrainBtn) joinTrainBtn.style.display = 'none';
+  if (howToPlayBtn) howToPlayBtn.style.display = 'none'; // hide tutorial button while in-game
 
-  // state & UI
   trainActive = true;
-  joinTrainBtn.style.display = 'none';
 
-  // generate problems (do NOT show submit button inside generateProblems)
+  // --- Setup game ---
   generateProblems();
-
-  // show problem board + submit button
   if (problemBoard) problemBoard.classList.remove('hidden');
+
   if (submitAnswersBtn) {
     submitAnswersBtn.classList.remove('hidden');
     submitAnswersBtn.style.display = 'block';
@@ -509,38 +512,36 @@ async function startTrain() {
     submitAnswersBtn.style.opacity = '0.6';
   }
 
-  // start timer & sound
+  // --- Start timer & sound ---
   startLoadingBar();
   playAudio(SOUND_PATHS.whistle);
 }
 
+
 async function endTrain(success, ticketNumber = null) {
+  const howToPlayBtn = document.getElementById('howToPlayBtn');
   stopLoadingBar();
 
-  // hide problems & submit
+  // --- Hide problem board & submit ---
   if (problemBoard) problemBoard.classList.add('hidden');
   if (submitAnswersBtn) {
-    submitAnswersBtn.style.display = 'none';
     submitAnswersBtn.classList.add('hidden');
+    submitAnswersBtn.style.display = 'none';
   }
 
-  // show join again only if pot > 0
-  if ((getStoredPot() ?? INITIAL_POT) > 0) {
-    if (joinTrainBtn) {
-      joinTrainBtn.style.display = 'block';
-      joinTrainBtn.disabled = false;
-      joinTrainBtn.style.opacity = '1';
-    }
-  } else {
-    if (joinTrainBtn) {
-      joinTrainBtn.style.display = 'block';
-      joinTrainBtn.disabled = true;
-      joinTrainBtn.style.opacity = '0.5';
-    }
+  // --- Show buttons back ---
+  const pot = getStoredPot() ?? INITIAL_POT;
+  if (joinTrainBtn) {
+    joinTrainBtn.style.display = 'block';
+    joinTrainBtn.disabled = pot <= 0;
+    joinTrainBtn.style.opacity = pot <= 0 ? '0.5' : '1';
   }
 
+  if (howToPlayBtn) howToPlayBtn.style.display = 'inline-block'; // bring tutorial back
+
+  // --- Handle result ---
   if (success) {
-    // update UI optimistically; final values will come from Firestore snapshot after transaction
+    // Update UI optimistically
     const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
     const newCash = oldCash + REWARD_TO_USER;
     if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
@@ -549,29 +550,29 @@ async function endTrain(success, ticketNumber = null) {
     const newStars = oldStars + STARS_PER_WIN;
     if (starCountEl) starCountEl.textContent = String(newStars);
 
-    // deduct pot
-    let pot = getStoredPot() ?? INITIAL_POT;
-    pot = Math.max(0, pot - DEDUCT_PER_WIN);
-    setStoredPot(pot);
+    // Deduct pot & persist
+    let updatedPot = Math.max(0, pot - DEDUCT_PER_WIN);
+    setStoredPot(updatedPot);
 
     const dest = trainDestinationEl?.textContent || 'your destination';
     const tnum = ticketNumber || '---';
+    showPopup(`🎫 You’ve secured your ${dest} train ticket #${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
 
-    showPopup(`🎫 You’ve secured your ${dest} train ticket number ${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
     playAudio(SOUND_PATHS.ding);
-
     maybeShowHalfwayAlert();
 
-    if (pot <= 0) handleStationClosed();
+    if (updatedPot <= 0) handleStationClosed();
 
-    // persist the reward to Firestore
+    // Save reward in Firestore
     const rewardResult = await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
     if (!rewardResult.ok) {
       showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
     }
   } else {
-    showPopup('Train left! You got nothing 😢', 2200);
+    showPopup('🚉 Train left! You got nothing 😢', 2200);
   }
+
+  trainActive = false;
 }
 
   /* ---------------- submit answers handler ---------------- */
