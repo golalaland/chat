@@ -100,7 +100,6 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   font-size: 18px;
   color: #fff;
   overflow: hidden;
-  z-index: 0;
 }
 
 /* animated border lights */
@@ -115,17 +114,17 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   background: linear-gradient(90deg, #FF1493, #FF8C00, #FF1493, #FF8C00);
   background-size: 300% 300%;
   animation: borderFlow 6s linear infinite;
-  z-index: -1;
+  z-index: 0; /* sits behind content */
 }
 
-/* keep inner background solid to mask the edges */
+/* keep inner background solid, but BEHIND text */
 #dailyReward::after {
   content: '';
   position: absolute;
   inset: 2px;
   background: #111;
   border-radius: 10px;
-  z-index: 0;
+  z-index: 1;
 }
 
 /* animation movement */
@@ -134,10 +133,14 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   100% { background-position: 300% 0%; }
 }
 
-/* text layer */
-#dailyReward span {
+/* text layer — ensure visible above all */
+#dailyReward span,
+#dailyReward {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+}
+
+#dailyReward span {
   color: gold;
   font-weight: 800;
   font-size: 22px;
