@@ -7,6 +7,27 @@
    profileName, starCount, cashCount
 */
 
+/* moneymaths.js - Firebase + Auto-login integrated */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, setDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  // ---------------- Firebase Setup ----------------
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------------- Config ---------------- */
@@ -41,6 +62,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const profileNameEl     = document.getElementById('profileName');
   const starCountEl       = document.getElementById('starCount');
   const cashCountEl       = document.getElementById('cashCount');
+
+
+  // ---------------- 🔹 Auto-login ----------------
+  const uid = localStorage.getItem('user_uid');
+  if (!uid){
+    alert("Please login in the chatroom first!");
+    window.location.href = '/chatroom-login.html'; // fallback
+    return;
+  }
+
+  // populate profile from localStorage
+  profileNameEl.textContent = localStorage.getItem('user_name') || 'GUEST 0000';
+  starCountEl.textContent = localStorage.getItem('user_stars') || '50';
+  cashCountEl.textContent = localStorage.getItem('user_cash') || '0';
 
   /* ---------------- Sounds (change paths if desired) ---------------- */
 const SOUND_PATHS = {
