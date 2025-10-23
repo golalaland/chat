@@ -46,20 +46,29 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 .problemInput{width:60px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);
   background:#0e0e0e;color:#fff;text-align:center;font-weight:700;}
 
-/* Submit Button */
+/* Submit Button styled like verifyTicketBtn */
 #submitAnswers {
-  display:none;
-  margin:10px auto;
-  padding:10px 20px;
-  border:none;
-  border-radius:10px;
-  background:linear-gradient(90deg,#FF1493,#FF8C00);
-  color:#fff;
-  font-weight:800;
-  cursor:pointer;
-  transition:0.2s;
+  display: none;
+  margin: 10px auto;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px; /* prevents iOS zoom */
+  font-weight: 600;
+  cursor: pointer;
+  color: #000;
+  background: linear-gradient(90deg, #00c853, #b2ff59);
+  transition: transform 0.2s ease, opacity 0.3s ease;
 }
-#submitAnswers:hover {transform:scale(1.03);}
+
+#submitAnswers:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#submitAnswers:hover:not(:disabled) {
+  transform: scale(1.05);
+}
 
 /* Profile Panel */
 .profile{position:fixed;bottom:60px;width:100%;max-width:480px;left:0;display:flex;justify-content:center;z-index:99;}
@@ -193,7 +202,7 @@ input, button {
   <div id="problemBoard" class="scramble-board hidden"></div>
 
   <!-- Submit Answers Button (created dynamically if missing) -->
-  <button id="submitAnswers" class="hidden">Unlock Ticket</button>
+  <button id="submitAnswers" class="hidden">Unlock Ticket 🎫</button>
 
   <!-- Profile Panel -->
   <div class="profile" id="profilePanel">
