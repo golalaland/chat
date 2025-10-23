@@ -148,6 +148,41 @@ input, button {
 }
 /* small helpers */
 .hidden { display:none !important; }
+
+<style>
+/* HOW TO PLAY BUTTON - animated border lights */
+#howToPlayBtn {
+  display:block;
+  margin:14px auto;
+  padding:12px 20px;
+  border-radius:20px;
+  font-weight:800;
+  font-size:14px;
+  color:#fff;
+  background:linear-gradient(90deg,#FF1493,#FF8C00);
+  border:none;
+  cursor:pointer;
+  position:relative;
+  text-shadow:0 0 6px #fff;
+  z-index:10;
+  overflow:hidden;
+}
+#howToPlayBtn::before {
+  content:'';
+  position:absolute;
+  top:-2px; left:-2px; right:-2px; bottom:-2px;
+  border-radius:22px;
+  background: linear-gradient(270deg,#FF1493,#FF8C00,#FF1493,#FF8C00);
+  background-size: 400% 400%;
+  z-index:-1;
+  animation: borderGlow 3s linear infinite;
+}
+@keyframes borderGlow {
+  0% {background-position:0% 50%;}
+  50% {background-position:100% 50%;}
+  100% {background-position:0% 50%;}
+}
+
 </style>
 </head>
 <body>
@@ -175,6 +210,25 @@ input, button {
       Reopens in <span id="reopenCountdown">00:00:00</span>
     </div>
   </div>
+  
+  
+  
+  <!-- HOW TO PLAY BUTTON -->
+<button id="howToPlayBtn">HOW TO PLAY</button>
+
+<!-- HOW TO PLAY MODAL -->
+<div id="howToPlayModal" class="confirm-modal">
+  <div class="confirm-box">
+    <h3>How to Play</h3>
+    <p>1️⃣ Press PLAY to join the Money Train.<br>
+       2️⃣ Solve the problems that appear.<br>
+       3️⃣ Unlock tickets and earn stars & cash!<br>
+       4️⃣ Watch your daily rewards grow!</p>
+    <div class="confirm-actions">
+      <button id="closeHowTo">Got it!</button>
+    </div>
+  </div>
+</div>
 
   <!-- 🪩 Confirmation Modal -->
   <div id="confirmModal" class="confirm-modal">
