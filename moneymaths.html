@@ -197,43 +197,27 @@ input, button {
 /* small helpers */
 .hidden { display:none !important; }
 
-/* HOW TO PLAY BUTTON - animated border lights */
+/* How To Play Button — smaller, gradient, backlight */
 #howToPlayBtn {
   position: relative;
-  padding: 8px 16px;
+  padding: 6px 14px; /* smaller padding */
   font-size: 12px;
   font-weight: 700;
   border: none;
   border-radius: 12px;
-  background: #111;
-  color: #FF1493;
+  background: linear-gradient(145deg, #111, #222); /* black gradient */
+  color: #FF1493; /* pink font */
   cursor: pointer;
   overflow: hidden;
   z-index: 0;
-  text-shadow: 0 0 4px #fff;
+  text-shadow: 0 0 4px #FF1493aa;
+  box-shadow: 0 4px 6px rgba(255,20,147,0.3); /* subtle 3D backlight */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* animated lights */
-#howToPlayBtn::before {
-  content: '';
-  position: absolute;
-  top: -2px; left: -2px; bottom: -2px; right: -2px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, #FF1493, #FF8C00, #FF1493, #FF8C00);
-  background-size: 200% 200%;
-  z-index: -1;
-  animation: lightTravel 2s linear infinite;
-}
-
-@keyframes lightTravel {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 200% 0%; }
-}
-
-/* make inner button background solid and hide border overlap */
-#howToPlayBtn span {
-  position: relative;
-  z-index: 1;
+#howToPlayBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(255,20,147,0.5); /* stronger highlight on hover */
 }
 </style>
 </head>
