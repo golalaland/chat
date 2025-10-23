@@ -228,6 +228,13 @@ function updateRedeemLink() {
   refs.redeemBtn.style.display = "inline-block";
 }
 
+/* ---------- Tip Link ---------- */
+function updateTipLink() {
+  if (!refs.tipBtn || !currentUser) return;
+  refs.tipBtn.href = `https://golalaland.github.io/chat/moneymaths.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  refs.tipBtn.style.display = "inline-block";
+}
+
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
   if (!rtdb) return;
@@ -792,6 +799,7 @@ window.addEventListener("DOMContentLoaded", () => {
     starCountEl: document.getElementById("starCount"),
     cashCountEl: document.getElementById("cashCount"),
     redeemBtn: document.getElementById("redeemBtn"),
+    tipBtn: document.getElementById("tipBtn"),
     onlineCountEl: document.getElementById("onlineCount"),
     adminControlsEl: document.getElementById("adminControls"),
     adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
