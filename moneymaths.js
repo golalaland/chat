@@ -1,21 +1,17 @@
-/* moneymaths.js
-   Drop-in JS for Money Train HTML provided by user.
-   Assumes HTML IDs: joinTrainBtn, confirmModal, confirmYes, confirmNo,
-   loadingContainer, loadingBar, trainEmoji, problemBoard, submitAnswers,
-   popup (star-popup), dailyPot, closedOverlay, reopenCountdown,
-   trainName, trainDate, trainTime, trainDestination,
-   profileName, starCount, cashCount
-*/
-
-/* moneymaths.js - Firebase + Auto-login integrated */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, getDoc, setDoc, serverTimestamp
+  getFirestore,
+  doc,
+  getDoc,
+  onSnapshot,
+  collection,
+  getDocs,
+  runTransaction,
+  serverTimestamp,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-document.addEventListener('DOMContentLoaded', () => {
-
-  // ---------------- Firebase Setup ----------------
+/* ------------------ Firebase ------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -26,9 +22,8 @@ const firebaseConfig = {
   measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-document.addEventListener('DOMContentLoaded', () => {
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
   /* ---------------- Config ---------------- */
   const INITIAL_POT       = 1_000_000; // ₦1,000,000
