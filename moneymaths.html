@@ -149,40 +149,44 @@ input, button {
 /* small helpers */
 .hidden { display:none !important; }
 
-<style>
 /* HOW TO PLAY BUTTON - animated border lights */
 #howToPlayBtn {
-  display:block;
-  margin:14px auto;
-  padding:12px 20px;
-  border-radius:20px;
-  font-weight:800;
-  font-size:14px;
-  color:#fff;
-  background:linear-gradient(90deg,#FF1493,#FF8C00);
-  border:none;
-  cursor:pointer;
-  position:relative;
-  text-shadow:0 0 6px #fff;
-  z-index:10;
-  overflow:hidden;
-}
-#howToPlayBtn::before {
-  content:'';
-  position:absolute;
-  top:-2px; left:-2px; right:-2px; bottom:-2px;
-  border-radius:22px;
-  background: linear-gradient(270deg,#FF1493,#FF8C00,#FF1493,#FF8C00);
-  background-size: 400% 400%;
-  z-index:-1;
-  animation: borderGlow 3s linear infinite;
-}
-@keyframes borderGlow {
-  0% {background-position:0% 50%;}
-  50% {background-position:100% 50%;}
-  100% {background-position:0% 50%;}
+  position: relative;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  background: #111;
+  color: #FF1493;
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 0;
+  text-shadow: 0 0 4px #fff;
 }
 
+/* animated lights */
+#howToPlayBtn::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; bottom: -2px; right: -2px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #FF1493, #FF8C00, #FF1493, #FF8C00);
+  background-size: 200% 200%;
+  z-index: -1;
+  animation: lightTravel 2s linear infinite;
+}
+
+@keyframes lightTravel {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+/* make inner button background solid and hide border overlap */
+#howToPlayBtn span {
+  position: relative;
+  z-index: 1;
+}
 </style>
 </head>
 <body>
