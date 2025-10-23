@@ -88,60 +88,27 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 
 #dailyReward {
   width: 90%;
-  max-width: 420px;
-  margin: 16px auto;
-  padding: 12px 18px;
-  font-family: 'Press Start 2P', cursive;
-  font-size: 12px;
-  text-align: center;
-  position: relative;
-  color: #fff;
-  background: #111;
-  border-radius: 14px;
-  overflow: hidden;
-  z-index: 1;
-}
-
-/* border animation */
-#dailyReward::before {
-  content: "";
-  position: absolute;
-  top: -2px; left: -2px; right: -2px; bottom: -2px;
-  border-radius: 16px;
-  background: linear-gradient(120deg, #FF1493, #FF8C00, #FF1493, #FF8C00);
-  background-size: 300% 300%;
-  animation: borderFlow 10s linear infinite; /* slow, premium animation */
-  z-index: 0;
-}
-
-/* dark mask inside to keep border only on the edge */
-#dailyReward::after {
-  content: "";
-  position: absolute;
-  top: 2px; left: 2px; right: 2px; bottom: 2px;
-  background: #111;
+  max-width: 480px;
+  margin: 12px auto;
+  background: #1c1c1c; /* dark, slightly lighter than page */
   border-radius: 12px;
-  z-index: 1;
+  padding: 12px 16px;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+  border: 2px solid #FF1493; /* premium accent outline */
+  box-shadow: 0 4px 12px rgba(255,20,147,0.2); /* soft highlight */
 }
 
-/* content stays above */
-#dailyReward span, 
-#dailyReward {
-  position: relative;
-  z-index: 2;
-}
-
-/* golden figure */
-#dailyPot {
+#dailyReward #dailyPot {
+  display: inline-block;
   color: gold;
   font-weight: 800;
-  font-size: 14px;
-  text-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
-}
-
-@keyframes borderFlow {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 200% 0%; }
+  font-size: 22px;
+  letter-spacing: 1px;
+  margin-left: 6px;
 }
 
 /* Problem Blocks */
