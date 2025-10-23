@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const shownDate = getHalfAlertDate();
     if (pot <= half && shownDate !== today){
       setHalfAlertDate(today);
-      showPopup('⚠️ Halfway mined — pot is running low!', 4000);
+      showPopup('⚠️ Tickets are Halfway mined — daily reward is running low!', 4000);
       const terminal = document.getElementById('trainTerminal');
       if (terminal){
         terminal.style.boxShadow = '0 0 30px rgba(255,165,0,0.28)';
@@ -421,7 +421,7 @@ if (profileNameEl) {
 }
   // Use a transaction to deduct stars when joining (atomic check)
   async function tryDeductStarsForJoin(cost) {
-    if (!currentUser?.uid) return { ok: false, message: 'Not logged in' };
+    if (!currentUser?.uid) return { ok: false, message: 'You are not logged in' };
     const userRef = doc(db, 'users', currentUser.uid);
     try {
       await runTransaction(db, async (t) => {
@@ -472,7 +472,7 @@ async function startTrain() {
   // --- Prechecks ---
   const pot = getStoredPot() ?? INITIAL_POT;
   if (pot <= 0) {
-    showPopup('🚧 Station closed for today. Come back tomorrow.');
+    showPopup('🚧 Train Station closed for today. Come back tomorrow.');
     return;
   }
 
@@ -482,7 +482,7 @@ async function startTrain() {
     : parseInt(starCountEl?.textContent || '0', 10) || 0;
 
   if (curStars < STAR_COST) {
-    showPopup('Not enough stars to join.');
+    showPopup('Not enough stars to mine Tickets.');
     return;
   }
 
@@ -569,7 +569,7 @@ async function endTrain(success, ticketNumber = null) {
       showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
     }
   } else {
-    showPopup('🚉 Train left! You got nothing 😢', 2200);
+    showPopup('🚉 Train has left the station! You didnt get a ticket ', 2200);
   }
 
   trainActive = false;
