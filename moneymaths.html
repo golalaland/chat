@@ -148,14 +148,6 @@ input, button {
 }
 /* small helpers */
 .hidden { display:none !important; }
-
-.terminal-icon {
-  width: 20px;
-  height: 20px;
-  vertical-align: middle;
-  margin-right: 6px;
-  filter: drop-shadow(0 0 2px #00c85370);
-}
 </style>
 </head>
 <body>
@@ -166,30 +158,16 @@ input, button {
     <div id="scrambleText">MONEY TRAIN 🚂</div>
   </div>
 
+ Can we use befitting svga instead of emojis here? 
+
  <!-- 🚉 Train Terminal Display -->
-<div id="trainTerminal" class="train-terminal glass-terminal">
-  <div class="terminal-header">TRAIN TERMINAL</div>
+  <div id="trainTerminal" class="train-terminal glass-terminal">
+    <div class="terminal-header">TRAIN TERMINAL</div>
+    <div class="terminal-line">🚂 Train Name: <span id="trainName">Money Express</span></div>
+    <div class="terminal-line">📅 Date: <span id="trainDate"></span></div>
+    <div class="terminal-line">⏰ Time: <span id="trainTime"></span></div>
+    <div class="terminal-line">📍 Destination: <span id="trainDestination">Lagos Central</span></div>
 
-  <div class="terminal-line">
-    <img src="./icons/train.svg" class="terminal-icon" alt="Train"> 
-    Train Name: <span id="trainName">Money Express</span>
-  </div>
-
-  <div class="terminal-line">
-    <img src="./icons/calendar.svg" class="terminal-icon" alt="Date"> 
-    Date: <span id="trainDate"></span>
-  </div>
-
-  <div class="terminal-line">
-    <img src="./icons/clock.svg" class="terminal-icon" alt="Time"> 
-    Time: <span id="trainTime"></span>
-  </div>
-
-  <div class="terminal-line">
-    <img src="./icons/location.svg" class="terminal-icon" alt="Destination"> 
-    Destination: <span id="trainDestination">Lagos Central</span>
-  </div>
-</div>
 
     <!-- closed overlay placeholder -->
     <div id="closedOverlay" class="station-closed hidden">
