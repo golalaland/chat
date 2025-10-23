@@ -403,8 +403,9 @@ async function loadCurrentUserForGame() {
       }
 
       // Update UI in real time
-      if (DOM?.stars) DOM.stars.textContent = `${newData.stars ?? 0} ⭐️`;
-      if (DOM?.cash) DOM.cash.textContent = `₦${(newData.cash ?? 0).toLocaleString()}`;
+      // Update UI in real time (Money Game elements)
+if (starCountEl) starCountEl.textContent = String(newData.stars ?? 0);
+if (cashCountEl) cashCountEl.textContent = `₦${(newData.cash ?? 0).toLocaleString()}`;
       if (profileNameEl) profileNameEl.textContent = newData.chatId || storedUser.displayName || storedUser.email.split('@')[0];
     });
 
