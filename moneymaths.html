@@ -86,8 +86,44 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 #loadingBar{width:0%;height:16px;background:var(--accent);}
 #trainEmoji{position:absolute;left:0;top:-8px;font-size:24px;transition:left 1s linear;}
 
-/* Daily Reward */
-#dailyReward{width:90%;max-width:480px;margin:10px auto;background:#222;border-radius:12px;padding:6px;color:var(--accent);text-align:center;font-weight:700;}
+/* Daily Reward — premium odometer style */
+#dailyReward {
+  width: 90%;
+  max-width: 480px;
+  margin: 12px auto;
+  background: linear-gradient(145deg, #111, #222); /* dark glass gradient */
+  border-radius: 16px;
+  padding: 12px;
+  color: #FF1493;
+  text-align: center;
+  font-weight: 800;
+  font-size: 18px;
+  font-family: 'Press Start 2P', monospace;
+  box-shadow: 0 4px 12px rgba(255,20,147,0.3), inset 0 0 8px rgba(255,20,147,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Odometer number */
+#dailyPot {
+  display: inline-block;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: #FF1493;
+  text-shadow: 0 0 6px #FF1493aa, 0 0 12px #FF8C00aa;
+  transition: all 0.3s ease;
+}
+
+/* Optional pulse effect on number change */
+.odometer-pulse {
+  animation: pulseGlow 0.6s ease-in-out 1;
+}
+
+@keyframes pulseGlow {
+  0% { text-shadow: 0 0 6px #FF1493aa, 0 0 12px #FF8C00aa; }
+  50% { text-shadow: 0 0 12px #FF1493ff, 0 0 20px #FF8C00ff; }
+  100% { text-shadow: 0 0 6px #FF1493aa, 0 0 12px #FF8C00aa; }
+}
 
 /* Problem Blocks */
 .scramble-board{text-align:center; margin:10px 0; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;}
