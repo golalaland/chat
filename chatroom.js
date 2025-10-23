@@ -582,6 +582,7 @@ async function loginWhitelist(email, phone) {
 
     // 🧠 Setup post-login systems
     updateRedeemLink();
+    updateTipLink();
     setupPresence(currentUser);
     attachMessagesListener();
     startStarEarning(currentUser.uid);
@@ -833,6 +834,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     await sleep(400);
     updateRedeemLink();
+    updateTipLink();
   }
 
   loginBtn?.addEventListener("click", handleLogin);
@@ -849,6 +851,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if (!success) return;
       await sleep(400);
       updateRedeemLink();
+      updateTipLink();
     })();
   }
 
