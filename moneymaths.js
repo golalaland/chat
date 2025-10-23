@@ -1,10 +1,10 @@
 /* ---------------- Firebase Setup ---------------- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
+import { 
   getFirestore,
   doc,
   getDoc,
-  onSnapshot
+  onSnapshot,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -103,8 +103,9 @@ const cashCountEl        = document.getElementById('cashCount');
 
 /* ---------------- DOMContentLoaded Init ---------------- */
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadCurrentUserForGame();
+  await loadCurrentUserForGame();   // wait until Firestore user is loaded
   console.log('✅ Game user loaded and synced');
+  init();                           // now safe to initialize the UI & timers
 });
 
   /* ---------------- Sounds (change paths if desired) ---------------- */
@@ -633,7 +634,6 @@ function init(){
   }
 }
 
-init();
 
 /* ---------------- Expose debug helpers ---------------- */
 window.moneyTrainLocal = {
