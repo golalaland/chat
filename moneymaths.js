@@ -334,72 +334,84 @@ document.addEventListener('DOMContentLoaded', () => {
     if (trainEmoji) trainEmoji.style.left = '0px';
   }
 
-  /* ------------------ Firestore user integration ------------------ */
-  let currentUser = null;          // full user doc (uid + fields)
-  let currentUserUnsub = null;     // snapshot unsubscribe
+/* ------------------ Firestore user integration ------------------ */
+let currentUser = null;          // full user doc (uid + fields)
+let currentUserUnsub = null;     // snapshot unsubscribe
 
-  // Helper: sanitize email to your Firestore doc id style
-  const sanitizeEmailToId = (raw) => String(raw || '').replace(/[.#$[\]]/g, ',');
+// Helper: sanitize email to match Firestore doc ID style
+const sanitizeEmailToId = (raw) => String(raw || '').replace(/[.#$[\]]/g, ',');
 
-  // Load logged-in user exactly like your shop does
-  async function loadCurrentUserForGame() {
-    try {
-      // Try vipUser then hostUser (same logic as shop)
-      const vipRaw = localStorage.getItem('vipUser');
-      const hostRaw = localStorage.getItem('hostUser');
-      const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+// Load logged-in user exactly like your shop does
+async function loadCurrentUserForGame() {
+  try {
+    // Try vipUser then hostUser (same logic as shop)
+    const vipRaw = localStorage.getItem('vipUser');
+    const hostRaw = localStorage.getItem('hostUser');
+    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
 
-      // default UI while loading
-      if (profileNameEl) profileNameEl.textContent = profileNameEl.textContent || 'GUEST 0000';
-      if (starCountEl) starCountEl.textContent = starCountEl.textContent || '50';
-      if (cashCountEl) cashCountEl.textContent = cashCountEl.textContent || '0';
+    // Default UI while loading
+    if (profileNameEl) profileNameEl.textContent = profileNameEl.textContent || 'GUEST 0000';
+    if (starCountEl) starCountEl.textContent = starCountEl.textContent || '50';
+    if (cashCountEl) cashCountEl.textContent = cashCountEl.textContent || '0';
 
-      if (!storedUser?.email) {
-        currentUser = null;
-        return;
-      }
-
-      const uid = sanitizeEmailToId(storedUser.email);
-      const userRef = doc(db, 'users', uid);
-      const snap = await getDoc(userRef);
-
-      if (!snap.exists()) {
-        // fallback minimal user
-        currentUser = {
-          uid,
-          stars: 0,
-          cash: 0,
-          isHost: false,
-          chatId: storedUser.displayName || storedUser.email.split('@')[0],
-          email: storedUser.email
-        };
-        // update UI
-        if (profileNameEl) profileNameEl.textContent = currentUser.chatId;
-        if (starCountEl) starCountEl.textContent = String(currentUser.stars);
-        if (cashCountEl) cashCountEl.textContent = String(currentUser.cash);
-        return;
-      }
-
-      // subscribe to real-time updates for this user
-      if (currentUserUnsub) currentUserUnsub(); // unsubscribe previous if any
-      currentUserUnsub = onSnapshot(userRef, (docSnap) => {
-        const data = docSnap.data() || {};
-        currentUser = { uid, ...data };
-
-        // Update UI fields live
-        if (profileNameEl)
-          profileNameEl.textContent = currentUser.chatId || (storedUser.displayName || storedUser.email.split('@')[0]) || 'Guest';
-        if (starCountEl)
-          starCountEl.textContent = String(currentUser.stars ?? 0);
-        if (cashCountEl)
-          cashCountEl.textContent = String(currentUser.cash ?? 0);
-      });
-
-    } catch (err) {
-      console.error('loadCurrentUserForGame error', err);
+    // If no stored user, stop
+    if (!storedUser?.email) {
+      currentUser = null;
+      return;
     }
-  }
 
+    // --- 🔹 Prepare Firestore reference ---
+    const uid = sanitizeEmailToId(storedUser.email);
+    const userRef = doc(db, 'users', uid);
+    const snap = await getDoc(userRef);
+
+    // --- 🔹 Fallback if no record found ---
+    if (!snap.exists()) {
+      currentUser = {
+        uid,
+        stars: 0,
+        cash: 0,
+        isHost: false,
+        chatId: storedUser.displayName || storedUser.email.split('@')[0],
+        email: storedUser.email
+      };
+
+      // Update UI
+      if (profileNameEl) profileNameEl.textContent = currentUser.chatId;
+      if (starCountEl) starCountEl.textContent = String(currentUser.stars);
+      if (cashCountEl) cashCountEl.textContent = String(currentUser.cash);
+      return;
+    }
+
+    // --- ✅ Set current user and attach real-time listener ---
+    currentUser = { uid, ...snap.data() };
+
+    // Unsubscribe previous listener if any
+    if (currentUserUnsub) currentUserUnsub();
+
+    // 🔁 Live sync user's data between Firestore, localStorage, and UI
+    currentUserUnsub = onSnapshot(userRef, (docSnap) => {
+      if (!docSnap.exists()) return;
+      const newData = docSnap.data();
+      currentUser = { uid, ...newData };
+
+      // Update localStorage copy for other pages (shop, etc.)
+      if (newData.isVIP) {
+        localStorage.setItem('vipUser', JSON.stringify(newData));
+      } else {
+        localStorage.setItem('hostUser', JSON.stringify(newData));
+      }
+
+      // Update UI in real time
+      if (DOM?.stars) DOM.stars.textContent = `${newData.stars ?? 0} ⭐️`;
+      if (DOM?.cash) DOM.cash.textContent = `₦${(newData.cash ?? 0).toLocaleString()}`;
+      if (profileNameEl) profileNameEl.textContent = newData.chatId || storedUser.displayName || storedUser.email.split('@')[0];
+    });
+
+  } catch (err) {
+    console.error('loadCurrentUserForGame error', err);
+  }
+}
   // Use a transaction to deduct stars when joining (atomic check)
   async function tryDeductStarsForJoin(cost) {
     if (!currentUser?.uid) return { ok: false, message: 'Not logged in' };
