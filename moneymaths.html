@@ -248,6 +248,31 @@ input, button {
   transform: translateY(-2px);
   box-shadow: 0 6px 10px rgba(255,20,147,0.5); /* stronger highlight on hover */
 }
+
+/* Odometer container */
+.odometer {
+  display: inline-flex;
+  font-size: 32px;
+  color: #FFD700; /* premium gold */
+  font-family: 'Press Start 2P', monospace;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+/* Each digit scroll effect */
+.digit {
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  height: 1em;
+  width: 0.6em;
+  text-align: center;
+}
+
+.digit span {
+  display: block;
+  transition: transform 0.6s ease-in-out;
+}
 </style>
 </head>
 <body>
@@ -307,8 +332,18 @@ input, button {
     </div>
   </div>
 
-  <!-- Daily Reward -->
-  <div id="dailyReward">DAILY CASH REWARD: ₦<span id="dailyPot">1,000,000</span></div>
+  <div id="dailyReward">
+  DAILY CASH REWARD: ₦
+  <span id="dailyPot" class="odometer">
+    <span class="digit">1</span>
+    <span class="digit">0</span>
+    <span class="digit">0</span>
+    <span class="digit">0</span>
+    <span class="digit">0</span>
+    <span class="digit">0</span>
+    <span class="digit">0</span>
+  </span>
+</div>
 
   <!-- Join Train Button -->
   <button id="joinTrainBtn">Play</button>
