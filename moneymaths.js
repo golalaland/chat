@@ -43,13 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const cashCountEl       = document.getElementById('cashCount');
 
   /* ---------------- Sounds (change paths if desired) ---------------- */
-  const SOUND_PATHS = {
+const SOUND_PATHS = {
     start:  './sounds/train_start.mp3',
     depart: './sounds/train_depart.mp3',
     whistle:'./sounds/train_whistle.mp3',
     ding:   './sounds/cha_ching.mp3',
-    error:  './sounds/error_bell.mp3'
-  };
+    error:  './sounds/error_bell.mp3',
+    ambience: './sounds/train_ambience.mp3' // faint, looping background ambience
+};
   function playAudio(src, opts = {}) {
     if (!src) return;
     try {
@@ -313,6 +314,9 @@ submitAnswersBtn.style.opacity = '0.6';
     trainEmoji.style.left = '0px';
   }
 /* ---------------- start / end train ---------------- */
+/* ---------------- start / end train ---------------- */
+let trainAmbienceLoop = null; // background ambience
+
 function startTrain(){
     // ensure pot open
     if ((getStoredPot() ?? INITIAL_POT) <= 0){
@@ -340,28 +344,31 @@ function startTrain(){
     submitAnswersBtn.disabled = false;
     submitAnswersBtn.style.opacity = '0.6';
 
-    // start timer & ambience sound
+    // start timer & sounds
     startLoadingBar();
 
-    // play looping train whistle ambience if not already playing
-    if (!trainAmbience) {
-        trainAmbience = playAudio(SOUND_PATHS.whistle, { loop: true, volume: 0.4 });
+    // play train whistle
+    playAudio(SOUND_PATHS.whistle);
+
+    // start background ambience if not already running
+    if (!trainAmbienceLoop){
+        trainAmbienceLoop = playAudio(SOUND_PATHS.ambience, { loop: true, volume: 0.2 });
     }
 }
 
 function endTrain(success, ticketNumber=null){
     stopLoadingBar();
 
-    // stop train ambience
-    if (trainAmbience) {
-        trainAmbience.pause();
-        trainAmbience = null;
-    }
-
     // hide problems & submit
     problemBoard.classList.add('hidden');
     submitAnswersBtn.classList.add('hidden');
     submitAnswersBtn.style.display = 'none';
+
+    // stop background ambience
+    if (trainAmbienceLoop){
+        trainAmbienceLoop.pause();
+        trainAmbienceLoop = null;
+    }
 
     // show join again only if pot >0
     if ((getStoredPot() ?? INITIAL_POT) > 0){
@@ -399,7 +406,8 @@ function endTrain(success, ticketNumber=null){
 
         if (pot <= 0) handleStationClosed();
     } else {
-        showPopup('Train left! You missed Train! ☹️', 2200);
+        showPopup('Train left! You got nothing 😢', 2200);
+        playAudio(SOUND_PATHS.depart);
     }
 }
   /* ---------------- submit answers handler ---------------- */
