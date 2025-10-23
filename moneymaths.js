@@ -403,10 +403,22 @@ async function loadCurrentUserForGame() {
       }
 
 // Update UI in real time (Money Game elements)
-if (starCountEl) starCountEl.textContent = String(newData.stars ?? 0);
-if (cashCountEl) cashCountEl.textContent = `₦${(newData.cash ?? 0).toLocaleString()}`;
-if (profileNameEl)
-  profileNameEl.textContent = newData.chatId || storedUser.displayName || storedUser.email.split('@')[0];
+// ✅ Update UI in real time (Money Game elements)
+if (starCountEl) {
+  starCountEl.textContent = (newData.stars ?? 0).toLocaleString();
+}
+
+if (cashCountEl) {
+  const cashValue = Number(newData.cash ?? 0);
+  cashCountEl.textContent = `₦${cashValue.toLocaleString()}`;
+}
+
+if (profileNameEl) {
+  profileNameEl.textContent =
+    newData.chatId ||
+    storedUser.displayName ||
+    storedUser.email.split('@')[0];
+}
 });
 
   } catch (err) {
