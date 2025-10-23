@@ -278,11 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
       problemBoard.appendChild(wrapper);
     }
 
-// show submit/verify button for gameplay
-submitAnswersBtn.classList.remove('hidden'); // make it visible
-submitAnswersBtn.style.display = 'block';
-submitAnswersBtn.disabled = false;
-submitAnswersBtn.style.opacity = '0.6';
 
     // watch inputs: only enable button when all fields are filled (not necessarily correct)
     const inputs = problemBoard.querySelectorAll('.problemInput');
@@ -470,97 +465,114 @@ if (profileNameEl) {
   }
 
   /* ---------------- start / end train (modified to use Firestore) ---------------- */
-  async function startTrain(){
-    // ensure pot open
-    if ((getStoredPot() ?? INITIAL_POT) <= 0){
-      showPopup('🚧 Station closed for today. Come back tomorrow.');
-      return;
-    }
+async function startTrain() {
+  // ensure pot open
+  if ((getStoredPot() ?? INITIAL_POT) <= 0) {
+    showPopup('🚧 Station closed for today. Come back tomorrow.');
+    return;
+  }
 
-    // star check - get from currentUser if present, otherwise from UI
-    const curStars = currentUser?.stars != null ? Number(currentUser.stars) : (parseInt(starCountEl?.textContent || '0',10) || 0);
-    if (curStars < STAR_COST){
-      showPopup('Not enough stars to join.');
-      return;
-    }
+  // star check - get from currentUser if present, otherwise from UI
+  const curStars = currentUser?.stars != null
+    ? Number(currentUser.stars)
+    : (parseInt(starCountEl?.textContent || '0', 10) || 0);
 
-    // deduct star cost in Firestore (atomic)
-    const deductResult = await tryDeductStarsForJoin(STAR_COST);
-    if (!deductResult.ok){
-      showPopup(deductResult.message || 'Not enough stars.');
-      playAudio(SOUND_PATHS.error);
-      return;
-    }
+  if (curStars < STAR_COST) {
+    showPopup('Not enough stars to join.');
+    return;
+  }
 
-    // update UI optimistically (will be overwritten by snapshot)
-    if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
+  // deduct star cost in Firestore (atomic)
+  const deductResult = await tryDeductStarsForJoin(STAR_COST);
+  if (!deductResult.ok) {
+    showPopup(deductResult.message || 'Not enough stars.');
+    playAudio(SOUND_PATHS.error);
+    return;
+  }
+
+  // update UI optimistically
+  if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
 
   // state & UI
-trainActive = true;
-joinTrainBtn.style.display = 'none';
-generateProblems();
+  trainActive = true;
+  joinTrainBtn.style.display = 'none';
 
-// show problem board + button
-problemBoard.classList.remove('hidden');
-submitAnswersBtn.classList.remove('hidden');
-submitAnswersBtn.style.display = 'block';
-submitAnswersBtn.disabled = false;
-submitAnswersBtn.style.opacity = '0.6';    }
+  // generate problems (do NOT show submit button inside generateProblems)
+  generateProblems();
 
-    // start timer & sound
-    startLoadingBar();
-    playAudio(SOUND_PATHS.whistle);
+  // show problem board + submit button
+  if (problemBoard) problemBoard.classList.remove('hidden');
+  if (submitAnswersBtn) {
+    submitAnswersBtn.classList.remove('hidden');
+    submitAnswersBtn.style.display = 'block';
+    submitAnswersBtn.disabled = false;
+    submitAnswersBtn.style.opacity = '0.6';
   }
 
-  async function endTrain(success, ticketNumber=null){
-    stopLoadingBar();
+  // start timer & sound
+  startLoadingBar();
+  playAudio(SOUND_PATHS.whistle);
+}
 
-    // hide problems & submit
-    if (problemBoard) problemBoard.classList.add('hidden');
-    if (submitAnswersBtn) submitAnswersBtn.style.display = 'none';
+async function endTrain(success, ticketNumber = null) {
+  stopLoadingBar();
 
-    // show join again only if pot >0
-    if ((getStoredPot() ?? INITIAL_POT) > 0){
-      if (joinTrainBtn) { joinTrainBtn.style.display = 'block'; joinTrainBtn.disabled = false; joinTrainBtn.style.opacity = '1'; }
-    } else {
-      if (joinTrainBtn) { joinTrainBtn.style.display = 'block'; joinTrainBtn.disabled = true; joinTrainBtn.style.opacity = '0.5'; }
+  // hide problems & submit
+  if (problemBoard) problemBoard.classList.add('hidden');
+  if (submitAnswersBtn) {
+    submitAnswersBtn.style.display = 'none';
+    submitAnswersBtn.classList.add('hidden');
+  }
+
+  // show join again only if pot > 0
+  if ((getStoredPot() ?? INITIAL_POT) > 0) {
+    if (joinTrainBtn) {
+      joinTrainBtn.style.display = 'block';
+      joinTrainBtn.disabled = false;
+      joinTrainBtn.style.opacity = '1';
     }
-
-    if (success){
-      // update UI optimistically; final values will come from Firestore snapshot after transaction
-      const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g,''),10) || 0;
-      const newCash = oldCash + REWARD_TO_USER;
-      if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
-
-      const oldStars = parseInt(starCountEl?.textContent?.replace(/,/g,''),10) || 0;
-      const newStars = oldStars + STARS_PER_WIN;
-      if (starCountEl) starCountEl.textContent = String(newStars);
-
-      // deduct pot
-      let pot = getStoredPot() ?? INITIAL_POT;
-      pot = Math.max(0, pot - DEDUCT_PER_WIN);
-      setStoredPot(pot);
-
-      const dest = trainDestinationEl?.textContent || 'your destination';
-      const tnum = ticketNumber || '---';
-
-      showPopup(`🎫 You’ve secured your ${dest} train ticket number ${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
-      playAudio(SOUND_PATHS.ding);
-
-      maybeShowHalfwayAlert();
-
-      if (pot <= 0) handleStationClosed();
-
-      // Now persist the reward to Firestore in a transaction
-      const rewardResult = await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
-      if (!rewardResult.ok) {
-        // If Firestore update fails, notify user and revert optimistic UI is tricky; but we will at least inform
-        showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
-      }
-    } else {
-      showPopup('Train left! You got nothing 😢', 2200);
+  } else {
+    if (joinTrainBtn) {
+      joinTrainBtn.style.display = 'block';
+      joinTrainBtn.disabled = true;
+      joinTrainBtn.style.opacity = '0.5';
     }
   }
+
+  if (success) {
+    // update UI optimistically; final values will come from Firestore snapshot after transaction
+    const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
+    const newCash = oldCash + REWARD_TO_USER;
+    if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
+
+    const oldStars = parseInt(starCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
+    const newStars = oldStars + STARS_PER_WIN;
+    if (starCountEl) starCountEl.textContent = String(newStars);
+
+    // deduct pot
+    let pot = getStoredPot() ?? INITIAL_POT;
+    pot = Math.max(0, pot - DEDUCT_PER_WIN);
+    setStoredPot(pot);
+
+    const dest = trainDestinationEl?.textContent || 'your destination';
+    const tnum = ticketNumber || '---';
+
+    showPopup(`🎫 You’ve secured your ${dest} train ticket number ${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
+    playAudio(SOUND_PATHS.ding);
+
+    maybeShowHalfwayAlert();
+
+    if (pot <= 0) handleStationClosed();
+
+    // persist the reward to Firestore
+    const rewardResult = await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
+    if (!rewardResult.ok) {
+      showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
+    }
+  } else {
+    showPopup('Train left! You got nothing 😢', 2200);
+  }
+}
 
   /* ---------------- submit answers handler ---------------- */
   submitAnswersBtn?.addEventListener('click', () => {
