@@ -278,12 +278,11 @@ document.addEventListener('DOMContentLoaded', () => {
       problemBoard.appendChild(wrapper);
     }
 
-    // show submit/verify button for gameplay and attach input watchers
-    if (submitAnswersBtn) {
-      submitAnswersBtn.style.display = 'block';
-      submitAnswersBtn.disabled = false; // visible; disabling handled below
-      submitAnswersBtn.style.opacity = '0.6';
-    }
+// show submit/verify button for gameplay
+submitAnswersBtn.classList.remove('hidden'); // make it visible
+submitAnswersBtn.style.display = 'block';
+submitAnswersBtn.disabled = false;
+submitAnswersBtn.style.opacity = '0.6';
 
     // watch inputs: only enable button when all fields are filled (not necessarily correct)
     const inputs = problemBoard.querySelectorAll('.problemInput');
@@ -496,16 +495,17 @@ if (profileNameEl) {
     // update UI optimistically (will be overwritten by snapshot)
     if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
 
-    // state & UI
-    trainActive = true;
-    if (joinTrainBtn) joinTrainBtn.style.display = 'none';
-    generateProblems();
-    if (problemBoard) problemBoard.classList.remove('hidden');
-    if (submitAnswersBtn) {
-      submitAnswersBtn.style.display = 'block';
-      submitAnswersBtn.disabled = true;
-      submitAnswersBtn.style.opacity = '0.6';
-    }
+  // state & UI
+trainActive = true;
+joinTrainBtn.style.display = 'none';
+generateProblems();
+
+// show problem board + button
+problemBoard.classList.remove('hidden');
+submitAnswersBtn.classList.remove('hidden');
+submitAnswersBtn.style.display = 'block';
+submitAnswersBtn.disabled = false;
+submitAnswersBtn.style.opacity = '0.6';    }
 
     // start timer & sound
     startLoadingBar();
