@@ -87,64 +87,61 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
 #trainEmoji{position:absolute;left:0;top:-8px;font-size:24px;transition:left 1s linear;}
 
 #dailyReward {
-  position: relative;
   width: 90%;
-  max-width: 480px;
-  margin: 12px auto;
-  background: #111; /* clean black core */
-  border-radius: 12px;
-  padding: 12px 16px;
+  max-width: 420px;
+  margin: 16px auto;
+  padding: 12px 18px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
   text-align: center;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-  font-size: 18px;
+  position: relative;
   color: #fff;
-  overflow: hidden;
-}
-
-/* animated border lights */
-#dailyReward::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, #FF1493, #FF8C00, #FF1493, #FF8C00);
-  background-size: 300% 300%;
-  animation: borderFlow 6s linear infinite;
-  z-index: 0; /* sits behind content */
-}
-
-/* keep inner background solid, but BEHIND text */
-#dailyReward::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
   background: #111;
-  border-radius: 10px;
+  border-radius: 14px;
+  overflow: hidden;
   z-index: 1;
 }
 
-/* animation movement */
-@keyframes borderFlow {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 300% 0%; }
+/* border animation */
+#dailyReward::before {
+  content: "";
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #FF1493, #FF8C00, #FF1493, #FF8C00);
+  background-size: 300% 300%;
+  animation: borderFlow 10s linear infinite; /* slow, premium animation */
+  z-index: 0;
 }
 
-/* text layer — ensure visible above all */
-#dailyReward span,
+/* dark mask inside to keep border only on the edge */
+#dailyReward::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  background: #111;
+  border-radius: 12px;
+  z-index: 1;
+}
+
+/* content stays above */
+#dailyReward span, 
 #dailyReward {
   position: relative;
   z-index: 2;
 }
 
-#dailyReward span {
+/* golden figure */
+#dailyPot {
   color: gold;
   font-weight: 800;
-  font-size: 22px;
-  letter-spacing: 1px;
+  font-size: 14px;
+  text-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes borderFlow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
 }
 
 /* Problem Blocks */
@@ -372,7 +369,7 @@ input, button {
   </div>
 
 <div id="dailyReward">
-  DAILY CASH REWARD: <span id="dailyPot">₦1,000,000</span>
+  DAILY CASH REWARD: ₦<span id="dailyPot">1,000,000</span>
 </div>
 
   <!-- Join Train Button -->
