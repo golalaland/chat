@@ -101,12 +101,7 @@ const profileNameEl      = document.getElementById('profileName');
 const starCountEl        = document.getElementById('starCount');
 const cashCountEl        = document.getElementById('cashCount');
 
-/* ---------------- DOMContentLoaded Init ---------------- */
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadCurrentUserForGame();   // wait until Firestore user is loaded
-  console.log('✅ Game user loaded and synced');
-  init();                           // now safe to initialize the UI & timers
-});
+
 
   /* ---------------- Sounds (change paths if desired) ---------------- */
   const SOUND_PATHS = {
@@ -634,6 +629,12 @@ function init(){
   }
 }
 
+/* ---------------- DOMContentLoaded Init ---------------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadCurrentUserForGame();   // wait until Firestore user is loaded
+  console.log('✅ Game user loaded and synced');
+  init();                           // now safe to initialize the UI & timers
+});
 
 /* ---------------- Expose debug helpers ---------------- */
 window.moneyTrainLocal = {
@@ -646,3 +647,4 @@ window.moneyTrainLocal = {
     await endTrain(true,'TEST-TICKET'); 
   }
 };
+
