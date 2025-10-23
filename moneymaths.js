@@ -18,7 +18,7 @@ import {
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------------- Config ---------------- */
-  const INITIAL_POT       = 10_000; // $10,000
+  const INITIAL_POT       = 1_000_000; // $1,000,000
   const DEDUCT_PER_WIN    = 1_000;     // deduct from pot per win
   const REWARD_TO_USER    = 1_000;     // reward to user per win
   const STARS_PER_WIN     = 5 * 8;     // 40 stars
