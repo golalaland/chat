@@ -1,3 +1,20 @@
+// Money Train + Firebase integration
+// Replace your existing JS1 file with this (or merge accordingly).
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  onSnapshot,
+  collection,
+  getDocs,
+  runTransaction,
+  serverTimestamp,
+  updateDoc,
+  increment
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------------- Config ---------------- */
@@ -7,6 +24,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const STARS_PER_WIN     = 5 * 8;     // 40 stars
   const NUM_BLOCKS        = 8;
   const STAR_COST         = 10;        // cost to join (enforced)
+
+  /* ---------------- Firebase (from your JS2) ---------------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+    authDomain: "metaverse-1010.firebaseapp.com",
+    projectId: "metaverse-1010",
+    storageBucket: "metaverse-1010.appspot.com",
+    messagingSenderId: "1044064238233",
+    appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+    measurementId: "G-S77BMC266C",
+    databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
   /* ---------------- UI Refs ---------------- */
   const joinTrainBtn      = document.getElementById('joinTrainBtn');
@@ -29,9 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const trainTimeEl       = document.getElementById('trainTime');
   const trainDestinationEl= document.getElementById('trainDestination');
 
-  const profileNameEl     = document.getElementById('profileName');
-  const starCountEl       = document.getElementById('starCount');
-  const cashCountEl       = document.getElementById('cashCount');
+  const profileNameEl     = document.getElementById('profileName') || document.getElementById('username');
+  // accept both id variants for stars/cash used across pages
+  const starCountEl       = document.getElementById('starCount') || document.getElementById('stars-count');
+  const cashCountEl       = document.getElementById('cashCount') || document.getElementById('cash-count');
 
   /* ---------------- Sounds (change paths if desired) ---------------- */
   const SOUND_PATHS = {
@@ -88,14 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updatePotUI(){
     const pot = getStoredPot() ?? INITIAL_POT;
-    dailyPotEl.textContent = pot.toLocaleString();
+    if (dailyPotEl) dailyPotEl.textContent = pot.toLocaleString();
     if (pot <= 0){
       handleStationClosed();
     } else {
-      if (!closedOverlay.classList.contains('hidden') && !isPastMidnightReset()){
+      if (closedOverlay && !closedOverlay.classList.contains('hidden') && !isPastMidnightReset()){
         closedOverlay.classList.add('hidden');
-        joinTrainBtn.disabled = false;
-        joinTrainBtn.style.opacity = '1';
+        if (joinTrainBtn) { joinTrainBtn.disabled = false; joinTrainBtn.style.opacity = '1'; }
       }
     }
   }
@@ -174,10 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleStationClosed(){
-    closedOverlay.classList.remove('hidden');
-    joinTrainBtn.disabled = true;
-    joinTrainBtn.style.display = 'block';
-    joinTrainBtn.style.opacity = '0.5';
+    if (closedOverlay) closedOverlay.classList.remove('hidden');
+    if (joinTrainBtn) { joinTrainBtn.disabled = true; joinTrainBtn.style.display = 'block'; joinTrainBtn.style.opacity = '0.5'; }
     if (countdownTimer) clearInterval(countdownTimer);
     function tick(){
       const ms = timeToNextMidnight();
@@ -197,9 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const today = new Date().toISOString().slice(0,10);
     setPotResetDay(today);
     setHalfAlertDate('');
-    closedOverlay.classList.add('hidden');
-    joinTrainBtn.disabled = false;
-    joinTrainBtn.style.opacity = '1';
+    if (closedOverlay) closedOverlay.classList.add('hidden');
+    if (joinTrainBtn) { joinTrainBtn.disabled = false; joinTrainBtn.style.opacity = '1'; }
     setTrainTerminal();
     updatePotUI();
     showPopup('🔁 Pot reset! Station reopened.', 3000);
@@ -210,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------------- problems generator ---------------- */
   function generateProblems(){
     currentProblems = [];
-    problemBoard.innerHTML = '';
+    if (problemBoard) problemBoard.innerHTML = '';
     // layout: keep inline blocks as small flex columns
     for (let i=0;i<NUM_BLOCKS;i++){
       let a = Math.floor(Math.random()*20)+1;
@@ -251,20 +279,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // show submit/verify button for gameplay and attach input watchers
-    submitAnswersBtn.style.display = 'block';
-    submitAnswersBtn.disabled = false; // visible; disabling handled below
-    submitAnswersBtn.style.opacity = '0.6';
+    if (submitAnswersBtn) {
+      submitAnswersBtn.style.display = 'block';
+      submitAnswersBtn.disabled = false; // visible; disabling handled below
+      submitAnswersBtn.style.opacity = '0.6';
+    }
 
     // watch inputs: only enable button when all fields are filled (not necessarily correct)
     const inputs = problemBoard.querySelectorAll('.problemInput');
     function checkFilled(){
       const allFilled = Array.from(inputs).every(i => i.value.trim() !== '');
-      submitAnswersBtn.disabled = !allFilled;
-      submitAnswersBtn.style.opacity = allFilled ? '1' : '0.6';
+      if (submitAnswersBtn) {
+        submitAnswersBtn.disabled = !allFilled;
+        submitAnswersBtn.style.opacity = allFilled ? '1' : '0.6';
+      }
     }
     inputs.forEach(inp => {
       inp.addEventListener('input', checkFilled);
-      // prevent iOS zoom by ensuring font-size set via CSS (you added earlier)
     });
     // initial check (in case some browser auto-fills)
     checkFilled();
@@ -272,17 +303,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------------- loading bar ---------------- */
   function startLoadingBar(){
-    loadingContainer.style.display = 'block';
+    if (loadingContainer) loadingContainer.style.display = 'block';
     loadingProgress = 0;
-    loadingBar.style.width = '0%';
-    trainEmoji.style.left = '0px';
+    if (loadingBar) loadingBar.style.width = '0%';
+    if (trainEmoji) trainEmoji.style.left = '0px';
     // play start sound
     playAudio(SOUND_PATHS.start, true); // loop start chug (it will be freed - we won't keep reference)
     loadingInterval = setInterval(()=>{
       loadingProgress++;
       const percent = (loadingProgress/39) * 100; // 39s window
-      loadingBar.style.width = `${percent}%`;
-      trainEmoji.style.left = `calc(${percent}% - 12px)`;
+      if (loadingBar) loadingBar.style.width = `${percent}%`;
+      if (trainEmoji) trainEmoji.style.left = `calc(${percent}% - 12px)`;
       if (loadingProgress >= 39){
         clearInterval(loadingInterval);
         loadingInterval = null;
@@ -298,68 +329,187 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function stopLoadingBar(){
     if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
-    loadingContainer.style.display = 'none';
-    loadingBar.style.width = '0%';
-    trainEmoji.style.left = '0px';
+    if (loadingContainer) loadingContainer.style.display = 'none';
+    if (loadingBar) loadingBar.style.width = '0%';
+    if (trainEmoji) trainEmoji.style.left = '0px';
   }
 
-  /* ---------------- start / end train ---------------- */
-  function startTrain(){
+  /* ------------------ Firestore user integration ------------------ */
+  let currentUser = null;          // full user doc (uid + fields)
+  let currentUserUnsub = null;     // snapshot unsubscribe
+
+  // Helper: sanitize email to your Firestore doc id style
+  const sanitizeEmailToId = (raw) => String(raw || '').replace(/[.#$[\]]/g, ',');
+
+  // Load logged-in user exactly like your shop does
+  async function loadCurrentUserForGame() {
+    try {
+      // Try vipUser then hostUser (same logic as shop)
+      const vipRaw = localStorage.getItem('vipUser');
+      const hostRaw = localStorage.getItem('hostUser');
+      const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+
+      // default UI while loading
+      if (profileNameEl) profileNameEl.textContent = profileNameEl.textContent || 'GUEST 0000';
+      if (starCountEl) starCountEl.textContent = starCountEl.textContent || '50';
+      if (cashCountEl) cashCountEl.textContent = cashCountEl.textContent || '0';
+
+      if (!storedUser?.email) {
+        currentUser = null;
+        return;
+      }
+
+      const uid = sanitizeEmailToId(storedUser.email);
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        // fallback minimal user
+        currentUser = {
+          uid,
+          stars: 0,
+          cash: 0,
+          isHost: false,
+          chatId: storedUser.displayName || storedUser.email.split('@')[0],
+          email: storedUser.email
+        };
+        // update UI
+        if (profileNameEl) profileNameEl.textContent = currentUser.chatId;
+        if (starCountEl) starCountEl.textContent = String(currentUser.stars);
+        if (cashCountEl) cashCountEl.textContent = String(currentUser.cash);
+        return;
+      }
+
+      // subscribe to real-time updates for this user
+      if (currentUserUnsub) currentUserUnsub(); // unsubscribe previous if any
+      currentUserUnsub = onSnapshot(userRef, (docSnap) => {
+        const data = docSnap.data() || {};
+        currentUser = { uid, ...data };
+
+        // Update UI fields live
+        if (profileNameEl)
+          profileNameEl.textContent = currentUser.chatId || (storedUser.displayName || storedUser.email.split('@')[0]) || 'Guest';
+        if (starCountEl)
+          starCountEl.textContent = String(currentUser.stars ?? 0);
+        if (cashCountEl)
+          cashCountEl.textContent = String(currentUser.cash ?? 0);
+      });
+
+    } catch (err) {
+      console.error('loadCurrentUserForGame error', err);
+    }
+  }
+
+  // Use a transaction to deduct stars when joining (atomic check)
+  async function tryDeductStarsForJoin(cost) {
+    if (!currentUser?.uid) return { ok: false, message: 'Not logged in' };
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await runTransaction(db, async (t) => {
+        const u = await t.get(userRef);
+        if (!u.exists()) throw new Error('User not found');
+        const udata = u.data();
+        const currentStars = Number(udata.stars || 0);
+        if (currentStars < cost) throw new Error('Not enough stars');
+        t.update(userRef, { stars: currentStars - cost });
+      });
+      return { ok: true };
+    } catch (e) {
+      console.warn('Deduct stars failed', e);
+      return { ok: false, message: e.message || 'Could not deduct stars' };
+    }
+  }
+
+  // Give reward: add cash & stars in a transaction
+  async function giveWinRewards(rewardCash, rewardStars) {
+    if (!currentUser?.uid) {
+      // if no user, just update UI locally
+      if (cashCountEl) cashCountEl.textContent = String((parseInt(cashCountEl.textContent.replace(/,/g,''),10) || 0) + rewardCash);
+      if (starCountEl) starCountEl.textContent = String((parseInt(starCountEl.textContent,10) || 0) + rewardStars);
+      return;
+    }
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      await runTransaction(db, async (t) => {
+        const u = await t.get(userRef);
+        if (!u.exists()) throw new Error('User not found');
+        const udata = u.data();
+        const newCash = (Number(udata.cash || 0) + Number(rewardCash));
+        const newStars = (Number(udata.stars || 0) + Number(rewardStars));
+        t.update(userRef, { cash: newCash, stars: newStars });
+      });
+      return { ok: true };
+    } catch (e) {
+      console.error('giveWinRewards error', e);
+      return { ok: false, message: e.message || 'Failed to give rewards' };
+    }
+  }
+
+  /* ---------------- start / end train (modified to use Firestore) ---------------- */
+  async function startTrain(){
     // ensure pot open
     if ((getStoredPot() ?? INITIAL_POT) <= 0){
       showPopup('🚧 Station closed for today. Come back tomorrow.');
       return;
     }
-    // star check
-    const curStars = parseInt(starCountEl.textContent,10) || 0;
+
+    // star check - get from currentUser if present, otherwise from UI
+    const curStars = currentUser?.stars != null ? Number(currentUser.stars) : (parseInt(starCountEl?.textContent || '0',10) || 0);
     if (curStars < STAR_COST){
       showPopup('Not enough stars to join.');
       return;
     }
-    // deduct star cost
-    starCountEl.textContent = (curStars - STAR_COST);
+
+    // deduct star cost in Firestore (atomic)
+    const deductResult = await tryDeductStarsForJoin(STAR_COST);
+    if (!deductResult.ok){
+      showPopup(deductResult.message || 'Not enough stars.');
+      playAudio(SOUND_PATHS.error);
+      return;
+    }
+
+    // update UI optimistically (will be overwritten by snapshot)
+    if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
 
     // state & UI
     trainActive = true;
-    joinTrainBtn.style.display = 'none';
+    if (joinTrainBtn) joinTrainBtn.style.display = 'none';
     generateProblems();
-    problemBoard.classList.remove('hidden');
-    submitAnswersBtn.style.display = 'block';
-    submitAnswersBtn.disabled = true;
-    submitAnswersBtn.style.opacity = '0.6';
+    if (problemBoard) problemBoard.classList.remove('hidden');
+    if (submitAnswersBtn) {
+      submitAnswersBtn.style.display = 'block';
+      submitAnswersBtn.disabled = true;
+      submitAnswersBtn.style.opacity = '0.6';
+    }
 
     // start timer & sound
     startLoadingBar();
     playAudio(SOUND_PATHS.whistle);
   }
 
-  function endTrain(success, ticketNumber=null){
+  async function endTrain(success, ticketNumber=null){
     stopLoadingBar();
 
     // hide problems & submit
-    problemBoard.classList.add('hidden');
-    submitAnswersBtn.style.display = 'none';
+    if (problemBoard) problemBoard.classList.add('hidden');
+    if (submitAnswersBtn) submitAnswersBtn.style.display = 'none';
 
     // show join again only if pot >0
     if ((getStoredPot() ?? INITIAL_POT) > 0){
-      joinTrainBtn.style.display = 'block';
-      joinTrainBtn.disabled = false;
-      joinTrainBtn.style.opacity = '1';
+      if (joinTrainBtn) { joinTrainBtn.style.display = 'block'; joinTrainBtn.disabled = false; joinTrainBtn.style.opacity = '1'; }
     } else {
-      joinTrainBtn.style.display = 'block';
-      joinTrainBtn.disabled = true;
-      joinTrainBtn.style.opacity = '0.5';
+      if (joinTrainBtn) { joinTrainBtn.style.display = 'block'; joinTrainBtn.disabled = true; joinTrainBtn.style.opacity = '0.5'; }
     }
 
     if (success){
-      // give rewards
-      const oldCash = parseInt(cashCountEl.textContent.replace(/,/g,''),10) || 0;
+      // update UI optimistically; final values will come from Firestore snapshot after transaction
+      const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g,''),10) || 0;
       const newCash = oldCash + REWARD_TO_USER;
-      cashCountEl.textContent = newCash.toLocaleString();
+      if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
 
-      const oldStars = parseInt(starCountEl.textContent,10) || 0;
+      const oldStars = parseInt(starCountEl?.textContent?.replace(/,/g,''),10) || 0;
       const newStars = oldStars + STARS_PER_WIN;
-      starCountEl.textContent = newStars;
+      if (starCountEl) starCountEl.textContent = String(newStars);
 
       // deduct pot
       let pot = getStoredPot() ?? INITIAL_POT;
@@ -375,13 +525,20 @@ document.addEventListener('DOMContentLoaded', () => {
       maybeShowHalfwayAlert();
 
       if (pot <= 0) handleStationClosed();
+
+      // Now persist the reward to Firestore in a transaction
+      const rewardResult = await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
+      if (!rewardResult.ok) {
+        // If Firestore update fails, notify user and revert optimistic UI is tricky; but we will at least inform
+        showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
+      }
     } else {
       showPopup('Train left! You got nothing 😢', 2200);
     }
   }
 
   /* ---------------- submit answers handler ---------------- */
-  submitAnswersBtn.addEventListener('click', () => {
+  submitAnswersBtn?.addEventListener('click', () => {
     if (!trainActive) return;
 
     const inputs = Array.from(document.querySelectorAll('.problemInput'));
@@ -418,13 +575,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ---------------- join modal wiring ---------------- */
-  joinTrainBtn.addEventListener('click', () => {
+  joinTrainBtn?.addEventListener('click', () => {
     if (joinTrainBtn.disabled) return;
-    confirmModal.style.display = 'flex';
+    if (confirmModal) confirmModal.style.display = 'flex';
     playAudio(SOUND_PATHS.whistle);
   });
-  confirmYes.addEventListener('click', () => { confirmModal.style.display = 'none'; startTrain(); });
-  confirmNo.addEventListener('click', () => { confirmModal.style.display = 'none'; });
+  confirmYes?.addEventListener('click', () => { if (confirmModal) confirmModal.style.display = 'none'; startTrain(); });
+  confirmNo?.addEventListener('click', () => { if (confirmModal) confirmModal.style.display = 'none'; });
+
+  /* ---------------- Expose debug helpers ---------------- */
+  window.moneyTrainLocal = {
+    getPot: () => getStoredPot(),
+    setPot: (v) => setStoredPot(v),
+    resetPotAndReopen,
+    simulateWin: () => { trainActive = true; generateProblems(); endTrain(true,'TEST-TICKET'); },
+    // firebase helpers
+    currentUser: () => currentUser,
+    loadCurrentUserForGame
+  };
 
   /* ---------------- init & timers ---------------- */
   function init(){
@@ -437,8 +605,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTrainTime();
     maybeShowHalfwayAlert();
 
-    problemBoard.classList.add('hidden');
-    submitAnswersBtn.style.display = 'none';
+    if (problemBoard) problemBoard.classList.add('hidden');
+    if (submitAnswersBtn) submitAnswersBtn.style.display = 'none';
 
     // schedule midnight reset (and fallback)
     const msToMid = timeToNextMidnight();
@@ -453,12 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   init();
 
-  /* ---------------- Expose debug helpers ---------------- */
-  window.moneyTrainLocal = {
-    getPot: () => getStoredPot(),
-    setPot: (v) => setStoredPot(v),
-    resetPotAndReopen,
-    simulateWin: () => { trainActive = true; generateProblems(); endTrain(true,'TEST-TICKET'); }
-  };
+  // Load user from Firestore & start listening (fire-and-forget)
+  loadCurrentUserForGame().catch(err => console.error('loadCurrentUserForGame failed', err));
 
 }); // DOMContentLoaded end
