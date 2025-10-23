@@ -402,12 +402,12 @@ async function loadCurrentUserForGame() {
         localStorage.setItem('hostUser', JSON.stringify(newData));
       }
 
-      // Update UI in real time
-      // Update UI in real time (Money Game elements)
+// Update UI in real time (Money Game elements)
 if (starCountEl) starCountEl.textContent = String(newData.stars ?? 0);
 if (cashCountEl) cashCountEl.textContent = `₦${(newData.cash ?? 0).toLocaleString()}`;
-      if (profileNameEl) profileNameEl.textContent = newData.chatId || storedUser.displayName || storedUser.email.split('@')[0];
-    });
+if (profileNameEl)
+  profileNameEl.textContent = newData.chatId || storedUser.displayName || storedUser.email.split('@')[0];
+});
 
   } catch (err) {
     console.error('loadCurrentUserForGame error', err);
