@@ -752,3 +752,32 @@ updateProfileOffset();
 
 // call whenever layout might change
 window.addEventListener('resize', updateProfileOffset);
+const dailyPotEl = document.getElementById('dailyPot');
+const STORAGE_KEY = 'dailyPotValue';
+const MAX_VALUE = 50000;
+const INCREMENT = 10;
+const INTERVAL = 1000; // 1 second
+
+// Load last saved value or start at 10000
+let currentValue = parseInt(localStorage.getItem(STORAGE_KEY)) || 10000;
+
+// Function to format as currency
+function formatCash(val) {
+  return '$ ' + val.toLocaleString();
+}
+
+// Update the display initially
+dailyPotEl.textContent = formatCash(currentValue);
+
+// Increment function
+function rollDailyPot() {
+  currentValue += INCREMENT;
+  if (currentValue > MAX_VALUE) currentValue = 0;
+  dailyPotEl.textContent = formatCash(currentValue);
+
+  // Save current value in localStorage for persistence
+  localStorage.setItem(STORAGE_KEY, currentValue);
+}
+
+// Start rolling every second
+setInterval(rollDailyPot, INTERVAL);
