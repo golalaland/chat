@@ -140,10 +140,10 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   transform: scale(1.05);
 }
 
-/* Profile Panel — sticky above bottom buttons */
+/* Profile Panel — dynamic sticky */
 .profile {
   position: fixed;
-  bottom: 120px;             /* moves panel above submit/join buttons */
+  bottom: var(--profile-bottom, 120px); /* default offset */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -151,7 +151,8 @@ body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;b
   display: flex;
   justify-content: center;
   z-index: 99;
-  pointer-events: auto;      /* ensures buttons inside are clickable */
+  pointer-events: auto;
+  transition: bottom 0.2s ease; /* smooth movement */
 }
 
 .profile-card {
