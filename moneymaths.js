@@ -760,3 +760,33 @@ document.addEventListener('DOMContentLoaded', () => {
   // Also periodically check if dynamic elements appear (like popups or in-game buttons)
   setInterval(updateProfileOffset, 500);
 });
+function replaceStarsWithSVG(container, svgURL = 'star.svg') {
+  if (!container) return;
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+  const nodesToReplace = [];
+  while (walker.nextNode()) nodesToReplace.push(walker.currentNode);
+
+  nodesToReplace.forEach(textNode => {
+    const parent = textNode.parentNode;
+    if (!parent) return;
+
+    const fragments = textNode.nodeValue.split(/⭐️?|⭐/);
+
+    fragments.forEach((frag, i) => {
+      if (frag) parent.insertBefore(document.createTextNode(frag), textNode);
+
+      if (i < fragments.length - 1) {
+        const img = document.createElement("img");
+        img.src = svgURL;
+        img.alt = "⭐";
+        img.style.width = "1em";
+        img.style.height = "1em";
+        img.style.verticalAlign = "text-bottom";
+        parent.insertBefore(img, textNode);
+      }
+    });
+
+    parent.removeChild(textNode);
+  });
+}
