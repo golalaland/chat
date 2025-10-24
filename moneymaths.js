@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
       label.textContent = `${a} + ${b}`;
       label.style.fontWeight = '700';
       label.style.fontSize = '12px';
-      label.style.color = '#fff';
+      label.style.color = '#fff';i
 
       const input = document.createElement('input');
       input.type = 'number';
