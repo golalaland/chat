@@ -574,37 +574,52 @@ async function endTrain(success, ticketNumber = null) {
   }
   if (howToPlayBtn) howToPlayBtn.style.display = 'inline-block';
 
-  // If train was successful
   if (success) {
-    const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
-    const oldStars = parseInt(starCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
+    // --- Calculate new rewards ---
+    const rewardCash = REWARD_TO_USER;
+    const rewardStars = STARS_PER_WIN;
 
-    const newCash = oldCash + REWARD_TO_USER;
-    const newStars = oldStars + STARS_PER_WIN;
+    const oldCash = parseInt(cashCountEl?.textContent?.replace(/[^0-9]/g, ''), 10) || 0;
+    const oldStars = parseInt(starCountEl?.textContent?.replace(/[^0-9]/g, ''), 10) || 0;
 
-    if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
-    if (starCountEl) starCountEl.textContent = String(newStars);
+    const newCash = oldCash + rewardCash;
+    const newStars = oldStars + rewardStars;
+
+    if (cashCountEl) cashCountEl.textContent = `₦${newCash.toLocaleString()}`;
+    if (starCountEl) starCountEl.textContent = newStars.toString();
 
     // Deduct from daily pot
-    let updatedPot = Math.max(0, (getStoredPot() ?? INITIAL_POT) - DEDUCT_PER_WIN);
+    const updatedPot = Math.max(0, (getStoredPot() ?? INITIAL_POT) - DEDUCT_PER_WIN);
     setStoredPot(updatedPot);
 
     // Ticket info
     const dest = trainDestinationEl?.textContent || 'your destination';
     const tnum = ticketNumber || '---';
 
-    // Show win modal immediately
-    showWinModal(REWARD_TO_USER, tnum, dest);
+    // --- Show win modal ---
+    showWinModal(rewardCash, tnum, dest);
     playAudio(SOUND_PATHS.ding);
 
     // Halfway alert & station closure
     maybeShowHalfwayAlert();
     if (updatedPot <= 0) handleStationClosed();
 
-    // Persist rewards asynchronously (fire-and-forget)
-    giveWinRewards(REWARD_TO_USER, STARS_PER_WIN)
+    // Persist rewards in Firestore & sync locally
+    await giveWinRewards(rewardCash, rewardStars)
       .then(res => {
-        if (!res.ok) {
+        if (res.ok) {
+          // Update currentUser object
+          currentUser.cash = (currentUser.cash || 0) + rewardCash;
+          currentUser.stars = (currentUser.stars || 0) + rewardStars;
+
+          // Update UI again (safety)
+          if (cashCountEl) cashCountEl.textContent = `₦${currentUser.cash.toLocaleString()}`;
+          if (starCountEl) starCountEl.textContent = currentUser.stars.toString();
+
+          // Update localStorage copy
+          const storedKey = currentUser.isVIP ? 'vipUser' : 'hostUser';
+          localStorage.setItem(storedKey, JSON.stringify(currentUser));
+        } else {
           showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
         }
       })
@@ -614,10 +629,29 @@ async function endTrain(success, ticketNumber = null) {
       });
 
   } else {
-    // Failure: show loss popup
+    // Train failed
     showPopup('🚉 Train has left the station! You didn’t get a ticket 😢', 2200);
     playAudio(SOUND_PATHS.depart);
   }
+}
+
+/* ---------------- Win modal helper ---------------- */
+function showWinModal(cashReward, ticketNumber, destination) {
+  const modal = document.getElementById('winModal');
+  const ticketEl = document.getElementById('winTicketNumber');
+  const cashEl = document.getElementById('winCash');
+  const destEl = document.getElementById('winDestination');
+
+  if (!modal) return;
+
+  if (ticketEl) ticketEl.textContent = ticketNumber || '---';
+  if (cashEl) cashEl.textContent = `₦${cashReward.toLocaleString()}`;
+  if (destEl) destEl.textContent = destination || 'your destination';
+
+  modal.style.display = 'flex';
+
+  // Auto-hide after 5 seconds
+  setTimeout(()=> { modal.style.display = 'none'; }, 5000);
 }
 
   /* ---------------- join modal wiring ---------------- */
