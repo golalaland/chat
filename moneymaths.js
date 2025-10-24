@@ -529,33 +529,31 @@ if (submitAnswersBtn) {
     });
 
     // --- Add click handler ---
-    submitAnswersBtn.onclick = async () => {
-      if (!trainActive) return;
+submitAnswersBtn.onclick = async () => {
+  if (!trainActive) return;
 
-      const allFilled = inputs.every(i => i.value.trim() !== '');
-      if (!allFilled) {
-        showPopup("You're not done yet! Fill all ticket numbers.", 2400);
-        if (SOUND_PATHS.error) playAudio(SOUND_PATHS.error);
-        return;
-      }
-
-      let correct = true;
-      inputs.forEach((inp, idx) => {
-        const val = parseInt(inp.value, 10);
-        if (val !== currentProblems[idx].ans) correct = false;
-      });
-
-      const ticketNumber = `TICKET-${Math.floor(Math.random()*9000)+1000}`;
-      await endTrain(correct, ticketNumber);
-    };
+  const allFilled = inputs.every(i => i.value.trim() !== '');
+  if (!allFilled) {
+    showPopup("You're not done yet! Fill all ticket numbers.", 2400);
+    if (SOUND_PATHS.error) playAudio(SOUND_PATHS.error);
+    return;
   }
-}
 
-async function endTrain(success, ticketNumber = null) {
+  let correct = true;
+  inputs.forEach((inp, idx) => {
+    const val = parseInt(inp.value, 10);
+    if (val !== currentProblems[idx].ans) correct = false;
+  });
+
+  // Generate numeric ticket once
+  const ticketNum = Math.floor(Math.random() * 9000) + 1000; // e.g., 1234
+  await endTrain(correct, ticketNum); // pass number only
+};
+
+async function endTrain(success, ticketNum = null) {
   stopLoadingBar();
   trainActive = false;
 
-  // Hide problems and submit button
   if (problemBoard) problemBoard.classList.add('hidden');
   if (submitAnswersBtn) {
     submitAnswersBtn.classList.add('hidden');
@@ -563,10 +561,8 @@ async function endTrain(success, ticketNumber = null) {
   }
 
   if (success) {
-    // Show modal using helper
     const destination = trainDestinationEl?.textContent || 'Unknown Destination';
-    showWinModal(REWARD_TO_USER, ticketNumber, destination);
-
+    showWinModal(REWARD_TO_USER, ticketNum, destination); // numeric ticket passed here
     playAudio(SOUND_PATHS.ding);
 
     // Update stars/cash locally
@@ -576,7 +572,7 @@ async function endTrain(success, ticketNumber = null) {
       cashCountEl.textContent = String((parseInt(cashCountEl?.textContent || '0', 10) + REWARD_TO_USER));
     }
 
-    // Persist reward in Firestore or backend
+    // Persist reward
     await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
 
   } else {
@@ -585,34 +581,23 @@ async function endTrain(success, ticketNumber = null) {
   }
 }
 
-/* ---------------- Win modal helper ---------------- */
-function showWinModal(cashReward, ticketConcat, destination) {
+function showWinModal(cashReward, ticketNum, destination) {
   const modal = document.getElementById('winModal');
   const winTextEl = document.getElementById('winText');
-
   if (!modal || !winTextEl) return;
 
-  // Get the user's display name
   const chatID = profileNameEl?.textContent || 'GUEST';
 
-  // Format the modal text exactly as requested
   winTextEl.textContent = 
-    `🎫 Ticket Unlocked!\n` +
     `Name: ${chatID}\n` +
-    `Ticket: ${ticketConcat}\n` +
+    `Ticket: TICKET-${ticketNum}\n` + // only here
     `Destination: ${destination}\n` +
     `You’ve Earned ₦${cashReward.toLocaleString()}`;
 
-  // Ensure line breaks display correctly
   winTextEl.style.whiteSpace = 'pre-line';
-
-  // Show modal
   modal.classList.add('show');
 
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
-    modal.classList.remove('show'); // smooth fade-out
-  }, 5000);
+  setTimeout(() => modal.classList.remove('show'), 5000);
 }
 
   /* ---------------- join modal wiring ---------------- */
