@@ -316,10 +316,10 @@ document.addEventListener('DOMContentLoaded', () => {
     playAudio(SOUND_PATHS.start, true); // loop start chug (it will be freed - we won't keep reference)
     loadingInterval = setInterval(()=>{
       loadingProgress++;
-      const percent = (loadingProgress/39) * 100; // 39s window
+      const percent = (loadingProgress/52) * 100; // 52s window
       if (loadingBar) loadingBar.style.width = `${percent}%`;
       if (trainEmoji) trainEmoji.style.left = `calc(${percent}% - 12px)`;
-      if (loadingProgress >= 39){
+      if (loadingProgress >= 52){
         clearInterval(loadingInterval);
         loadingInterval = null;
         if (trainActive){
