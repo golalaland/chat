@@ -411,7 +411,8 @@ async function loadCurrentUserForGame() {
 
 // ✅ Update UI in real time (Money Game elements)
 if (starCountEl) {
-  starCountEl.textContent = (newData.stars ?? 0).toLocaleString();
+  starCountEl.textContent = (newData.stars ?? 0).toLocaleString() + ' ⭐';
+  replaceStarsWithSVG(starCountEl);
 }
 
 if (cashCountEl) {
@@ -456,9 +457,12 @@ if (profileNameEl) {
     if (!currentUser?.uid) {
       // if no user, just update UI locally
       if (cashCountEl) cashCountEl.textContent = String((parseInt(cashCountEl.textContent.replace(/,/g,''),10) || 0) + rewardCash);
-      if (starCountEl) starCountEl.textContent = String((parseInt(starCountEl.textContent,10) || 0) + rewardStars);
-      return;
-    }
+      if (starCountEl) {
+  const newCount = (parseInt(starCountEl.textContent.replace(/[^0-9]/g, ''), 10) || 0) + rewardStars;
+  starCountEl.textContent = `${newCount} ⭐`;
+  replaceStarsWithSVG(starCountEl);
+  return;
+}
     const userRef = doc(db, 'users', currentUser.uid);
     try {
       await runTransaction(db, async (t) => {
@@ -700,6 +704,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+function replaceStarsWithSVG(container, svgURL = 'images/star.svg') {
+  if (!container) return;
+
+  const html = container.innerHTML;
+  container.innerHTML = html.replace(/⭐/, `<img src="${svgURL}" alt="⭐" style="width:1em;height:1em;vertical-align:text-bottom;">`);
+}
+
 /* ---------------- Leaderboard---------------- */
 document.addEventListener('DOMContentLoaded', () => {
   const leaderboardBtn = document.getElementById('leaderboardBtn');
@@ -760,33 +771,3 @@ document.addEventListener('DOMContentLoaded', () => {
   // Also periodically check if dynamic elements appear (like popups or in-game buttons)
   setInterval(updateProfileOffset, 500);
 });
-function replaceStarsWithSVG(container, svgURL = 'star.svg') {
-  if (!container) return;
-
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
-  const nodesToReplace = [];
-  while (walker.nextNode()) nodesToReplace.push(walker.currentNode);
-
-  nodesToReplace.forEach(textNode => {
-    const parent = textNode.parentNode;
-    if (!parent) return;
-
-    const fragments = textNode.nodeValue.split(/⭐️?|⭐/);
-
-    fragments.forEach((frag, i) => {
-      if (frag) parent.insertBefore(document.createTextNode(frag), textNode);
-
-      if (i < fragments.length - 1) {
-        const img = document.createElement("img");
-        img.src = svgURL;
-        img.alt = "⭐";
-        img.style.width = "1em";
-        img.style.height = "1em";
-        img.style.verticalAlign = "text-bottom";
-        parent.insertBefore(img, textNode);
-      }
-    });
-
-    parent.removeChild(textNode);
-  });
-}
