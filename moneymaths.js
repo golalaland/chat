@@ -667,22 +667,23 @@ async function endTrain(success, ticketNumber = null) {
 }); // DOMContentLoaded end
 
 /* ---------------- How to Play ---------------- */
-const howToPlayBtn = document.getElementById('howToPlayBtn');
-  const modal = document.getElementById('howToPlayModal');
-  const closeBtn = document.getElementById('closeHowToPlay');
+document.addEventListener('DOMContentLoaded', () => {
+  const howToPlayBtn = document.getElementById('howToPlayBtn');
+  const howToPlayModal = document.getElementById('howToPlayModal');
+  const closeHowTo = document.getElementById('closeHowTo');
 
-  if (howToPlayBtn && modal && closeBtn) {
+  if (howToPlayBtn && howToPlayModal && closeHowTo) {
     howToPlayBtn.addEventListener('click', () => {
-      modal.classList.remove('hidden');
+      howToPlayModal.style.display = 'flex';
     });
 
-    closeBtn.addEventListener('click', () => {
-      modal.classList.add('hidden');
+    closeHowTo.addEventListener('click', () => {
+      howToPlayModal.style.display = 'none';
     });
 
     // Optional: click outside to close
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.classList.add('hidden');
+    howToPlayModal.addEventListener('click', (e) => {
+      if (e.target === howToPlayModal) howToPlayModal.style.display = 'none';
     });
   }
-})
+});
