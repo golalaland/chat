@@ -730,3 +730,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === leaderboardPopup) leaderboardPopup.style.display = 'none';
   });
 });
+function updateProfileOffset() {
+  const submitBtn = document.getElementById('submitAnswers');
+  const joinBtn = document.getElementById('joinTrainBtn');
+  const profile = document.getElementById('profilePanel');
+
+  // choose the lower of the two buttons that are visible
+  let offset = 20; // default bottom spacing
+
+  if (submitBtn && submitBtn.offsetParent !== null) { // visible
+    offset = submitBtn.getBoundingClientRect().height + 20;
+  } else if (joinBtn && joinBtn.offsetParent !== null) { // visible
+    offset = joinBtn.getBoundingClientRect().height + 20;
+  }
+
+  profile.style.setProperty('--profile-bottom', `${offset}px`);
+}
+
+// call on load
+updateProfileOffset();
+
+// call whenever layout might change
+window.addEventListener('resize', updateProfileOffset);
