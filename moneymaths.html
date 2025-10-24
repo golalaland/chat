@@ -251,6 +251,71 @@ input, button {
   margin: 10px auto;     /* centers it horizontally */
   text-align: center;
 }
+
+/* Win Modal Base */
+.win-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Show modal */
+.win-modal.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Win Box */
+.win-box {
+  background: linear-gradient(145deg, #ffed00, #ffb400);
+  border-radius: 16px;
+  padding: 20px 24px;
+  text-align: center;
+  color: #000;
+  box-shadow: 0 0 30px #ffd700aa, 0 0 50px #ffb40088 inset;
+  transform: scale(0.8);
+  animation: popIn 0.5s forwards;
+}
+
+/* Pop-in animation */
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* Reward Text */
+#winText {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff200;
+  margin: 10px 0;
+  text-shadow: 0 0 8px #fff200aa, 0 0 12px #ffb40088;
+}
+
+/* Close Button */
+#closeWinBtn {
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #ff1493;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+#closeWinBtn:hover {
+  transform: scale(1.05);
+}
 </style>
 </head>
 <body>
@@ -374,6 +439,14 @@ input, button {
     </div>
 </div>
 
+<!-- Win Modal -->
+<div id="winModal" class="win-modal hidden">
+  <div class="win-box">
+    <h3>🎉 You Won! 🎉</h3>
+    <p id="winText">You secured your ticket and earned ₦1,000,000!</p>
+    <button id="closeWinBtn">Awesome!</button>
+  </div>
+</div>
 <!-- Popup -->
 <div id="popup" class="star-popup">+1 ⭐</div>
 
