@@ -638,20 +638,20 @@ async function endTrain(success, ticketNumber = null) {
 /* ---------------- Win modal helper ---------------- */
 function showWinModal(cashReward, ticketNumber, destination) {
   const modal = document.getElementById('winModal');
-  const ticketEl = document.getElementById('winTicketNumber');
-  const cashEl = document.getElementById('winCash');
-  const destEl = document.getElementById('winDestination');
+  const winTextEl = document.getElementById('winText');
 
   if (!modal) return;
 
-  if (ticketEl) ticketEl.textContent = ticketNumber || '---';
-  if (cashEl) cashEl.textContent = `₦${cashReward.toLocaleString()}`;
-  if (destEl) destEl.textContent = destination || 'your destination';
+  // Update content
+  winTextEl.textContent = `🎟 Ticket: ${ticketNumber} — Destination: ${destination}\n💰 You earned ₦${cashReward.toLocaleString()}!`;
 
-  modal.style.display = 'flex';
+  // Show modal
+  modal.classList.add('show');
 
-  // Auto-hide after 5 seconds
-  setTimeout(()=> { modal.style.display = 'none'; }, 5000);
+  // Auto-hide after 5s
+  setTimeout(() => {
+    modal.classList.remove('show');  // fades out smoothly
+  }, 5000);
 }
 
   /* ---------------- join modal wiring ---------------- */
