@@ -477,7 +477,7 @@ if (profileNameEl) {
   
 
 
-/* ---------------- start / end train (streamlined + Firestore + UI polish) ---------------- */
+  /* ---------------- start / end train (streamlined + Firestore + UI polish) ---------------- */
 
 async function startTrain() {
   const howToPlayBtn = document.getElementById('howToPlayBtn');
@@ -489,6 +489,7 @@ async function startTrain() {
     return;
   }
 
+  // Get current stars (prefer from user profile)
   const curStars = currentUser?.stars != null
     ? Number(currentUser.stars)
     : parseInt(starCountEl?.textContent || '0', 10) || 0;
@@ -498,107 +499,131 @@ async function startTrain() {
     return;
   }
 
+  // --- Attempt Firestore deduction ---
   const deductResult = await tryDeductStarsForJoin(STAR_COST);
   if (!deductResult.ok) {
     showPopup(deductResult.message || 'Not enough stars.');
     playAudio(SOUND_PATHS.error);
     return;
   }
-trainActive = true;
 
-// --- Setup game ---
-generateProblems();
-if (problemBoard) problemBoard.classList.remove('hidden');
+  // --- Update UI optimistically ---
+  if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
+  if (joinTrainBtn) joinTrainBtn.style.display = 'none';
+  if (howToPlayBtn) howToPlayBtn.style.display = 'none'; // hide tutorial button while in-game
 
-// Start loading bar animation
-startLoadingBar();
+  trainActive = true;
 
-if (submitAnswersBtn) {
-  submitAnswersBtn.classList.remove('hidden');
-  submitAnswersBtn.style.display = 'block';
-  submitAnswersBtn.disabled = false;
-  submitAnswersBtn.style.opacity = '0.6'; // dimmed until ready
+  // --- Setup game ---
+  generateProblems();
+  if (problemBoard) problemBoard.classList.remove('hidden');
 
-    // --- Add input listener to brighten button only when all fields filled ---
-    const inputs = Array.from(document.querySelectorAll('.problemInput'));
-    inputs.forEach(input => {
-      input.addEventListener('input', () => {
-        const allFilled = inputs.every(i => i.value.trim() !== '');
-        submitAnswersBtn.style.opacity = allFilled ? '1' : '0.6';
-      });
-    });
-
-    // --- Add click handler ---
-submitAnswersBtn.onclick = async () => {
-  if (!trainActive) return;
-
-  const allFilled = inputs.every(i => i.value.trim() !== '');
-  if (!allFilled) {
-    showPopup("You're not done yet! Fill all ticket numbers.", 2400);
-    if (SOUND_PATHS.error) playAudio(SOUND_PATHS.error);
-    return;
+  if (submitAnswersBtn) {
+    submitAnswersBtn.classList.remove('hidden');
+    submitAnswersBtn.style.display = 'block';
+    submitAnswersBtn.disabled = false;
+    submitAnswersBtn.style.opacity = '0.6';
   }
 
-  let correct = true;
-  inputs.forEach((inp, idx) => {
-    const val = parseInt(inp.value, 10);
-    if (val !== currentProblems[idx].ans) correct = false;
-  });
+  // --- Start timer & sound ---
+  startLoadingBar();
+  playAudio(SOUND_PATHS.whistle);
+}
 
-  // Generate numeric ticket once
-  const ticketNum = Math.floor(Math.random() * 9000) + 1000; // e.g., 1234
-  await endTrain(correct, ticketNum); // pass number only
-};
 
-async function endTrain(success, ticketNum = null) {
+async function endTrain(success, ticketNumber = null) {
+  const howToPlayBtn = document.getElementById('howToPlayBtn');
   stopLoadingBar();
-  trainActive = false;
 
+  // --- Hide problem board & submit ---
   if (problemBoard) problemBoard.classList.add('hidden');
   if (submitAnswersBtn) {
     submitAnswersBtn.classList.add('hidden');
     submitAnswersBtn.style.display = 'none';
   }
 
-  if (success) {
-    const destination = trainDestinationEl?.textContent || 'Unknown Destination';
-    showWinModal(REWARD_TO_USER, ticketNum, destination); // numeric ticket passed here
-    playAudio(SOUND_PATHS.ding);
+  // --- Show buttons back ---
+  const pot = getStoredPot() ?? INITIAL_POT;
+  if (joinTrainBtn) {
+    joinTrainBtn.style.display = 'block';
+    joinTrainBtn.disabled = pot <= 0;
+    joinTrainBtn.style.opacity = pot <= 0 ? '0.5' : '1';
+  }
 
-    // Update stars/cash locally
-    const curStars = currentUser?.stars ?? parseInt(starCountEl?.textContent || '0', 10);
-    if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
-    if (cashCountEl) {
-      cashCountEl.textContent = String((parseInt(cashCountEl?.textContent || '0', 10) + REWARD_TO_USER));
+  if (howToPlayBtn) howToPlayBtn.style.display = 'inline-block'; // bring tutorial back
+
+  // --- Handle result ---
+  if (success) {
+    // Update UI optimistically
+    const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
+    const newCash = oldCash + REWARD_TO_USER;
+    if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
+
+    const oldStars = parseInt(starCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
+    const newStars = oldStars + STARS_PER_WIN;
+    if (starCountEl) starCountEl.textContent = String(newStars);
+
+    // Deduct pot & persist
+    let updatedPot = Math.max(0, pot - DEDUCT_PER_WIN);
+    setStoredPot(updatedPot);
+
+    const dest = trainDestinationEl?.textContent || 'your destination';
+    const tnum = ticketNumber || '---';
+    showPopup(`🎫 You’ve secured your ${dest} train ticket #${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
+
+    playAudio(SOUND_PATHS.ding);
+    maybeShowHalfwayAlert();
+
+    if (updatedPot <= 0) handleStationClosed();
+
+    // Save reward in Firestore
+    const rewardResult = await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
+    if (!rewardResult.ok) {
+      showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
+    }
+  } else {
+    showPopup('🚉 Train has left the station! You didnt get a ticket ', 2200);
+  }
+
+  trainActive = false;
+}
+
+  /* ---------------- submit answers handler ---------------- */
+  submitAnswersBtn?.addEventListener('click', () => {
+    if (!trainActive) return;
+
+    const inputs = Array.from(document.querySelectorAll('.problemInput'));
+    // check empties:
+    const anyEmpty = inputs.some(inp => inp.value === '' || inp.value === null);
+    if (anyEmpty){
+      showPopup("You're not yet done hashing your train ticket — hurry!", 2400);
+      playAudio(SOUND_PATHS.error);
+      return;
     }
 
-    // Persist reward
-    await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
+    // evaluate correctness
+    let allCorrect = true;
+    inputs.forEach((inp, i) => {
+      const val = parseInt(inp.value,10);
+      const expected = currentProblems[i].ans;
+      if (isNaN(val) || val !== expected) allCorrect = false;
+    });
 
-  } else {
-    showPopup('🚉 Train has left the station! You didn’t get a ticket 😢', 2200);
-    playAudio(SOUND_PATHS.depart);
-  }
-}
+    // stop timer
+    trainActive = false;
+    stopLoadingBar();
 
-function showWinModal(cashReward, ticketNum, destination) {
-  const modal = document.getElementById('winModal');
-  const winTextEl = document.getElementById('winText');
-  if (!modal || !winTextEl) return;
-
-  const chatID = profileNameEl?.textContent || 'GUEST';
-
-  winTextEl.textContent = 
-    `Name: ${chatID}\n` +
-    `Ticket: TICKET-${ticketNum}\n` + // only here
-    `Destination: ${destination}\n` +
-    `You’ve Earned ₦${cashReward.toLocaleString()}`;
-
-  winTextEl.style.whiteSpace = 'pre-line';
-  modal.classList.add('show');
-
-  setTimeout(() => modal.classList.remove('show'), 5000);
-}
+    if (allCorrect){
+      // build ticket number by concatenating each answer's string (in order)
+      const answers = inputs.map(inp => String(parseInt(inp.value,10)));
+      const ticketNumber = answers.join('');
+      endTrain(true, ticketNumber);
+    } else {
+      showPopup("Some answers are incorrect — train left!", 3000);
+      playAudio(SOUND_PATHS.depart);
+      endTrain(false);
+    }
+  });
 
   /* ---------------- join modal wiring ---------------- */
   joinTrainBtn?.addEventListener('click', () => {
