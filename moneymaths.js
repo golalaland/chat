@@ -532,107 +532,71 @@ async function startTrain() {
 
 
 async function endTrain(success, ticketNumber = null) {
+  // Stop the loading bar immediately
   stopLoadingBar();
+  trainActive = false;
 
-  // --- Hide problems & submit ---
+  // Hide problems and submit button
   if (problemBoard) problemBoard.classList.add('hidden');
   if (submitAnswersBtn) {
     submitAnswersBtn.classList.add('hidden');
     submitAnswersBtn.style.display = 'none';
   }
 
-  // --- Show buttons back ---
-  const pot = getStoredPot() ?? INITIAL_POT;
+  // Show join/tutorial buttons again
   if (joinTrainBtn) {
+    const pot = getStoredPot() ?? INITIAL_POT;
     joinTrainBtn.style.display = 'block';
     joinTrainBtn.disabled = pot <= 0;
     joinTrainBtn.style.opacity = pot <= 0 ? '0.5' : '1';
   }
-  if (howToPlayBtn) howToPlayBtn.style.display = 'inline-block'; // bring tutorial back
+  if (howToPlayBtn) howToPlayBtn.style.display = 'inline-block';
 
-  trainActive = false;
-
+  // If train was successful
   if (success) {
-    // --- Update UI ---
     const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
-    const newCash = oldCash + REWARD_TO_USER;
-    if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
-
     const oldStars = parseInt(starCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
+
+    const newCash = oldCash + REWARD_TO_USER;
     const newStars = oldStars + STARS_PER_WIN;
+
+    if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
     if (starCountEl) starCountEl.textContent = String(newStars);
 
-    // --- Deduct pot ---
-    let updatedPot = Math.max(0, pot - DEDUCT_PER_WIN);
+    // Deduct from daily pot
+    let updatedPot = Math.max(0, (getStoredPot() ?? INITIAL_POT) - DEDUCT_PER_WIN);
     setStoredPot(updatedPot);
 
+    // Ticket info
     const dest = trainDestinationEl?.textContent || 'your destination';
     const tnum = ticketNumber || '---';
 
-    // --- Special win modal ---
+    // Show win modal immediately
     showWinModal(REWARD_TO_USER, tnum, dest);
-
     playAudio(SOUND_PATHS.ding);
-    maybeShowHalfwayAlert();
 
+    // Halfway alert & station closure
+    maybeShowHalfwayAlert();
     if (updatedPot <= 0) handleStationClosed();
 
-    // --- Persist reward ---
-    const rewardResult = await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
-    if (!rewardResult.ok) {
-      showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
-    }
+    // Persist rewards asynchronously (fire-and-forget)
+    giveWinRewards(REWARD_TO_USER, STARS_PER_WIN)
+      .then(res => {
+        if (!res.ok) {
+          showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
+        }
+      })
+      .catch(err => {
+        console.error('giveWinRewards failed', err);
+        showPopup('⚠️ Reward save error. Try again later.', 4500);
+      });
+
   } else {
-    // --- Normal failure popup ---
+    // Failure: show loss popup
     showPopup('🚉 Train has left the station! You didn’t get a ticket 😢', 2200);
+    playAudio(SOUND_PATHS.depart);
   }
 }
-
-function showWinModal(amount, ticketNumber, destination) {
-  const modal = document.getElementById('winModal');
-  const winText = document.getElementById('winText');
-  winText.textContent = `🎫 Ticket #${ticketNumber} — Destination: ${destination} — You earned ₦${amount.toLocaleString()}!`;
-  modal.classList.add('show');
-
-  const closeBtn = document.getElementById('closeWinBtn');
-  closeBtn.onclick = () => modal.classList.remove('show');
-}
-  /* ---------------- submit answers handler ---------------- */
-  submitAnswersBtn?.addEventListener('click', () => {
-    if (!trainActive) return;
-
-    const inputs = Array.from(document.querySelectorAll('.problemInput'));
-    // check empties:
-    const anyEmpty = inputs.some(inp => inp.value === '' || inp.value === null);
-    if (anyEmpty){
-      showPopup("You're not yet done hashing your train ticket — hurry!", 2400);
-      playAudio(SOUND_PATHS.error);
-      return;
-    }
-
-    // evaluate correctness
-    let allCorrect = true;
-    inputs.forEach((inp, i) => {
-      const val = parseInt(inp.value,10);
-      const expected = currentProblems[i].ans;
-      if (isNaN(val) || val !== expected) allCorrect = false;
-    });
-
-    // stop timer
-    trainActive = false;
-    stopLoadingBar();
-
-    if (allCorrect){
-      // build ticket number by concatenating each answer's string (in order)
-      const answers = inputs.map(inp => String(parseInt(inp.value,10)));
-      const ticketNumber = answers.join('');
-      endTrain(true, ticketNumber);
-    } else {
-      showPopup("Some answers are incorrect — train left!", 3000);
-      playAudio(SOUND_PATHS.depart);
-      endTrain(false);
-    }
-  });
 
   /* ---------------- join modal wiring ---------------- */
   joinTrainBtn?.addEventListener('click', () => {
