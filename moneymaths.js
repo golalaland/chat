@@ -532,10 +532,9 @@ async function startTrain() {
 
 
 async function endTrain(success, ticketNumber = null) {
-  const howToPlayBtn = document.getElementById('howToPlayBtn');
   stopLoadingBar();
 
-  // --- Hide problem board & submit ---
+  // --- Hide problems & submit ---
   if (problemBoard) problemBoard.classList.add('hidden');
   if (submitAnswersBtn) {
     submitAnswersBtn.classList.add('hidden');
@@ -549,12 +548,12 @@ async function endTrain(success, ticketNumber = null) {
     joinTrainBtn.disabled = pot <= 0;
     joinTrainBtn.style.opacity = pot <= 0 ? '0.5' : '1';
   }
-
   if (howToPlayBtn) howToPlayBtn.style.display = 'inline-block'; // bring tutorial back
 
-  // --- Handle result ---
+  trainActive = false;
+
   if (success) {
-    // Update UI optimistically
+    // --- Update UI ---
     const oldCash = parseInt(cashCountEl?.textContent?.replace(/,/g, ''), 10) || 0;
     const newCash = oldCash + REWARD_TO_USER;
     if (cashCountEl) cashCountEl.textContent = newCash.toLocaleString();
@@ -563,31 +562,43 @@ async function endTrain(success, ticketNumber = null) {
     const newStars = oldStars + STARS_PER_WIN;
     if (starCountEl) starCountEl.textContent = String(newStars);
 
-    // Deduct pot & persist
+    // --- Deduct pot ---
     let updatedPot = Math.max(0, pot - DEDUCT_PER_WIN);
     setStoredPot(updatedPot);
 
     const dest = trainDestinationEl?.textContent || 'your destination';
     const tnum = ticketNumber || '---';
-    showPopup(`🎫 You’ve secured your ${dest} train ticket #${tnum} — welcome aboard! You earned ₦${REWARD_TO_USER.toLocaleString()}!`, 4500);
+
+    // --- Special win modal ---
+    showWinModal(REWARD_TO_USER, tnum, dest);
 
     playAudio(SOUND_PATHS.ding);
     maybeShowHalfwayAlert();
 
     if (updatedPot <= 0) handleStationClosed();
 
-    // Save reward in Firestore
+    // --- Persist reward ---
     const rewardResult = await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
     if (!rewardResult.ok) {
       showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
     }
   } else {
-    showPopup('🚉 Train has left the station! You didnt get a ticket ', 2200);
+    // --- Normal failure popup ---
+    showPopup('🚉 Train has left the station! You didn’t get a ticket 😢', 2200);
   }
-
+}
   trainActive = false;
 }
 
+function showWinModal(amount, ticketNumber) {
+  const modal = document.getElementById('winModal');
+  const winText = document.getElementById('winText');
+  winText.textContent = `🎫 Ticket #${ticketNumber} — You earned ₦${amount.toLocaleString()}!`;
+  modal.classList.add('show');
+
+  const closeBtn = document.getElementById('closeWinBtn');
+  closeBtn.onclick = () => modal.classList.remove('show');
+}
   /* ---------------- submit answers handler ---------------- */
   submitAnswersBtn?.addEventListener('click', () => {
     if (!trainActive) return;
