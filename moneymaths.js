@@ -272,40 +272,36 @@ function generateProblems(){
     label.style.color = '#fff';
 
     const inputWrapper = document.createElement('div');
-    inputWrapper.style.position = 'relative';
-    inputWrapper.style.display = 'inline-block';
+inputWrapper.style.position = 'relative';
+inputWrapper.style.display = 'inline-block';
+inputWrapper.style.width = '60px'; // match input width
 
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.className = 'problemInput';
-    input.inputMode = 'numeric';
-    input.placeholder = '?'; 
-    input.style.width = '60px';
-    input.style.padding = '6px 6px 6px 14px'; // space for $ sign
-    input.style.borderRadius = '6px';
-    input.style.border = '1px solid rgba(255,255,255,0.12)';
-    input.style.background = '#0e0e0e';
-    input.style.color = '#fff';
-    input.style.textAlign = 'center';
-    input.dataset.index = i;
+const input = document.createElement('input');
+input.type = 'number';
+input.className = 'problemInput';
+input.inputMode = 'numeric';
+input.placeholder = '?';
+input.style.width = '100%';
+input.style.padding = '6px 6px 6px 14px'; // left padding for $
+input.style.borderRadius = '6px';
+input.style.border = '1px solid rgba(255,255,255,0.12)';
+input.style.background = '#0e0e0e';
+input.style.color = '#fff';
+input.style.textAlign = 'center';
+input.dataset.index = i;
 
-    const dollar = document.createElement('span');
-    dollar.textContent = '$';
-    dollar.style.position = 'absolute';
-    dollar.style.left = '6px';
-    dollar.style.top = '50%';
-    dollar.style.transform = 'translateY(-50%)';
-    dollar.style.color = '#fff';
-    dollar.style.fontWeight = '700';
-    dollar.style.pointerEvents = 'none';
+const dollar = document.createElement('span');
+dollar.textContent = '$';
+dollar.style.position = 'absolute';
+dollar.style.left = '4px'; // closer to the number
+dollar.style.top = '50%';
+dollar.style.transform = 'translateY(-50%)';
+dollar.style.color = '#fff';
+dollar.style.fontWeight = '700';
+dollar.style.pointerEvents = 'none';
 
-    inputWrapper.appendChild(dollar);
-    inputWrapper.appendChild(input);
-
-    wrapper.appendChild(label);
-    wrapper.appendChild(inputWrapper);
-    problemBoard.appendChild(wrapper);
-  }
+inputWrapper.appendChild(dollar);
+inputWrapper.appendChild(input);
 
   // watch inputs: only enable button when all fields are filled (not necessarily correct)
   const inputs = problemBoard.querySelectorAll('.problemInput');
