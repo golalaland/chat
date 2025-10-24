@@ -730,4 +730,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === leaderboardPopup) leaderboardPopup.style.display = 'none';
   });
 });
+function updateProfileOffset() {
+  const profile = document.getElementById('profilePanel');
+  if (!profile) return;
 
+  // Get all elements that can influence the profile offset
+  const elements = [
+    document.getElementById('submitAnswers'),
+    document.getElementById('joinTrainBtn'),
+    document.getElementById('leaderboardPopup'),
+    document.getElementById('popup')
+  ];
+
+  // Filter visible elements and get the max bottom offset
+  let maxHeight = 20; // default spacing
+  elements.forEach(el => {
+    if (el && el.offsetParent !== null) { // visible
+      const elHeight = el.getBoundingClientRect().height;
+      maxHeight = Math.max(maxHeight, elHeight + 20); // 20px margin
+    }
+  });
+
+  profile.style.setProperty('--profile-bottom', `${maxHeight}px`);
+}
+
+// Call on load
+updateProfileOffset();
+
+// Update whenever window resizes or layout changes
+window.addEventListener('resize', updateProfileOffset);
+
+// Optional: Observe changes in buttons or popups dynamically
+const observer = new MutationObserver(updateProfileOffset);
+['submitAnswers', 'joinTrainBtn', 'leaderboardPopup', 'popup'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+});
