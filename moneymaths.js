@@ -731,24 +731,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 function updateProfileOffset() {
-  const submitBtn = document.getElementById('submitAnswers');
-  const joinBtn = document.getElementById('joinTrainBtn');
   const profile = document.getElementById('profilePanel');
+  if (!profile) return;
 
-  // choose the lower of the two buttons that are visible
-  let offset = 20; // default bottom spacing
+  const elements = [
+    document.getElementById('submitAnswers'),
+    document.getElementById('joinTrainBtn'),
+    document.getElementById('leaderboardBtn')
+  ];
 
-  if (submitBtn && submitBtn.offsetParent !== null) { // visible
-    offset = submitBtn.getBoundingClientRect().height + 20;
-  } else if (joinBtn && joinBtn.offsetParent !== null) { // visible
-    offset = joinBtn.getBoundingClientRect().height + 20;
-  }
+  // Only consider visible elements
+  const visibleHeights = elements
+    .filter(el => el && el.offsetParent !== null)
+    .map(el => el.getBoundingClientRect().height);
+
+  // Take the tallest visible element (or 0 if none)
+  const offset = visibleHeights.length ? Math.max(...visibleHeights) + 20 : 20;
 
   profile.style.setProperty('--profile-bottom', `${offset}px`);
 }
 
-// call on load
-updateProfileOffset();
+// Call on load and whenever layout changes
+document.addEventListener('DOMContentLoaded', () => {
+  updateProfileOffset();
+  window.addEventListener('resize', updateProfileOffset);
 
-// call whenever layout might change
-window.addEventListener('resize', updateProfileOffset);
+  // Also periodically check if dynamic elements appear (like popups or in-game buttons)
+  setInterval(updateProfileOffset, 500);
+});
