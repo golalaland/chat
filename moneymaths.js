@@ -587,13 +587,11 @@ async function endTrain(success, ticketNumber = null) {
     showPopup('🚉 Train has left the station! You didn’t get a ticket 😢', 2200);
   }
 }
-  trainActive = false;
-}
 
-function showWinModal(amount, ticketNumber) {
+function showWinModal(amount, ticketNumber, destination) {
   const modal = document.getElementById('winModal');
   const winText = document.getElementById('winText');
-  winText.textContent = `🎫 Ticket #${ticketNumber} — You earned ₦${amount.toLocaleString()}!`;
+  winText.textContent = `🎫 Ticket #${ticketNumber} — Destination: ${destination} — You earned ₦${amount.toLocaleString()}!`;
   modal.classList.add('show');
 
   const closeBtn = document.getElementById('closeWinBtn');
