@@ -518,18 +518,36 @@ async function startTrain() {
   generateProblems();
   if (problemBoard) problemBoard.classList.remove('hidden');
 
-  if (submitAnswersBtn) {
-    submitAnswersBtn.classList.remove('hidden');
-    submitAnswersBtn.style.display = 'block';
-    submitAnswersBtn.disabled = false;
-    submitAnswersBtn.style.opacity = '0.6';
-  }
+if (submitAnswersBtn) {
+  submitAnswersBtn.classList.remove('hidden');
+  submitAnswersBtn.style.display = 'block';
+  submitAnswersBtn.disabled = false;
+  submitAnswersBtn.style.opacity = '0.6';
 
-  // --- Start timer & sound ---
-  startLoadingBar();
-  playAudio(SOUND_PATHS.whistle);
+  // --- Add click handler ---
+  submitAnswersBtn.onclick = async () => {
+    if (!trainActive) return; // only allow during active train
+
+    const inputs = Array.from(document.querySelectorAll('.problemInput'));
+    const allFilled = inputs.every(i => i.value.trim() !== '');
+    if (!allFilled) {
+      showPopup("You're not done yet! Fill all ticket numbers.", 2400);
+      if (SOUND_PATHS.error) playAudio(SOUND_PATHS.error);
+      return;
+    }
+
+    // Check correctness
+    let correct = true;
+    inputs.forEach((inp, idx) => {
+      const val = parseInt(inp.value, 10);
+      if (val !== currentProblems[idx].ans) correct = false;
+    });
+
+    // End the train based on result
+    const ticketNumber = `TICKET-${Math.floor(Math.random()*9000)+1000}`;
+    await endTrain(correct, ticketNumber);
+  };
 }
-
 
 async function endTrain(success, ticketNumber = null) {
   // Stop the loading bar immediately
