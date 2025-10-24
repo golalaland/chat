@@ -118,18 +118,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function updatePotUI(){
-    const pot = getStoredPot() ?? INITIAL_POT;
-    if (dailyPotEl) dailyPotEl.textContent = pot.toLocaleString();
-    if (pot <= 0){
-      handleStationClosed();
-    } else {
-      if (closedOverlay && !closedOverlay.classList.contains('hidden') && !isPastMidnightReset()){
-        closedOverlay.classList.add('hidden');
-        if (joinTrainBtn) { joinTrainBtn.disabled = false; joinTrainBtn.style.opacity = '1'; }
+ function updatePotUI() {
+  const pot = getStoredPot() ?? INITIAL_POT;
+
+  // --- FIXED FRONT DISPLAY ---
+  if (dailyPotEl) dailyPotEl.textContent = '$10,000'; // always show this
+  
+  // --- BACKEND POT LOGIC STILL ACTIVE ---
+  if (pot <= 0) {
+    handleStationClosed();
+  } else {
+    if (
+      closedOverlay &&
+      !closedOverlay.classList.contains('hidden') &&
+      !isPastMidnightReset()
+    ) {
+      closedOverlay.classList.add('hidden');
+      if (joinTrainBtn) {
+        joinTrainBtn.disabled = false;
+        joinTrainBtn.style.opacity = '1';
       }
     }
   }
+}
 
   /* ---------------- terminal helpers ---------------- */
   const trainNames = ["Money Express","Starliner 9000","Frenzy Rail","Lucky Cargo","Fortune Flyer","Crypto Cruiser","Golden Dash","Midnight Ride"];
