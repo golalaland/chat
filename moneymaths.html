@@ -326,44 +326,12 @@ input, button {
   <!-- Problem Blocks -->
   <div id="problemBoard" class="scramble-board hidden"></div>
 
-<button id="submitAnswers" class="hidden" style="
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #FFD700, #FFA500);
-  color: #000;
-  font-weight: 700;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(255, 215, 0, 0.6);
-  transition: transform 0.2s;
-">
+<button id="submitAnswers" class="hidden" style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;border-radius:8px;background:linear-gradient(90deg, #00c853, #b2ff59);color:#000;font-weight:600;font-size:16px;border:none;cursor:pointer;transition:transform 0.2s ease, opacity 0.3s ease;">
   Unlock Ticket
-  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="url(#ticketGradient)" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(-10deg); transition: transform 0.3s;">
-    <defs>
-      <linearGradient id="ticketGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#FFD700"/>
-        <stop offset="100%" stop-color="#FFA500"/>
-      </linearGradient>
-    </defs>
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
     <path d="M21 10h-3V7H6v3H3v4h3v3h12v-3h3v-4z"/>
   </svg>
 </button>
-
-<style>
-#submitAnswers:hover {
-  transform: translateY(-2px) scale(1.05);
-}
-
-#submitAnswers:hover svg {
-  transform: rotate(-10deg) scale(1.2);
-  filter: drop-shadow(0 0 6px gold);
-}
-</style>
 
   <!-- Profile Panel -->
   <div class="profile" id="profilePanel">
