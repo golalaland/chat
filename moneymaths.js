@@ -247,77 +247,64 @@ document.addEventListener('DOMContentLoaded', () => {
   function isPastMidnightReset(){ return getPotResetDay() !== new Date().toISOString().slice(0,10); }
 
  /* ---------------- problems generator ---------------- */
-/* ---------------- problems generator ---------------- */
-function generateProblems(){
-  currentProblems = [];
-  if (problemBoard) problemBoard.innerHTML = '';
-  // layout: keep inline blocks as small flex columns
-  for (let i=0;i<NUM_BLOCKS;i++){
-    let a = Math.floor(Math.random()*20)+1;
-    let b = Math.floor(Math.random()*20)+1;
-    if (a < b) [a,b] = [b,a];
-    currentProblems.push({a,b,ans:a+b});
+  function generateProblems(){
+    currentProblems = [];
+    if (problemBoard) problemBoard.innerHTML = '';
+    // layout: keep inline blocks as small flex columns
+    for (let i=0;i<NUM_BLOCKS;i++){
+      let a = Math.floor(Math.random()*20)+1;
+      let b = Math.floor(Math.random()*20)+1;
+      if (a < b) [a,b] = [b,a];
+      currentProblems.push({a,b,ans:a+b});
 
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.alignItems = 'center';
-    wrapper.style.gap = '6px';
-    wrapper.style.margin = '6px';
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.gap = '6px';
+      wrapper.style.margin = '6px';
 
-    const label = document.createElement('div');
-    label.innerHTML = `<strong>$</strong>${a} + <strong>$</strong>${b}`;
-    label.style.fontWeight = '700';
-    label.style.fontSize = '12px';
-    label.style.color = '#fff';
+      const label = document.createElement('div');
+      label.textContent = `${a} + ${b}`;
+      label.style.fontWeight = '700';
+      label.style.fontSize = '12px';
+      label.style.color = '#fff';
 
-    const inputWrapper = document.createElement('div');
-inputWrapper.style.position = 'relative';
-inputWrapper.style.display = 'inline-block';
-inputWrapper.style.width = '60px'; // match input width
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'problemInput';
+      input.inputMode = 'numeric';
+      input.placeholder = '?';
+      input.style.width = '60px';
+      input.style.padding = '6px';
+      input.style.borderRadius = '6px';
+      input.style.border = '1px solid rgba(255,255,255,0.12)';
+      input.style.background = '#0e0e0e';
+      input.style.color = '#fff';
+      input.style.textAlign = 'center';
+      input.dataset.index = i;
 
-const input = document.createElement('input');
-input.type = 'number';
-input.className = 'problemInput';
-input.inputMode = 'numeric';
-input.placeholder = '?';
-input.style.width = '100%';
-input.style.padding = '6px 6px 6px 14px'; // left padding for $
-input.style.borderRadius = '6px';
-input.style.border = '1px solid rgba(255,255,255,0.12)';
-input.style.background = '#0e0e0e';
-input.style.color = '#fff';
-input.style.textAlign = 'center';
-input.dataset.index = i;
-
-const dollar = document.createElement('span');
-dollar.textContent = '$';
-dollar.style.position = 'absolute';
-dollar.style.left = '4px'; // closer to the number
-dollar.style.top = '50%';
-dollar.style.transform = 'translateY(-50%)';
-dollar.style.color = '#fff';
-dollar.style.fontWeight = '700';
-dollar.style.pointerEvents = 'none';
-
-inputWrapper.appendChild(dollar);
-inputWrapper.appendChild(input);
-
-  // watch inputs: only enable button when all fields are filled (not necessarily correct)
-  const inputs = problemBoard.querySelectorAll('.problemInput');
-  function checkFilled(){
-    const allFilled = Array.from(inputs).every(i => i.value.trim() !== '');
-    if (submitAnswersBtn) {
-      submitAnswersBtn.disabled = !allFilled;
-      submitAnswersBtn.style.opacity = allFilled ? '1' : '0.6';
+      wrapper.appendChild(label);
+      wrapper.appendChild(input);
+      problemBoard.appendChild(wrapper);
     }
+
+
+    // watch inputs: only enable button when all fields are filled (not necessarily correct)
+    const inputs = problemBoard.querySelectorAll('.problemInput');
+    function checkFilled(){
+      const allFilled = Array.from(inputs).every(i => i.value.trim() !== '');
+      if (submitAnswersBtn) {
+        submitAnswersBtn.disabled = !allFilled;
+        submitAnswersBtn.style.opacity = allFilled ? '1' : '0.6';
+      }
+    }
+    inputs.forEach(inp => {
+      inp.addEventListener('input', checkFilled);
+    });
+    // initial check (in case some browser auto-fills)
+    checkFilled();
   }
-  inputs.forEach(inp => {
-    inp.addEventListener('input', checkFilled);
-  });
-  // initial check (in case some browser auto-fills)
-  checkFilled();
-}
 
   /* ---------------- loading bar ---------------- */
   function startLoadingBar(){
