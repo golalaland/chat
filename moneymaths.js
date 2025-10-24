@@ -562,92 +562,56 @@ async function endTrain(success, ticketNumber = null) {
     submitAnswersBtn.style.display = 'none';
   }
 
-  // Show join/tutorial buttons again
-  if (joinTrainBtn) {
-    const pot = getStoredPot() ?? INITIAL_POT;
-    joinTrainBtn.style.display = 'block';
-    joinTrainBtn.disabled = pot <= 0;
-    joinTrainBtn.style.opacity = pot <= 0 ? '0.5' : '1';
-  }
-  if (howToPlayBtn) howToPlayBtn.style.display = 'inline-block';
-
   if (success) {
-    // --- Calculate new rewards ---
-    const rewardCash = REWARD_TO_USER;
-    const rewardStars = STARS_PER_WIN;
+    // Show modal using helper
+    const destination = trainDestinationEl?.textContent || 'Unknown Destination';
+    showWinModal(REWARD_TO_USER, ticketNumber, destination);
 
-    const oldCash = parseInt(cashCountEl?.textContent?.replace(/[^0-9]/g, ''), 10) || 0;
-    const oldStars = parseInt(starCountEl?.textContent?.replace(/[^0-9]/g, ''), 10) || 0;
-
-    const newCash = oldCash + rewardCash;
-    const newStars = oldStars + rewardStars;
-
-    if (cashCountEl) cashCountEl.textContent = `₦${newCash.toLocaleString()}`;
-    if (starCountEl) starCountEl.textContent = newStars.toString();
-
-    // Deduct from daily pot
-    const updatedPot = Math.max(0, (getStoredPot() ?? INITIAL_POT) - DEDUCT_PER_WIN);
-    setStoredPot(updatedPot);
-
-    // Ticket info
-    const dest = trainDestinationEl?.textContent || 'your destination';
-    const tnum = ticketNumber || '---';
-
-    // --- Show win modal ---
-    showWinModal(rewardCash, tnum, dest);
     playAudio(SOUND_PATHS.ding);
 
-    // Halfway alert & station closure
-    maybeShowHalfwayAlert();
-    if (updatedPot <= 0) handleStationClosed();
+    // Update stars/cash locally
+    const curStars = currentUser?.stars ?? parseInt(starCountEl?.textContent || '0', 10);
+    if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
+    if (cashCountEl) {
+      cashCountEl.textContent = String((parseInt(cashCountEl?.textContent || '0', 10) + REWARD_TO_USER));
+    }
 
-    // Persist rewards in Firestore & sync locally
-    await giveWinRewards(rewardCash, rewardStars)
-      .then(res => {
-        if (res.ok) {
-          // Update currentUser object
-          currentUser.cash = (currentUser.cash || 0) + rewardCash;
-          currentUser.stars = (currentUser.stars || 0) + rewardStars;
-
-          // Update UI again (safety)
-          if (cashCountEl) cashCountEl.textContent = `₦${currentUser.cash.toLocaleString()}`;
-          if (starCountEl) starCountEl.textContent = currentUser.stars.toString();
-
-          // Update localStorage copy
-          const storedKey = currentUser.isVIP ? 'vipUser' : 'hostUser';
-          localStorage.setItem(storedKey, JSON.stringify(currentUser));
-        } else {
-          showPopup('⚠️ Reward could not be saved. Try again or contact support.', 4500);
-        }
-      })
-      .catch(err => {
-        console.error('giveWinRewards failed', err);
-        showPopup('⚠️ Reward save error. Try again later.', 4500);
-      });
+    // Persist reward in Firestore or backend
+    await giveWinRewards(REWARD_TO_USER, STARS_PER_WIN);
 
   } else {
-    // Train failed
     showPopup('🚉 Train has left the station! You didn’t get a ticket 😢', 2200);
     playAudio(SOUND_PATHS.depart);
   }
 }
 
 /* ---------------- Win modal helper ---------------- */
-function showWinModal(cashReward, ticketNumber, destination) {
+function showWinModal(cashReward, ticketConcat, destination) {
   const modal = document.getElementById('winModal');
   const winTextEl = document.getElementById('winText');
 
-  if (!modal) return;
+  if (!modal || !winTextEl) return;
 
-  // Update content
-  winTextEl.textContent = `🎟 Ticket: ${ticketNumber} — Destination: ${destination}\n💰 You earned ₦${cashReward.toLocaleString()}!`;
+  // Get the user's display name
+  const chatID = profileNameEl?.textContent || 'GUEST';
+
+  // Format the modal text exactly as requested
+  winTextEl.textContent = 
+    `🎫 Ticket Unlocked!\n` +
+    `Name: ${chatID}\n` +
+    `Ticket: ${ticketConcat}\n` +
+    `Destination: ${destination}\n` +
+    `You’ve Earned ₦${cashReward.toLocaleString()}`;
+
+  // Ensure line breaks display correctly
+  winTextEl.style.whiteSpace = 'pre-line';
 
   // Show modal
   modal.classList.add('show');
 
-  // Auto-hide after 5s
+  // Auto-hide after 5 seconds
   setTimeout(() => {
-    modal.classList.remove('show');  // fades out smoothly
+    modal.classList.remove('show'); // smooth fade-out
   }, 5000);
 }
 
