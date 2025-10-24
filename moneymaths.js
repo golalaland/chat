@@ -464,26 +464,7 @@ if (profileNameEl) {
     }
   }
   
-/* ---------------- How to Play ---------------- */
-const howToPlayBtn = document.getElementById('howToPlayBtn');
-  const modal = document.getElementById('howToPlayModal');
-  const closeBtn = document.getElementById('closeHowToPlay');
 
-  if (howToPlayBtn && modal && closeBtn) {
-    howToPlayBtn.addEventListener('click', () => {
-      modal.classList.remove('hidden');
-    });
-
-    closeBtn.addEventListener('click', () => {
-      modal.classList.add('hidden');
-    });
-
-    // Optional: click outside to close
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.classList.add('hidden');
-    });
-  }
-})
 
   /* ---------------- start / end train (streamlined + Firestore + UI polish) ---------------- */
 
@@ -684,3 +665,24 @@ async function endTrain(success, ticketNumber = null) {
   loadCurrentUserForGame().catch(err => console.error('loadCurrentUserForGame failed', err));
 
 }); // DOMContentLoaded end
+
+/* ---------------- How to Play ---------------- */
+const howToPlayBtn = document.getElementById('howToPlayBtn');
+  const modal = document.getElementById('howToPlayModal');
+  const closeBtn = document.getElementById('closeHowToPlay');
+
+  if (howToPlayBtn && modal && closeBtn) {
+    howToPlayBtn.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+    });
+
+    closeBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    // Optional: click outside to close
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+})
