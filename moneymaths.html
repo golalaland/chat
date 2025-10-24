@@ -17,38 +17,6 @@
   --accent-gradient: linear-gradient(90deg,#FF1493,#FF8C00);
   --glass: rgba(255,255,255,0.03);
 }
-
-.odometer {
-  display: inline-flex;
-  font-variant-numeric: tabular-nums;
-  font-size: 22px;
-  font-weight: 800;
-  color: gold;
-  overflow: hidden;
-}
-
-.odometer-digit {
-  display: inline-block;
-  position: relative;
-  width: 1ch;
-  height: 1.2em;
-}
-
-.odometer-digit span {
-  display: block;
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  transition: transform 0.5s ease-in-out;
-}
-
-.odometer-digit span.show {
-  transform: translateY(0%);
-}
-
-.odometer-digit span.hide {
-  transform: translateY(-100%);
-}
 /* Base */
 body, html {margin:0;padding:0;height:100%;font-family:'Montserrat',sans-serif;background:var(--bg);color:#fff;display:flex;justify-content:center;}
 #appWrapper{width:100%;max-width:480px;display:flex;flex-direction:column;height:100%;position:relative;padding-bottom:120px;}
