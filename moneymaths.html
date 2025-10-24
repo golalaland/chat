@@ -247,6 +247,26 @@ input, button {
   box-shadow: 0 6px 10px rgba(255,20,147,0.5);
 }
 
+.how-to-steps div {
+  position: relative;
+  padding: 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+}
+
+/* Glow divider between each step */
+.how-to-steps div:not(:last-child)::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px;
+  margin-top: 8px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #FF1493, #FFD700, #FF1493);
+  box-shadow: 0 0 6px #FF1493, 0 0 8px #FFD700;
+}
+
 </style>
 </head>
 <body>
@@ -277,44 +297,18 @@ input, button {
   
   
   
-  <!-- HOW TO PLAY BUTTON -->
-<button id="howToPlayBtn">HOW TO PLAY</button>
+<button id="howToPlayBtn">How to Play</button>
 
 <!-- HOW TO PLAY MODAL -->
 <div id="howToPlayModal" class="confirm-modal">
   <div class="confirm-box">
     <h3>How to Play</h3>
-    <ul class="how-to-list">
-      <li>
-        <svg width="24" height="24" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
-          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">1</text>
-        </svg>
-        Press <strong>PLAY</strong> to join the Money Train.
-      </li>
-      <li>
-        <svg width="24" height="24" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
-          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">2</text>
-        </svg>
-        Solve the problems that appear.
-      </li>
-      <li>
-        <svg width="24" height="24" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
-          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">3</text>
-        </svg>
-        Unlock tickets and earn <strong>stars & cash!</strong>
-      </li>
-      <li>
-        <svg width="24" height="24" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
-          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">4</text>
-        </svg>
-        Watch your daily rewards grow!
-      </li>
-    </ul>
-
+    <div class="how-to-steps">
+      <div>Press <strong>PLAY</strong> to join the Money Train.</div>
+      <div>Solve the problems that appear.</div>
+      <div>Unlock tickets and earn <strong>stars & cash!</strong></div>
+      <div>Watch your daily rewards grow!</div>
+    </div>
     <div class="confirm-actions">
       <button id="closeHowTo">Got it!</button>
     </div>
