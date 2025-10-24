@@ -698,3 +698,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+const leaderboardBtn = document.getElementById('leaderboardBtn');
+  const leaderboardPopup = document.getElementById('leaderboardPopup');
+  const closeBtn = document.getElementById('closeLeaderboard');
+  const leaderboardList = document.getElementById('leaderboardList');
+
+  const randomNames = ["Zara", "Leo", "Ava", "Max", "Mia", "Eli", "Luna", "Kai", "Nia", "Jax"];
+
+  function generateRandomLeaderboard() {
+    leaderboardList.innerHTML = '';
+    for (let i = 0; i < 10; i++) {
+      const name = randomNames[Math.floor(Math.random() * randomNames.length)];
+      const cash = Math.floor(Math.random() * 5000 + 1000);
+      const li = document.createElement('li');
+      li.textContent = `${name} — $${cash.toLocaleString()}`;
+      leaderboardList.appendChild(li);
+    }
+  }
+
+  leaderboardBtn.addEventListener('click', () => {
+    generateRandomLeaderboard();
+    leaderboardPopup.style.display = 'block';
+  });
+
+  closeBtn.addEventListener('click', () => leaderboardPopup.style.display = 'none');
+
+  leaderboardPopup.addEventListener('click', (e) => {
+    if (e.target === leaderboardPopup) leaderboardPopup.style.display = 'none';
+  });
+});
