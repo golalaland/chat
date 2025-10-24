@@ -264,7 +264,7 @@ input, button {
   z-index: 10000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.5s ease; /* smooth fade in/out */
 }
 
 /* Show modal */
@@ -299,22 +299,6 @@ input, button {
   color: #fff200;
   margin: 10px 0;
   text-shadow: 0 0 8px #fff200aa, 0 0 12px #ffb40088;
-}
-
-/* Close Button */
-#closeWinBtn {
-  margin-top: 12px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 10px;
-  background: #ff1493;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-#closeWinBtn:hover {
-  transform: scale(1.05);
 }
 </style>
 </head>
@@ -440,7 +424,7 @@ input, button {
 </div>
 
 <!-- Win Modal -->
-<div id="winModal" class="win-modal hidden">
+<div id="winModal" class="win-modal">
   <div class="win-box">
     <h3>🎉 You Won! 🎉</h3>
     <p id="winText">You secured your ticket and earned ₦1,000,000!</p>
