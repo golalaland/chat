@@ -463,6 +463,27 @@ if (profileNameEl) {
       return { ok: false, message: e.message || 'Failed to give rewards' };
     }
   }
+  
+/* ---------------- How to Play ---------------- */
+const howToPlayBtn = document.getElementById('howToPlayBtn');
+  const modal = document.getElementById('howToPlayModal');
+  const closeBtn = document.getElementById('closeHowToPlay');
+
+  if (howToPlayBtn && modal && closeBtn) {
+    howToPlayBtn.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+    });
+
+    closeBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    // Optional: click outside to close
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+})
 
   /* ---------------- start / end train (streamlined + Firestore + UI polish) ---------------- */
 
