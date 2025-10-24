@@ -1,5 +1,3 @@
-No, I wanna add this star replacement code to this JS: 
-
 // Money Train + Firebase integration
 // Replace your existing JS1 file with this (or merge accordingly).
 
