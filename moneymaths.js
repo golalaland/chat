@@ -730,54 +730,71 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === leaderboardPopup) leaderboardPopup.style.display = 'none';
   });
 });
-function updateProfileOffset() {
-  const submitBtn = document.getElementById('submitAnswers');
-  const joinBtn = document.getElementById('joinTrainBtn');
-  const profile = document.getElementById('profilePanel');
-
-  // choose the lower of the two buttons that are visible
-  let offset = 20; // default bottom spacing
-
-  if (submitBtn && submitBtn.offsetParent !== null) { // visible
-    offset = submitBtn.getBoundingClientRect().height + 20;
-  } else if (joinBtn && joinBtn.offsetParent !== null) { // visible
-    offset = joinBtn.getBoundingClientRect().height + 20;
-  }
-
-  profile.style.setProperty('--profile-bottom', `${offset}px`);
-}
-
-// call on load
-updateProfileOffset();
-
-// call whenever layout might change
-window.addEventListener('resize', updateProfileOffset);
 const dailyPotEl = document.getElementById('dailyPot');
 const STORAGE_KEY = 'dailyPotValue';
 const MAX_VALUE = 50000;
 const INCREMENT = 10;
-const INTERVAL = 1000; // 1 second
+const INTERVAL = 1000;
 
-// Load last saved value or start at 10000
+// Load last saved value
 let currentValue = parseInt(localStorage.getItem(STORAGE_KEY)) || 10000;
 
-// Function to format as currency
-function formatCash(val) {
-  return '$ ' + val.toLocaleString();
+// Helper: pad number with zeros
+function padNumber(val, length = 6) {
+  return val.toString().padStart(length, '0');
 }
 
-// Update the display initially
-dailyPotEl.textContent = formatCash(currentValue);
+// Render the odometer digits
+function renderOdometer(val) {
+  dailyPotEl.innerHTML = ''; // clear old digits
+  const strVal = padNumber(val);
+  for (let char of strVal) {
+    const digitWrapper = document.createElement('span');
+    digitWrapper.className = 'odometer-digit';
+    
+    // Current and next span
+    const currentSpan = document.createElement('span');
+    currentSpan.textContent = char;
+    currentSpan.className = 'show';
+    
+    const nextSpan = document.createElement('span');
+    nextSpan.textContent = char;
+    nextSpan.className = 'hide';
+    
+    digitWrapper.appendChild(currentSpan);
+    digitWrapper.appendChild(nextSpan);
+    dailyPotEl.appendChild(digitWrapper);
+  }
+}
 
-// Increment function
-function rollDailyPot() {
-  currentValue += INCREMENT;
-  if (currentValue > MAX_VALUE) currentValue = 0;
-  dailyPotEl.textContent = formatCash(currentValue);
-
-  // Save current value in localStorage for persistence
+// Animate digits
+function animateOdometer(newValue) {
+  const strOld = padNumber(currentValue);
+  const strNew = padNumber(newValue);
+  
+  const digits = dailyPotEl.querySelectorAll('.odometer-digit');
+  
+  digits.forEach((digitWrapper, i) => {
+    const oldDigit = strOld[i];
+    const newDigit = strNew[i];
+    if (oldDigit !== newDigit) {
+      const spans = digitWrapper.querySelectorAll('span');
+      spans[0].className = 'hide';
+      spans[1].textContent = newDigit;
+      spans[1].className = 'show';
+    }
+  });
+  
+  currentValue = newValue;
   localStorage.setItem(STORAGE_KEY, currentValue);
 }
 
-// Start rolling every second
-setInterval(rollDailyPot, INTERVAL);
+// Start rolling
+setInterval(() => {
+  let nextValue = currentValue + INCREMENT;
+  if (nextValue > MAX_VALUE) nextValue = 0;
+  animateOdometer(nextValue);
+}, INTERVAL);
+
+// Initial render
+renderOdometer(currentValue);
