@@ -221,85 +221,32 @@ input, button {
 
 /* How To Play Button — compact & premium */
 #howToPlayBtn {
-  position: relative;
-  padding: 6px 10px;       /* smaller, tighter padding */
-  min-width: 100px;        /* ensures button has some width but stays small */
-  max-width: 140px;        /* caps the width */
+  display: block;                 /* centers the button */
+  margin: 10px auto;
+  padding: 6px 12px;              /* slightly wider for better text fit */
+  min-width: 100px;
+  max-width: 140px;
   font-size: 12px;
   font-weight: 700;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(145deg, #111, #222); /* black gradient */
-  color: #FF1493;          /* pink font */
+  background: linear-gradient(145deg, #111, #222); /* subtle black gradient */
+  color: #FF1493;
+  text-shadow: 0 0 4px #FF1493aa;
+  box-shadow: 0 4px 6px rgba(255,20,147,0.3);
   cursor: pointer;
   overflow: hidden;
-  z-index: 0;
-  text-shadow: 0 0 4px #FF1493aa;
-  box-shadow: 0 4px 6px rgba(255,20,147,0.3); /* subtle 3D backlight */
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: inline-block;
   text-align: center;
+  position: relative;
+  z-index: 0;
 }
 
 #howToPlayBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 10px rgba(255,20,147,0.5); /* stronger highlight on hover */
+  box-shadow: 0 6px 10px rgba(255,20,147,0.5);
 }
 
-#howToPlayBtn {
-  display: block;        /* replaces inline-block */
-  margin: 10px auto;     /* centers it horizontally */
-  text-align: center;
-}
-
-/* Win Modal Base */
-.win-modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.7);
-  z-index: 10000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.5s ease; /* smooth fade in/out */
-}
-
-/* Show modal */
-.win-modal.show {
-  opacity: 1;
-  pointer-events: all;
-}
-
-/* Win Box */
-.win-box {
-  background: linear-gradient(145deg, #ffed00, #ffb400);
-  border-radius: 16px;
-  padding: 20px 24px;
-  text-align: center;
-  color: #000;
-  box-shadow: 0 0 30px #ffd700aa, 0 0 50px #ffb40088 inset;
-  transform: scale(0.8);
-  animation: popIn 0.5s forwards;
-}
-
-/* Pop-in animation */
-@keyframes popIn {
-  0% { transform: scale(0.8); opacity: 0; }
-  60% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); }
-}
-
-/* Reward Text */
-#winText {
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff200;
-  margin: 10px 0;
-  text-shadow: 0 0 8px #fff200aa, 0 0 12px #ffb40088;
-}
 </style>
 </head>
 <body>
@@ -337,10 +284,37 @@ input, button {
 <div id="howToPlayModal" class="confirm-modal">
   <div class="confirm-box">
     <h3>How to Play</h3>
-    <p>1️⃣ Press PLAY to join the Money Train.<br>
-       2️⃣ Solve the problems that appear.<br>
-       3️⃣ Unlock tickets and earn stars & cash!<br>
-       4️⃣ Watch your daily rewards grow!</p>
+    <ul class="how-to-list">
+      <li>
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
+          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">1</text>
+        </svg>
+        Press <strong>PLAY</strong> to join the Money Train.
+      </li>
+      <li>
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
+          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">2</text>
+        </svg>
+        Solve the problems that appear.
+      </li>
+      <li>
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
+          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">3</text>
+        </svg>
+        Unlock tickets and earn <strong>stars & cash!</strong>
+      </li>
+      <li>
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="12" fill="#FFD700"/>
+          <text x="12" y="16" text-anchor="middle" font-size="14" font-family="Arial" fill="#000">4</text>
+        </svg>
+        Watch your daily rewards grow!
+      </li>
+    </ul>
+
     <div class="confirm-actions">
       <button id="closeHowTo">Got it!</button>
     </div>
@@ -423,14 +397,6 @@ input, button {
     </div>
 </div>
 
-<!-- Win Modal -->
-<div id="winModal" class="win-modal">
-  <div class="win-box">
-    <h3>🎉 You Won! 🎉</h3>
-    <p id="winText">You secured your ticket and earned ₦1,000,000!</p>
-    <button id="closeWinBtn">Awesome!</button>
-  </div>
-</div>
 <!-- Popup -->
 <div id="popup" class="star-popup">+1 ⭐</div>
 
