@@ -698,7 +698,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-const leaderboardBtn = document.getElementById('leaderboardBtn');
+
+/* ---------------- Leaderboard---------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const leaderboardBtn = document.getElementById('leaderboardBtn');
   const leaderboardPopup = document.getElementById('leaderboardPopup');
   const closeBtn = document.getElementById('closeLeaderboard');
   const leaderboardList = document.getElementById('leaderboardList');
@@ -712,7 +715,25 @@ const leaderboardBtn = document.getElementById('leaderboardBtn');
       const cash = Math.floor(Math.random() * 5000 + 1000);
       const li = document.createElement('li');
       li.textContent = `${name} — $${cash.toLocaleString()}`;
+
+      // Flashy colors for top 3
+      if (i === 0) li.style.color = 'gold';
+      if (i === 1) li.style.color = 'silver';
+      if (i === 2) li.style.color = 'peru'; // bronze-ish
+
+      // Text shadow for glow effect
+      li.style.textShadow = '0 0 5px rgba(255,255,255,0.3), 0 0 10px rgba(255,215,0,0.5)';
+
       leaderboardList.appendChild(li);
+
+      // Animate cash number briefly
+      li.style.opacity = 0;
+      li.style.transform = 'translateY(-10px)';
+      setTimeout(() => {
+        li.style.transition = 'all 0.5s ease-out';
+        li.style.opacity = 1;
+        li.style.transform = 'translateY(0)';
+      }, i * 100); // stagger animation
     }
   }
 
