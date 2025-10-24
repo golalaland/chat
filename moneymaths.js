@@ -247,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function isPastMidnightReset(){ return getPotResetDay() !== new Date().toISOString().slice(0,10); }
 
  /* ---------------- problems generator ---------------- */
+/* ---------------- problems generator ---------------- */
 function generateProblems(){
   currentProblems = [];
   if (problemBoard) problemBoard.innerHTML = '';
@@ -270,13 +271,17 @@ function generateProblems(){
     label.style.fontSize = '12px';
     label.style.color = '#fff';
 
+    const inputWrapper = document.createElement('div');
+    inputWrapper.style.position = 'relative';
+    inputWrapper.style.display = 'inline-block';
+
     const input = document.createElement('input');
     input.type = 'number';
     input.className = 'problemInput';
     input.inputMode = 'numeric';
-    input.placeholder = '$?'; // show dollar in placeholder
+    input.placeholder = '?'; 
     input.style.width = '60px';
-    input.style.padding = '6px';
+    input.style.padding = '6px 6px 6px 14px'; // space for $ sign
     input.style.borderRadius = '6px';
     input.style.border = '1px solid rgba(255,255,255,0.12)';
     input.style.background = '#0e0e0e';
@@ -284,8 +289,21 @@ function generateProblems(){
     input.style.textAlign = 'center';
     input.dataset.index = i;
 
+    const dollar = document.createElement('span');
+    dollar.textContent = '$';
+    dollar.style.position = 'absolute';
+    dollar.style.left = '6px';
+    dollar.style.top = '50%';
+    dollar.style.transform = 'translateY(-50%)';
+    dollar.style.color = '#fff';
+    dollar.style.fontWeight = '700';
+    dollar.style.pointerEvents = 'none';
+
+    inputWrapper.appendChild(dollar);
+    inputWrapper.appendChild(input);
+
     wrapper.appendChild(label);
-    wrapper.appendChild(input);
+    wrapper.appendChild(inputWrapper);
     problemBoard.appendChild(wrapper);
   }
 
@@ -729,3 +747,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === leaderboardPopup) leaderboardPopup.style.display = 'none';
   });
 });
+
