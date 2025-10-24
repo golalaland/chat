@@ -504,23 +504,20 @@ async function startTrain() {
     playAudio(SOUND_PATHS.error);
     return;
   }
+trainActive = true;
 
-  // --- Update UI optimistically ---
-  if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
-  if (joinTrainBtn) joinTrainBtn.style.display = 'none';
-  if (howToPlayBtn) howToPlayBtn.style.display = 'none';
+// --- Setup game ---
+generateProblems();
+if (problemBoard) problemBoard.classList.remove('hidden');
 
-  trainActive = true;
+// Start loading bar animation
+startLoadingBar();
 
-  // --- Setup game ---
-  generateProblems();
-  if (problemBoard) problemBoard.classList.remove('hidden');
-
-  if (submitAnswersBtn) {
-    submitAnswersBtn.classList.remove('hidden');
-    submitAnswersBtn.style.display = 'block';
-    submitAnswersBtn.disabled = false;
-    submitAnswersBtn.style.opacity = '0.6'; // dimmed until ready
+if (submitAnswersBtn) {
+  submitAnswersBtn.classList.remove('hidden');
+  submitAnswersBtn.style.display = 'block';
+  submitAnswersBtn.disabled = false;
+  submitAnswersBtn.style.opacity = '0.6'; // dimmed until ready
 
     // --- Add input listener to brighten button only when all fields filled ---
     const inputs = Array.from(document.querySelectorAll('.problemInput'));
