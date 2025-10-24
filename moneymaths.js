@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (trainNameEl) trainNameEl.textContent = name;
     if (trainDateEl) trainDateEl.textContent = date;
     if (trainDestinationEl) trainDestinationEl.textContent = dest;
-    if (confirmText) confirmText.textContent = `Join ${name} → ${dest}? Ready to play?`;
+    if (confirmText) confirmText.textContent = `Join ${name} train to → ${dest}? Ready to play ?`;
   }
 
   function updateTrainTime(){
