@@ -477,7 +477,7 @@ if (profileNameEl) {
   
 
 
-  /* ---------------- start / end train (streamlined + Firestore + UI polish) ---------------- */
+/* ---------------- start / end train (streamlined + Firestore + UI polish) ---------------- */
 
 async function startTrain() {
   const howToPlayBtn = document.getElementById('howToPlayBtn');
@@ -489,7 +489,6 @@ async function startTrain() {
     return;
   }
 
-  // Get current stars (prefer from user profile)
   const curStars = currentUser?.stars != null
     ? Number(currentUser.stars)
     : parseInt(starCountEl?.textContent || '0', 10) || 0;
@@ -499,7 +498,6 @@ async function startTrain() {
     return;
   }
 
-  // --- Attempt Firestore deduction ---
   const deductResult = await tryDeductStarsForJoin(STAR_COST);
   if (!deductResult.ok) {
     showPopup(deductResult.message || 'Not enough stars.');
@@ -510,7 +508,7 @@ async function startTrain() {
   // --- Update UI optimistically ---
   if (starCountEl) starCountEl.textContent = String(Math.max(0, curStars - STAR_COST));
   if (joinTrainBtn) joinTrainBtn.style.display = 'none';
-  if (howToPlayBtn) howToPlayBtn.style.display = 'none'; // hide tutorial button while in-game
+  if (howToPlayBtn) howToPlayBtn.style.display = 'none';
 
   trainActive = true;
 
@@ -518,39 +516,45 @@ async function startTrain() {
   generateProblems();
   if (problemBoard) problemBoard.classList.remove('hidden');
 
-if (submitAnswersBtn) {
-  submitAnswersBtn.classList.remove('hidden');
-  submitAnswersBtn.style.display = 'block';
-  submitAnswersBtn.disabled = false;
-  submitAnswersBtn.style.opacity = '0.6';
+  if (submitAnswersBtn) {
+    submitAnswersBtn.classList.remove('hidden');
+    submitAnswersBtn.style.display = 'block';
+    submitAnswersBtn.disabled = false;
+    submitAnswersBtn.style.opacity = '0.6'; // dimmed until ready
 
-  // --- Add click handler ---
-  submitAnswersBtn.onclick = async () => {
-    if (!trainActive) return; // only allow during active train
-
+    // --- Add input listener to brighten button only when all fields filled ---
     const inputs = Array.from(document.querySelectorAll('.problemInput'));
-    const allFilled = inputs.every(i => i.value.trim() !== '');
-    if (!allFilled) {
-      showPopup("You're not done yet! Fill all ticket numbers.", 2400);
-      if (SOUND_PATHS.error) playAudio(SOUND_PATHS.error);
-      return;
-    }
-
-    // Check correctness
-    let correct = true;
-    inputs.forEach((inp, idx) => {
-      const val = parseInt(inp.value, 10);
-      if (val !== currentProblems[idx].ans) correct = false;
+    inputs.forEach(input => {
+      input.addEventListener('input', () => {
+        const allFilled = inputs.every(i => i.value.trim() !== '');
+        submitAnswersBtn.style.opacity = allFilled ? '1' : '0.6';
+      });
     });
 
-    // End the train based on result
-    const ticketNumber = `TICKET-${Math.floor(Math.random()*9000)+1000}`;
-    await endTrain(correct, ticketNumber);
-  };
+    // --- Add click handler ---
+    submitAnswersBtn.onclick = async () => {
+      if (!trainActive) return;
+
+      const allFilled = inputs.every(i => i.value.trim() !== '');
+      if (!allFilled) {
+        showPopup("You're not done yet! Fill all ticket numbers.", 2400);
+        if (SOUND_PATHS.error) playAudio(SOUND_PATHS.error);
+        return;
+      }
+
+      let correct = true;
+      inputs.forEach((inp, idx) => {
+        const val = parseInt(inp.value, 10);
+        if (val !== currentProblems[idx].ans) correct = false;
+      });
+
+      const ticketNumber = `TICKET-${Math.floor(Math.random()*9000)+1000}`;
+      await endTrain(correct, ticketNumber);
+    };
+  }
 }
 
 async function endTrain(success, ticketNumber = null) {
-  // Stop the loading bar immediately
   stopLoadingBar();
   trainActive = false;
 
