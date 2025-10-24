@@ -155,9 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (trainNameEl) trainNameEl.textContent = name;
     if (trainDateEl) trainDateEl.textContent = date;
     if (trainDestinationEl) trainDestinationEl.textContent = dest;
-  if (confirmText) {
-  confirmText.innerHTML = `Join <strong>${name}</strong> train to → <strong>${dest}</strong>? Ready to play?`;
-}
+    if (confirmText) confirmText.textContent = `Join ${name} train to → ${dest}? Ready to play ?`;
+  }
 
   function updateTrainTime(){
     if (!trainTimeEl) return;
@@ -730,33 +729,4 @@ document.addEventListener('DOMContentLoaded', () => {
   leaderboardPopup.addEventListener('click', (e) => {
     if (e.target === leaderboardPopup) leaderboardPopup.style.display = 'none';
   });
-});
-function updateProfileOffset() {
-  const profile = document.getElementById('profilePanel');
-  if (!profile) return;
-
-  const elements = [
-    document.getElementById('submitAnswers'),
-    document.getElementById('joinTrainBtn'),
-    document.getElementById('leaderboardBtn')
-  ];
-
-  // Only consider visible elements
-  const visibleHeights = elements
-    .filter(el => el && el.offsetParent !== null)
-    .map(el => el.getBoundingClientRect().height);
-
-  // Take the tallest visible element (or 0 if none)
-  const offset = visibleHeights.length ? Math.max(...visibleHeights) + 20 : 20;
-
-  profile.style.setProperty('--profile-bottom', `${offset}px`);
-}
-
-// Call on load and whenever layout changes
-document.addEventListener('DOMContentLoaded', () => {
-  updateProfileOffset();
-  window.addEventListener('resize', updateProfileOffset);
-
-  // Also periodically check if dynamic elements appear (like popups or in-game buttons)
-  setInterval(updateProfileOffset, 500);
 });
