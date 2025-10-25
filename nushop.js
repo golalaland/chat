@@ -1,3 +1,4 @@
+/* ------------------ IMPORTS ------------------ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -11,7 +12,9 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ------------------ Firebase ------------------ */
+import { launchSubscription } from './paystack.js';
+
+/* ------------------ FIREBASE CONFIG ------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -22,15 +25,11 @@ const firebaseConfig = {
   measurementId: "G-S77BMC266C",
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ---------------- Spinner Helpers (Code 1 style) ----------------
-   Uses the .shop-spinner element already present in your HTML.
-   Toggling the 'active' class will smoothly fade spinner in/out
-   because your CSS (.shop-spinner/.shop-spinner.active) controls
-   visibility & opacity transitions.
-------------------------------------------------------------------*/
+/* ---------------- Spinner Helpers ---------------- */
 function showSpinner() {
   const spinner = document.querySelector('.shop-spinner') || document.getElementById('shopSpinner');
   if (spinner) spinner.classList.add('active');
@@ -41,6 +40,9 @@ function hideSpinner() {
   if (spinner) spinner.classList.remove('active');
 }
 
+/* ------------------ Current user state ------------------ */
+let currentUser = null;
+
 /* ------------------ DOM references ------------------ */
 const DOM = {
   username: document.getElementById('username'),
@@ -48,6 +50,7 @@ const DOM = {
   cash: document.getElementById('cash-count'),
   shopItems: document.getElementById('shop-items'),
   hostTabs: document.getElementById('hostTabs'),
+  vipBtn: document.getElementById('vipBtn'),
   vipStat: document.getElementById('vip-stat'),
   friendsStat: document.getElementById('friends-stat'),
   badgesStat: document.getElementById('badges-stat'),
@@ -65,6 +68,53 @@ const DOM = {
   rewardTitle: document.getElementById('rewardTitle'),
   rewardMessage: document.getElementById('rewardMessage')
 };
+
+/* ------------------ Load current user ------------------ */
+const loadCurrentUser = async () => {
+  showSpinner();
+
+  try {
+    const vipRaw = localStorage.getItem('vipUser');
+    const hostRaw = localStorage.getItem('hostUser');
+    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+
+    // Reset UI placeholders
+    if (DOM.username) DOM.username.textContent = '******';
+    if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
+    if (DOM.cash) DOM.cash.textContent = `₦0`;
+    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
+
+    await renderShop(); // Your shop rendering function
+
+    if (!storedUser?.email) {
+      currentUser = null;
+      return;
+    }
+
+    currentUser = storedUser;
+
+    // Update UI with user info
+    if (DOM.username) DOM.username.textContent = currentUser.username || '******';
+    if (DOM.stars) DOM.stars.textContent = `${currentUser.stars || 0} ⭐️`;
+    if (DOM.cash) DOM.cash.textContent = `₦${currentUser.cash || 0}`;
+
+  } catch (err) {
+    console.error("Error loading user:", err);
+  } finally {
+    hideSpinner();
+  }
+};
+
+/* ------------------ Button Event Listeners ------------------ */
+if (DOM.vipBtn) {
+  DOM.vipBtn.addEventListener('click', () => {
+    if (!currentUser) {
+      alert("Please log in first.");
+      return;
+    }
+    launchSubscription(currentUser, db);
+  });
+}
 
 /* ------------------ Utilities ------------------ */
 const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) : '0';
@@ -227,31 +277,6 @@ const updateHostStats = async (newUser) => {
     console.error('Failed to update host stats:', err);
   }
 };
-
-/* ------------------ Current user state ------------------ */
-let currentUser = null;
-
-/* ------------------ Load current user from localStorage and Firestore ------------------ */
-const loadCurrentUser = async () => {
-  showSpinner();
-
-  try {
-    // --- Load user from localStorage ---
-    const vipRaw = localStorage.getItem('vipUser');
-    const hostRaw = localStorage.getItem('hostUser');
-    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-
-    // --- Reset UI ---
-    if (DOM.username) DOM.username.textContent = '******';
-    if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
-    if (DOM.cash) DOM.cash.textContent = `₦0`;
-    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
-    await renderShop();
-
-    if (!storedUser?.email) {
-      currentUser = null;
-      return;
-    }
 
     // --- Get Firestore data ---
     const uid = String(storedUser.email).replace(/[.#$[\]]/g, ',');
@@ -619,7 +644,7 @@ const createProductCard = (product) => {
     });
 
     if (avail <= 0) btn.disabled = true;
-    btn.addEventListener('click', () => openPaystackPayment(product.paystackPlanId));
+    btn.addEventListener('click', () => launchSubscription(currentUser, db));
   } else {
     btn.className = 'buy-btn';
     btn.textContent = 'Redeem';
