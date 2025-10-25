@@ -1254,9 +1254,9 @@ function loadHost(idx) {
   // Clear previous
   videoContainer.innerHTML = "";
   videoContainer.style.position = "relative";
-  videoContainer.style.touchAction = "manipulation"; // helps prevent double-tap zoom
+  videoContainer.style.touchAction = "manipulation";
 
-  // Shimmer
+  // Shimmer loader
   const shimmer = document.createElement("div");
   shimmer.className = "video-shimmer";
   videoContainer.appendChild(shimmer);
@@ -1265,25 +1265,26 @@ function loadHost(idx) {
   const videoEl = document.createElement("video");
   videoEl.src = host.videoUrl || "";
   videoEl.autoplay = true;
-  videoEl.muted = true;        // required for autoplay
+  videoEl.muted = true;
   videoEl.loop = true;
   videoEl.playsInline = true;
   videoEl.preload = "metadata";
-  videoEl.style.width = "100%";
-  videoEl.style.height = "100%";
-  videoEl.style.objectFit = "cover";
-  videoEl.style.borderRadius = "8px";
-  videoEl.style.display = "none";
-  videoEl.style.cursor = "pointer";
+  Object.assign(videoEl.style, {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    borderRadius: "8px",
+    display: "none",
+    cursor: "pointer",
+  });
   videoEl.setAttribute("webkit-playsinline", "true");
 
-  // Hint (bottom center)
+  // Hint text
   const hint = document.createElement("div");
   hint.className = "video-hint";
   hint.textContent = "Tap to unmute";
   videoContainer.appendChild(hint);
 
-  // Helpers for hint fade
   function showHint(msg, timeout = 1400) {
     hint.textContent = msg;
     hint.classList.add("show");
@@ -1291,74 +1292,94 @@ function loadHost(idx) {
     hint._t = setTimeout(() => hint.classList.remove("show"), timeout);
   }
 
-  // Fullscreen helpers (cross-browser)
-  function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement);
-  }
-  function enterFullscreen() {
-    if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
-    if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen(); // iOS Safari native fullscreen
-    if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
-  }
-  function exitFullscreen() {
-    if (document.exitFullscreen) return document.exitFullscreen();
-    if (document.webkitExitFullscreen) return document.webkitExitFullscreen?.();
-  }
-  function toggleFullscreen() {
-    if (isFullscreen()) exitFullscreen();
-    else enterFullscreen();
-  }
+  // Fullscreen helpers
+  const isFullscreen = () =>
+    !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const enterFullscreen = () =>
+    videoEl.requestFullscreen?.() ||
+    videoEl.webkitEnterFullscreen?.() ||
+    videoEl.webkitRequestFullscreen?.();
+  const exitFullscreen = () =>
+    document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+  const toggleFullscreen = () =>
+    isFullscreen() ? exitFullscreen() : enterFullscreen();
 
-  // Tap / double-tap detection supporting both touch and click
+  // Tap logic
   let lastTap = 0;
-  function onTapEvent(e) {
-    // allow native controls if user tapped a control element (not needed here but safe)
+  function onTapEvent() {
     const now = Date.now();
     const diff = now - lastTap;
     lastTap = now;
 
-    if (diff > 0 && diff < 300) {
-      // double-tap
-      toggleFullscreen();
-    } else {
-      // single-tap: toggle mute/unmute
+    if (diff > 0 && diff < 300) toggleFullscreen();
+    else {
       videoEl.muted = !videoEl.muted;
-      if (videoEl.muted) showHint("Tap to unmute", 1200);
-      else showHint("Sound on", 900);
+      showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 1200);
     }
   }
 
-  // Attach both click and touchend so it works on mobile & desktop
   videoEl.addEventListener("click", onTapEvent);
-  videoEl.addEventListener("touchend", (ev) => {
-    // don't swallow multi-touch (pinch) — if more than 1 touch, ignore
-    if (ev.changedTouches && ev.changedTouches.length > 1) return;
-    // prevent double-tap zoom only for this element
-    ev.preventDefault && ev.preventDefault();
-    onTapEvent(ev);
-  }, { passive: false });
+  videoEl.addEventListener(
+    "touchend",
+    (ev) => {
+      if (ev.changedTouches && ev.changedTouches.length > 1) return;
+      ev.preventDefault?.();
+      onTapEvent(ev);
+    },
+    { passive: false }
+  );
 
-  // Show video when ready
+  // Reveal when ready
   videoEl.addEventListener("loadeddata", () => {
     shimmer.style.display = "none";
     videoEl.style.display = "block";
-    // show initial hint because video starts muted
     showHint("Tap to unmute", 1400);
-    // ensure autoplay tries to play
     videoEl.play().catch(() => {});
   });
 
-  // append video after everything set
   videoContainer.appendChild(videoEl);
 
-  // update UI text and avatar highlight (your existing logic)
+  /* ---------- Host Info + Meet ---------- */
   usernameEl.textContent = host.chatId || "Unknown Host";
+
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
-  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
   const flair = gender === "male" ? "😎" : "💋";
-  detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+  const fruit = host.fruitPick || "🍓";
+  const nature = host.naturePick || "cool";
+  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
+  const location = host.location || "Lagos";
+  const country = host.country || "Nigeria";
 
+  // Create description line
+  detailsEl.textContent = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} currently in ${location}, ${country}.`;
+
+  // Meet Button
+  const meetBtn = document.createElement("button");
+  meetBtn.className = "meet-btn";
+  meetBtn.textContent = "💫 Meet (21⭐)";
+  detailsEl.insertAdjacentElement("afterend", meetBtn);
+
+  meetBtn.addEventListener("click", () => {
+    const starsAvailable = parseInt(giftSlider.value || "0");
+    if (starsAvailable < 21) {
+      alert("You need at least 21⭐ to meet this host!");
+      return;
+    }
+
+    // Telegram link
+    const agentUser = "YOUR_AGENT_USERNAME"; // <-- change this
+    const text = encodeURIComponent(
+      `💫 New Meet Request:\n` +
+        `Host: ${host.chatId}\n` +
+        `Profile: ${fruit} ${nature} ${gender}, ${ageGroup}\n` +
+        `Location: ${location}, ${country}\n` +
+        `Meet cost: 21⭐`
+    );
+    window.open(`https://t.me/${agentUser}?text=${text}`, "_blank");
+  });
+
+  // Highlight avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
@@ -1368,7 +1389,6 @@ function loadHost(idx) {
 
   console.log("🎬 Loaded host video:", host.videoUrl);
 }
-
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
