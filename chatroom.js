@@ -1360,3 +1360,25 @@ window.addEventListener("click", e => {
 
 /* ---------- Init ---------- */
 fetchFeaturedHosts();
+  // --- Initial random values for first load ---
+  const initialValues = [100, 105, 405, 455, 364, 224];
+  let count = initialValues[Math.floor(Math.random() * initialValues.length)];
+
+  const maxCount = 1000;
+  const counterElement = document.getElementById("onlineCount");
+  counterElement.textContent = count;
+
+  // --- Pick a random increment ---
+  function randomIncrement() {
+    const increments = [5, 3, 4, 1];
+    return increments[Math.floor(Math.random() * increments.length)];
+  }
+
+  // --- Update counter every 4 seconds ---
+  setInterval(() => {
+    if (count < maxCount) {
+      count += randomIncrement();
+      if (count > maxCount) count = maxCount;
+      counterElement.textContent = count;
+    }
+  }, 4000);
