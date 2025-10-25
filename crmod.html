@@ -978,18 +978,53 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   width: 100%; /* take full width for perfect centering */
   margin: 20px 0;
 }
+.featured-host-video-container {
+  position: relative;
+  overflow: hidden;
+}
+
 .video-shimmer {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, #1a1a1a 25%, #333 50%, #1a1a1a 75%);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, #222 8%, #333 18%, #222 33%);
   background-size: 200% 100%;
-  animation: shimmer 1.2s infinite linear;
+  animation: shimmer 1.5s linear infinite;
   border-radius: 8px;
 }
 
 @keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+  to {
+    background-position-x: -200%;
+  }
+}
+
+.video-controls {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  display: flex;
+  gap: 10px;
+  opacity: 1; /* visible for testing */
+  z-index: 999;
+  transition: opacity 0.4s ease;
+}
+
+.video-controls button {
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.video-controls svg {
+  fill: white;
+  width: 22px;
+  height: 22px;
 }
 </style>
 </head>
