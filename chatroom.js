@@ -1246,15 +1246,20 @@ function renderHostAvatars() {
 function loadHost(idx) {
   const host = hosts[idx];
   if (!host) return;
+
   currentIndex = idx;
 
   const videoContainer = document.getElementById("featuredHostVideo");
-  const shimmer = document.querySelector(".video-shimmer");
+  if (!videoContainer) return;
 
-  // Reset content + show shimmer
+  // Clear previous
   videoContainer.innerHTML = "";
-  shimmer.style.display = "block";
-  videoContainer.style.position = "relative"; // ensure controls position right
+
+  // Shimmer loader
+  const shimmer = document.createElement("div");
+  shimmer.className = "video-shimmer";
+  shimmer.innerHTML = `<div class="shimmer"></div>`;
+  videoContainer.appendChild(shimmer);
 
   // 🎥 Create video dynamically
   const videoEl = document.createElement("video");
@@ -1267,37 +1272,30 @@ function loadHost(idx) {
   videoEl.style.width = "100%";
   videoEl.style.borderRadius = "8px";
   videoEl.style.display = "none";
-  videoEl.style.objectFit = "cover";
 
-  // When video is ready, reveal it
-  videoEl.addEventListener("loadeddata", () => {
-    shimmer.style.display = "none";
-    videoEl.style.display = "block";
-    videoContainer.appendChild(controls);
-    showControlsTemporarily();
-  });
+  // Inject shimmer loader first
+  shimmer.style.display = "block";
 
-  // Append video to container
-  videoContainer.appendChild(videoEl);
-
-  // 🎛️ Custom controls (SVG edition)
+  // 🎛️ Custom controls
   const controls = document.createElement("div");
   controls.className = "video-controls";
   controls.innerHTML = `
     <button class="mute-toggle" aria-label="Toggle sound">
-      <svg class="icon-sound" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="22" height="22">
+      <svg class="icon-sound" xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="22" height="22">
         <path d="M3 9v6h4l5 5V4L7 9H3z"></path>
       </svg>
     </button>
     <button class="fullscreen-toggle" aria-label="Fullscreen">
-      <svg class="icon-fullscreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="22" height="22">
+      <svg class="icon-fullscreen" xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="22" height="22">
         <path d="M7 14H5v5h5v-2H7v-3zm0-4h2V7h3V5H7v5zm10 4h-2v3h-3v2h5v-5zm-2-4V7h3V5h-5v5h2z"/>
       </svg>
     </button>
   `;
 
+  // 🎚️ Events for mute and fullscreen
   const muteBtn = controls.querySelector(".mute-toggle");
   const muteIcon = muteBtn.querySelector(".icon-sound");
+  const fullscreenBtn = controls.querySelector(".fullscreen-toggle");
 
   muteBtn.addEventListener("click", () => {
     videoEl.muted = !videoEl.muted;
@@ -1307,12 +1305,12 @@ function loadHost(idx) {
     showControlsTemporarily();
   });
 
-  controls.querySelector(".fullscreen-toggle").addEventListener("click", () => {
+  fullscreenBtn.addEventListener("click", () => {
     if (videoEl.requestFullscreen) videoEl.requestFullscreen();
     else if (videoEl.webkitRequestFullscreen) videoEl.webkitRequestFullscreen();
   });
 
-  // Auto-hide controls after 2s of inactivity
+  // Show/hide controls
   let controlsTimeout;
   const showControlsTemporarily = () => {
     controls.classList.add("visible");
@@ -1320,13 +1318,23 @@ function loadHost(idx) {
     controlsTimeout = setTimeout(() => controls.classList.remove("visible"), 2000);
   };
 
-  // Show controls on hover/tap
   videoEl.addEventListener("mousemove", showControlsTemporarily);
   videoEl.addEventListener("touchstart", showControlsTemporarily);
 
+  // Show video when ready
+  videoEl.addEventListener("loadeddata", () => {
+    shimmer.style.display = "none";
+    videoEl.style.display = "block";
+    videoContainer.appendChild(controls);
+    showControlsTemporarily();
+  });
+
+  // Add video to container
+  videoContainer.appendChild(videoEl);
+
   console.log("🎬 Loaded host video:", host.videoUrl);
 
-  // 🧍 Username + details
+  // 🧍 User Info
   usernameEl.textContent = host.chatId || "Unknown Host";
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
@@ -1334,7 +1342,7 @@ function loadHost(idx) {
   const flair = gender === "male" ? "😎" : "💋";
   detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  // Highlight avatar
+  // Highlight active avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
