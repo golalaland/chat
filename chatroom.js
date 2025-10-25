@@ -1241,8 +1241,6 @@ function renderHostAvatars() {
   });
 }
 
-/* ---------- Load Host ---------- */
-So this code auto plays? 
 
 /* ---------- Load Host ---------- */
 function loadHost(idx) {
@@ -1268,6 +1266,25 @@ function loadHost(idx) {
   videoEl.style.width = "100%";
   videoEl.style.borderRadius = "8px";
   videoEl.style.display = "none";
+  videoEl.style.cursor = "pointer";
+
+  // Tap + double-tap detection
+  let lastTap = 0;
+  videoEl.addEventListener("click", (e) => {
+    const now = Date.now();
+    const tapDiff = now - lastTap;
+
+    if (tapDiff < 300 && tapDiff > 0) {
+      // Double tap → Fullscreen
+      if (videoEl.requestFullscreen) videoEl.requestFullscreen();
+      else if (videoEl.webkitRequestFullscreen) videoEl.webkitRequestFullscreen();
+    } else {
+      // Single tap → Toggle mute
+      videoEl.muted = !videoEl.muted;
+    }
+
+    lastTap = now;
+  });
 
   // When video is ready, reveal it
   videoEl.addEventListener("loadeddata", () => {
