@@ -586,6 +586,14 @@ const renderMyOrders = async () => {
 /* ------------------ Shop rendering + card creation ------------------ */
 /* ------------------ Shop rendering + card creation ------------------ */
 const createProductCard = (product) => {
+  // --- Visibility logic: hosts & VIPs ---
+  if (
+    (product.hostOnly && !currentUser?.isHost) || 
+    (product.vipOnly && !currentUser?.isVIP) ||
+    (product.hostOnly && currentUser?.isVIP) ||
+    (product.vipOnly && currentUser?.isHost)
+  ) return null; // skip rendering
+
   const card = document.createElement('div');
   card.className = 'product-card';
 
@@ -602,12 +610,12 @@ const createProductCard = (product) => {
   badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
   if (avail <= 0) badge.style.background = '#666';
 
-  // Title - clicking the name opens the description modal
+  // Title
   const title = document.createElement('h3');
   title.textContent = product.name || 'Unnamed';
   title.className = 'product-title';
   title.style.cursor = 'pointer';
-  title.addEventListener('click', () => openProductModal(product)); // <— this triggers description modal
+  title.addEventListener('click', () => openProductModal(product));
 
   // Price
   const price = document.createElement('div');
@@ -618,15 +626,20 @@ const createProductCard = (product) => {
   const btn = document.createElement('button');
   btn.className = 'buy-btn';
   btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
-  if (avail <= 0 || (product.hostOnly && currentUser && !currentUser.isHost) ||
-      (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
+
+  if (
+    avail <= 0 ||
+    (product.hostOnly && currentUser && !currentUser.isHost) ||
+    (product.vipOnly && currentUser && !currentUser.isVIP) ||
+    (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)
+  ) {
     btn.disabled = true;
   }
+
   btn.addEventListener('click', () => redeemProduct(product));
 
   // Assemble the card
   card.append(badge, img, title, price, btn);
-
   return card;
 };
 
@@ -637,8 +650,7 @@ const redeemProduct = async (product) => {
   if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
 
   showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
-    // Show spinner immediately
-    showSpinner();
+    showSpinner(); // show spinner immediately
 
     try {
       const userRef = doc(db, 'users', currentUser.uid);
@@ -687,6 +699,7 @@ const redeemProduct = async (product) => {
       animateNumber(DOM.cash, prevCash, newCash);
       await renderShop();
       triggerConfetti();
+
       if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
       else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
       else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
@@ -694,8 +707,7 @@ const redeemProduct = async (product) => {
       console.error(e);
       showThemedMessage('Redemption Failed', e.message || 'Try again');
     } finally {
-      // Hide spinner after processing with fade-out
-      hideSpinner();
+      hideSpinner(); // hide spinner after processing
     }
   });
 };
