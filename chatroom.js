@@ -1345,51 +1345,56 @@ function loadHost(idx) {
   giftAmountEl.textContent = "1";
 
 
-// --- Meet button ---
-  let meetBtn = document.getElementById("meetBtn");
-  if (!meetBtn) {
-    meetBtn = document.createElement("button");
-    meetBtn.id = "meetBtn";
-    meetBtn.className = "fiery-btn"; // add your fiery styles from gift slider
-    detailsEl.parentNode.appendChild(meetBtn);
-  }
-  meetBtn.textContent = `[meet ${host.chatId}]`;
+ // --- Meet button ---
+let meetBtn = document.getElementById("meetBtn");
+if (!meetBtn) {
+  meetBtn = document.createElement("button");
+  meetBtn.id = "meetBtn";
+  meetBtn.className = "fiery-btn"; // keep the color you like
+  detailsEl.parentNode.appendChild(meetBtn);
+}
+meetBtn.textContent = `[meet ${host.chatId}]`;
 
-  meetBtn.onclick = async () => {
-    const meetCost = 21;
-    if (!currentUser) return showGiftAlert("Please log in to meet ⭐");
+meetBtn.onclick = async () => {
+  const meetCost = 21;
+  if (!currentUser) return showGiftAlert("Please log in to meet ⭐");
 
-    const senderRef = doc(db, "users", currentUser.uid);
-    const hostRef = doc(db, "users", host.id);
+  const confirmMeet = confirm(`Meet ${host.chatId} for ${meetCost} stars?`);
+  if (!confirmMeet) return;
 
-    try {
-      await runTransaction(db, async (tx) => {
-        const senderSnap = await tx.get(senderRef);
-        const hostSnap = await tx.get(hostRef);
+  const senderRef = doc(db, "users", currentUser.uid);
+  const hostRef = doc(db, "users", host.id);
 
-        if (!senderSnap.exists()) throw new Error("Your user record not found.");
-        if (!hostSnap.exists()) tx.set(hostRef, { stars: 0 }, { merge: true });
+  try {
+    await runTransaction(db, async (tx) => {
+      const senderSnap = await tx.get(senderRef);
+      const hostSnap = await tx.get(hostRef);
 
-        const senderData = senderSnap.data();
-        if ((senderData.stars || 0) < meetCost) throw new Error("Insufficient stars to meet host");
+      if (!senderSnap.exists()) throw new Error("Your user record not found.");
+      if (!hostSnap.exists()) tx.set(hostRef, { stars: 0 }, { merge: true });
 
-        tx.update(senderRef, { stars: increment(-meetCost) });
-        tx.set(doc(db, "meetRequests", `${currentUser.uid}_${host.id}`), {
-          from: currentUser.uid,
-          to: host.id,
-          cost: meetCost,
-          timestamp: serverTimestamp(),
-        });
+      const senderData = senderSnap.data();
+      if ((senderData.stars || 0) < meetCost) throw new Error("Insufficient stars to meet host");
+
+      // Deduct stars
+      tx.update(senderRef, { stars: increment(-meetCost) });
+
+      // Log the meet request
+      tx.set(doc(db, "meetRequests", `${currentUser.uid}_${host.id}`), {
+        from: currentUser.uid,
+        to: host.id,
+        cost: meetCost,
+        timestamp: serverTimestamp(),
       });
+    });
 
-      showGiftAlert(`🔥 You spent ${meetCost} stars to meet ${host.chatId}!`);
-      // Open your matchmaking modal here
-      openMeetModal(host); // implement this function
-    } catch (err) {
-      console.error("❌ Meet request failed:", err);
-      showGiftAlert(`⚠️ ${err.message}`);
-    }
-  };
+    showGiftAlert(`🔥 You spent ${meetCost} stars to meet ${host.chatId}!`);
+    openMeetModal(host); // trigger your matchmaking modal
+  } catch (err) {
+    console.error("❌ Meet request failed:", err);
+    showGiftAlert(`⚠️ ${err.message}`);
+  }
+};
 
   console.log("🎬 Loaded host video:", host.videoUrl);
 }
