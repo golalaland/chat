@@ -715,8 +715,7 @@ header {
   </div>
 </div>
 
-
-<!-- Host Tabs -->
+<!-- Host Tabs (unchanged) -->
 <div class="host-tabs" id="hostTabs" style="display:none;">
   <button class="tab-btn active" data-tab="vip">VIP</button>
   <button class="tab-btn" data-tab="friends">Friends</button>
@@ -724,24 +723,33 @@ header {
 </div>
 
 <!-- User Tabs -->
-<div class="host-tabs" id="userTabs">
+<div class="user-tabs" id="userTabs" style="display:none;">
   <button class="tab-btn active" data-tab="shop">Shop</button>
   <button class="tab-btn" data-tab="orders">My Orders</button>
+  <!-- New VIP-only badges tab -->
+  <button class="tab-btn" data-tab="vip-badges" data-vip-only="true">Badges</button>
 </div>
 
-<!-- Stats -->
-<div id="tab-content" class="tab-content" style="display:none;">
-  <div class="stat-block">
+<!-- Stats / Content -->
+<div id="tabContent" class="tab-content" style="display:none;">
+  <!-- Host Stats -->
+  <div class="stat-block" id="vip-stat-block">
     <div class="stat-value" id="vip-stat">0</div>
     <div class="stat-label">VIPs on your Tab</div>
   </div>
-  <div class="stat-block">
+  <div class="stat-block" id="friends-stat-block">
     <div class="stat-value" id="friends-stat">0</div>
     <div class="stat-label">Friends Invited</div>
   </div>
-  <div class="stat-block">
+  <div class="stat-block" id="badges-stat-block">
     <div class="stat-value" id="badges-stat">0</div>
     <div class="stat-label">Badges Collected</div>
+  </div>
+
+  <!-- VIP-only badges (new, distinct) -->
+  <div class="stat-block" id="vip-badges-stat-block" style="display:none;">
+    <div class="stat-value" id="vip-badges-stat">0</div>
+    <div class="stat-label">VIP Badges Collected</div>
   </div>
 </div>
 
