@@ -742,6 +742,7 @@ function openPaystackPayment(planId) {
 }
 
 /* ------------------ RENDER SHOP ------------------ */
+// Render the shop items dynamically
 const renderShop = async () => {
   if (!DOM.shopItems) return;
   showSpinner();
@@ -775,10 +776,12 @@ const renderShop = async () => {
       const card = createProductCard(product);
       if (!card) return; // skip invisible cards
 
+      // Fade-in animation
       card.style.opacity = '0';
       card.style.animation = `fadeInUp 0.35s forwards`;
       card.style.animationDelay = `${delay}s`;
       delay += 0.05;
+
       DOM.shopItems.appendChild(card);
     });
   } catch (e) {
