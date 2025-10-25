@@ -714,6 +714,8 @@ header {
     </div>
   </div>
 </div>
+
+
 <!-- Host Tabs -->
 <div class="host-tabs" id="hostTabs" style="display:none;">
   <button class="tab-btn active" data-tab="vip">VIP</button>
@@ -722,33 +724,24 @@ header {
 </div>
 
 <!-- User Tabs -->
-<div class="host-tabs" id="userTabs" style="display:none;">
+<div class="host-tabs" id="userTabs">
   <button class="tab-btn active" data-tab="shop">Shop</button>
   <button class="tab-btn" data-tab="orders">My Orders</button>
-  <!-- VIP-only badges tab, hidden by default -->
-  <button class="tab-btn" data-tab="vip-badges" data-vip-only="true" style="display:none;">Badges</button>
 </div>
 
-<!-- Stats / Main Content -->
-<div id="tabContent" class="tab-content" style="display:none;">
-  <!-- Host Stats -->
-  <div class="stat-block" id="vip-stat-block">
+<!-- Stats -->
+<div id="tab-content" class="tab-content" style="display:none;">
+  <div class="stat-block">
     <div class="stat-value" id="vip-stat">0</div>
     <div class="stat-label">VIPs on your Tab</div>
   </div>
-  <div class="stat-block" id="friends-stat-block">
+  <div class="stat-block">
     <div class="stat-value" id="friends-stat">0</div>
     <div class="stat-label">Friends Invited</div>
   </div>
-  <div class="stat-block" id="badges-stat-block">
+  <div class="stat-block">
     <div class="stat-value" id="badges-stat">0</div>
     <div class="stat-label">Badges Collected</div>
-  </div>
-
-  <!-- VIP Badges, hidden by default -->
-  <div class="stat-block" id="vip-badges-stat-block" style="display:none;">
-    <div class="stat-value" id="vip-badges-stat">0</div>
-    <div class="stat-label">VIP Badges Collected</div>
   </div>
 </div>
 
@@ -776,14 +769,13 @@ header {
       </div>
       <div class="friend-subtext">Regular Member</div>
     </div>
-    <!-- Add more friends dynamically -->
+
+    <!-- Add more friends here dynamically -->
   </div>
 </div>
 
-<!-- Shop Items -->
 <div class="shop-grid" id="shop-items"></div> 
 
-<!-- Orders -->
 <div class="tab-content" id="orders-content" style="display:none;">
   <h3 style="margin-bottom:1rem;">My Orders</h3>
   <div id="orders-list" class="orders-list"></div>
