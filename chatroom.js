@@ -1250,105 +1250,109 @@ function loadHost(idx) {
   currentIndex = idx;
 
   const videoContainer = document.getElementById("featuredHostVideo");
-  const shimmer = document.querySelector(".video-shimmer");
+  if (!videoContainer) return;
 
-  // Reset content + show shimmer
+  // Clear previous
   videoContainer.innerHTML = "";
-  shimmer.style.display = "block";
+  videoContainer.style.position = "relative";
+  videoContainer.style.touchAction = "manipulation"; // helps prevent double-tap zoom
 
-  // 🎥 Create video dynamically
+  // Shimmer
+  const shimmer = document.createElement("div");
+  shimmer.className = "video-shimmer";
+  videoContainer.appendChild(shimmer);
+
+  // Create video
   const videoEl = document.createElement("video");
   videoEl.src = host.videoUrl || "";
   videoEl.autoplay = true;
-  videoEl.muted = true;
+  videoEl.muted = true;        // required for autoplay
   videoEl.loop = true;
   videoEl.playsInline = true;
   videoEl.preload = "metadata";
   videoEl.style.width = "100%";
+  videoEl.style.height = "100%";
+  videoEl.style.objectFit = "cover";
   videoEl.style.borderRadius = "8px";
   videoEl.style.display = "none";
   videoEl.style.cursor = "pointer";
-  videoEl.style.position = "relative";
-  videoEl.style.zIndex = "1";
+  videoEl.setAttribute("webkit-playsinline", "true");
 
-  // 🔊 Hint overlay
+  // Hint (bottom center)
   const hint = document.createElement("div");
-  hint.textContent = "Tap to unmute 🔊";
-  Object.assign(hint.style, {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    background: "rgba(0, 0, 0, 0.5)",
-    color: "#fff",
-    padding: "6px 14px",
-    borderRadius: "20px",
-    fontSize: "14px",
-    opacity: "0",
-    transition: "opacity 0.4s ease",
-    zIndex: "2",
-    pointerEvents: "none",
-  });
-
-  videoContainer.style.position = "relative";
+  hint.className = "video-hint";
+  hint.textContent = "Tap to unmute";
   videoContainer.appendChild(hint);
 
-  // Fade hint in initially
-  setTimeout(() => { hint.style.opacity = "1"; }, 400);
+  // Helpers for hint fade
+  function showHint(msg, timeout = 1400) {
+    hint.textContent = msg;
+    hint.classList.add("show");
+    clearTimeout(hint._t);
+    hint._t = setTimeout(() => hint.classList.remove("show"), timeout);
+  }
 
-  // Disable default zoom on double tap
-  videoEl.addEventListener("touchstart", (e) => {
-    if (e.touches.length > 1) return;
-    e.preventDefault();
+  // Fullscreen helpers (cross-browser)
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement);
+  }
+  function enterFullscreen() {
+    if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
+    if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen(); // iOS Safari native fullscreen
+    if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
+  }
+  function exitFullscreen() {
+    if (document.exitFullscreen) return document.exitFullscreen();
+    if (document.webkitExitFullscreen) return document.webkitExitFullscreen?.();
+  }
+  function toggleFullscreen() {
+    if (isFullscreen()) exitFullscreen();
+    else enterFullscreen();
+  }
+
+  // Tap / double-tap detection supporting both touch and click
+  let lastTap = 0;
+  function onTapEvent(e) {
+    // allow native controls if user tapped a control element (not needed here but safe)
+    const now = Date.now();
+    const diff = now - lastTap;
+    lastTap = now;
+
+    if (diff > 0 && diff < 300) {
+      // double-tap
+      toggleFullscreen();
+    } else {
+      // single-tap: toggle mute/unmute
+      videoEl.muted = !videoEl.muted;
+      if (videoEl.muted) showHint("Tap to unmute", 1200);
+      else showHint("Sound on", 900);
+    }
+  }
+
+  // Attach both click and touchend so it works on mobile & desktop
+  videoEl.addEventListener("click", onTapEvent);
+  videoEl.addEventListener("touchend", (ev) => {
+    // don't swallow multi-touch (pinch) — if more than 1 touch, ignore
+    if (ev.changedTouches && ev.changedTouches.length > 1) return;
+    // prevent double-tap zoom only for this element
+    ev.preventDefault && ev.preventDefault();
+    onTapEvent(ev);
   }, { passive: false });
 
-  // Tap + double-tap detection
-  let lastTap = 0;
-  videoEl.addEventListener("click", (e) => {
-    const now = Date.now();
-    const tapDiff = now - lastTap;
-
-    if (tapDiff < 300 && tapDiff > 0) {
-      // Double tap → toggle fullscreen
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else if (videoEl.requestFullscreen) {
-        videoEl.requestFullscreen();
-      } else if (videoEl.webkitEnterFullscreen) {
-        videoEl.webkitEnterFullscreen(); // iPhone Safari
-      } else if (videoEl.webkitRequestFullscreen) {
-        videoEl.webkitRequestFullscreen();
-      }
-    } else {
-      // Single tap → toggle mute
-      videoEl.muted = !videoEl.muted;
-
-      if (videoEl.muted) {
-        hint.textContent = "Tap to unmute 🔊";
-        hint.style.opacity = "1";
-        setTimeout(() => (hint.style.opacity = "0"), 1500);
-      } else {
-        hint.textContent = "Sound on 🔈";
-        hint.style.opacity = "1";
-        setTimeout(() => (hint.style.opacity = "0"), 1200);
-      }
-    }
-
-    lastTap = now;
-  });
-
-  // When video is ready, reveal it
+  // Show video when ready
   videoEl.addEventListener("loadeddata", () => {
     shimmer.style.display = "none";
     videoEl.style.display = "block";
+    // show initial hint because video starts muted
+    showHint("Tap to unmute", 1400);
+    // ensure autoplay tries to play
+    videoEl.play().catch(() => {});
   });
 
-  // Append to container
+  // append video after everything set
   videoContainer.appendChild(videoEl);
 
-  console.log("🎬 Loaded host video:", host.videoUrl);
-
-  // 🧍 Username + details
+  // update UI text and avatar highlight (your existing logic)
   usernameEl.textContent = host.chatId || "Unknown Host";
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
@@ -1356,14 +1360,14 @@ function loadHost(idx) {
   const flair = gender === "male" ? "😎" : "💋";
   detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
 
-  // Highlight avatar
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
 
-  // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
+
+  console.log("🎬 Loaded host video:", host.videoUrl);
 }
 
 /* ---------- Gift slider ---------- */
