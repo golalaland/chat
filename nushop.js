@@ -565,13 +565,13 @@ const renderMyOrders = async () => {
 
 /* ------------------ CREATE PRODUCT CARD (Updated for Hosted Paystack) ------------------ */
 const createProductCard = (product) => {
-  // Hide products that shouldn’t appear for this user
+  // Skip invisible cards for host/vip restrictions
   if ((product.hostOnly && currentUser?.isVIP) || (product.vipOnly && currentUser?.isHost)) return null;
 
   const card = document.createElement('div');
   card.className = 'product-card';
 
-  // Product image
+  // Image
   const img = document.createElement('img');
   img.src = product.img || 'https://via.placeholder.com/300';
   img.alt = product.name || 'Item';
@@ -590,34 +590,50 @@ const createProductCard = (product) => {
   title.style.cursor = 'pointer';
   title.addEventListener('click', () => openProductModal(product));
 
-  // Price
+  // Price (for redeemable products)
   const price = document.createElement('div');
   price.className = 'price';
   price.textContent = `${Number(product.cost) || 0} ⭐`;
 
-  // Action button
-  const btn = document.createElement('button');
+  // Button
+  let btn = document.createElement('button');
 
   if (product.subscriberProduct) {
-    // VIP / subscription product
+    // Gold gradient "Join" button
     btn.className = 'subscriber-btn';
-    btn.textContent = 'Join VIP';
+    btn.textContent = 'Join';
+    btn.style.background = 'linear-gradient(90deg, #FFD700, #FFA500)';
+    btn.style.color = '#fff';
+    btn.style.fontWeight = 'bold';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '8px';
+    btn.style.padding = '0.6rem 1.2rem';
+    btn.style.fontSize = '1rem';
     btn.style.cursor = 'pointer';
+    btn.style.boxShadow = '0 4px 10px rgba(255, 215, 0, 0.5)';
+    btn.style.transition = 'transform 0.2s, box-shadow 0.2s';
+
+    btn.addEventListener('mouseenter', () => {
+      btn.style.transform = 'translateY(-2px)';
+      btn.style.boxShadow = '0 6px 15px rgba(255, 215, 0, 0.7)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transform = 'translateY(0)';
+      btn.style.boxShadow = '0 4px 10px rgba(255, 215, 0, 0.5)';
+    });
+
     if (avail <= 0) btn.disabled = true;
 
+    // Open Paystack hosted page with email + phone prefilled
     btn.addEventListener('click', () => {
-      if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to join VIP.');
-
-      // Build Paystack hosted link with prefilled fields
+      if (!currentUser) return alert('Please log in first.');
       const email = encodeURIComponent(currentUser.email || '');
       const phone = encodeURIComponent(currentUser.phone || '');
-      const planId = product.paystackPlanId || '';
-      const paystackLink = `https://paystack.com/pay/${planId}?email=${email}&phone=${phone}`;
-
-      window.open(paystackLink, '_blank'); // opens hosted payment page
+      const link = `https://paystack.com/pay/${product.paystackPlanId}?email=${email}&phone=${phone}`;
+      window.open(link, '_blank');
     });
   } else {
-    // Normal redeemable product
+    // Redeemable product button
     btn.className = 'buy-btn';
     btn.textContent = 'Redeem';
     if (avail <= 0 || (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
