@@ -624,24 +624,32 @@ const createProductCard = (product) => {
 
     if (avail <= 0) btn.disabled = true;
 
-    // Open Paystack hosted page with email + phone prefilled
+    // 🟨 Open Paystack hosted page with prefilled details
     btn.addEventListener('click', () => {
       if (!currentUser) return alert('Please log in first.');
       const email = encodeURIComponent(currentUser.email || '');
       const phone = encodeURIComponent(currentUser.phone || '');
-      const link = `https://paystack.com/pay/${product.paystackPlanId}?email=${email}&phone=${phone}`;
+      const planId = product.paystackPlanId?.startsWith('PLN_') ? product.paystackPlanId.slice(4) : product.paystackPlanId;
+      const link = `https://paystack.com/pay/${planId}?email=${email}&phone=${phone}`;
       window.open(link, '_blank');
     });
+
   } else {
-    // Redeemable product button
+    // Regular redeemable product
     btn.className = 'buy-btn';
     btn.textContent = 'Redeem';
-    if (avail <= 0 || (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)) {
+    if (
+      avail <= 0 ||
+      (product.name?.toLowerCase() === 'redeem cash balance' &&
+        currentUser &&
+        Number(currentUser.cash) <= 0)
+    ) {
       btn.disabled = true;
     }
     btn.addEventListener('click', () => redeemProduct(product));
   }
 
+  // Assemble
   card.append(badge, img, title);
   if (!product.subscriberProduct) card.append(price);
   card.append(btn);
