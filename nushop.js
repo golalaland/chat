@@ -570,75 +570,143 @@ const createProductCard = (product) => {
   if (
     (product.hostOnly && currentUser?.isVIP) || // VIPs cannot see host-only
     (product.vipOnly && currentUser?.isHost)   // Hosts cannot see VIP-only
-  ) return null; // don't render this card at all
+  ) return null; // skip this product
 
   const card = document.createElement('div');
   card.className = 'product-card';
+  card.style.display = 'flex';
+  card.style.flexDirection = 'column';
+  card.style.alignItems = 'center';
+  card.style.padding = '1rem';
+  card.style.border = '1px solid #ddd';
+  card.style.borderRadius = '12px';
+  card.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
+  card.style.margin = '0.5rem';
+  card.style.background = '#fff';
 
-  // Image (click to preview)
+  // --- Image ---
   const img = document.createElement('img');
   img.src = product.img || 'https://via.placeholder.com/300';
   img.alt = product.name || 'Item';
+  img.style.width = '100%';
+  img.style.borderRadius = '8px';
+  img.style.cursor = 'pointer';
   img.addEventListener('click', () => previewImage(img.src));
 
-  // Availability badge
-  const avail = Number(product.available) || 0;
+  // --- Availability badge ---
   const badge = document.createElement('span');
   badge.className = 'availability-badge';
+  const avail = Number(product.available) || 0;
   badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
-  if (avail <= 0) badge.style.background = '#666';
+  badge.style.padding = '0.25rem 0.5rem';
+  badge.style.borderRadius = '6px';
+  badge.style.background = avail > 0 ? '#4caf50' : '#666';
+  badge.style.color = '#fff';
+  badge.style.fontSize = '0.8rem';
+  badge.style.marginBottom = '0.5rem';
 
-  // Title
+  // --- Title ---
   const title = document.createElement('h3');
   title.textContent = product.name || 'Unnamed';
   title.className = 'product-title';
+  title.style.margin = '0.5rem 0';
   title.style.cursor = 'pointer';
   title.addEventListener('click', () => openProductModal(product));
 
-  // Price (only for non-subscriber products)
-  if (!product.subscriberProduct) {
-    const price = document.createElement('div');
-    price.className = 'price';
-    price.textContent = `${Number(product.cost) || 0} ⭐`;
-    card.appendChild(price);
-  }
+  // --- Price ---
+  const price = document.createElement('div');
+  price.className = 'price';
+  price.style.marginBottom = '0.5rem';
+  price.style.fontWeight = 'bold';
+  price.textContent = `${Number(product.cost) || 0} ⭐`;
 
-  // Button
+  // --- Button ---
   const btn = document.createElement('button');
 
   if (product.subscriberProduct) {
-    // Subscriber product (Join button)
-    btn.className = 'buy-btn subscriber-btn'; // inherits styles from buy-btn
+    // Subscriber / VIP product
+    btn.className = 'subscriber-btn';
     btn.textContent = 'Join';
     btn.style.background = 'linear-gradient(90deg, #fbc2eb, #a18cd1)';
     btn.style.color = '#fff';
     btn.style.fontWeight = 'bold';
-    btn.style.width = '100%'; // fill button width like Redeem
-    btn.style.padding = '0.75rem 0';
+    btn.style.fontSize = '1rem';
+    btn.style.padding = '0.6rem 1.2rem';
+    btn.style.border = 'none';
     btn.style.borderRadius = '8px';
     btn.style.cursor = 'pointer';
+    btn.style.width = '100%';
+    btn.style.transition = 'all 0.3s ease';
+
+    // Hover effect
+    btn.addEventListener('mouseenter', () => {
+      btn.style.transform = 'scale(1.05)';
+      btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transform = 'scale(1)';
+      btn.style.boxShadow = 'none';
+    });
+
+    // Disable if not available
     if (avail <= 0) btn.disabled = true;
 
-    // Paystack payment
-    btn.addEventListener('click', () => openPaystackPayment(product.paystackPlanId));
+    // Hide price for subscriber products
+    price.style.display = 'none';
+
+    // Click triggers Paystack VIP subscription
+    btn.addEventListener('click', () => {
+      if (!currentUser) {
+        alert("Please log in first!");
+        return;
+      }
+      import("./paystack.js").then(({ launchSubscription }) => {
+        launchSubscription(currentUser);
+      });
+    });
 
   } else {
-    // Regular redeem product
+    // Regular redeemable product
     btn.className = 'buy-btn';
     btn.textContent = 'Redeem';
+    btn.style.width = '100%';
+    btn.style.padding = '0.6rem';
+    btn.style.borderRadius = '8px';
+    btn.style.border = 'none';
+    btn.style.cursor = 'pointer';
+    btn.style.background = '#ff9800';
+    btn.style.color = '#fff';
+    btn.style.fontWeight = 'bold';
+    btn.style.transition = 'all 0.2s ease';
+
+    btn.addEventListener('mouseenter', () => {
+      btn.style.background = '#e68900';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.background = '#ff9800';
+    });
+
     if (
       avail <= 0 ||
       (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)
     ) {
       btn.disabled = true;
+      btn.style.background = '#999';
+      btn.style.cursor = 'not-allowed';
     }
+
     btn.addEventListener('click', () => redeemProduct(product));
   }
 
-  // Assemble card
-  card.append(badge, img, title, btn);
-  return card;
-};
+// --- Assemble the card ---
+card.append(badge, img, title);
+
+// Show price only for regular products
+if (!product.subscriberProduct) {
+  card.append(price);
+}
+
+card.append(btn);
 
 /* ------------------ Redeem product ------------------ */
 const redeemProduct = async (product) => {
