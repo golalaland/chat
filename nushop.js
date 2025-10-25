@@ -586,13 +586,11 @@ const renderMyOrders = async () => {
 /* ------------------ Shop rendering + card creation ------------------ */
 /* ------------------ Shop rendering + card creation ------------------ */
 const createProductCard = (product) => {
-  // --- Visibility logic: hosts & VIPs ---
+  // --- Visibility logic: skip rendering if user shouldn't see this product ---
   if (
-    (product.hostOnly && !currentUser?.isHost) || 
-    (product.vipOnly && !currentUser?.isVIP) ||
-    (product.hostOnly && currentUser?.isVIP) ||
-    (product.vipOnly && currentUser?.isHost)
-  ) return null; // skip rendering
+    (product.hostOnly && currentUser?.isVIP) || // VIPs cannot see host-only
+    (product.vipOnly && currentUser?.isHost)   // Hosts cannot see VIP-only
+  ) return null; // don't render this card at all
 
   const card = document.createElement('div');
   card.className = 'product-card';
@@ -625,12 +623,11 @@ const createProductCard = (product) => {
   // Redeem button
   const btn = document.createElement('button');
   btn.className = 'buy-btn';
-  btn.textContent = product.hostOnly ? (currentUser?.isHost ? 'Redeem' : 'Host Only') : 'Redeem';
+  btn.textContent = 'Redeem';
 
+  // Disable button if not available or special conditions
   if (
     avail <= 0 ||
-    (product.hostOnly && currentUser && !currentUser.isHost) ||
-    (product.vipOnly && currentUser && !currentUser.isVIP) ||
     (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)
   ) {
     btn.disabled = true;
