@@ -1363,43 +1363,59 @@ fetchFeaturedHosts();
   // --- Initial random values for first load ---
 (function() {
   const onlineCountEl = document.getElementById('onlineCount');
-  const maxCount = 1000;
-  const initialOptions = [100, 105, 405, 455, 364, 224];
-
-  // Helper: get a random integer between min and max (inclusive)
-  function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+  const storageKey = 'lastOnlineCount';
+  
+  // Helper: format number as K if > 999
+  function formatCount(n) {
+    if(n >= 1000) return (n/1000).toFixed(n%1000===0?0:1) + 'K';
+    return n;
   }
-
-  // Load last count from localStorage or pick random initial with slight variation
-  let lastStored = parseInt(localStorage.getItem('onlineCount'));
-  let currentCount;
-  if (lastStored) {
-    currentCount = lastStored;
-  } else {
-    let base = initialOptions[Math.floor(Math.random() * initialOptions.length)];
-    // Add a small random offset +/- 5-15 for realism
-    currentCount = Math.max(0, base + randInt(-15, 15));
+  
+  // Function to get a random starting value
+  function getRandomStart() {
+    const options = [100, 105, 405, 455, 364, 224];
+    return options[Math.floor(Math.random() * options.length)];
   }
+  
+  // Initialize count from storage or random
+  let count = parseInt(localStorage.getItem(storageKey)) || getRandomStart();
+  onlineCountEl.textContent = formatCount(count);
+  
+  // Increment pattern
+  const increments = [5,3,4,1];
+  let idx = 0;
 
-  onlineCountEl.textContent = currentCount;
+  // Random threshold to start decreasing (2K–5K)
+  let decreaseThreshold = 2000 + Math.floor(Math.random()*3000); 
+  
+  setInterval(() => {
+    if(count < 5000) {
+      // Occasionally spike
+      if(Math.random() < 0.05) {
+        count += Math.floor(Math.random()*500); 
+      } else {
+        count += increments[idx % increments.length];
+      }
+      if(count > 5000) count = 5000;
+      idx++;
+    }
+    onlineCountEl.textContent = formatCount(count);
+    localStorage.setItem(storageKey, count);
+    
+    // Reset threshold occasionally
+    if(count >= decreaseThreshold) {
+      decreaseThreshold = 2000 + Math.floor(Math.random()*3000);
+    }
+    
+  }, 4000);
 
-  function updateCount() {
-    // Random human-like increment
-    const increments = [1, 3, 4, 5];
-    const randomIncrement = increments[Math.floor(Math.random() * increments.length)];
-
-    // Random slight fluctuation (+/- 1) for realism
-    const fluctuation = Math.random() < 0.3 ? -1 : 0;
-
-    currentCount = Math.min(maxCount, currentCount + randomIncrement + fluctuation);
-    currentCount = Math.max(0, currentCount); // safety check
-    onlineCountEl.textContent = currentCount;
-
-    // Save last count for this user
-    localStorage.setItem('onlineCount', currentCount);
-  }
-
-  // Update every 6 seconds
-  setInterval(updateCount, 6000);
+  // Slow decrease every 30s if above threshold
+  setInterval(() => {
+    if(count > decreaseThreshold) {
+      count -= 10;
+      if(count < 500) count = 500;
+      onlineCountEl.textContent = formatCount(count);
+      localStorage.setItem(storageKey, count);
+    }
+  }, 30000);
 })();
