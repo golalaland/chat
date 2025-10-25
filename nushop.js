@@ -187,7 +187,8 @@ document.getElementById('closePreview')?.addEventListener('click', () => {
 /* ------------------ Host stats updater ------------------ */
 const updateHostStats = async (newUser) => {
   const referrerId = newUser.invitedBy;
-  if (!referrerId) return;
+  if (!referrerId) return; // no host to update
+
   const sanitizedId = String(referrerId).replace(/[.#$[\]]/g, ',');
   const hostRef = doc(db, 'users', sanitizedId);
 
@@ -197,11 +198,13 @@ const updateHostStats = async (newUser) => {
       if (!hostSnap.exists()) return;
 
       const hostData = hostSnap.data() || {};
-      const friends = Array.isArray(hostData.hostFriends)
-        ? hostData.hostFriends.slice()
-        : [];
+      const friends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends.slice() : [];
 
-      if (!friends.find(f => f.email === newUser.email)) {
+      // Check if this user already exists in hostFriends
+      const existing = friends.find(f => f.email === newUser.email);
+
+      if (!existing) {
+        // Add to hostFriends
         friends.push({
           email: newUser.email,
           chatId: newUser.chatId || '',
@@ -212,10 +215,13 @@ const updateHostStats = async (newUser) => {
         });
       }
 
-      const hostVIP = hostData.hostVIP || 0;
-      const newVIP = newUser.isVIP ? hostVIP + 1 : hostVIP;
+      // Only increment hostVIP if new user is VIP AND not already counted
+      let hostVIP = hostData.hostVIP || 0;
+      if (newUser.isVIP && !existing) {
+        hostVIP += 1;
+      }
 
-      t.update(hostRef, { hostFriends: friends, hostVIP: newVIP });
+      t.update(hostRef, { hostFriends: friends, hostVIP });
     });
   } catch (err) {
     console.error('Failed to update host stats:', err);
@@ -274,18 +280,17 @@ const loadCurrentUser = async () => {
         storedUser.displayName ||
         storedUser.email.split('@')[0] ||
         'Guest';
-
-    if (DOM.stars)
-      DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-    if (DOM.cash)
-      DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-    if (DOM.hostTabs)
-      DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+    if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+    if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
 
     updateHostPanels();
 
-    // --- Update host stats if invited ---
-    if (currentUser?.invitedBy) {
+    // --- Only update host stats if first time VIP/Host addition ---
+    if (currentUser?.invitedBy && currentUser._firstLoad === undefined) {
+      // Mark first load to prevent reload increments
+      currentUser._firstLoad = false;
+
       await updateHostStats({
         email: currentUser.email || '',
         chatId: currentUser.chatId || '',
@@ -298,11 +303,8 @@ const loadCurrentUser = async () => {
 
     // --- Setup VIP/Host features ---
     try {
-      if (currentUser.isVIP) {
-        setupVIPButton();
-      } else if (currentUser.isHost) {
-        setupHostGiftListener();
-      }
+      if (currentUser.isVIP) setupVIPButton();
+      else if (currentUser.isHost) setupHostGiftListener();
     } catch (e) {
       console.error('Failed to initialize VIP/Host features:', e);
     }
@@ -320,105 +322,83 @@ const loadCurrentUser = async () => {
           storedUser.displayName ||
           storedUser.email.split('@')[0] ||
           'Guest';
-      if (DOM.stars)
-        DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
-      if (DOM.cash)
-        DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-      if (DOM.hostTabs)
-        DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+      if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+      if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+      if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
 
       updateHostPanels();
       renderShop().catch(console.error);
 
-/* --- Invitee reward flow --- */
-try {
-  if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
-    let inviterName = data.hostName || data.invitedBy;
-    let inviteeStars = data.inviteeGiftStars;
-
-    try {
-      // Fetch inviter details dynamically
-      const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
-      const invSnap = await getDoc(invRef);
-      if (invSnap.exists()) {
-        const invData = invSnap.data();
-        inviterName =
-          invData.chatId ||
-          invData.hostName ||
-          (invData.email ? invData.email.split('@')[0] : inviterName);
-        // Use inviter’s configured reward amount if available
-        inviteeStars = inviteeStars || invData.inviteeGiftStars;
-      }
-    } catch (err) {
-      console.warn('Could not fetch inviter details:', err);
-    }
-
-    // Fallback if none set anywhere
-    inviteeStars = inviteeStars || 50;
-
-    showReward(
-      `You’ve been gifted <b>+${inviteeStars}⭐️</b> for joining <b>${inviterName}</b>’s VIP Tab.`,
-      '⭐ Congratulations! ⭐️'
-    );
-
-    await updateDoc(userRef, {
-      inviteeGiftShown: true,
-      inviteeGiftStars: inviteeStars
-    });
-  }
-} catch (e) {
-  console.error('Invitee reward flow error', e);
-}
-
-/* --- Inviter reward flow --- */
-try {
-  const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-  const pending = friendsArr.find(f => !f.giftShown && f.email);
-
-  if (pending) {
-    const friendName =
-      pending.vipName ||
-      pending.chatId ||
-      (pending.email ? pending.email.split('@')[0] : 'Friend');
-
-    let inviterStars = pending.giftStars;
-
-    // Fetch configurable inviter star amount
-    if (!inviterStars) {
+      /* --- Invitee reward flow --- */
       try {
-        const sysRef = doc(db, 'config', 'rewards');
-        const sysSnap = await getDoc(sysRef);
-        if (sysSnap.exists()) {
-          inviterStars = sysSnap.data().inviterRewardStars;
+        if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
+          let inviterName = data.hostName || data.invitedBy;
+          let inviteeStars = data.inviteeGiftStars;
+
+          try {
+            const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
+            const invSnap = await getDoc(invRef);
+            if (invSnap.exists()) {
+              const invData = invSnap.data();
+              inviterName =
+                invData.chatId ||
+                invData.hostName ||
+                (invData.email ? invData.email.split('@')[0] : inviterName);
+              inviteeStars = inviteeStars || invData.inviteeGiftStars;
+            }
+          } catch (err) {
+            console.warn('Could not fetch inviter details:', err);
+          }
+
+          inviteeStars = inviteeStars || 50;
+
+          showReward(
+            `You’ve been gifted <b>+${inviteeStars}⭐️</b> for joining <b>${inviterName}</b>’s VIP Tab.`,
+            '⭐ Congratulations! ⭐️'
+          );
+
+          await updateDoc(userRef, {
+            inviteeGiftShown: true,
+            inviteeGiftStars: inviteeStars
+          });
         }
-      } catch (err) {
-        console.warn('Could not fetch reward config:', err);
+      } catch (e) {
+        console.error('Invitee reward flow error', e);
       }
-    }
 
-    inviterStars = inviterStars || 200;
+      /* --- Inviter reward flow --- */
+      try {
+        const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
+        const pending = friendsArr.find(f => !f.giftShown && f.email);
 
-    showReward(
-      `You’ve been gifted <b>+${inviterStars}⭐️</b>, <b>${friendName}</b> just joined your Tab.`,
-      '⭐ Congratulations! ⭐️'
-    );
+        if (pending) {
+          const friendName =
+            pending.vipName ||
+            pending.chatId ||
+            (pending.email ? pending.email.split('@')[0] : 'Friend');
 
-    const updated = friendsArr.map(f =>
-      f.email === pending.email ? { ...f, giftShown: true, giftStars: inviterStars } : f
-    );
+          let inviterStars = pending.giftStars || 200;
 
-    await updateDoc(userRef, { hostFriends: updated });
+          showReward(
+            `You’ve been gifted <b>+${inviterStars}⭐️</b>, <b>${friendName}</b> just joined your Tab.`,
+            '⭐ Congratulations! ⭐️'
+          );
+
+          const updated = friendsArr.map(f =>
+            f.email === pending.email ? { ...f, giftShown: true, giftStars: inviterStars } : f
+          );
+
+          await updateDoc(userRef, { hostFriends: updated });
+        }
+      } catch (e) {
+        console.error('Inviter reward flow error', e);
+      }
+    });
+  } catch (e) {
+    console.error('loadCurrentUser error', e);
+  } finally {
+    hideSpinner();
   }
-} catch (e) {
-  console.error('Inviter reward flow error', e);
-}
-
-});
-} catch (e) {
-  console.error('loadCurrentUser error', e);
-} finally {
-  hideSpinner();
-}
 };
 
 
