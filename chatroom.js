@@ -1361,24 +1361,45 @@ window.addEventListener("click", e => {
 /* ---------- Init ---------- */
 fetchFeaturedHosts();
   // --- Initial random values for first load ---
-  const initialValues = [100, 105, 405, 455, 364, 224];
-  let count = initialValues[Math.floor(Math.random() * initialValues.length)];
-
+(function() {
+  const onlineCountEl = document.getElementById('onlineCount');
   const maxCount = 1000;
-  const counterElement = document.getElementById("onlineCount");
-  counterElement.textContent = count;
+  const initialOptions = [100, 105, 405, 455, 364, 224];
 
-  // --- Pick a random increment ---
-  function randomIncrement() {
-    const increments = [5, 3, 4, 1];
-    return increments[Math.floor(Math.random() * increments.length)];
+  // Helper: get a random integer between min and max (inclusive)
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  // --- Update counter every 4 seconds ---
-  setInterval(() => {
-    if (count < maxCount) {
-      count += randomIncrement();
-      if (count > maxCount) count = maxCount;
-      counterElement.textContent = count;
-    }
-  }, 4000);
+  // Load last count from localStorage or pick random initial with slight variation
+  let lastStored = parseInt(localStorage.getItem('onlineCount'));
+  let currentCount;
+  if (lastStored) {
+    currentCount = lastStored;
+  } else {
+    let base = initialOptions[Math.floor(Math.random() * initialOptions.length)];
+    // Add a small random offset +/- 5-15 for realism
+    currentCount = Math.max(0, base + randInt(-15, 15));
+  }
+
+  onlineCountEl.textContent = currentCount;
+
+  function updateCount() {
+    // Random human-like increment
+    const increments = [1, 3, 4, 5];
+    const randomIncrement = increments[Math.floor(Math.random() * increments.length)];
+
+    // Random slight fluctuation (+/- 1) for realism
+    const fluctuation = Math.random() < 0.3 ? -1 : 0;
+
+    currentCount = Math.min(maxCount, currentCount + randomIncrement + fluctuation);
+    currentCount = Math.max(0, currentCount); // safety check
+    onlineCountEl.textContent = currentCount;
+
+    // Save last count for this user
+    localStorage.setItem('onlineCount', currentCount);
+  }
+
+  // Update every 6 seconds
+  setInterval(updateCount, 6000);
+})();
