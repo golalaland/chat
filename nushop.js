@@ -575,16 +575,16 @@ const createProductCard = (product) => {
   const card = document.createElement('div');
   card.className = 'product-card';
 
-  // Image (preview only)
+  // Image (click to preview)
   const img = document.createElement('img');
   img.src = product.img || 'https://via.placeholder.com/300';
   img.alt = product.name || 'Item';
   img.addEventListener('click', () => previewImage(img.src));
 
   // Availability badge
+  const avail = Number(product.available) || 0;
   const badge = document.createElement('span');
   badge.className = 'availability-badge';
-  const avail = Number(product.available) || 0;
   badge.textContent = avail > 0 ? `${avail} Left` : 'Sold Out';
   if (avail <= 0) badge.style.background = '#666';
 
@@ -595,47 +595,48 @@ const createProductCard = (product) => {
   title.style.cursor = 'pointer';
   title.addEventListener('click', () => openProductModal(product));
 
-  // Price
-  const price = document.createElement('div');
-  price.className = 'price';
-  price.textContent = `${Number(product.cost) || 0} ⭐`;
-
-  // Redeem button
-  // Button
-const btn = document.createElement('button');
-
-// Determine type of product
-if (product.subscriberProduct) {
-  btn.className = 'subscriber-btn';
-  btn.textContent = 'Join';
-  
-  // Special style for subscriber product
-  btn.style.background = 'linear-gradient(90deg, #fbc2eb, #a18cd1)';
-  btn.style.color = '#fff';
-  btn.style.fontWeight = 'bold';
-
-  // Disable if not available
-  if (avail <= 0) btn.disabled = true;
-
-  // Click triggers Paystack payment flow
-  btn.addEventListener('click', () => openPaystackPayment(product.paystackPlanId));
-
-} else {
-  btn.className = 'buy-btn';
-  btn.textContent = 'Redeem';
-
-  // Disable if not available or special conditions
-  if (
-    avail <= 0 ||
-    (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)
-  ) {
-    btn.disabled = true;
+  // Price (only for non-subscriber products)
+  if (!product.subscriberProduct) {
+    const price = document.createElement('div');
+    price.className = 'price';
+    price.textContent = `${Number(product.cost) || 0} ⭐`;
+    card.appendChild(price);
   }
 
-  btn.addEventListener('click', () => redeemProduct(product));
-}
-  // Assemble the card
-  card.append(badge, img, title, price, btn);
+  // Button
+  const btn = document.createElement('button');
+
+  if (product.subscriberProduct) {
+    // Subscriber product (Join button)
+    btn.className = 'buy-btn subscriber-btn'; // inherits styles from buy-btn
+    btn.textContent = 'Join';
+    btn.style.background = 'linear-gradient(90deg, #fbc2eb, #a18cd1)';
+    btn.style.color = '#fff';
+    btn.style.fontWeight = 'bold';
+    btn.style.width = '100%'; // fill button width like Redeem
+    btn.style.padding = '0.75rem 0';
+    btn.style.borderRadius = '8px';
+    btn.style.cursor = 'pointer';
+    if (avail <= 0) btn.disabled = true;
+
+    // Paystack payment
+    btn.addEventListener('click', () => openPaystackPayment(product.paystackPlanId));
+
+  } else {
+    // Regular redeem product
+    btn.className = 'buy-btn';
+    btn.textContent = 'Redeem';
+    if (
+      avail <= 0 ||
+      (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)
+    ) {
+      btn.disabled = true;
+    }
+    btn.addEventListener('click', () => redeemProduct(product));
+  }
+
+  // Assemble card
+  card.append(badge, img, title, btn);
   return card;
 };
 
