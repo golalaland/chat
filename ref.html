@@ -95,11 +95,9 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
   <span class="btn-text">Sign Up</span>
   <span class="spinner" id="spinner"></span>
 </button>
-<button class="submit-btn" id="vipAccessBtn" style="display:none;background:gold;color:black;">
-  <span class="btn-text">Activate VIP Access</span>
-</button>
 <div class="message" id="message"></div>
 
+<div class="message" id="message"></div>
 <footer id="footer">
   <div>©5786 <span>ገብር ነፍስህ</span> (Own Your Vibe)</div>
   <div>自分の雰囲気を自分のものにしよう</div>
@@ -111,13 +109,14 @@ footer { width:100%; text-align:center; margin-top:2rem; font-size:0.8rem; color
   </div>
 </footer>
 
-<!-- Load Paystack SDK first -->
-<script src="https://js.paystack.co/v1/inline.js"></script>
+<script type="module">
+  // your JS here
+</script>
 
-<!-- Then load your Paystack helper file -->
-<script type="module" src="paystack.js"></script>
+<script type="module">
+  // your JS here
+</script>
 
-<!-- Then your main script -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -173,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const snapshot = await getDocs(q);
     return !snapshot.empty;
   }
-});
+
   phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
 
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
@@ -447,18 +446,13 @@ try {
       messageEl.textContent=`✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
       // store for auto-login on shop
       localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
-     // hide submit to prevent reclicks
-submitBtn.style.display = 'none';
+      // hide submit to prevent reclicks (hosts & vip)
+      submitBtn.style.display = 'none';
+      // confetti for signup success if VIP or just for celebration (keeps UX)
+      if(isVIP) triggerSprayConfetti();
 
-// if VIP, show activate button instead of redirect
-if (isVIP) {
-  triggerSprayConfetti();
-  messageEl.textContent = `🎉 Welcome ${fullName}! Please activate your VIP access below.`;
-  submitBtn.style.display = 'none';
-  document.getElementById('vipAccessBtn').style.display = 'flex';
-} else {
-  setTimeout(() => { window.location.href = "nushop.html"; }, 1500);
-}
+      setTimeout(()=>{ window.location.href="nushop.html"; },1500);
+
     } catch(e){
       console.error(e);
       messageEl.textContent="❌ Signup failed. Please try again.";
@@ -471,4 +465,4 @@ if (isVIP) {
 });
 </script>
 </body>
-</html>(
+</html>
