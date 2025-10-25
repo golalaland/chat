@@ -584,7 +584,7 @@ const renderMyOrders = async () => {
 };
 
 /* ------------------ Shop rendering + card creation ------------------ */
-/* ------------------ Shop rendering + card creation ------------------ */
+/* ------------------ Create product card ------------------ */
 const createProductCard = (product) => {
   // --- Visibility logic: skip rendering if user shouldn't see this product ---
   if (
@@ -640,6 +640,7 @@ const createProductCard = (product) => {
   return card;
 };
 
+/* ------------------ Redeem product ------------------ */
 const redeemProduct = async (product) => {
   if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
   if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
@@ -647,7 +648,7 @@ const redeemProduct = async (product) => {
   if (product.name?.toLowerCase() === 'redeem cash balance' && Number(currentUser.cash) <= 0) return showThemedMessage('No Cash', 'You have no cash to redeem');
 
   showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} ⭐?`, async () => {
-    showSpinner(); // show spinner immediately
+    showSpinner();
 
     try {
       const userRef = doc(db, 'users', currentUser.uid);
@@ -673,8 +674,11 @@ const redeemProduct = async (product) => {
           newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
         }
 
+        // Update user and product
         t.update(userRef, { stars: newStars, cash: newCash });
         t.update(productRef, { available: available - 1 });
+
+        // Record purchase
         const purchasesCol = collection(db, 'purchases');
         t.set(doc(purchasesCol), {
           userId: currentUser.uid,
@@ -691,7 +695,8 @@ const redeemProduct = async (product) => {
 
       const prevStars = parseNumberFromText(DOM.stars.textContent);
       const prevCash = parseNumberFromText(DOM.cash.textContent);
-      currentUser.stars = newStars; currentUser.cash = newCash;
+      currentUser.stars = newStars;
+      currentUser.cash = newCash;
       animateNumber(DOM.stars, prevStars, newStars);
       animateNumber(DOM.cash, prevCash, newCash);
       await renderShop();
@@ -700,11 +705,12 @@ const redeemProduct = async (product) => {
       if (redeemedCash > 0) showThemedMessage('Cash Redeemed', `You redeemed ₦${redeemedCash.toLocaleString()}`, 3000);
       else if (Number(product.cashReward) > 0) showThemedMessage('Redemption Success', `"${product.name}" redeemed and received ₦${Number(product.cashReward).toLocaleString()}`, 2500);
       else showThemedMessage('Redemption Success', `"${product.name}" redeemed!`, 2000);
+
     } catch (e) {
       console.error(e);
       showThemedMessage('Redemption Failed', e.message || 'Try again');
     } finally {
-      hideSpinner(); // hide spinner after processing
+      hideSpinner();
     }
   });
 };
@@ -722,8 +728,9 @@ const renderShop = async () => {
       return;
     }
 
-    // Build array of visible products
-    const products = [];
+    let delay = 0;
+    DOM.shopItems.innerHTML = '';
+
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
       const product = {
@@ -738,28 +745,15 @@ const renderShop = async () => {
         description: data.description || data.desc || ''
       };
 
-      // Skip if user shouldn't see it
-      if ((product.hostOnly && currentUser?.isVIP) || (product.vipOnly && currentUser?.isHost)) return;
-
-      products.push(product);
-    });
-
-    if (products.length === 0) {
-      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items available for you</div>';
-      return;
-    }
-
-    // Render visible products
-    let delay = 0;
-    products.forEach(product => {
       const card = createProductCard(product);
+      if (!card) return; // skip invisible cards
+
       card.style.opacity = '0';
       card.style.animation = `fadeInUp 0.35s forwards`;
       card.style.animationDelay = `${delay}s`;
       delay += 0.05;
       DOM.shopItems.appendChild(card);
     });
-
   } catch (e) {
     console.error(e);
     DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
