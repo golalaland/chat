@@ -1243,7 +1243,6 @@ function renderHostAvatars() {
 
 
 /* ---------- Load Host ---------- */
-/* ---------- Load Host (updated meet button and description) ---------- */
 function loadHost(idx) {
   const host = hosts[idx];
   if (!host) return;
@@ -1257,34 +1256,34 @@ function loadHost(idx) {
   videoContainer.style.position = "relative";
   videoContainer.style.touchAction = "manipulation";
 
-  // Shimmer loader
+  // Shimmer
   const shimmer = document.createElement("div");
   shimmer.className = "video-shimmer";
   videoContainer.appendChild(shimmer);
 
-  // Create video (same as before)
+  // Create video
   const videoEl = document.createElement("video");
   videoEl.src = host.videoUrl || "";
   videoEl.autoplay = true;
-  videoEl.muted = true;
+  videoEl.muted = true;        
   videoEl.loop = true;
   videoEl.playsInline = true;
   videoEl.preload = "metadata";
-  Object.assign(videoEl.style, {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    borderRadius: "8px",
-    display: "none",
-    cursor: "pointer"
-  });
+  videoEl.style.width = "100%";
+  videoEl.style.height = "100%";
+  videoEl.style.objectFit = "cover";
+  videoEl.style.borderRadius = "8px";
+  videoEl.style.display = "none";
+  videoEl.style.cursor = "pointer";
   videoEl.setAttribute("webkit-playsinline", "true");
+  videoContainer.appendChild(videoEl);
 
-  // Hint text
+  // Hint
   const hint = document.createElement("div");
   hint.className = "video-hint";
   hint.textContent = "Tap to unmute";
   videoContainer.appendChild(hint);
+
   function showHint(msg, timeout = 1400) {
     hint.textContent = msg;
     hint.classList.add("show");
@@ -1292,178 +1291,109 @@ function loadHost(idx) {
     hint._t = setTimeout(() => hint.classList.remove("show"), timeout);
   }
 
-  // Tap/double-tap handlers (keeps your behavior)
+  // Fullscreen helpers
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement);
+  }
+  function enterFullscreen() {
+    if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
+    if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
+    if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
+  }
+  function toggleFullscreen() { isFullscreen() ? document.exitFullscreen?.() : enterFullscreen(); }
+
+  // Tap / double-tap
   let lastTap = 0;
   function onTapEvent() {
     const now = Date.now();
     const diff = now - lastTap;
     lastTap = now;
-    if (diff > 0 && diff < 300) {
-      // double-tap fullscreen toggle
-      if (videoEl.requestFullscreen) videoEl.requestFullscreen();
-      else if (videoEl.webkitEnterFullscreen) videoEl.webkitEnterFullscreen();
-      else if (videoEl.webkitRequestFullscreen) videoEl.webkitRequestFullscreen();
-    } else {
-      // single tap: mute toggle
+    if (diff > 0 && diff < 300) toggleFullscreen();
+    else {
       videoEl.muted = !videoEl.muted;
-      showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 1200);
+      showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 900);
     }
   }
   videoEl.addEventListener("click", onTapEvent);
   videoEl.addEventListener("touchend", (ev) => {
     if (ev.changedTouches && ev.changedTouches.length > 1) return;
-    ev.preventDefault?.();
-    onTapEvent(ev);
+    ev.preventDefault && ev.preventDefault();
+    onTapEvent();
   }, { passive: false });
 
+  // Show video when ready
   videoEl.addEventListener("loadeddata", () => {
     shimmer.style.display = "none";
     videoEl.style.display = "block";
     showHint("Tap to unmute", 1400);
-    videoEl.play().catch(()=>{});
+    videoEl.play().catch(() => {});
   });
 
-  videoContainer.appendChild(videoEl);
-
-  /* ---------- Host Info + Meet button ---------- */
+  // UI text
   usernameEl.textContent = host.chatId || "Unknown Host";
-
-  const gender = (host.gender || "person").toLowerCase();
+  const gender = (host.gender || "female").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
-  const flair = gender === "male" ? "😎" : "💋";
-  const fruit = host.fruitPick || "🍇";
-  const nature = host.naturePick || "sexy";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-  const city = host.location || "Lagos";
-  const country = host.country || "Nigeria";
+  detailsEl.textContent = `A ${host.fruitPick || "🍇"} ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} currently in ${host.location || "Lagos"}, ${host.country || "Nigeria"}.`;
 
-  // Description text (dynamic)
-  detailsEl.textContent = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} currently in ${city}, ${country}. ${flair}`;
-
-  // ---- create single Meet button (no duplicates) ----
-  let meetBtn = document.getElementById("meetBtn");
-  const meetLabel = `Meet ${host.chatId || ""}`.trim(); // dynamic label
-  if (!meetBtn) {
-    meetBtn = document.createElement("button");
-    meetBtn.id = "meetBtn";
-    meetBtn.className = "meet-btn";
-    meetBtn.style.marginTop = "10px";
-    detailsEl.insertAdjacentElement("afterend", meetBtn);
-  }
-  meetBtn.textContent = `${meetLabel} · 21⭐`;
-
-  // click handler opens confirmation modal which will run transaction
-  meetBtn.onclick = () => showMeetModal(host);
-
-  // update avatar highlight
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
 
+  // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
+
+
+// --- Meet button ---
+  let meetBtn = document.getElementById("meetBtn");
+  if (!meetBtn) {
+    meetBtn = document.createElement("button");
+    meetBtn.id = "meetBtn";
+    meetBtn.className = "fiery-btn"; // add your fiery styles from gift slider
+    detailsEl.parentNode.appendChild(meetBtn);
+  }
+  meetBtn.textContent = `[meet ${host.chatId}]`;
+
+  meetBtn.onclick = async () => {
+    const meetCost = 21;
+    if (!currentUser) return showGiftAlert("Please log in to meet ⭐");
+
+    const senderRef = doc(db, "users", currentUser.uid);
+    const hostRef = doc(db, "users", host.id);
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const senderSnap = await tx.get(senderRef);
+        const hostSnap = await tx.get(hostRef);
+
+        if (!senderSnap.exists()) throw new Error("Your user record not found.");
+        if (!hostSnap.exists()) tx.set(hostRef, { stars: 0 }, { merge: true });
+
+        const senderData = senderSnap.data();
+        if ((senderData.stars || 0) < meetCost) throw new Error("Insufficient stars to meet host");
+
+        tx.update(senderRef, { stars: increment(-meetCost) });
+        tx.set(doc(db, "meetRequests", `${currentUser.uid}_${host.id}`), {
+          from: currentUser.uid,
+          to: host.id,
+          cost: meetCost,
+          timestamp: serverTimestamp(),
+        });
+      });
+
+      showGiftAlert(`🔥 You spent ${meetCost} stars to meet ${host.chatId}!`);
+      // Open your matchmaking modal here
+      openMeetModal(host); // implement this function
+    } catch (err) {
+      console.error("❌ Meet request failed:", err);
+      showGiftAlert(`⚠️ ${err.message}`);
+    }
+  };
 
   console.log("🎬 Loaded host video:", host.videoUrl);
 }
 
-
-/* ---------- Meet Modal (fixed to appear above video + proper stars logic) ---------- */
-/* ---------- Show Meet Modal with atomic Firestore deduction ---------- */
-async function showMeetModal(host) {
-  // require a logged-in user
-  if (!currentUser || !currentUser.uid) {
-    return showStarPopup("Sign in to request a meet.");
-  }
-
-  // Remove existing modal if any
-  let existing = document.getElementById("meetModal");
-  if (existing) existing.remove();
-
-  // build modal (simple)
-  const modal = document.createElement("div");
-  modal.id = "meetModal";
-  Object.assign(modal.style, {
-    position: "fixed",
-    inset: "0",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "rgba(0,0,0,0.75)",
-    zIndex: "999999",
-    backdropFilter: "blur(3px)"
-  });
-  modal.innerHTML = `
-    <div style="background:#0f0f0f;padding:18px;border-radius:12px;max-width:360px;color:#fff;text-align:center;">
-      <h3 style="margin:0 0 8px 0;">Meet ${host.chatId || "host"}?</h3>
-      <p style="margin:0 0 14px 0;">This costs <strong>21⭐</strong>. Proceed?</p>
-      <div style="display:flex;gap:10px;justify-content:center;margin-top:6px;">
-        <button id="meetCancel" style="padding:8px 12px;border-radius:8px;background:#333;border:none;color:#fff;">Cancel</button>
-        <button id="meetConfirm" style="padding:8px 12px;border-radius:8px;background:linear-gradient(90deg,#ff5db1,#ff77e9);border:none;color:#fff;font-weight:700;">Confirm</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  modal.querySelector("#meetCancel").onclick = () => modal.remove();
-
-  modal.querySelector("#meetConfirm").onclick = async () => {
-    const cost = 21;
-    const userRef = doc(db, "users", currentUser.uid);
-
-    try {
-      // Atomic transaction: read balance, check >= cost, deduct, add a record
-      await runTransaction(db, async (transaction) => {
-        const userSnap = await transaction.get(userRef);
-        if (!userSnap.exists()) throw new Error("User not found");
-        const data = userSnap.data();
-        const balance = data.stars || 0;
-
-        if (balance < cost) {
-          throw new Error("INSUFFICIENT_STARS");
-        }
-
-        // Deduct and optionally log a meet request
-        transaction.update(userRef, {
-          stars: increment(-cost),
-          lastMeetAt: serverTimestamp()
-        });
-
-        // Add a record to a "meetRequests" collection (optional)
-        const meetRef = doc(collection(db, "meetRequests")); // new doc
-        transaction.set(meetRef, {
-          userId: currentUser.uid,
-          userChatId: currentUser.chatId || null,
-          hostId: host.id || null,
-          hostChatId: host.chatId || null,
-          cost,
-          timestamp: serverTimestamp(),
-          status: "requested"
-        });
-      });
-
-      // Update local and UI
-      currentUser.stars = (currentUser.stars || 0) - cost;
-      if (typeof updateStarsDisplay === "function") updateStarsDisplay();
-
-      // Open Telegram to agent (change agent username)
-      const agent = "YOUR_AGENT_USERNAME"; // replace
-      const message = encodeURIComponent(
-        `💫 New Meet Request\nUser: ${currentUser.chatId || currentUser.uid}\nHost: ${host.chatId || host.id}\nProfile: ${host.fruitPick || ""} ${host.naturePick || ""} ${host.gender || ""}\nLocation: ${host.location || ""}, ${host.country || ""}\nCost: ${cost}⭐`
-      );
-      window.open(`https://t.me/${agent}?text=${message}`, "_blank");
-
-      modal.remove();
-      showStarPopup(`Success! ${cost}⭐ deducted.`);
-    } catch (err) {
-      console.error("Meet transaction failed:", err);
-      if (err.message === "INSUFFICIENT_STARS") {
-        alert("You do not have enough stars to meet this host.");
-      } else {
-        alert("Could not process meet request. Try again.");
-      }
-    }
-  };
-}
 /* ---------- Dummy helpers ---------- */
 let userStars = 100; // example balance
 function updateStarsDisplay() {
