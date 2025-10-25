@@ -978,6 +978,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   width: 100%; /* take full width for perfect centering */
   margin: 20px 0;
 }
+.video-shimmer {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #1a1a1a 25%, #333 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
 </style>
 </head>
 <body>
@@ -1028,6 +1041,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <div id="featuredHostVideo" class="featured-host-video-container">
   <!-- Player will be dynamically inserted here -->
 </div>
+<div class="video-shimmer"></div>
 
    <div class="featured-host-footer">
   <div>
