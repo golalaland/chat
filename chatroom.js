@@ -1341,15 +1341,13 @@ videoEl.addEventListener(
   { passive: false }
 );
 
-// 🔄 Handle when video is ready to display
+// 🔄 When video is ready
 videoEl.addEventListener("loadeddata", () => {
   shimmer.style.display = "none";
   videoEl.style.display = "block";
-
-  // Show subtle "Tap to unmute" hint
   showHint("Tap to unmute", 1500);
 
-  // Attempt safe autoplay
+  // Try safe autoplay
   videoEl.play().catch(() => {});
 
   // 🧠 Resume playback when returning to tab
@@ -1359,14 +1357,14 @@ videoEl.addEventListener("loadeddata", () => {
     }
   });
 
-  // 📱 iOS Safari specific — resume after fullscreen exit
+  // 📱 Resume after exiting fullscreen (iOS Safari)
   videoEl.addEventListener("webkitendfullscreen", () => {
     setTimeout(() => {
       if (videoEl.paused) videoEl.play().catch(() => {});
     }, 200);
   });
 
-  // 🧩 Sometimes fullscreen exit triggers pause — resume smoothly
+  // 🧩 Sometimes leaving fullscreen pauses — resume smoothly
   videoEl.addEventListener("pause", () => {
     if (document.visibilityState === "visible") {
       setTimeout(() => {
@@ -1375,6 +1373,28 @@ videoEl.addEventListener("loadeddata", () => {
     }
   });
 });
+
+// 🧱 Append video after setup
+videoContainer.appendChild(videoEl);
+
+// 🧍 Update host UI info
+usernameEl.textContent = host.chatId || "Unknown Host";
+const gender = (host.gender || "person").toLowerCase();
+const pronoun = gender === "male" ? "his" : "her";
+const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
+const flair = gender === "male" ? "😎" : "💋";
+detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+
+// 🧩 Highlight active avatar
+hostListEl.querySelectorAll("img").forEach((img, i) => {
+  img.classList.toggle("active", i === idx);
+});
+
+// 🎁 Reset gift slider
+giftSlider.value = 1;
+giftAmountEl.textContent = "1";
+
+console.log("🎬 Loaded host video:", host.videoUrl);
 
 // 🧱 Add video to container
 videoContainer.appendChild(videoEl);
