@@ -1243,7 +1243,6 @@ function renderHostAvatars() {
 
 
 /* ---------- Load Host ---------- */
-/* ---------- Load Host ---------- */
 function loadHost(idx) {
   const host = hosts[idx];
   if (!host) return;
@@ -1329,46 +1328,77 @@ function loadHost(idx) {
     }
   }
 
-  // Attach both click and touchend so it works on mobile & desktop
-  videoEl.addEventListener("click", onTapEvent);
-  videoEl.addEventListener("touchend", (ev) => {
-    // don't swallow multi-touch (pinch) — if more than 1 touch, ignore
+// 🎬 Setup video events for mobile + desktop
+videoEl.addEventListener("click", onTapEvent);
+videoEl.addEventListener(
+  "touchend",
+  (ev) => {
+    // Ignore pinch or multi-touch gestures
     if (ev.changedTouches && ev.changedTouches.length > 1) return;
-    // prevent double-tap zoom only for this element
-    ev.preventDefault && ev.preventDefault();
+    ev.preventDefault?.(); // prevent double-tap zoom
     onTapEvent(ev);
-  }, { passive: false });
+  },
+  { passive: false }
+);
 
-  // Show video when ready
-  videoEl.addEventListener("loadeddata", () => {
-    shimmer.style.display = "none";
-    videoEl.style.display = "block";
-    // show initial hint because video starts muted
-    showHint("Tap to unmute", 1400);
-    // ensure autoplay tries to play
-    videoEl.play().catch(() => {});
+// 🔄 Handle when video is ready to display
+videoEl.addEventListener("loadeddata", () => {
+  shimmer.style.display = "none";
+  videoEl.style.display = "block";
+
+  // Show subtle "Tap to unmute" hint
+  showHint("Tap to unmute", 1500);
+
+  // Attempt safe autoplay
+  videoEl.play().catch(() => {});
+
+  // 🧠 Resume playback when returning to tab
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && videoEl.paused) {
+      videoEl.play().catch(() => {});
+    }
   });
 
-  // append video after everything set
-  videoContainer.appendChild(videoEl);
-
-  // update UI text and avatar highlight (your existing logic)
-  usernameEl.textContent = host.chatId || "Unknown Host";
-  const gender = (host.gender || "person").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "her";
-  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-  const flair = gender === "male" ? "😎" : "💋";
-  detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
-
-  hostListEl.querySelectorAll("img").forEach((img, i) => {
-    img.classList.toggle("active", i === idx);
+  // 📱 iOS Safari specific — resume after fullscreen exit
+  videoEl.addEventListener("webkitendfullscreen", () => {
+    setTimeout(() => {
+      if (videoEl.paused) videoEl.play().catch(() => {});
+    }, 200);
   });
 
-  giftSlider.value = 1;
-  giftAmountEl.textContent = "1";
+  // 🧩 Sometimes fullscreen exit triggers pause — resume smoothly
+  videoEl.addEventListener("pause", () => {
+    if (document.visibilityState === "visible") {
+      setTimeout(() => {
+        if (videoEl.paused) videoEl.play().catch(() => {});
+      }, 250);
+    }
+  });
+});
 
-  console.log("🎬 Loaded host video:", host.videoUrl);
-}
+// 🧱 Add video to container
+videoContainer.appendChild(videoEl);
+
+// 🧍‍♂️ Update host UI info
+usernameEl.textContent = host.chatId || "Unknown Host";
+
+const gender = (host.gender || "person").toLowerCase();
+const pronoun = gender === "male" ? "his" : "her";
+const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
+const flair = gender === "male" ? "😎" : "💋";
+
+detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+
+// 🧩 Highlight active avatar
+hostListEl.querySelectorAll("img").forEach((img, i) => {
+  img.classList.toggle("active", i === idx);
+});
+
+// 🎁 Reset gift slider
+giftSlider.value = 1;
+giftAmountEl.textContent = "1";
+
+console.log("🎬 Loaded host video:", host.videoUrl);
 
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
