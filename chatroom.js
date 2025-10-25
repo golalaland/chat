@@ -1351,7 +1351,7 @@ function loadHost(idx) {
   if (!meetBtn) {
     meetBtn = document.createElement("button");
     meetBtn.id = "meetBtn";
-    meetBtn.textContent = "Meet 💫 (21⭐)";
+    meetBtn.textContent = "Meet";
     meetBtn.style.marginTop = "10px";
     meetBtn.style.padding = "8px 16px";
     meetBtn.style.borderRadius = "6px";
@@ -1376,11 +1376,12 @@ function loadHost(idx) {
   giftAmountEl.textContent = "1";
 }
 
-/* ---------- Meet Modal ---------- */
+/* ---------- Meet Modal (fixed to appear above video + proper stars logic) ---------- */
 function showMeetModal(host) {
   let modal = document.getElementById("meetModal");
   if (modal) modal.remove();
 
+  // Ensure modal is always on top of video (z-index fix)
   modal = document.createElement("div");
   modal.id = "meetModal";
   modal.style.position = "fixed";
@@ -1392,37 +1393,47 @@ function showMeetModal(host) {
   modal.style.display = "flex";
   modal.style.alignItems = "center";
   modal.style.justifyContent = "center";
-  modal.style.zIndex = 9999;
+  modal.style.zIndex = "999999"; // ensure it overrides video
+  modal.style.backdropFilter = "blur(3px)";
+  modal.style.webkitBackdropFilter = "blur(3px)";
 
   modal.innerHTML = `
-    <div style="background:#111;padding:20px;border-radius:10px;text-align:center;color:#fff;max-width:320px;">
-      <h3>Meet ${host.chatId || "this host"}?</h3>
-      <p>This will cost <b>21⭐</b>. Proceed?</p>
-      <div style="margin-top:15px;display:flex;gap:10px;justify-content:center;">
-        <button id="cancelMeet" style="padding:8px 14px;background:#333;border:none;color:#fff;border-radius:6px;">Cancel</button>
-        <button id="confirmMeet" style="padding:8px 14px;background:#ff6600;border:none;color:#fff;border-radius:6px;">Yes</button>
+    <div style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
+      <h3 style="margin-bottom:10px;font-weight:600;">Meet ${host.chatId || "this host"}?</h3>
+      <p style="margin-bottom:16px;">This will cost <b>21⭐</b>.</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
+        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
+  // Fix: always bring modal to top (in case of other positioned containers)
+  setTimeout(() => modal.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+
+  // Button actions
   modal.querySelector("#cancelMeet").onclick = () => modal.remove();
+
   modal.querySelector("#confirmMeet").onclick = () => {
     const cost = 21;
-    if (userStars >= cost) {
-      userStars -= cost;
-      updateStarsDisplay();
+    const balance = window.userStars || 0; // pull from global or fallback
+    console.log("⭐ Current stars:", balance);
 
-      // Send custom Telegram message to your agent
-      const msg = `💫 Meet Request!\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
+    if (balance >= cost) {
+      window.userStars = balance - cost; // deduct safely
+      if (typeof updateStarsDisplay === "function") updateStarsDisplay();
+
+      // Send Telegram message to agent
+      const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
       const encoded = encodeURIComponent(msg);
       window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
 
       modal.remove();
-      alert("Your meet request has been sent! 💫");
+      alert("💫 Your meet request has been sent!");
     } else {
-      alert("Not enough stars ⭐. Earn or buy more to meet!");
+      alert("You don’t have enough stars ⭐. Earn or buy more to continue.");
     }
   };
 }
