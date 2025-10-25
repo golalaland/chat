@@ -1328,104 +1328,52 @@ function loadHost(idx) {
     }
   }
 
-// 🎬 Setup video events for mobile + desktop
-videoEl.addEventListener("click", onTapEvent);
-videoEl.addEventListener(
-  "touchend",
-  (ev) => {
-    // Ignore pinch or multi-touch gestures
+  // Attach both click and touchend so it works on mobile & desktop
+  videoEl.addEventListener("click", onTapEvent);
+  videoEl.addEventListener("touchend", (ev) => {
+    // don't swallow multi-touch (pinch) — if more than 1 touch, ignore
     if (ev.changedTouches && ev.changedTouches.length > 1) return;
-    ev.preventDefault?.(); // prevent double-tap zoom
+    // prevent double-tap zoom only for this element
+    ev.preventDefault && ev.preventDefault();
     onTapEvent(ev);
-  },
-  { passive: false }
-);
+  }, { passive: false });
 
-// 🔄 When video is ready
-videoEl.addEventListener("loadeddata", () => {
-  shimmer.style.display = "none";
-  videoEl.style.display = "block";
-  showHint("Tap to unmute", 1500);
-
-  // Try safe autoplay
-  videoEl.play().catch(() => {});
-
-  // 🧠 Resume playback when returning to tab
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && videoEl.paused) {
-      videoEl.play().catch(() => {});
-    }
+  // Show video when ready
+  videoEl.addEventListener("loadeddata", () => {
+    shimmer.style.display = "none";
+    videoEl.style.display = "block";
+    // show initial hint because video starts muted
+    showHint("Tap to unmute", 1400);
+    // ensure autoplay tries to play
+    videoEl.play().catch(() => {});
   });
 
-  // 📱 Resume after exiting fullscreen (iOS Safari)
-  videoEl.addEventListener("webkitendfullscreen", () => {
-    setTimeout(() => {
-      if (videoEl.paused) videoEl.play().catch(() => {});
-    }, 200);
+  // append video after everything set
+  videoContainer.appendChild(videoEl);
+
+  // update UI text and avatar highlight (your existing logic)
+  usernameEl.textContent = host.chatId || "Unknown Host";
+  const gender = (host.gender || "person").toLowerCase();
+  const pronoun = gender === "male" ? "his" : "her";
+  const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
+  const flair = gender === "male" ? "😎" : "💋";
+  detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
+
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === idx);
   });
 
-  // 🧩 Sometimes leaving fullscreen pauses — resume smoothly
-  videoEl.addEventListener("pause", () => {
-    if (document.visibilityState === "visible") {
-      setTimeout(() => {
-        if (videoEl.paused) videoEl.play().catch(() => {});
-      }, 250);
-    }
-  });
-});
+  giftSlider.value = 1;
+  giftAmountEl.textContent = "1";
 
-// 🧱 Append video after setup
-videoContainer.appendChild(videoEl);
-
-// 🧍 Update host UI info
-usernameEl.textContent = host.chatId || "Unknown Host";
-const gender = (host.gender || "person").toLowerCase();
-const pronoun = gender === "male" ? "his" : "her";
-const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-const flair = gender === "male" ? "😎" : "💋";
-detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
-
-// 🧩 Highlight active avatar
-hostListEl.querySelectorAll("img").forEach((img, i) => {
-  img.classList.toggle("active", i === idx);
-});
-
-// 🎁 Reset gift slider
-giftSlider.value = 1;
-giftAmountEl.textContent = "1";
-
-console.log("🎬 Loaded host video:", host.videoUrl);
-
-// 🧱 Add video to container
-videoContainer.appendChild(videoEl);
-
-// 🧍‍♂️ Update host UI info
-usernameEl.textContent = host.chatId || "Unknown Host";
-
-const gender = (host.gender || "person").toLowerCase();
-const pronoun = gender === "male" ? "his" : "her";
-const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-const flair = gender === "male" ? "😎" : "💋";
-
-detailsEl.textContent = `A ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} ${flair}`;
-
-// 🧩 Highlight active avatar
-hostListEl.querySelectorAll("img").forEach((img, i) => {
-  img.classList.toggle("active", i === idx);
-});
-
-// 🎁 Reset gift slider
-giftSlider.value = 1;
-giftAmountEl.textContent = "1";
-
-console.log("🎬 Loaded host video:", host.videoUrl);
+  console.log("🎬 Loaded host video:", host.videoUrl);
+}
 
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
 });
 
-/* ---------- Send gift ---------- */
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
   try {
