@@ -11,6 +11,9 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// Import VIP subscription function
+import { launchSubscription } from './paystack.js';
+
 /* ------------------ Firebase ------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
@@ -604,15 +607,30 @@ const createProductCard = (product) => {
 
   if (product.subscriberProduct) {
     // JOIN button for VIP subscription
-    btn.className = 'subscriber-btn';
-    btn.textContent = 'Join';
-    btn.style.background = 'linear-gradient(90deg, #FFD700, #FFA500)'; // gold gradient
-    btn.style.color = '#fff';
-    btn.style.fontWeight = 'bold';
-    btn.style.padding = '0.6rem 1.2rem';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '0.5rem';
-    btn.style.cursor = 'pointer';
+   btn.className = 'subscriber-btn';
+btn.textContent = 'Join';
+
+// Gold gradient styling
+btn.style.background = 'linear-gradient(90deg, #FFD700, #FFA500)'; // Gold → Orange gradient
+btn.style.color = '#fff';
+btn.style.fontWeight = 'bold';
+btn.style.border = 'none';
+btn.style.borderRadius = '8px';
+btn.style.padding = '0.6rem 1.2rem';
+btn.style.fontSize = '1rem';
+btn.style.cursor = 'pointer';
+btn.style.boxShadow = '0 4px 10px rgba(255, 215, 0, 0.5)';
+btn.style.transition = 'transform 0.2s, box-shadow 0.2s';
+
+// Hover effect
+btn.addEventListener('mouseenter', () => {
+  btn.style.transform = 'translateY(-2px)';
+  btn.style.boxShadow = '0 6px 15px rgba(255, 215, 0, 0.7)';
+});
+btn.addEventListener('mouseleave', () => {
+  btn.style.transform = 'translateY(0)';
+  btn.style.boxShadow = '0 4px 10px rgba(255, 215, 0, 0.5)';
+});
 
     if (avail <= 0) btn.disabled = true;
     btn.addEventListener('click', () => openPaystackPayment(product.paystackPlanId));
