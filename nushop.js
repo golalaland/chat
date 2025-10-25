@@ -563,9 +563,9 @@ const renderMyOrders = async () => {
   }
 };
 
-/* ------------------ Shop rendering + card creation ------------------ */
+/* ------------------ CREATE PRODUCT CARD ------------------ */
 const createProductCard = (product) => {
-  // --- Visibility logic ---
+  // Skip rendering if user shouldn't see this product
   if (
     (product.hostOnly && currentUser?.isVIP) || // VIPs cannot see host-only
     (product.vipOnly && currentUser?.isHost)   // Hosts cannot see VIP-only
@@ -603,19 +603,18 @@ const createProductCard = (product) => {
   const btn = document.createElement('button');
 
   if (product.subscriberProduct) {
-    // Join / VIP subscription button
+    // JOIN button for VIP subscription
     btn.className = 'subscriber-btn';
     btn.textContent = 'Join';
-    btn.style.background = 'linear-gradient(90deg, #fbc2eb, #a18cd1)';
+    btn.style.background = 'linear-gradient(90deg, #FFD700, #FFA500)'; // gold gradient
     btn.style.color = '#fff';
     btn.style.fontWeight = 'bold';
-    btn.style.padding = '0.5rem 1rem';
+    btn.style.padding = '0.6rem 1.2rem';
     btn.style.border = 'none';
-    btn.style.borderRadius = '8px';
+    btn.style.borderRadius = '0.5rem';
     btn.style.cursor = 'pointer';
 
     if (avail <= 0) btn.disabled = true;
-
     btn.addEventListener('click', () => openPaystackPayment(product.paystackPlanId));
   } else {
     // Regular redeemable product
@@ -632,14 +631,10 @@ const createProductCard = (product) => {
     btn.addEventListener('click', () => redeemProduct(product));
   }
 
-  // --- Assemble the card ---
+  // Assemble the card
   card.append(badge, img, title);
-
-  if (!product.subscriberProduct) {
-    card.append(price); // only for redeemable products
-  }
-
-  card.append(btn); // always last
+  if (!product.subscriberProduct) card.append(price); // price only for redeem
+  card.append(btn);
 
   return card;
 };
@@ -719,7 +714,24 @@ const redeemProduct = async (product) => {
   });
 };
 
-/* ------------------ Render shop ------------------ */
+/* ------------------ PAYSTACK WRAPPER FOR JOIN BUTTON ------------------ */
+
+// Import your launchSubscription function if using modules
+// import { launchSubscription } from './paystack.js';
+
+// Called from subscriber product button
+function openPaystackPayment(planId) {
+  if (!currentUser) {
+    alert('Please log in first to join.');
+    return;
+  }
+
+  // Optional: you can check planId if you have multiple subscriber products
+  // Currently we only have one VIP plan
+  launchSubscription(currentUser);
+}
+
+/* ------------------ RENDER SHOP ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
   showSpinner();
@@ -733,22 +745,22 @@ const renderShop = async () => {
     }
 
     let delay = 0;
-    DOM.shopItems.innerHTML = '';
 
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
- const product = {
-  id: docSnap.id,
-  name: data.name || '',
-  img: data.img || '',
-  cost: data.cost || 0,
-  available: data.available || 0,
-  hostOnly: data.hostOnly || false,
-  vipOnly: data.vipOnly || false,
-  cashReward: data.cashReward || 0,
-  description: data.description || data.desc || '',
-  subscriberProduct: data.subscriberProduct || false  // NEW FIELD
-};
+      const product = {
+        id: docSnap.id,
+        name: data.name || '',
+        img: data.img || '',
+        cost: data.cost || 0,
+        available: data.available || 0,
+        hostOnly: data.hostOnly || false,
+        vipOnly: data.vipOnly || false,
+        subscriberProduct: data.subscriberProduct || false,
+        cashReward: data.cashReward || 0,
+        description: data.description || data.desc || '',
+        paystackPlanId: data.paystackPlanId || ''
+      };
 
       const card = createProductCard(product);
       if (!card) return; // skip invisible cards
@@ -766,6 +778,7 @@ const renderShop = async () => {
     hideSpinner();
   }
 };
+
 /* -------------------------------
    🌗 Theme Toggle Script
 --------------------------------- */
