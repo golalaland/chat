@@ -601,11 +601,30 @@ const createProductCard = (product) => {
   price.textContent = `${Number(product.cost) || 0} ⭐`;
 
   // Redeem button
-  const btn = document.createElement('button');
+  // Button
+const btn = document.createElement('button');
+
+// Determine type of product
+if (product.subscriberProduct) {
+  btn.className = 'subscriber-btn';
+  btn.textContent = 'Join';
+  
+  // Special style for subscriber product
+  btn.style.background = 'linear-gradient(90deg, #fbc2eb, #a18cd1)';
+  btn.style.color = '#fff';
+  btn.style.fontWeight = 'bold';
+
+  // Disable if not available
+  if (avail <= 0) btn.disabled = true;
+
+  // Click triggers Paystack payment flow
+  btn.addEventListener('click', () => openPaystackPayment(product.paystackPlanId));
+
+} else {
   btn.className = 'buy-btn';
   btn.textContent = 'Redeem';
 
-  // Disable button if not available or special conditions
+  // Disable if not available or special conditions
   if (
     avail <= 0 ||
     (product.name?.toLowerCase() === 'redeem cash balance' && currentUser && Number(currentUser.cash) <= 0)
@@ -614,7 +633,7 @@ const createProductCard = (product) => {
   }
 
   btn.addEventListener('click', () => redeemProduct(product));
-
+}
   // Assemble the card
   card.append(badge, img, title, price, btn);
   return card;
@@ -713,17 +732,18 @@ const renderShop = async () => {
 
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
-      const product = {
-        id: docSnap.id,
-        name: data.name || '',
-        img: data.img || '',
-        cost: data.cost || 0,
-        available: data.available || 0,
-        hostOnly: data.hostOnly || false,
-        vipOnly: data.vipOnly || false,
-        cashReward: data.cashReward || 0,
-        description: data.description || data.desc || ''
-      };
+ const product = {
+  id: docSnap.id,
+  name: data.name || '',
+  img: data.img || '',
+  cost: data.cost || 0,
+  available: data.available || 0,
+  hostOnly: data.hostOnly || false,
+  vipOnly: data.vipOnly || false,
+  cashReward: data.cashReward || 0,
+  description: data.description || data.desc || '',
+  subscriberProduct: data.subscriberProduct || false  // NEW FIELD
+};
 
       const card = createProductCard(product);
       if (!card) return; // skip invisible cards
