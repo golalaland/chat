@@ -698,14 +698,15 @@ const createProductCard = (product) => {
     btn.addEventListener('click', () => redeemProduct(product));
   }
 
-// --- Assemble the card ---
-card.append(badge, img, title);
+// Assemble the card
+card.append(badge, img, title); // image comes before title
 
-// Show price only for regular products
 if (!product.subscriberProduct) {
-  card.append(price);
+  // Price only for redeemable products
+  card.append(price); // comes right after title
 }
 
+// Button always last
 card.append(btn);
 
 /* ------------------ Redeem product ------------------ */
