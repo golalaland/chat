@@ -710,7 +710,6 @@ const redeemProduct = async (product) => {
 };
 
 /* ------------------ Render shop ------------------ */
-/* ------------------ Render shop ------------------ */
 const renderShop = async () => {
   if (!DOM.shopItems) return;
   showSpinner();
@@ -724,12 +723,11 @@ const renderShop = async () => {
     }
 
     let delay = 0;
+    let hasVisibleProducts = false;
     DOM.shopItems.innerHTML = ''; // clear
 
-    // ForEach on QuerySnapshot
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
-      // Ensure product object contains id + description (if present)
       const product = {
         id: docSnap.id,
         name: data.name || '',
@@ -737,17 +735,27 @@ const renderShop = async () => {
         cost: data.cost || 0,
         available: data.available || 0,
         hostOnly: data.hostOnly || false,
+        vipOnly: data.vipOnly || false,
         cashReward: data.cashReward || 0,
-        description: data.description || data.desc || '' // support either field name
+        description: data.description || data.desc || ''
       };
 
       const card = createProductCard(product);
+      if (!card) return; // skip products the user shouldn’t see
+
+      hasVisibleProducts = true;
       card.style.opacity = '0';
       card.style.animation = `fadeInUp 0.35s forwards`;
       card.style.animationDelay = `${delay}s`;
       delay += 0.05;
+
       DOM.shopItems.appendChild(card);
     });
+
+    if (!hasVisibleProducts) {
+      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items available for you</div>';
+    }
+
   } catch (e) {
     console.error(e);
     DOM.shopItems.innerHTML = '<div style="text-align:center;color:#ccc;">Failed to load shop</div>';
