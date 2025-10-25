@@ -11,9 +11,6 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Import VIP subscription function
-import { launchSubscription } from './paystack.js';
-
 /* ------------------ Firebase ------------------ */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
