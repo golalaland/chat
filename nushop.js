@@ -722,10 +722,8 @@ const renderShop = async () => {
       return;
     }
 
-    let delay = 0;
-    let hasVisibleProducts = false;
-    DOM.shopItems.innerHTML = ''; // clear
-
+    // Build array of visible products
+    const products = [];
     shopSnap.forEach(docSnap => {
       const data = docSnap.data() || {};
       const product = {
@@ -740,21 +738,27 @@ const renderShop = async () => {
         description: data.description || data.desc || ''
       };
 
-      const card = createProductCard(product);
-      if (!card) return; // skip products the user shouldn’t see
+      // Skip if user shouldn't see it
+      if ((product.hostOnly && currentUser?.isVIP) || (product.vipOnly && currentUser?.isHost)) return;
 
-      hasVisibleProducts = true;
+      products.push(product);
+    });
+
+    if (products.length === 0) {
+      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items available for you</div>';
+      return;
+    }
+
+    // Render visible products
+    let delay = 0;
+    products.forEach(product => {
+      const card = createProductCard(product);
       card.style.opacity = '0';
       card.style.animation = `fadeInUp 0.35s forwards`;
       card.style.animationDelay = `${delay}s`;
       delay += 0.05;
-
       DOM.shopItems.appendChild(card);
     });
-
-    if (!hasVisibleProducts) {
-      DOM.shopItems.innerHTML = '<div style="text-align:center;color:#555;">No items available for you</div>';
-    }
 
   } catch (e) {
     console.error(e);
