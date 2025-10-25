@@ -1248,8 +1248,36 @@ function loadHost(idx) {
 
   currentIndex = idx;
 
-  // 🎥 Load video
-  videoFrame.src = host.videoUrl || "";
+  // 🎥 Get video container (keep same ID for layout)
+  const container = document.getElementById("featuredHostVideo");
+  container.innerHTML = ""; // clear previous player
+
+  const videoUrl = host.videoUrl || "";
+  let playerEl;
+
+  // 🎬 Detect if link is direct video or an embed
+  if (videoUrl.match(/\.(mp4|webm|mov)$/i)) {
+    // ▶️ Use HTML5 <video> for direct .mp4 etc.
+    playerEl = document.createElement("video");
+    playerEl.src = videoUrl;
+    playerEl.controls = true;
+    playerEl.autoplay = true;
+    playerEl.muted = true;
+    playerEl.playsInline = true;
+    playerEl.style.width = "100%";
+    playerEl.style.borderRadius = "8px";
+  } else {
+    // ▶️ Use <iframe> for YouTube, Vimeo, etc.
+    playerEl = document.createElement("iframe");
+    playerEl.src = videoUrl;
+    playerEl.allowFullscreen = true;
+    playerEl.frameBorder = "0";
+    playerEl.style.width = "100%";
+    playerEl.style.height = "300px";
+    playerEl.style.borderRadius = "8px";
+  }
+
+  container.appendChild(playerEl);
   console.log("🎬 Loading host:", host.chatId || host.id);
 
   // 🧍 Username
