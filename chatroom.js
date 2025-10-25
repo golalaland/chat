@@ -1243,6 +1243,7 @@ function renderHostAvatars() {
 
 
 /* ---------- Load Host ---------- */
+/* ---------- Load Host ---------- */
 function loadHost(idx) {
   const host = hosts[idx];
   if (!host) return;
@@ -1267,6 +1268,39 @@ function loadHost(idx) {
   videoEl.style.borderRadius = "8px";
   videoEl.style.display = "none";
   videoEl.style.cursor = "pointer";
+  videoEl.style.position = "relative";
+  videoEl.style.zIndex = "1";
+
+  // 🔊 Hint overlay
+  const hint = document.createElement("div");
+  hint.textContent = "Tap to unmute 🔊";
+  Object.assign(hint.style, {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    background: "rgba(0, 0, 0, 0.5)",
+    color: "#fff",
+    padding: "6px 14px",
+    borderRadius: "20px",
+    fontSize: "14px",
+    opacity: "0",
+    transition: "opacity 0.4s ease",
+    zIndex: "2",
+    pointerEvents: "none",
+  });
+
+  videoContainer.style.position = "relative";
+  videoContainer.appendChild(hint);
+
+  // Fade hint in initially
+  setTimeout(() => { hint.style.opacity = "1"; }, 400);
+
+  // Disable default zoom on double tap
+  videoEl.addEventListener("touchstart", (e) => {
+    if (e.touches.length > 1) return;
+    e.preventDefault();
+  }, { passive: false });
 
   // Tap + double-tap detection
   let lastTap = 0;
@@ -1275,12 +1309,29 @@ function loadHost(idx) {
     const tapDiff = now - lastTap;
 
     if (tapDiff < 300 && tapDiff > 0) {
-      // Double tap → Fullscreen
-      if (videoEl.requestFullscreen) videoEl.requestFullscreen();
-      else if (videoEl.webkitRequestFullscreen) videoEl.webkitRequestFullscreen();
+      // Double tap → toggle fullscreen
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (videoEl.requestFullscreen) {
+        videoEl.requestFullscreen();
+      } else if (videoEl.webkitEnterFullscreen) {
+        videoEl.webkitEnterFullscreen(); // iPhone Safari
+      } else if (videoEl.webkitRequestFullscreen) {
+        videoEl.webkitRequestFullscreen();
+      }
     } else {
-      // Single tap → Toggle mute
+      // Single tap → toggle mute
       videoEl.muted = !videoEl.muted;
+
+      if (videoEl.muted) {
+        hint.textContent = "Tap to unmute 🔊";
+        hint.style.opacity = "1";
+        setTimeout(() => (hint.style.opacity = "0"), 1500);
+      } else {
+        hint.textContent = "Sound on 🔈";
+        hint.style.opacity = "1";
+        setTimeout(() => (hint.style.opacity = "0"), 1200);
+      }
     }
 
     lastTap = now;
