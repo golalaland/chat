@@ -1261,7 +1261,7 @@ function loadHost(idx) {
   shimmer.className = "video-shimmer";
   videoContainer.appendChild(shimmer);
 
-  // Create video
+  // Create video element
   const videoEl = document.createElement("video");
   videoEl.src = host.videoUrl || "";
   videoEl.autoplay = true;
@@ -1269,22 +1269,21 @@ function loadHost(idx) {
   videoEl.loop = true;
   videoEl.playsInline = true;
   videoEl.preload = "metadata";
-  Object.assign(videoEl.style, {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    borderRadius: "8px",
-    display: "none",
-    cursor: "pointer",
-  });
+  videoEl.style.width = "100%";
+  videoEl.style.height = "100%";
+  videoEl.style.objectFit = "cover";
+  videoEl.style.borderRadius = "8px";
+  videoEl.style.display = "none";
+  videoEl.style.cursor = "pointer";
   videoEl.setAttribute("webkit-playsinline", "true");
 
-  // Hint text
+  // Hint (bottom center)
   const hint = document.createElement("div");
   hint.className = "video-hint";
   hint.textContent = "Tap to unmute";
   videoContainer.appendChild(hint);
 
+  // Hint fade helper
   function showHint(msg, timeout = 1400) {
     hint.textContent = msg;
     hint.classList.add("show");
@@ -1293,43 +1292,37 @@ function loadHost(idx) {
   }
 
   // Fullscreen helpers
-  const isFullscreen = () =>
-    !!(document.fullscreenElement || document.webkitFullscreenElement);
-  const enterFullscreen = () =>
-    videoEl.requestFullscreen?.() ||
-    videoEl.webkitEnterFullscreen?.() ||
-    videoEl.webkitRequestFullscreen?.();
-  const exitFullscreen = () =>
-    document.exitFullscreen?.() || document.webkitExitFullscreen?.();
-  const toggleFullscreen = () =>
-    isFullscreen() ? exitFullscreen() : enterFullscreen();
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function toggleFullscreen() {
+    if (isFullscreen()) document.exitFullscreen?.();
+    else videoEl.requestFullscreen?.();
+  }
 
-  // Tap logic
+  // Tap events
   let lastTap = 0;
-  function onTapEvent() {
+  function onTapEvent(e) {
     const now = Date.now();
     const diff = now - lastTap;
     lastTap = now;
 
-    if (diff > 0 && diff < 300) toggleFullscreen();
-    else {
+    if (diff > 0 && diff < 300) {
+      toggleFullscreen();
+    } else {
       videoEl.muted = !videoEl.muted;
       showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 1200);
     }
   }
 
   videoEl.addEventListener("click", onTapEvent);
-  videoEl.addEventListener(
-    "touchend",
-    (ev) => {
-      if (ev.changedTouches && ev.changedTouches.length > 1) return;
-      ev.preventDefault?.();
-      onTapEvent(ev);
-    },
-    { passive: false }
-  );
+  videoEl.addEventListener("touchend", (ev) => {
+    if (ev.changedTouches && ev.changedTouches.length > 1) return;
+    ev.preventDefault?.();
+    onTapEvent(ev);
+  }, { passive: false });
 
-  // Reveal when ready
+  // Show video when ready
   videoEl.addEventListener("loadeddata", () => {
     shimmer.style.display = "none";
     videoEl.style.display = "block";
@@ -1337,57 +1330,107 @@ function loadHost(idx) {
     videoEl.play().catch(() => {});
   });
 
+  // Append video
   videoContainer.appendChild(videoEl);
 
-  /* ---------- Host Info + Meet ---------- */
+  /* ---------- Host Info ---------- */
   usernameEl.textContent = host.chatId || "Unknown Host";
-
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
-  const flair = gender === "male" ? "😎" : "💋";
-  const fruit = host.fruitPick || "🍓";
-  const nature = host.naturePick || "cool";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-  const location = host.location || "Lagos";
+  const flair = gender === "male" ? "😎" : "💋";
+  const fruit = host.fruitPick || "🍇";
+  const nature = host.naturePick || "cool";
+  const city = host.location || "Lagos";
   const country = host.country || "Nigeria";
 
-  // Create description line
-  detailsEl.textContent = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup} currently in ${location}, ${country}.`;
+  detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
 
-  // Meet Button
-  const meetBtn = document.createElement("button");
-  meetBtn.className = "meet-btn";
-  meetBtn.textContent = "💫 Meet (21⭐)";
-  detailsEl.insertAdjacentElement("afterend", meetBtn);
+  /* ---------- Meet Button ---------- */
+  let meetBtn = document.getElementById("meetBtn");
+  if (!meetBtn) {
+    meetBtn = document.createElement("button");
+    meetBtn.id = "meetBtn";
+    meetBtn.textContent = "Meet 💫 (21⭐)";
+    meetBtn.style.marginTop = "10px";
+    meetBtn.style.padding = "8px 16px";
+    meetBtn.style.borderRadius = "6px";
+    meetBtn.style.background = "linear-gradient(90deg,#ff0099,#ff6600)";
+    meetBtn.style.color = "#fff";
+    meetBtn.style.border = "none";
+    meetBtn.style.fontWeight = "bold";
+    meetBtn.style.cursor = "pointer";
+    detailsEl.insertAdjacentElement("afterend", meetBtn);
+  }
 
-  meetBtn.addEventListener("click", () => {
-    const starsAvailable = parseInt(giftSlider.value || "0");
-    if (starsAvailable < 21) {
-      alert("You need at least 21⭐ to meet this host!");
-      return;
-    }
+  meetBtn.onclick = () => {
+    showMeetModal(host);
+  };
 
-    // Telegram link
-    const agentUser = "YOUR_AGENT_USERNAME"; // <-- change this
-    const text = encodeURIComponent(
-      `💫 New Meet Request:\n` +
-        `Host: ${host.chatId}\n` +
-        `Profile: ${fruit} ${nature} ${gender}, ${ageGroup}\n` +
-        `Location: ${location}, ${country}\n` +
-        `Meet cost: 21⭐`
-    );
-    window.open(`https://t.me/${agentUser}?text=${text}`, "_blank");
-  });
-
-  // Highlight avatar
+  // Update avatar highlight
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
 
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
+}
 
-  console.log("🎬 Loaded host video:", host.videoUrl);
+/* ---------- Meet Modal ---------- */
+function showMeetModal(host) {
+  let modal = document.getElementById("meetModal");
+  if (modal) modal.remove();
+
+  modal = document.createElement("div");
+  modal.id = "meetModal";
+  modal.style.position = "fixed";
+  modal.style.top = 0;
+  modal.style.left = 0;
+  modal.style.width = "100vw";
+  modal.style.height = "100vh";
+  modal.style.background = "rgba(0,0,0,0.75)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.zIndex = 9999;
+
+  modal.innerHTML = `
+    <div style="background:#111;padding:20px;border-radius:10px;text-align:center;color:#fff;max-width:320px;">
+      <h3>Meet ${host.chatId || "this host"}?</h3>
+      <p>This will cost <b>21⭐</b>. Proceed?</p>
+      <div style="margin-top:15px;display:flex;gap:10px;justify-content:center;">
+        <button id="cancelMeet" style="padding:8px 14px;background:#333;border:none;color:#fff;border-radius:6px;">Cancel</button>
+        <button id="confirmMeet" style="padding:8px 14px;background:#ff6600;border:none;color:#fff;border-radius:6px;">Yes</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.querySelector("#cancelMeet").onclick = () => modal.remove();
+  modal.querySelector("#confirmMeet").onclick = () => {
+    const cost = 21;
+    if (userStars >= cost) {
+      userStars -= cost;
+      updateStarsDisplay();
+
+      // Send custom Telegram message to your agent
+      const msg = `💫 Meet Request!\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
+
+      modal.remove();
+      alert("Your meet request has been sent! 💫");
+    } else {
+      alert("Not enough stars ⭐. Earn or buy more to meet!");
+    }
+  };
+}
+
+/* ---------- Dummy helpers ---------- */
+let userStars = 100; // example balance
+function updateStarsDisplay() {
+  document.getElementById("starsBalance").textContent = `${userStars}⭐`;
 }
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
