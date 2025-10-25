@@ -1242,48 +1242,44 @@ function renderHostAvatars() {
 }
 
 /* ---------- Load Host ---------- */
+/* ---------- Load Host ---------- */
 function loadHost(idx) {
   const host = hosts[idx];
   if (!host) return;
-
   currentIndex = idx;
 
-  // 🎥 Get video container (keep same ID for layout)
-  const container = document.getElementById("featuredHostVideo");
-  container.innerHTML = ""; // clear previous player
+  const videoContainer = document.getElementById("featuredHostVideo");
+  const shimmer = document.querySelector(".video-shimmer");
 
-  const videoUrl = host.videoUrl || "";
-  let playerEl;
+  // Reset content + show shimmer
+  videoContainer.innerHTML = "";
+  shimmer.style.display = "block";
 
-  // 🎬 Detect if link is direct video or an embed
-  if (videoUrl.match(/\.(mp4|webm|mov)$/i)) {
-    // ▶️ Use HTML5 <video> for direct .mp4 etc.
-    playerEl = document.createElement("video");
-    playerEl.src = videoUrl;
-    playerEl.controls = true;
-    playerEl.autoplay = true;
-    playerEl.muted = true;
-    playerEl.playsInline = true;
-    playerEl.style.width = "100%";
-    playerEl.style.borderRadius = "8px";
-  } else {
-    // ▶️ Use <iframe> for YouTube, Vimeo, etc.
-    playerEl = document.createElement("iframe");
-    playerEl.src = videoUrl;
-    playerEl.allowFullscreen = true;
-    playerEl.frameBorder = "0";
-    playerEl.style.width = "100%";
-    playerEl.style.height = "300px";
-    playerEl.style.borderRadius = "8px";
-  }
+  // 🎥 Create video dynamically
+  const videoEl = document.createElement("video");
+  videoEl.src = host.videoUrl || "";
+  videoEl.autoplay = true;
+  videoEl.muted = true;
+  videoEl.loop = true;
+  videoEl.playsInline = true;
+  videoEl.preload = "metadata";
+  videoEl.style.width = "100%";
+  videoEl.style.borderRadius = "8px";
+  videoEl.style.display = "none";
 
-  container.appendChild(playerEl);
-  console.log("🎬 Loading host:", host.chatId || host.id);
+  // When video is ready, reveal it
+  videoEl.addEventListener("loadeddata", () => {
+    shimmer.style.display = "none";
+    videoEl.style.display = "block";
+  });
 
-  // 🧍 Username
+  // Append to container
+  videoContainer.appendChild(videoEl);
+
+  console.log("🎬 Loaded host video:", host.videoUrl);
+
+  // 🧍 Username + details
   usernameEl.textContent = host.chatId || "Unknown Host";
-
-  // 💬 Description
   const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
