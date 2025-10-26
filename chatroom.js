@@ -1381,7 +1381,6 @@ function showMeetModal(host) {
   let modal = document.getElementById("meetModal");
   if (modal) modal.remove();
 
-  // Ensure modal is always on top of video (z-index fix)
   modal = document.createElement("div");
   modal.id = "meetModal";
   modal.style.position = "fixed";
@@ -1393,7 +1392,7 @@ function showMeetModal(host) {
   modal.style.display = "flex";
   modal.style.alignItems = "center";
   modal.style.justifyContent = "center";
-  modal.style.zIndex = "999999"; // ensure it overrides video
+  modal.style.zIndex = "999999";
   modal.style.backdropFilter = "blur(3px)";
   modal.style.webkitBackdropFilter = "blur(3px)";
 
@@ -1410,30 +1409,48 @@ function showMeetModal(host) {
 
   document.body.appendChild(modal);
 
-  // Fix: always bring modal to top (in case of other positioned containers)
   setTimeout(() => modal.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
 
-  // Button actions
-  modal.querySelector("#cancelMeet").onclick = () => modal.remove();
+  const cancelBtn = modal.querySelector("#cancelMeet");
+  const confirmBtn = modal.querySelector("#confirmMeet");
 
-  modal.querySelector("#confirmMeet").onclick = () => {
+  cancelBtn.onclick = () => modal.remove();
+
+  confirmBtn.onclick = async () => {
     const cost = 21;
-    const balance = window.userStars || 0; // pull from global or fallback
-    console.log("⭐ Current stars:", balance);
 
-    if (balance >= cost) {
-      window.userStars = balance - cost; // deduct safely
-      if (typeof updateStarsDisplay === "function") updateStarsDisplay();
-
-      // Send Telegram message to agent
-      const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
-      const encoded = encodeURIComponent(msg);
-      window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
-
+    if (!currentUser?.uid) {
+      alert("Please log in to meet ⭐");
       modal.remove();
-      alert("💫 Your meet request has been sent!");
-    } else {
-      alert("You don’t have enough stars ⭐. Earn or buy more to continue.");
+      return;
+    }
+
+    // Disable button immediately to prevent multiple clicks
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = 0.6;
+    confirmBtn.style.cursor = "not-allowed";
+
+    try {
+      const result = await tryDeductStarsForJoin(cost);
+
+      if (result.ok) {
+        // Update UI in real-time
+        if (typeof updateStarsDisplay === "function") updateStarsDisplay();
+
+        // Telegram redirect
+        const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
+        const encoded = encodeURIComponent(msg);
+        window.open(`https://t.me/drtantra?text=${encoded}`, "_blank");
+
+        alert("💫 Your meet request has been sent!");
+      } else {
+        alert(result.message || "You don’t have enough stars ⭐. Earn or buy more to continue.");
+      }
+    } catch (err) {
+      console.error("Meet transaction failed:", err);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      modal.remove(); // Always close modal
     }
   };
 }
