@@ -1,18 +1,3 @@
-
-
-
-A {fruitPick} { {gender} in her {20s} currently in {location}, {country} 
-
-A 🍇 sexy female in her 20s currently in Lagos, Nigeria. 
-
-[meet] btn - sends our agent a custom WhatsApp msg 
-
-Hi, I’m a VIP member on Cube & I’d like to meet {hostName} , I’ll send my pictures shortly. 
-
-
-
-Chatroom JS : 
-
 /* ---------- Imports (Firebase v10) ---------- */
 import { 
   initializeApp 
