@@ -1,3 +1,18 @@
+
+
+
+A {fruitPick} { {gender} in her {20s} currently in {location}, {country} 
+
+A 🍇 sexy female in her 20s currently in Lagos, Nigeria. 
+
+[meet] btn - sends our agent a custom WhatsApp msg 
+
+Hi, I’m a VIP member on Cube & I’d like to meet {hostName} , I’ll send my pictures shortly. 
+
+
+
+Chatroom JS : 
+
 /* ---------- Imports (Firebase v10) ---------- */
 import { 
   initializeApp 
@@ -1242,8 +1257,6 @@ function renderHostAvatars() {
 }
 
 
-
-
 /* ---------- Load Host ---------- */
 function loadHost(idx) {
   const host = hosts[idx];
@@ -1347,8 +1360,37 @@ function loadHost(idx) {
   const country = host.country || "Nigeria";
 
   detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-  
-  
+
+  /* ---------- Meet Button ---------- */
+  let meetBtn = document.getElementById("meetBtn");
+  if (!meetBtn) {
+    meetBtn = document.createElement("button");
+    meetBtn.id = "meetBtn";
+    meetBtn.textContent = "Meet";
+    meetBtn.style.marginTop = "10px";
+    meetBtn.style.padding = "8px 16px";
+    meetBtn.style.borderRadius = "6px";
+    meetBtn.style.background = "linear-gradient(90deg,#ff0099,#ff6600)";
+    meetBtn.style.color = "#fff";
+    meetBtn.style.border = "none";
+    meetBtn.style.fontWeight = "bold";
+    meetBtn.style.cursor = "pointer";
+    detailsEl.insertAdjacentElement("afterend", meetBtn);
+  }
+
+  meetBtn.onclick = () => {
+    showMeetModal(host);
+  };
+
+  // Update avatar highlight
+  hostListEl.querySelectorAll("img").forEach((img, i) => {
+    img.classList.toggle("active", i === idx);
+  });
+
+  giftSlider.value = 1;
+  giftAmountEl.textContent = "1";
+}
+
 /* ---------- Meet Modal (fixed to appear above video + proper stars logic) ---------- */
 function showMeetModal(host) {
   let modal = document.getElementById("meetModal");
