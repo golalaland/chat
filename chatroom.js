@@ -1401,7 +1401,7 @@ function showMeetModal(host) {
   modal.innerHTML = `
     <div id="meetModalContent" style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
       <h3 style="margin-bottom:10px;font-weight:600;">Meet ${host.chatId || "this host"}?</h3>
-      <p style="margin-bottom:16px;">This will cost you <b>21 stars ⭐</b>.</p>
+      <p style="margin-bottom:16px;">This will cost <b>21⭐</b>.</p>
       <div style="display:flex;gap:10px;justify-content:center;">
         <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
         <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
@@ -1464,7 +1464,7 @@ function showMeetModal(host) {
               modalContent.innerHTML = `
                 <h3 style="margin-bottom:10px;font-weight:600;">Meet Request Sent!</h3>
                 <p style="margin-bottom:16px;">Your request to meet <b>${host.chatId}</b> is approved.</p>
-                <button id="letsGoBtn" style="margin-top:6px;padding:10px 18px;border:none;border-radius:8px;font-weight:600;background:linear-gradient(90deg,#ff0099,#ff6600);color:#fff;cursor:pointer;">Send Message</button>
+                <button id="letsGoBtn" style="margin-top:6px;padding:10px 18px;border:none;border-radius:8px;font-weight:600;background:linear-gradient(90deg,#ff0099,#ff6600);color:#fff;cursor:pointer;">Let's Go 🚀</button>
               `;
 
               const letsGoBtn = modalContent.querySelector("#letsGoBtn");
@@ -1491,13 +1491,31 @@ let userStars = 100; // example balance
 function updateStarsDisplay() {
   document.getElementById("starsBalance").textContent = `${userStars}⭐`;
 }
+const giftGradients = [
+  "linear-gradient(90deg, #ff0099, #ff6600)",
+  "linear-gradient(90deg, #ff3399, #ff66cc)",
+  "linear-gradient(90deg, #ff00ff, #ff66ff)",
+  "linear-gradient(90deg, #ff6666, #ff99cc)",
+  "linear-gradient(90deg, #ff0077, #ff55aa)"
+];
+
+function getRandomGradient() {
+  return giftGradients[Math.floor(Math.random() * giftGradients.length)];
+}
+
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
+
+  // Random gradient for slider track
+  giftSlider.style.background = getRandomGradient();
 });
 
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
+  // Random gradient for gift button
+  giftBtn.style.background = getRandomGradient();
+
   try {
     const host = hosts[currentIndex];
     if (!host?.id) {
@@ -1530,11 +1548,8 @@ giftBtn.addEventListener("click", async () => {
       const senderData = senderSnap.data();
       if ((senderData.stars || 0) < giftStars) throw new Error("Insufficient stars");
 
-      // --- Users updates only ---
       tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
       tx.update(receiverRef, { stars: increment(giftStars) });
-
-      // --- Only receiver in featuredHosts ---
       tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
     });
 
@@ -1556,7 +1571,7 @@ nextBtn.addEventListener("click", e => {
   loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* ---------- Modal control ---------- */
+/* ---------- Modal control -b--------- */
 openBtn.addEventListener("click", () => {
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
