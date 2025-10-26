@@ -1402,19 +1402,9 @@ function showMeetModal(host) {
       <p style="margin-bottom:16px;">This will cost <b>21⭐</b>.</p>
       <div style="display:flex;gap:10px;justify-content:center;">
         <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
-        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;display:flex;align-items:center;gap:5px;">
-          <span class="btn-text">Yes</span>
-          <span class="btn-spinner" style="display:none;border:2px solid #fff;border-top:2px solid transparent;border-radius:50%;width:14px;height:14px;animation:spin 0.8s linear infinite;"></span>
-        </button>
+        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
       </div>
     </div>
-
-    <style>
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    </style>
   `;
 
   document.body.appendChild(modal);
@@ -1422,8 +1412,6 @@ function showMeetModal(host) {
 
   const cancelBtn = modal.querySelector("#cancelMeet");
   const confirmBtn = modal.querySelector("#confirmMeet");
-  const btnText = modal.querySelector(".btn-text");
-  const btnSpinner = modal.querySelector(".btn-spinner");
   const modalContent = modal.querySelector("#meetModalContent");
 
   cancelBtn.onclick = () => modal.remove();
@@ -1443,39 +1431,43 @@ function showMeetModal(host) {
       return;
     }
 
-    // Disable button + show spinner
+    // Disable button
     confirmBtn.disabled = true;
     confirmBtn.style.opacity = 0.6;
     confirmBtn.style.cursor = "not-allowed";
-    btnText.style.display = "none";
-    btnSpinner.style.display = "inline-block";
 
     try {
-      // Optimistic local update
+      // Optimistic deduction
       currentUser.stars -= COST;
       if (refs?.starCountEl) {
         refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
       }
+      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch(err => console.error(err));
 
-      // Firestore update (async)
-      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch(err => {
-        console.error("Firestore deduction failed:", err);
-        alert("Stars update failed on server. Refresh to sync.");
+      // Replace modal content with staged messages
+      const stages = [
+        "Handling your meet request…",
+        "Collecting host’s identity…",
+        "Generating secure token…",
+        "GBAM! Redirecting now…"
+      ];
+
+      modalContent.innerHTML = `<p id="stageMsg" style="margin-top:20px;font-weight:500;"></p>`;
+
+      const stageMsgEl = modalContent.querySelector("#stageMsg");
+
+      stages.forEach((msg, index) => {
+        setTimeout(() => {
+          stageMsgEl.textContent = msg;
+          // Final stage: redirect to Telegram
+          if (index === stages.length - 1) {
+            const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
+            const telegramUrl = `https://t.me/<AGENT_USERNAME>?text=${encodeURIComponent(telegramMessage)}`;
+            window.open(telegramUrl, "_blank");
+            modal.remove();
+          }
+        }, index * 1500); // 1.5s between each stage
       });
-
-      // ✅ Update modal content to show confirmation
-      modalContent.innerHTML = `
-        <h3 style="margin-bottom:10px;font-weight:600;">Meet Request Sent!</h3>
-        <p style="margin-bottom:16px;">Your meet request to <b>${host.chatId}</b> has been sent. Redirecting to Telegram in 5 seconds...</p>
-      `;
-
-      // Delay Telegram redirect 5 seconds
-      setTimeout(() => {
-        const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
-        const encoded = encodeURIComponent(msg);
-        window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
-        modal.remove();
-      }, 5000);
 
     } catch (err) {
       console.error("Meet deduction failed:", err);
