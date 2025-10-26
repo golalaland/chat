@@ -1402,61 +1402,75 @@ function showMeetModal(host) {
       <p style="margin-bottom:16px;">This will cost <b>21⭐</b>.</p>
       <div style="display:flex;gap:10px;justify-content:center;">
         <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
-        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
+        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;display:flex;align-items:center;gap:5px;">
+          <span class="btn-text">Yes</span>
+          <span class="btn-spinner" style="display:none;border:2px solid #fff;border-top:2px solid transparent;border-radius:50%;width:14px;height:14px;animation:spin 0.8s linear infinite;"></span>
+        </button>
       </div>
     </div>
+
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   `;
 
   document.body.appendChild(modal);
-
   setTimeout(() => modal.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
 
   const cancelBtn = modal.querySelector("#cancelMeet");
   const confirmBtn = modal.querySelector("#confirmMeet");
+  const btnText = modal.querySelector(".btn-text");
+  const btnSpinner = modal.querySelector(".btn-spinner");
 
   cancelBtn.onclick = () => modal.remove();
 
   confirmBtn.onclick = async () => {
-  const cost = 21;
+    const cost = 21;
 
-  if (!currentUser?.uid) {
-    alert("Please log in to meet ⭐");
-    modal.remove();
-    return;
-  }
-
-  confirmBtn.disabled = true;
-  confirmBtn.style.opacity = 0.6;
-  confirmBtn.style.cursor = "not-allowed";
-  const originalText = confirmBtn.textContent;
-  confirmBtn.textContent = "Processing...";
-
-  try {
-    const result = await tryDeductStarsForJoin(cost);
-
-    if (result.ok) {
-      if (typeof updateStarsDisplay === "function") updateStarsDisplay();
-
-      const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
-      const encoded = encodeURIComponent(msg);
-      window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
-
-      alert("💫 Your meet request has been sent!");
-    } else {
-      alert(result.message || "You don’t have enough stars ⭐. Earn or buy more to continue.");
+    if (!currentUser?.uid) {
+      alert("Please log in to meet ⭐");
+      modal.remove();
+      return;
     }
-  } catch (err) {
-    console.error("Meet transaction failed:", err);
-    alert("Something went wrong. Please try again later.");
-  } finally {
-    // Always reset button and close modal
-    modal.remove();
-    confirmBtn.disabled = false;
-    confirmBtn.style.opacity = 1;
-    confirmBtn.style.cursor = "pointer";
-    confirmBtn.textContent = originalText;
-  }
-};
+
+    // Disable button + show spinner
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = 0.6;
+    confirmBtn.style.cursor = "not-allowed";
+    btnText.style.display = "none";
+    btnSpinner.style.display = "inline-block";
+
+    try {
+      const result = await tryDeductStarsForJoin(cost);
+
+      if (result.ok) {
+        if (typeof updateStarsDisplay === "function") updateStarsDisplay();
+
+        const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
+        const encoded = encodeURIComponent(msg);
+        window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
+
+        alert("💫 Your meet request has been sent!");
+      } else {
+        alert(result.message || "You don’t have enough stars ⭐. Earn or buy more to continue.");
+      }
+    } catch (err) {
+      console.error("Meet transaction failed:", err);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      // Reset button & close modal
+      modal.remove();
+      confirmBtn.disabled = false;
+      confirmBtn.style.opacity = 1;
+      confirmBtn.style.cursor = "pointer";
+      btnText.style.display = "inline";
+      btnSpinner.style.display = "none";
+    }
+  };
+}
 
 /* ---------- Dummy helpers ---------- */
 let userStars = 100; // example balance
