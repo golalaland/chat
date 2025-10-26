@@ -1378,9 +1378,11 @@ function loadHost(idx) {
 
 /* ---------- Meet Modal (fixed to appear above video + proper stars logic) ---------- */
 function showMeetModal(host) {
+  // Remove any existing modal
   let modal = document.getElementById("meetModal");
   if (modal) modal.remove();
 
+  // Create modal container
   modal = document.createElement("div");
   modal.id = "meetModal";
   Object.assign(modal.style, {
@@ -1398,13 +1400,38 @@ function showMeetModal(host) {
     WebkitBackdropFilter: "blur(3px)"
   });
 
+  // Insert modal content
   modal.innerHTML = `
-    <div id="meetModalContent" style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
+    <div id="meetModalContent" style="
+      background:#111;
+      padding:20px 22px;
+      border-radius:12px;
+      text-align:center;
+      color:#fff;
+      max-width:340px;
+      box-shadow:0 0 20px rgba(0,0,0,0.5);
+    ">
       <h3 style="margin-bottom:10px;font-weight:600;">Meet ${host.chatId || "this host"}?</h3>
       <p style="margin-bottom:16px;">This will cost <b>21⭐</b>.</p>
       <div style="display:flex;gap:10px;justify-content:center;">
-        <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
-        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
+        <button id="cancelMeet" style="
+          padding:8px 16px;
+          background:#333;
+          border:none;
+          color:#fff;
+          border-radius:8px;
+          font-weight:500;
+          cursor:pointer;
+        ">Cancel</button>
+        <button id="confirmMeet" style="
+          padding:8px 16px;
+          background:linear-gradient(90deg,#ff0099,#ff6600);
+          border:none;
+          color:#fff;
+          border-radius:8px;
+          font-weight:600;
+          cursor:pointer;
+        ">Yes</button>
       </div>
     </div>
   `;
@@ -1415,36 +1442,43 @@ function showMeetModal(host) {
   const confirmBtn = modal.querySelector("#confirmMeet");
   const modalContent = modal.querySelector("#meetModalContent");
 
+  // Cancel button
   cancelBtn.onclick = () => modal.remove();
 
+  // Confirm button
   confirmBtn.onclick = async () => {
-    const COST = 21;
-
-    if (!currentUser?.uid) {
-      alert("Please log in to meet ⭐");
-      modal.remove();
-      return;
-    }
-
-    if ((currentUser.stars || 0) < COST) {
-      alert("You don’t have enough stars ⭐. Earn or buy more to continue.");
-      modal.remove();
-      return;
-    }
-
-    // Disable button
-    confirmBtn.disabled = true;
-    confirmBtn.style.opacity = 0.6;
-    confirmBtn.style.cursor = "not-allowed";
-
     try {
-      // Optimistic deduction
-      currentUser.stars -= COST;
-      if (refs?.starCountEl)
-        refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch(console.error);
+      const COST = 21;
 
-      // Replace modal content with staged messages
+      if (!currentUser?.uid) {
+        alert("Please log in to meet ⭐");
+        return modal.remove();
+      }
+
+      if ((currentUser.stars || 0) < COST) {
+        alert("You don’t have enough stars ⭐. Earn or buy more to continue.");
+        return modal.remove();
+      }
+
+      // Disable button immediately
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = 0.6;
+      confirmBtn.style.cursor = "not-allowed";
+
+      // Optimistically deduct stars
+      currentUser.stars -= COST;
+      if (refs?.starCountEl) {
+        refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+      }
+
+      // Update database safely
+      try {
+        await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) });
+      } catch (dbErr) {
+        console.error("Failed to update stars:", dbErr);
+      }
+
+      // Staged messages
       const stages = [
         "Handling your meet request…",
         "Collecting host’s identity…",
@@ -1456,30 +1490,46 @@ function showMeetModal(host) {
 
       stages.forEach((msg, index) => {
         setTimeout(() => {
-          stageMsgEl.textContent = msg;
+          try {
+            stageMsgEl.textContent = msg;
 
-          // After all stages, show success and redirect btn
-          if (index === stages.length - 1) {
-            setTimeout(() => {
-              modalContent.innerHTML = `
-                <h3 style="margin-bottom:10px;font-weight:600;">Meet Request Sent!</h3>
-                <p style="margin-bottom:16px;">Your request to meet <b>${host.chatId}</b> is approved.</p>
-                <button id="letsGoBtn" style="margin-top:6px;padding:10px 18px;border:none;border-radius:8px;font-weight:600;background:linear-gradient(90deg,#ff0099,#ff6600);color:#fff;cursor:pointer;">Let's Go 🚀</button>
-              `;
-
-              const letsGoBtn = modalContent.querySelector("#letsGoBtn");
-              letsGoBtn.onclick = () => {
-                const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
-                const telegramUrl = `https://t.me/drtantra?text=${encodeURIComponent(telegramMessage)}`;
-                window.open(telegramUrl, "_blank");
-                modal.remove();
-              };
-            }, 1500);
+            if (index === stages.length - 1) {
+              setTimeout(() => {
+                try {
+                  modalContent.innerHTML = `
+                    <h3 style="margin-bottom:10px;font-weight:600;">Meet Request Sent!</h3>
+                    <p style="margin-bottom:16px;">Your request to meet <b>${host.chatId}</b> is approved.</p>
+                    <button id="letsGoBtn" style="
+                      margin-top:6px;
+                      padding:10px 18px;
+                      border:none;
+                      border-radius:8px;
+                      font-weight:600;
+                      background:linear-gradient(90deg,#ff0099,#ff6600);
+                      color:#fff;
+                      cursor:pointer;
+                    ">Let's Go 🚀</button>
+                  `;
+                  const letsGoBtn = modalContent.querySelector("#letsGoBtn");
+                  letsGoBtn.onclick = () => {
+                    const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
+                    const telegramUrl = `https://t.me/drtantra?text=${encodeURIComponent(telegramMessage)}`;
+                    window.open(telegramUrl, "_blank");
+                    modal.remove();
+                  };
+                } catch (err) {
+                  console.error("Final modal update failed:", err);
+                }
+              }, 1500);
+            }
+          } catch (err) {
+            console.error("Stage update failed:", err);
           }
         }, index * 1500);
       });
+
     } catch (err) {
-      console.error("Meet deduction failed:", err);
+      console.error("Confirm button failed:", err);
       alert("Something went wrong. Please try again later.");
       modal.remove();
     }
