@@ -1397,7 +1397,7 @@ function showMeetModal(host) {
   modal.style.webkitBackdropFilter = "blur(3px)";
 
   modal.innerHTML = `
-    <div style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
+    <div id="meetModalContent" style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
       <h3 style="margin-bottom:10px;font-weight:600;">Meet ${host.chatId || "this host"}?</h3>
       <p style="margin-bottom:16px;">This will cost <b>21⭐</b>.</p>
       <div style="display:flex;gap:10px;justify-content:center;">
@@ -1424,6 +1424,7 @@ function showMeetModal(host) {
   const confirmBtn = modal.querySelector("#confirmMeet");
   const btnText = modal.querySelector(".btn-text");
   const btnSpinner = modal.querySelector(".btn-spinner");
+  const modalContent = modal.querySelector("#meetModalContent");
 
   cancelBtn.onclick = () => modal.remove();
 
@@ -1450,35 +1451,36 @@ function showMeetModal(host) {
     btnSpinner.style.display = "inline-block";
 
     try {
-      // ✅ Optimistic local update
+      // Optimistic local update
       currentUser.stars -= COST;
       if (refs?.starCountEl) {
         refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
       }
 
-      // Firestore update (async, no await blocking UI)
-      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch((err) => {
+      // Firestore update (async)
+      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch(err => {
         console.error("Firestore deduction failed:", err);
         alert("Stars update failed on server. Refresh to sync.");
       });
 
-      // Telegram redirect immediately
-      const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
-      const encoded = encodeURIComponent(msg);
-      window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
+      // ✅ Update modal content to show confirmation
+      modalContent.innerHTML = `
+        <h3 style="margin-bottom:10px;font-weight:600;">Meet Request Sent!</h3>
+        <p style="margin-bottom:16px;">Your meet request to <b>${host.chatId}</b> has been sent. Redirecting to Telegram in 5 seconds...</p>
+      `;
 
-      alert("💫 Your meet request has been sent!");
+      // Delay Telegram redirect 5 seconds
+      setTimeout(() => {
+        const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
+        const encoded = encodeURIComponent(msg);
+        window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
+        modal.remove();
+      }, 5000);
+
     } catch (err) {
       console.error("Meet deduction failed:", err);
       alert("Something went wrong. Please try again later.");
-    } finally {
-      // Reset button & close modal
       modal.remove();
-      confirmBtn.disabled = false;
-      confirmBtn.style.opacity = 1;
-      confirmBtn.style.cursor = "pointer";
-      btnText.style.display = "inline";
-      btnSpinner.style.display = "none";
     }
   };
 }
