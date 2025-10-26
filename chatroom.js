@@ -1448,8 +1448,7 @@ function showMeetModal(host) {
       const stages = [
         "Handling your meet request…",
         "Collecting host’s identity…",
-        "Generating secure token…",
-        "GBAM! Redirecting now…"
+        "Generating secure token…"
       ];
 
       modalContent.innerHTML = `<p id="stageMsg" style="margin-top:20px;font-weight:500;"></p>`;
@@ -1459,12 +1458,29 @@ function showMeetModal(host) {
       stages.forEach((msg, index) => {
         setTimeout(() => {
           stageMsgEl.textContent = msg;
-          // Final stage: redirect to Telegram
+
+          // On final stage, show "Let's Go" button
           if (index === stages.length - 1) {
-            const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
-            const telegramUrl = `https://t.me/<AGENT_USERNAME>?text=${encodeURIComponent(telegramMessage)}`;
-            window.open(telegramUrl, "_blank");
-            modal.remove();
+            const letsGoBtn = document.createElement("button");
+            letsGoBtn.textContent = "Let's Go!";
+            letsGoBtn.style.marginTop = "16px";
+            letsGoBtn.style.padding = "10px 18px";
+            letsGoBtn.style.border = "none";
+            letsGoBtn.style.borderRadius = "8px";
+            letsGoBtn.style.fontWeight = "600";
+            letsGoBtn.style.background = "linear-gradient(90deg,#ff0099,#ff6600)";
+            letsGoBtn.style.color = "#fff";
+            letsGoBtn.style.cursor = "pointer";
+
+            modalContent.appendChild(letsGoBtn);
+
+            letsGoBtn.onclick = () => {
+              // Telegram redirect on user click
+              const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
+              const telegramUrl = `https://t.me/<AGENT_USERNAME>?text=${encodeURIComponent(telegramMessage)}`;
+              window.open(telegramUrl, "_blank");
+              modal.remove();
+            };
           }
         }, index * 1500); // 1.5s between each stage
       });
@@ -1476,7 +1492,6 @@ function showMeetModal(host) {
     }
   };
 }
-
 /* ---------- Dummy helpers ---------- */
 let userStars = 100; // example balance
 function updateStarsDisplay() {
