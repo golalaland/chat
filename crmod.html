@@ -1,4 +1,4 @@
-(<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -852,7 +852,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* 🎁 Gift slider section */
 .gift-slider-container {
   display: flex;
-  align-items: center;
+  align-items: center;      /* vertical center for all items */
   justify-content: space-between;
   gap: 10px;
   background: rgba(255, 255, 255, 0.05);
@@ -900,20 +900,26 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   transform: scale(1.05);
 }
 
-.gift-slider-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-#giftAmount, #giftAmount + span {
-  vertical-align: middle;
+/* Number + star inline */
+#giftDisplay {
+  display: inline-flex;
+  align-items: center;  /* vertical align emoji and number */
+  gap: 2px;
+  font-size: 16px;      /* same size for number and emoji */
   line-height: 1;
 }
+
+#giftAmount {
+  display: inline-flex;
+  align-items: center;
+}
+
 #giftAmount + span {
-  transform: translateY(0);
+  display: inline-flex;
+  align-items: center;  /* ensures emoji aligns perfectly */
+  font-size: 16px;
+  line-height: 1;
+  transform: none;      /* remove old translateY tweaks */
 }
 
 /* 🖼 Avatar list */
@@ -1085,19 +1091,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <div id="featuredHostDetails" class="featured-host-details"></div>
   </div>
 
-  <div class="gift-slider-container">
-    <!-- Slider -->
-    <input type="range" id="giftSlider" min="1" max="999" value="1">
+<div class="gift-slider-container">
+  <!-- Slider -->
+  <input type="range" id="giftSlider" min="1" max="999" value="1">
 
-    <!-- Number + star inline -->
-    <span id="giftDisplay" style="display:inline-flex; align-items:center; gap:2px;">
-      <span id="giftAmount">1</span>
-      <span>⭐</span>
-    </span>
+  <!-- Number + star inline -->
+  <span id="giftDisplay">
+    <span id="giftAmount">1</span>
+    <span class="star-emoji">⭐</span>
+  </span>
 
-    <!-- Button -->
-    <button id="featuredGiftBtn" class="featured-gift-btn">GIFT 🎁</button>
-  </div>
+  <!-- Button -->
+  <button id="featuredGiftBtn" class="featured-gift-btn">GIFT</button>
 </div>
 
     <!-- Host avatars list -->
