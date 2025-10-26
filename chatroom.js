@@ -1477,7 +1477,7 @@ function showMeetModal(host) {
             letsGoBtn.onclick = () => {
               // Telegram redirect on user click
               const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
-              const telegramUrl = `https://t.me/<AGENT_USERNAME>?text=${encodeURIComponent(telegramMessage)}`;
+              const telegramUrl = `https://t.me/drtantra?text=${encodeURIComponent(telegramMessage)}`;
               window.open(telegramUrl, "_blank");
               modal.remove();
             };
