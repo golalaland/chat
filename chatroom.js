@@ -1383,18 +1383,20 @@ function showMeetModal(host) {
 
   modal = document.createElement("div");
   modal.id = "meetModal";
-  modal.style.position = "fixed";
-  modal.style.top = 0;
-  modal.style.left = 0;
-  modal.style.width = "100vw";
-  modal.style.height = "100vh";
-  modal.style.background = "rgba(0,0,0,0.75)";
-  modal.style.display = "flex";
-  modal.style.alignItems = "center";
-  modal.style.justifyContent = "center";
-  modal.style.zIndex = "999999";
-  modal.style.backdropFilter = "blur(3px)";
-  modal.style.webkitBackdropFilter = "blur(3px)";
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(0,0,0,0.75)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: "999999",
+    backdropFilter: "blur(3px)",
+    WebkitBackdropFilter: "blur(3px)"
+  });
 
   modal.innerHTML = `
     <div id="meetModalContent" style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
@@ -1408,7 +1410,6 @@ function showMeetModal(host) {
   `;
 
   document.body.appendChild(modal);
-  setTimeout(() => modal.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
 
   const cancelBtn = modal.querySelector("#cancelMeet");
   const confirmBtn = modal.querySelector("#confirmMeet");
@@ -1439,10 +1440,9 @@ function showMeetModal(host) {
     try {
       // Optimistic deduction
       currentUser.stars -= COST;
-      if (refs?.starCountEl) {
+      if (refs?.starCountEl)
         refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-      }
-      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch(err => console.error(err));
+      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch(console.error);
 
       // Replace modal content with staged messages
       const stages = [
@@ -1452,39 +1452,32 @@ function showMeetModal(host) {
       ];
 
       modalContent.innerHTML = `<p id="stageMsg" style="margin-top:20px;font-weight:500;"></p>`;
-
       const stageMsgEl = modalContent.querySelector("#stageMsg");
 
       stages.forEach((msg, index) => {
         setTimeout(() => {
           stageMsgEl.textContent = msg;
 
-          // On final stage, show "Let's Go" button
+          // After all stages, show success and redirect btn
           if (index === stages.length - 1) {
-            const letsGoBtn = document.createElement("button");
-            letsGoBtn.textContent = "Let's Go!";
-            letsGoBtn.style.marginTop = "16px";
-            letsGoBtn.style.padding = "10px 18px";
-            letsGoBtn.style.border = "none";
-            letsGoBtn.style.borderRadius = "8px";
-            letsGoBtn.style.fontWeight = "600";
-            letsGoBtn.style.background = "linear-gradient(90deg,#ff0099,#ff6600)";
-            letsGoBtn.style.color = "#fff";
-            letsGoBtn.style.cursor = "pointer";
+            setTimeout(() => {
+              modalContent.innerHTML = `
+                <h3 style="margin-bottom:10px;font-weight:600;">Meet Request Sent!</h3>
+                <p style="margin-bottom:16px;">Your request to meet <b>${host.chatId}</b> is approved.</p>
+                <button id="letsGoBtn" style="margin-top:6px;padding:10px 18px;border:none;border-radius:8px;font-weight:600;background:linear-gradient(90deg,#ff0099,#ff6600);color:#fff;cursor:pointer;">Let's Go 🚀</button>
+              `;
 
-            modalContent.appendChild(letsGoBtn);
-
-            letsGoBtn.onclick = () => {
-              // Telegram redirect on user click
-              const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
-              const telegramUrl = `https://t.me/drtantra?text=${encodeURIComponent(telegramMessage)}`;
-              window.open(telegramUrl, "_blank");
-              modal.remove();
-            };
+              const letsGoBtn = modalContent.querySelector("#letsGoBtn");
+              letsGoBtn.onclick = () => {
+                const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
+                const telegramUrl = `https://t.me/drtantra?text=${encodeURIComponent(telegramMessage)}`;
+                window.open(telegramUrl, "_blank");
+                modal.remove();
+              };
+            }, 1500);
           }
-        }, index * 1500); // 1.5s between each stage
+        }, index * 1500);
       });
-
     } catch (err) {
       console.error("Meet deduction failed:", err);
       alert("Something went wrong. Please try again later.");
@@ -1492,6 +1485,7 @@ function showMeetModal(host) {
     }
   };
 }
+
 /* ---------- Dummy helpers ---------- */
 let userStars = 100; // example balance
 function updateStarsDisplay() {
