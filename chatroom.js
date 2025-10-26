@@ -1256,16 +1256,16 @@ function loadHost(idx) {
   videoContainer.style.position = "relative";
   videoContainer.style.touchAction = "manipulation";
 
-  // Shimmer
+  // Shimmer loader
   const shimmer = document.createElement("div");
   shimmer.className = "video-shimmer";
   videoContainer.appendChild(shimmer);
 
-  // Create video
+  // Video element
   const videoEl = document.createElement("video");
   videoEl.src = host.videoUrl || "";
   videoEl.autoplay = true;
-  videoEl.muted = true;        
+  videoEl.muted = true;
   videoEl.loop = true;
   videoEl.playsInline = true;
   videoEl.preload = "metadata";
@@ -1276,7 +1276,6 @@ function loadHost(idx) {
   videoEl.style.display = "none";
   videoEl.style.cursor = "pointer";
   videoEl.setAttribute("webkit-playsinline", "true");
-  videoContainer.appendChild(videoEl);
 
   // Hint
   const hint = document.createElement("div");
@@ -1291,18 +1290,16 @@ function loadHost(idx) {
     hint._t = setTimeout(() => hint.classList.remove("show"), timeout);
   }
 
-  // Fullscreen helpers
+  // Fullscreen
   function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement);
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
   }
-  function enterFullscreen() {
-    if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
-    if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
-    if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
+  function toggleFullscreen() {
+    if (isFullscreen()) document.exitFullscreen?.();
+    else videoEl.requestFullscreen?.();
   }
-  function toggleFullscreen() { isFullscreen() ? document.exitFullscreen?.() : enterFullscreen(); }
 
-  // Tap / double-tap
+  // Tap events
   let lastTap = 0;
   function onTapEvent() {
     const now = Date.now();
@@ -1311,17 +1308,17 @@ function loadHost(idx) {
     if (diff > 0 && diff < 300) toggleFullscreen();
     else {
       videoEl.muted = !videoEl.muted;
-      showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 900);
+      showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 1200);
     }
   }
+
   videoEl.addEventListener("click", onTapEvent);
   videoEl.addEventListener("touchend", (ev) => {
     if (ev.changedTouches && ev.changedTouches.length > 1) return;
-    ev.preventDefault && ev.preventDefault();
+    ev.preventDefault?.();
     onTapEvent();
   }, { passive: false });
 
-  // Show video when ready
   videoEl.addEventListener("loadeddata", () => {
     shimmer.style.display = "none";
     videoEl.style.display = "block";
@@ -1329,82 +1326,107 @@ function loadHost(idx) {
     videoEl.play().catch(() => {});
   });
 
-  // UI text
+  videoContainer.appendChild(videoEl);
+
+  /* ---------- Host Info ---------- */
   usernameEl.textContent = host.chatId || "Unknown Host";
-  const gender = (host.gender || "female").toLowerCase();
+  const gender = (host.gender || "person").toLowerCase();
   const pronoun = gender === "male" ? "his" : "her";
   const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
-  detailsEl.textContent = `A ${host.fruitPick || "🍇"} ${host.naturePick || "cool"} ${gender} in ${pronoun} ${ageGroup} currently in ${host.location || "Lagos"}, ${host.country || "Nigeria"}.`;
+  const flair = gender === "male" ? "😎" : "💋";
+  const fruit = host.fruitPick || "🍇";
+  const nature = host.naturePick || "cool";
+  const city = host.location || "Lagos";
+  const country = host.country || "Nigeria";
 
+  detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+
+  /* ---------- Meet Button ---------- */
+  let meetBtn = document.getElementById("meetBtn");
+  if (!meetBtn) {
+    meetBtn = document.createElement("button");
+    meetBtn.id = "meetBtn";
+    meetBtn.style.marginTop = "10px";
+    meetBtn.style.padding = "8px 16px";
+    meetBtn.style.borderRadius = "6px";
+    meetBtn.style.background = "linear-gradient(90deg,#ff0099,#ff6600)";
+    meetBtn.style.color = "#fff";
+    meetBtn.style.border = "none";
+    meetBtn.style.fontWeight = "bold";
+    meetBtn.style.cursor = "pointer";
+    detailsEl.insertAdjacentElement("afterend", meetBtn);
+  }
+  meetBtn.textContent = `[meet ${host.chatId}]`;
+
+  meetBtn.onclick = () => showMeetModal(host);
+
+  // Update avatar highlight
   hostListEl.querySelectorAll("img").forEach((img, i) => {
     img.classList.toggle("active", i === idx);
   });
 
-  // Reset slider
   giftSlider.value = 1;
   giftAmountEl.textContent = "1";
 
-
-// --- Meet button ---
-let meetBtn = document.getElementById("meetBtn");
-if (!meetBtn) {
-  meetBtn = document.createElement("button");
-  meetBtn.id = "meetBtn";
-  meetBtn.className = "fiery-btn"; // keep your fiery color
-  detailsEl.parentNode.appendChild(meetBtn);
+  console.log("🎬 Loaded host video:", host.videoUrl);
 }
-meetBtn.textContent = `[meet ${host.chatId}]`;
 
-meetBtn.onclick = async () => {
-  const meetCost = 21;
-  if (!currentUser) return showGiftAlert("Please log in to meet ⭐");
+/* ---------- Meet Modal ---------- */
+function showMeetModal(host) {
+  let modal = document.getElementById("meetModal");
+  if (modal) modal.remove();
 
-  const confirmMeet = confirm(`Meet ${host.chatId} for ${meetCost} stars?`);
-  if (!confirmMeet) return;
+  modal = document.createElement("div");
+  modal.id = "meetModal";
+  modal.style.position = "fixed";
+  modal.style.top = 0;
+  modal.style.left = 0;
+  modal.style.width = "100vw";
+  modal.style.height = "100vh";
+  modal.style.background = "rgba(0,0,0,0.75)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.zIndex = "999999";
+  modal.style.backdropFilter = "blur(3px)";
+  modal.style.webkitBackdropFilter = "blur(3px)";
 
-  const senderRef = doc(db, "users", currentUser.uid);
-  const hostRef = doc(db, "users", host.id);
+  modal.innerHTML = `
+    <div style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
+      <h3 style="margin-bottom:10px;font-weight:600;">Meet ${host.chatId || "this host"}?</h3>
+      <p style="margin-bottom:16px;">This will cost <b>21⭐</b>.</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
+        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
+      </div>
+    </div>
+  `;
 
-  try {
-    await runTransaction(db, async (tx) => {
-      const senderSnap = await tx.get(senderRef);
-      const hostSnap = await tx.get(hostRef);
+  document.body.appendChild(modal);
 
-      if (!senderSnap.exists()) throw new Error("Your user record not found.");
-      if (!hostSnap.exists()) tx.set(hostRef, { stars: 0 }, { merge: true });
+  // Button actions
+  modal.querySelector("#cancelMeet").onclick = () => modal.remove();
 
-      const senderData = senderSnap.data();
-      if ((senderData.stars || 0) < meetCost) throw new Error("Insufficient stars to meet host");
+  modal.querySelector("#confirmMeet").onclick = () => {
+    const cost = 21;
+    const balance = window.userStars || 0;
 
-      // Deduct stars
-      tx.update(senderRef, { stars: increment(-meetCost) });
+    if (balance >= cost) {
+      window.userStars = balance - cost;
+      if (typeof updateStarsDisplay === "function") updateStarsDisplay();
 
-      // Log the meet request
-      tx.set(doc(db, "meetRequests", `${currentUser.uid}_${host.id}`), {
-        from: currentUser.uid,
-        to: host.id,
-        cost: meetCost,
-        timestamp: serverTimestamp(),
-      });
-    });
+      // Telegram redirect
+      const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick || "🍇"}/${host.naturePick || "cool"}`;
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
 
-    showGiftAlert(`🔥 You spent ${meetCost} stars to meet ${host.chatId}!`);
-
-    // --- Telegram redirect ---
-    const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
-    const telegramUrl = `https://t.me/drtantra?text=${encodeURIComponent(telegramMessage)}`;
-    window.open(telegramUrl, "_blank");
-
-    // Optional: open modal
-    openMeetModal(host);
-
-  } catch (err) {
-    console.error("❌ Meet request failed:", err);
-    showGiftAlert(`⚠️ ${err.message}`);
-  }
-};
-
-console.log("🎬 Loaded host video:", host.videoUrl);
+      modal.remove();
+      alert(`💫 You spent ${cost} stars to meet ${host.chatId}!`);
+    } else {
+      alert("You don’t have enough stars ⭐. Earn or buy more to continue.");
+    }
+  };
+}
 
 /* ---------- Dummy helpers ---------- */
 let userStars = 100; // example balance
