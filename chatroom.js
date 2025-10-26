@@ -1425,33 +1425,36 @@ function showMeetModal(host) {
       return;
     }
 
-    // Disable button immediately to prevent multiple clicks
+    // Disable button + show loading text
     confirmBtn.disabled = true;
     confirmBtn.style.opacity = 0.6;
     confirmBtn.style.cursor = "not-allowed";
+    const originalText = confirmBtn.textContent;
+    confirmBtn.textContent = "Processing...";
 
-    try {
-      const result = await tryDeductStarsForJoin(cost);
+    // Firestore transaction to deduct stars
+    const result = await tryDeductStarsForJoin(cost);
 
-      if (result.ok) {
-        // Update UI in real-time
-        if (typeof updateStarsDisplay === "function") updateStarsDisplay();
+    if (result.ok) {
+      // Real-time UI update
+      if (typeof updateStarsDisplay === "function") updateStarsDisplay();
 
-        // Telegram redirect
-        const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
-        const encoded = encodeURIComponent(msg);
-        window.open(`https://t.me/drtantra?text=${encoded}`, "_blank");
+      // Telegram redirect
+      const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick}/${host.naturePick}`;
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
 
-        alert("💫 Your meet request has been sent!");
-      } else {
-        alert(result.message || "You don’t have enough stars ⭐. Earn or buy more to continue.");
-      }
-    } catch (err) {
-      console.error("Meet transaction failed:", err);
-      alert("Something went wrong. Please try again later.");
-    } finally {
-      modal.remove(); // Always close modal
+      alert("💫 Your meet request has been sent!");
+    } else {
+      alert(result.message || "You don’t have enough stars ⭐. Earn or buy more to continue.");
     }
+
+    // Reset button and close modal
+    modal.remove();
+    confirmBtn.disabled = false;
+    confirmBtn.style.opacity = 1;
+    confirmBtn.style.cursor = "pointer";
+    confirmBtn.textContent = originalText;
   };
 }
 
