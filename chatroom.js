@@ -1345,12 +1345,12 @@ function loadHost(idx) {
   giftAmountEl.textContent = "1";
 
 
- // --- Meet button ---
+// --- Meet button ---
 let meetBtn = document.getElementById("meetBtn");
 if (!meetBtn) {
   meetBtn = document.createElement("button");
   meetBtn.id = "meetBtn";
-  meetBtn.className = "fiery-btn"; // keep the color you like
+  meetBtn.className = "fiery-btn"; // keep your fiery color
   detailsEl.parentNode.appendChild(meetBtn);
 }
 meetBtn.textContent = `[meet ${host.chatId}]`;
@@ -1389,15 +1389,22 @@ meetBtn.onclick = async () => {
     });
 
     showGiftAlert(`🔥 You spent ${meetCost} stars to meet ${host.chatId}!`);
-    openMeetModal(host); // trigger your matchmaking modal
+
+    // --- Telegram redirect ---
+    const telegramMessage = `Hi! I want to meet ${host.chatId} (userID: ${currentUser.uid})`;
+    const telegramUrl = `https://t.me/drtantra?text=${encodeURIComponent(telegramMessage)}`;
+    window.open(telegramUrl, "_blank");
+
+    // Optional: open modal
+    openMeetModal(host);
+
   } catch (err) {
     console.error("❌ Meet request failed:", err);
     showGiftAlert(`⚠️ ${err.message}`);
   }
 };
 
-  console.log("🎬 Loaded host video:", host.videoUrl);
-}
+console.log("🎬 Loaded host video:", host.videoUrl);
 
 /* ---------- Dummy helpers ---------- */
 let userStars = 100; // example balance
