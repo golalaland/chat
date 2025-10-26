@@ -1242,6 +1242,8 @@ function renderHostAvatars() {
 }
 
 
+
+
 /* ---------- Load Host ---------- */
 function loadHost(idx) {
   const host = hosts[idx];
@@ -1261,7 +1263,7 @@ function loadHost(idx) {
   shimmer.className = "video-shimmer";
   videoContainer.appendChild(shimmer);
 
-  // Video element
+  // Create video element
   const videoEl = document.createElement("video");
   videoEl.src = host.videoUrl || "";
   videoEl.autoplay = true;
@@ -1277,12 +1279,13 @@ function loadHost(idx) {
   videoEl.style.cursor = "pointer";
   videoEl.setAttribute("webkit-playsinline", "true");
 
-  // Hint
+  // Hint (bottom center)
   const hint = document.createElement("div");
   hint.className = "video-hint";
   hint.textContent = "Tap to unmute";
   videoContainer.appendChild(hint);
 
+  // Hint fade helper
   function showHint(msg, timeout = 1400) {
     hint.textContent = msg;
     hint.classList.add("show");
@@ -1290,7 +1293,7 @@ function loadHost(idx) {
     hint._t = setTimeout(() => hint.classList.remove("show"), timeout);
   }
 
-  // Fullscreen
+  // Fullscreen helpers
   function isFullscreen() {
     return !!(document.fullscreenElement || document.webkitFullscreenElement);
   }
@@ -1301,12 +1304,14 @@ function loadHost(idx) {
 
   // Tap events
   let lastTap = 0;
-  function onTapEvent() {
+  function onTapEvent(e) {
     const now = Date.now();
     const diff = now - lastTap;
     lastTap = now;
-    if (diff > 0 && diff < 300) toggleFullscreen();
-    else {
+
+    if (diff > 0 && diff < 300) {
+      toggleFullscreen();
+    } else {
       videoEl.muted = !videoEl.muted;
       showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 1200);
     }
@@ -1316,9 +1321,10 @@ function loadHost(idx) {
   videoEl.addEventListener("touchend", (ev) => {
     if (ev.changedTouches && ev.changedTouches.length > 1) return;
     ev.preventDefault?.();
-    onTapEvent();
+    onTapEvent(ev);
   }, { passive: false });
 
+  // Show video when ready
   videoEl.addEventListener("loadeddata", () => {
     shimmer.style.display = "none";
     videoEl.style.display = "block";
@@ -1326,6 +1332,7 @@ function loadHost(idx) {
     videoEl.play().catch(() => {});
   });
 
+  // Append video
   videoContainer.appendChild(videoEl);
 
   /* ---------- Host Info ---------- */
@@ -1340,8 +1347,8 @@ function loadHost(idx) {
   const country = host.country || "Nigeria";
 
   detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-
-
+  
+  
 /* ---------- Meet Modal (fixed to appear above video + proper stars logic) ---------- */
 function showMeetModal(host) {
   let modal = document.getElementById("meetModal");
