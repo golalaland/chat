@@ -1356,7 +1356,7 @@ function loadHost(idx) {
     meetBtn.style.cursor = "pointer";
     detailsEl.insertAdjacentElement("afterend", meetBtn);
   }
-  meetBtn.textContent = `[meet ${host.chatId}]`;
+  meetBtn.textContent = `meet ${host.chatId}`;
 
   meetBtn.onclick = () => showMeetModal(host);
 
@@ -1405,28 +1405,47 @@ function showMeetModal(host) {
   document.body.appendChild(modal);
 
   // Button actions
-  modal.querySelector("#cancelMeet").onclick = () => modal.remove();
+modal.querySelector("#confirmMeet").onclick = async () => {
+  const meetCost = 21;
+  if (!currentUser) return showGiftAlert("Please log in to meet ⭐");
 
-  modal.querySelector("#confirmMeet").onclick = () => {
-    const cost = 21;
-    const balance = window.userStars || 0;
+  const senderRef = doc(db, "users", currentUser.uid);
 
-    if (balance >= cost) {
-      window.userStars = balance - cost;
-      if (typeof updateStarsDisplay === "function") updateStarsDisplay();
+  try {
+    await runTransaction(db, async (tx) => {
+      const senderSnap = await tx.get(senderRef);
+      if (!senderSnap.exists()) throw new Error("Your user record not found.");
 
-      // Telegram redirect
-      const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick || "🍇"}/${host.naturePick || "cool"}`;
-      const encoded = encodeURIComponent(msg);
-      window.open(`https://t.me/YOUR_AGENT_USERNAME?text=${encoded}`, "_blank");
+      const senderData = senderSnap.data();
+      if ((senderData.stars || 0) < meetCost) throw new Error("Insufficient stars to meet host");
 
-      modal.remove();
-      alert(`💫 You spent ${cost} stars to meet ${host.chatId}!`);
-    } else {
-      alert("You don’t have enough stars ⭐. Earn or buy more to continue.");
-    }
-  };
-}
+      // Deduct stars
+      tx.update(senderRef, { stars: increment(-meetCost) });
+
+      // Log the meet request in Firestore
+      const meetRef = doc(db, "meetRequests", `${currentUser.uid}_${host.id}`);
+      tx.set(meetRef, {
+        from: currentUser.uid,
+        to: host.id,
+        cost: meetCost,
+        timestamp: serverTimestamp(),
+      });
+    });
+
+    // Telegram redirect
+    const msg = `💫 Meet Request\nUser wants to meet: ${host.chatId}\nLocation: ${host.location || "Unknown"}\nGender: ${host.gender}\nFruit/Nature: ${host.fruitPick || "🍇"}/${host.naturePick || "cool"}`;
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://t.me/drtantra?text=${encoded}`, "_blank");
+
+    modal.remove();
+    showGiftAlert(`💫 You spent ${meetCost} stars to meet ${host.chatId}!`);
+    if (typeof updateStarsDisplay === "function") updateStarsDisplay();
+
+  } catch (err) {
+    console.error("❌ Meet request failed:", err);
+    showGiftAlert(`⚠️ ${err.message}`);
+  }
+};
 
 /* ---------- Dummy helpers ---------- */
 let userStars = 100; // example balance
