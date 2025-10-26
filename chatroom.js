@@ -1491,31 +1491,14 @@ let userStars = 100; // example balance
 function updateStarsDisplay() {
   document.getElementById("starsBalance").textContent = `${userStars}⭐`;
 }
-const giftGradients = [
-  "linear-gradient(90deg, #ff0099, #ff6600)",
-  "linear-gradient(90deg, #ff3399, #ff66cc)",
-  "linear-gradient(90deg, #ff00ff, #ff66ff)",
-  "linear-gradient(90deg, #ff6666, #ff99cc)",
-  "linear-gradient(90deg, #ff0077, #ff55aa)"
-];
-
-function getRandomGradient() {
-  return giftGradients[Math.floor(Math.random() * giftGradients.length)];
-}
 
 /* ---------- Gift slider ---------- */
 giftSlider.addEventListener("input", () => {
   giftAmountEl.textContent = giftSlider.value;
-
-  // Random gradient for slider track
-  giftSlider.style.background = getRandomGradient();
 });
 
 /* ---------- Send gift ---------- */
 giftBtn.addEventListener("click", async () => {
-  // Random gradient for gift button
-  giftBtn.style.background = getRandomGradient();
-
   try {
     const host = hosts[currentIndex];
     if (!host?.id) {
@@ -1548,8 +1531,11 @@ giftBtn.addEventListener("click", async () => {
       const senderData = senderSnap.data();
       if ((senderData.stars || 0) < giftStars) throw new Error("Insufficient stars");
 
+      // --- Users updates only ---
       tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
       tx.update(receiverRef, { stars: increment(giftStars) });
+
+      // --- Only receiver in featuredHosts ---
       tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
     });
 
