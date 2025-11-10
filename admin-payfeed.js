@@ -507,81 +507,30 @@ if (massRemoveUsersBtn) massRemoveUsersBtn.addEventListener("click", async ()=>{
   }catch(err){ hideLoader(); console.error(err); alert("Failed to remove selected users."); }
 });
 
-// ---------- Move Selected Users to Whitelist (UID-based) ----------
+// ---------- Move Selected Users to Whitelist (mass) ----------
 if (moveToWhitelistBtn) moveToWhitelistBtn.addEventListener("click", async ()=>{
   const ids = getCheckedRowIdsFrom(usersTableBody);
   if(!ids.length) return alert("No users selected.");
-  
   const confirmed = await showConfirmModal("Move to Whitelist", `Move ${ids.length} user(s) to whitelist?`);
   if(!confirmed) return;
-
   showLoader("Moving to whitelist...");
   try{
-    for(const uid of ids){
-      const user = usersCache.find(u => u.id === uid);
+    for(const id of ids){
+      const user = usersCache.find(u=>u.id===id);
       if(!user) continue;
-      const email = (user.email || "").toLowerCase();
-      if(!email) continue;
-
-      // ✅ Set whitelist entry using UID as doc ID
-      await setDoc(doc(db, "whitelist", uid), {
-        uid,
-        email,
-        sanitizedEmail: email.replaceAll('.',','), // optional: for email queries
+      const emailKey = (user.email||"").toLowerCase();
+      if(!emailKey) continue;
+      await setDoc(doc(db,"whitelist", emailKey), {
+        email: emailKey,
         phone: user.phone || "",
         subscriptionActive: true,
         subscriptionStartTime: Date.now()
       }, { merge: true });
-
-      // update user doc to mark subscription active
-      await updateDoc(doc(db, "users", uid), { subscriptionActive: true }).catch(()=>{});
+      await updateDoc(doc(db,"users", id), { subscriptionActive: true }).catch(()=>{});
     }
-    hideLoader();
-    await loadWhitelist(); 
-    await loadUsers();
+    hideLoader(); await loadWhitelist(); await loadUsers();
     alert(`${ids.length} user(s) moved to whitelist.`);
-  } catch(err){
-    hideLoader();
-    console.error(err);
-    alert("Failed to move users to whitelist.");
-  }
-});
-
-// ---------- Per-row "To WL" button (UID-based) ----------
-usersTableBody.querySelectorAll("tr").forEach(tr=>{
-  const toWLBtn = tr.querySelector(".actions-cell button:nth-child(2)"); // adjust if necessary
-  if(!toWLBtn) return;
-  toWLBtn.addEventListener("click", async ()=>{
-    const uid = tr.dataset.id;
-    const user = usersCache.find(u => u.id === uid);
-    if(!user) return alert("User not found.");
-    const email = (user.email || "").toLowerCase();
-    if(!email) return alert("User has no email.");
-    const phone = tr.querySelector(".phone-input")?.value?.trim() || user.phone || "";
-
-    const confirmed = await showConfirmModal("Add to whitelist", `Add ${email} to whitelist?`);
-    if(!confirmed) return;
-
-    showLoader("Adding to whitelist...");
-    try {
-      await setDoc(doc(db, "whitelist", uid), {
-        uid,
-        email,
-        sanitizedEmail: email.replaceAll('.',','), // optional
-        phone,
-        subscriptionActive: true,
-        subscriptionStartTime: Date.now()
-      }, { merge: true });
-
-      await updateDoc(doc(db,"users", uid), { subscriptionActive: true, phone }).catch(()=>{});
-      hideLoader(); await loadWhitelist(); await loadUsers();
-      alert("Added to whitelist.");
-    } catch(err){
-      hideLoader();
-      console.error(err);
-      alert("Failed to add to whitelist.");
-    }
-  });
+  }catch(err){ hideLoader(); console.error(err); alert("Failed to move users to whitelist."); }
 });
 
 // ---------- Mass Remove Whitelist ----------
