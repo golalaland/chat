@@ -1124,10 +1124,12 @@ const startBtn = document.getElementById('startBtn');
 const startPage = document.getElementById('startPage');
 const posterImg = document.getElementById('posterImg');
 
+const startBtn = document.getElementById('startBtn');
+const startPage = document.getElementById('startPage');
+
 startBtn.addEventListener('click', () => {
-  document.body.classList.add('game-started'); // wallpaper 2
-  startPage.style.display = 'none';           // hide start page
-  posterImg.style.display = 'none';           // hide poster
+  document.body.classList.add('game-started'); // show wallpaper 2
+  startPage.style.display = 'none';            // hide start page + poster
   // show your game page here
 });
 </script>
