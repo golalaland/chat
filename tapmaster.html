@@ -171,6 +171,36 @@ body::before {
   -webkit-backdrop-filter: blur(8px);
   z-index: -1; /* behind content */
 }
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.lb-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.lb-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.lb-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lb-score {
+  font-size: 12px;
+  opacity: 0.7;
+}
 </style>
 </head>
 <body>
@@ -951,22 +981,38 @@ async function fetchLeaderboard(period = "daily", top = 10) {
       return;
     }
 
-    leaderboardList.innerHTML = topScores
-      .map((u, i) => {
-        const isCurrent = currentUser && u.uid === currentUser.uid;
+leaderboardList.innerHTML = topScores
+  .map((u, i) => {
+    const isCurrent = currentUser && u.uid === currentUser.uid;
 
-        let style = "";
-        if (i === 0) style = "color:#FFD700;font-weight:700;";
-        else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
-        else if (i === 2) style = "color:#CD7F32;font-weight:700;";
-        else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
+    // ---- Avatar selection (simple male/female placeholder) ----
+    const maleAvatar = "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/avatar-male.png";
+    const femaleAvatar = "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/avatar-female.png";
+    
+    // If your user object doesn't have gender, it defaults to male
+    const avatar = u.gender === "female" ? femaleAvatar : maleAvatar;
 
-        return `
-          <li style="margin-bottom:6px;${style}">
-            ${i + 1}. <strong>${u.chatId}</strong> — ${u.taps.toLocaleString()} taps
-          </li>`;
-      })
-      .join("");
+    // ---- Styles for ranks ----
+    let style = "";
+    if (i === 0) style = "color:#FFD700;font-weight:700;";
+    else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
+    else if (i === 2) style = "color:#CD7F32;font-weight:700;";
+    else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
+
+    return `
+      <li class="lb-row" style="${style}">
+        
+        <img class="lb-avatar" src="${avatar}" alt="avatar">
+
+        <div class="lb-info">
+          <span class="lb-name">${i + 1}. ${u.chatId}</span>
+          <span class="lb-score">${u.taps.toLocaleString()} taps</span>
+        </div>
+
+      </li>
+    `;
+  })
+  .join("");
   } catch (err) {
     console.error("Leaderboard error:", err);
     leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
