@@ -698,17 +698,18 @@ function startSession() {
 //   INSTANT END — UI FREEZE, BLOCK TAPS
 // ======================================================
 function endSessionImmediate() {
-
+  // Stop game
   running = false;
   tapLocked = true;
   tapButton.disabled = true;
 
+  // Stop any running intervals
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
   }
 
-  // Fill modal
+  // Fill end-game modal
   endTapsEl.textContent = taps;
   endEarningsEl.textContent = formatNumber(earnings.toFixed(2));
   endBonusEl.textContent = bonusLevel;
@@ -717,8 +718,21 @@ function endSessionImmediate() {
   const speed = elapsed > 0 ? taps / elapsed : 0;
   endSpeedEl.textContent = speed.toFixed(2);
 
-  // Show modal immediately
+  // Show modal
   endGameModal.style.display = "flex";
+
+  // Reset game state for next session
+  // Wait for user to tap play/pay
+  taps = 0;
+  progress = 0;
+  cashCounter = 0;
+  bonusLevel = 0;
+  tapButton.disabled = false;
+  tapLocked = false;
+
+  // Reset any UI elements you need
+  updateUI();
+  updateBonusBar();
 }
 
 
@@ -795,28 +809,27 @@ async function endSessionRecord() {
 
 
 // ======================================================
-//   TAP HANDLER — LOCKED & OPTIMIZED
+//   TAP HANDLER — NOW PERFECTLY LOCKED + VIBRATION FIX
 // ======================================================
 tapButton?.addEventListener(tapEvent, async e => {
   e.preventDefault();
 
-  // Exit if game isn't running or tap is locked
   if (!running || tapLocked) return;
 
-  // Lock taps briefly to prevent accidental double-taps
+  // Lock taps briefly to prevent spamming
   tapLocked = true;
   setTimeout(() => tapLocked = false, 50);
 
-  // Increment tap counters
+  // Increment taps and user stats
   taps++;
   if (currentUser) currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
+
+  // Progress & cash counters
   progress++;
   cashCounter++;
-
-  // Show floating +1 animation
   showFloatingPlus(tapButton, "+1");
 
-  // ===== CASH AWARD LOGIC =====
+  // --- CASH AWARD ---
   if (cashCounter >= cashThreshold) {
     cashCounter = 0;
     cashThreshold = randomInt(1, 12);
@@ -829,7 +842,7 @@ tapButton?.addEventListener(tapEvent, async e => {
     }
   }
 
-  // ===== BONUS LEVEL LOGIC =====
+  // --- BONUS LEVEL ---
   if (progress >= tapsForNext) {
     progress = 0;
     bonusLevel++;
@@ -837,15 +850,21 @@ tapButton?.addEventListener(tapEvent, async e => {
     triggerConfetti();
   }
 
-  // ===== TAP FEEDBACK =====
-  flashTapGlow();                     // Visual feedback
+  // --- TAP FEEDBACK ---
+  flashTapGlow();
+
+  // Play tap sound
   try { 
     tapSound.currentTime = 0; 
-    tapSound.play().catch(() => {}); // Sound feedback
+    tapSound.play().catch(()=>{}); 
   } catch {}
-  navigator.vibrate?.(12);            // Subtle vibration on mobile
 
-  // ===== UI UPDATES =====
+  // Vibrate device — improved noticeable pulse
+  if (navigator.vibrate) {
+    navigator.vibrate([20, 10, 20]); // double quick pulse
+  }
+
+  // Update UI
   updateUI();
   updateBonusBar();
 });
