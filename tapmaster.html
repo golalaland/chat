@@ -349,7 +349,7 @@ body::before {
     <div id="leaderboardImageSlider"
          style="position:relative;width:100%;height:180px;overflow:hidden;border-radius:8px;margin-bottom:10px;touch-action:pan-y;">
       <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:block;">
-      <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
+      <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
       <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
     </div>
 
@@ -461,45 +461,18 @@ endGameModal.innerHTML = `
 `;
 document.body.appendChild(endGameModal);
 
-// ---------- ELEMENT ----------
-const closeEndGameBtn = document.getElementById("closeEndGame");
+const endTapsEl = document.getElementById('endTaps');
+const endEarningsEl = document.getElementById('endEarnings');
+const endBonusEl = document.getElementById('endBonus');
+const endSpeedEl = document.getElementById('endSpeed');
+const closeEndGameBtn = document.getElementById('closeEndGame');
 
-// ---------- CLOSE BUTTON RELOAD ----------
 closeEndGameBtn.addEventListener('click', () => {
-  location.reload(); // simply reloads the page
+  endGameModal.style.display = "none";
+  gamePage.style.display = "none";
+  startPage.style.display = "block";
+  if(posterImg) posterImg.style.display = "block";
 });
-
-// ---------- ELEMENTS ----------
-const endTapsEl = endGameModal.querySelector("#endTaps");
-const endEarningsEl = endGameModal.querySelector("#endEarnings");
-const endBonusEl = endGameModal.querySelector("#endBonus");
-const endSpeedEl = endGameModal.querySelector("#endSpeed");
-const playAgainBtn = endGameModal.querySelector("#playAgain");
-const closeEndGameBtn = endGameModal.querySelector("#closeEndGame");
-
-// ---------- END SESSION FUNCTION ----------
-function endSessionImmediate() {
-  running = false;
-  tapLocked = true;
-  tapButton.disabled = true;
-
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-  }
-
-  // Fill modal
-  endTapsEl.textContent = taps;
-  endEarningsEl.textContent = formatNumber(earnings.toFixed(2));
-  endBonusEl.textContent = bonusLevel;
-
-  const elapsed = SESSION_DURATION - timer;
-  const speed = elapsed > 0 ? taps / elapsed : 0;
-  endSpeedEl.textContent = speed.toFixed(2);
-
-  // Show modal
-  endGameModal.style.display = "flex"; // <<< THIS LINE makes the modal appear
-}
 
 // ---------- CONFIG ----------
 const STAR_COST = 10;
@@ -720,6 +693,7 @@ function startSession() {
 }
 
 
+
 // ======================================================
 //   INSTANT END — UI FREEZE, BLOCK TAPS
 // ======================================================
@@ -821,27 +795,25 @@ async function endSessionRecord() {
 
 
 // ======================================================
-//   TAP HANDLER — NOW PERFECTLY LOCKED + VIBRATION FIX
+//   TAP HANDLER — NOW PERFECTLY LOCKED
 // ======================================================
 tapButton?.addEventListener(tapEvent, async e => {
+
   e.preventDefault();
 
   if (!running || tapLocked) return;
 
-  // Lock taps briefly to prevent spamming
   tapLocked = true;
   setTimeout(() => tapLocked = false, 50);
 
-  // Increment taps and user stats
   taps++;
-  if (currentUser) currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
+  currentUser && (currentUser.totalTaps = (currentUser.totalTaps || 0) + 1);
 
-  // Progress & cash counters
   progress++;
   cashCounter++;
   showFloatingPlus(tapButton, "+1");
 
-  // --- CASH AWARD ---
+  // CASH AWARD
   if (cashCounter >= cashThreshold) {
     cashCounter = 0;
     cashThreshold = randomInt(1, 12);
@@ -854,7 +826,7 @@ tapButton?.addEventListener(tapEvent, async e => {
     }
   }
 
-  // --- BONUS LEVEL ---
+  // BONUS LEVEL
   if (progress >= tapsForNext) {
     progress = 0;
     bonusLevel++;
@@ -862,21 +834,10 @@ tapButton?.addEventListener(tapEvent, async e => {
     triggerConfetti();
   }
 
-  // --- TAP FEEDBACK ---
   flashTapGlow();
+  try { tapSound.currentTime = 0; tapSound.play().catch(()=>{}); } catch {}
+  navigator.vibrate?.(12);
 
-  // Play tap sound
-  try { 
-    tapSound.currentTime = 0; 
-    tapSound.play().catch(()=>{}); 
-  } catch {}
-
-  // Vibrate device — improved noticeable pulse
-  if (navigator.vibrate) {
-    navigator.vibrate([20, 10, 20]); // double quick pulse
-  }
-
-  // Update UI
   updateUI();
   updateBonusBar();
 });
@@ -972,55 +933,15 @@ function getWeek(date) {
 }
 
 
-/* ------------------------------
-   LEADERBOARD IMAGE SLIDER
-------------------------------- */
-const sliderContainer = document.getElementById("leaderboardImageSlider");
-const slides = sliderContainer.querySelectorAll(".leaderboard-slide");
-let currentSlide = 0;
-let slideInterval = null;
-
-// Function to show a specific slide
-function showSlide(index) {
-  slides.forEach((slide, i) => {
-    slide.style.display = i === index ? "block" : "none";
-  });
-  currentSlide = index;
-}
-
-// Auto-slide every 3 seconds
-function startSlider() {
-  slideInterval = setInterval(() => {
-    let nextSlide = (currentSlide + 1) % slides.length;
-    showSlide(nextSlide);
-  }, 3000);
-}
-
-// Optional: stop slider (on modal close or hover)
-function stopSlider() {
-  clearInterval(slideInterval);
-}
-
-// Swipe support for mobile
-let startX = 0;
-sliderContainer.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  stopSlider();
-});
-
-sliderContainer.addEventListener("touchend", e => {
-  const endX = e.changedTouches[0].clientX;
-  if (endX - startX > 50) showSlide((currentSlide - 1 + slides.length) % slides.length); // swipe right
-  if (startX - endX > 50) showSlide((currentSlide + 1) % slides.length); // swipe left
-  startSlider();
-});
-
-// Initialize
-showSlide(0);
-startSlider();
-
-// Stop slider when modal closes
-closeLeaderboard?.addEventListener("click", () => stopSlider());
+/* -------------------------------------------
+   SIMPLE GLOBAL SLIDER (Matches Your HTML)
+-------------------------------------------- */
+let slideIndex = 0;
+setInterval(() => {
+  leaderboardSlides.forEach(img => img.style.display = "none");
+  slideIndex = (slideIndex + 1) % leaderboardSlides.length;
+  leaderboardSlides[slideIndex].style.display = "block";
+}, 3000);
 
 
 /* -------------------------------------------
