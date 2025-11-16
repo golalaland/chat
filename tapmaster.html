@@ -201,6 +201,36 @@ body::before {
   font-size: 12px;
   opacity: 0.7;
 }
+@keyframes neonRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes powerPulse {
+  0% { box-shadow: 0 0 10px rgba(255,20,147,0.6); }
+  100% { box-shadow: 0 0 20px rgba(0,230,118,0.8), 0 0 30px rgba(255,20,147,0.6); }
+}
+@keyframes pulse {
+  0% { opacity:1; transform:scale(1); }
+  50% { opacity:0.7; transform:scale(1.2); }
+  100% { opacity:1; transform:scale(1); }
+}
+
+/* Nav Button Interactions */
+.nav-btn:active {
+  transform: scale(0.95) !important;
+}
+.nav-btn:hover .glow-effect {
+  opacity:1 !important;
+}
+.nav-btn.active {
+  background: linear-gradient(145deg, rgba(255,20,147,0.2), rgba(255,140,0,0.2)) !important;
+  border-color: #FF1493 !important;
+  box-shadow: 0 8px 25px rgba(255,20,147,0.4) !important;
+  transform: scale(1.05);
+}
+.nav-btn.active .glow-effect {
+  opacity:1 !important;
+}
 </style>
 </head>
 <body>
@@ -377,6 +407,213 @@ body::before {
 
   </div>
 </div>
+
+<!-- Enhanced Dope Game Footer - Replace your existing #bottomBar -->
+<div id="enhancedFooter" style="
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:95%;
+  max-width:500px;
+  background: linear-gradient(180deg, rgba(15,15,20,0.95) 0%, rgba(5,5,10,0.98) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 
+    0 -10px 40px rgba(0,0,0,0.8),
+    0 -4px 20px rgba(255,20,147,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 16px 16px;
+  z-index: 1000;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+">
+
+  <!-- Profile Card - Glowy Neon Style -->
+  <div class="profile-card-enhanced" style="
+    background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    padding: 20px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.12);
+    position:relative;
+    overflow:hidden;
+    text-align:center;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  " onmouseenter="this.style.boxShadow='0 0 30px rgba(255,20,147,0.4), inset 0 1px 0 rgba(255,255,255,0.2)'" 
+     onmouseleave="this.style.boxShadow=''">
+    
+    <!-- Neon Glow Border -->
+    <div style="
+      position:absolute;
+      top:-2px; left:-2px; right:-2px; bottom:-2px;
+      background: linear-gradient(45deg, #FF1493, #FF8C00, #00e676, #FF1493);
+      border-radius: 22px;
+      padding: 2px;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      animation: neonRotate 3s linear infinite;
+      opacity:0.7;
+    "></div>
+    
+    <div style="position:relative; z-index:1;">
+      <div style="
+        width:48px; height:48px; 
+        background: linear-gradient(45deg, #FF1493, #00e676);
+        border-radius:50%; 
+        margin:0 auto 12px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:20px; font-weight:800; color:#000;
+        box-shadow: 0 0 20px rgba(255,20,147,0.5);
+      ">👤</div>
+      
+      <div class="profile-name" id="profileName" style="
+        font-size:16px; font-weight:900; color:#fff; 
+        text-shadow: 0 0 10px rgba(255,255,255,0.5); margin-bottom:8px;
+        font-family: 'Press Start 2P', cursive; font-size:12px;
+      ">TAP LEGEND 1337</div>
+      
+      <!-- Stats Grid -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+        <div class="stat-pill" style="
+          background: rgba(0,230,118,0.2); 
+          border:1px solid rgba(0,230,118,0.5);
+          padding:8px 12px; border-radius:20px;
+          text-align:center;
+          box-shadow: 0 4px 15px rgba(0,230,118,0.2);
+        ">
+          <div style="font-size:11px; color:var(--muted); margin-bottom:2px;">STARS</div>
+          <div id="starCount" style="font-size:18px; font-weight:900; color:#00e676; text-shadow:0 0 8px rgba(0,230,118,0.6);">420⭐</div>
+        </div>
+        <div class="stat-pill" style="
+          background: rgba(255,215,0,0.2); 
+          border:1px solid rgba(255,215,0,0.5);
+          padding:8px 12px; border-radius:20px;
+          text-align:center;
+          box-shadow: 0 4px 15px rgba(255,215,0,0.2);
+        ">
+          <div style="font-size:11px; color:var(--muted); margin-bottom:2px;">CASH</div>
+          <div id="cashCount" style="font-size:18px; font-weight:900; color:#FFD700; text-shadow:0 0 8px rgba(255,215,0,0.6);">₦69k</div>
+        </div>
+      </div>
+      
+      <!-- Power Level Bar -->
+      <div style="margin-top:12px;">
+        <div style="font-size:10px; color:#aaa; margin-bottom:4px;">TAP POWER</div>
+        <div style="
+          height:6px; background:rgba(255,255,255,0.1); 
+          border-radius:3px; overflow:hidden;
+        ">
+          <div id="powerBar" style="
+            height:100%; width:85%; 
+            background: linear-gradient(90deg, #FF1493, #00e676);
+            border-radius:3px;
+            box-shadow: 0 0 10px rgba(255,20,147,0.6);
+            animation: powerPulse 2s ease-in-out infinite alternate;
+          "></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs - Icon Grid with Neon Glow -->
+  <div id="navTabs" style="
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap:12px;
+  ">
+    <button class="nav-btn active" data-tab="home" style="
+      aspect-ratio:1; border:none; background:rgba(255,255,255,0.05);
+      border-radius:16px; color:#fff; font-size:24px;
+      cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+      border:1px solid rgba(255,255,255,0.1);
+      position:relative; overflow:hidden;
+    " title="Home">
+      <div style="font-size:28px;">🏠</div>
+      <span style="font-size:10px; font-weight:700; display:block; margin-top:2px;">HOME</span>
+      <div class="glow-effect" style="
+        position:absolute; inset:0; background:radial-gradient(circle, rgba(0,230,118,0.3) 0%, transparent 70%);
+        opacity:0; transition:opacity 0.3s;
+      "></div>
+    </button>
+
+    <button class="nav-btn" data-tab="shop" style="
+      aspect-ratio:1; border:none; background:rgba(255,255,255,0.05);
+      border-radius:16px; color:#fff; font-size:24px;
+      cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+      border:1px solid rgba(255,255,255,0.1);
+      position:relative; overflow:hidden;
+    " title="Shop">
+      <div style="font-size:28px;">🛒</div>
+      <span style="font-size:10px; font-weight:700; display:block; margin-top:2px;">SHOP</span>
+      <div class="glow-effect" style="
+        position:absolute; inset:0; background:radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%);
+        opacity:0; transition:opacity 0.3s;
+      "></div>
+    </button>
+
+    <button class="nav-btn" data-tab="leaderboard" style="
+      aspect-ratio:1; border:none; background:rgba(255,255,255,0.05);
+      border-radius:16px; color:#fff; font-size:24px;
+      cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+      border:1px solid rgba(255,255,255,0.1);
+      position:relative; overflow:hidden;
+    " title="Leaderboard">
+      <div style="font-size:28px;">🏆</div>
+      <span style="font-size:10px; font-weight:700; display:block; margin-top:2px;">LB</span>
+      <div class="glow-effect" style="
+        position:absolute; inset:0; background:radial-gradient(circle, rgba(255,20,147,0.3) 0%, transparent 70%);
+        opacity:0; transition:opacity 0.3s;
+      "></div>
+    </button>
+
+    <button class="nav-btn" data-tab="achievements" style="
+      aspect-ratio:1; border:none; background:rgba(255,255,255,0.05);
+      border-radius:16px; color:#fff; font-size:24px;
+      cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+      border:1px solid rgba(255,255,255,0.1);
+      position:relative; overflow:hidden;
+    " title="Achievements">
+      <div style="font-size:28px;">🎖️</div>
+      <span style="font-size:10px; font-weight:700; display:block; margin-top:2px;">ACH</span>
+      <div class="glow-effect" style="
+        position:absolute; inset:0; background:radial-gradient(circle, rgba(0,230,118,0.3) 0%, transparent 70%);
+        opacity:0; transition:opacity 0.3s;
+      "></div>
+    </button>
+
+    <button class="nav-btn" data-tab="settings" style="
+      aspect-ratio:1; border:none; background:rgba(255,255,255,0.05);
+      border-radius:16px; color:#fff; font-size:24px;
+      cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+      border:1px solid rgba(255,255,255,0.1);
+      position:relative; overflow:hidden;
+    " title="Settings">
+      <div style="font-size:28px;">⚙️</div>
+      <span style="font-size:10px; font-weight:700; display:block; margin-top:2px;">SET</span>
+      <div class="glow-effect" style="
+        position:absolute; inset:0; background:radial-gradient(circle, rgba(255,140,0,0.3) 0%, transparent 70%);
+        opacity:0; transition:opacity 0.3s;
+      "></div>
+    </button>
+  </div>
+
+  <!-- Live Pulse Indicator -->
+  <div style="
+    position:absolute;
+    top:10px; right:20px;
+    width:12px; height:12px;
+    background:#00FF99;
+    border-radius:50%;
+    box-shadow: 0 0 20px rgba(0,255,153,0.8);
+    animation: pulse 1.5s infinite;
+  "></div>
+
+</div>
+
+
 
 
 <!-- Audio -->
