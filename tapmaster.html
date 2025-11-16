@@ -765,17 +765,18 @@ function endSessionImmediate() {
     intervalId = null;
   }
 
-  // Fill modal
-  endTapsEl.textContent = taps;
-  endEarningsEl.textContent = formatNumber(earnings.toFixed(2));
-  endBonusEl.textContent = bonusLevel;
-
   const elapsed = SESSION_DURATION - timer;
   const speed = elapsed > 0 ? taps / elapsed : 0;
-  endSpeedEl.textContent = speed.toFixed(2);
 
-  // Show modal immediately
-  endGameModal.style.display = "flex";
+  // Show the new dynamic end game modal
+  // Replace 'Player1' with your actual username variable
+  showEndGameModal(
+    username || 'Player1',        // player's name
+    taps,                          // total taps
+    parseFloat(earnings.toFixed(2)), // earnings
+    bonusLevel,                    // bonus
+    speed.toFixed(2)               // speed multiplier
+  );
 }
 
 
