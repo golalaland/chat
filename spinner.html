@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tap Master Spinner</title>
+
+<style>
+:root{
+  --bg:#0e0e0e;
+  --green1:#00e676;
+  --accent2:#00b0ff;
+  --text:#fff;
+}
+
+body {
+  margin:0;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:#0e0e0e;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--text);
+}
+
+h1 {
+  font-size:18px;
+  margin-bottom:16px;
+  color: var(--green1);
+}
+
+/* TAP button */
+#tapButton {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0,230,118,0.2);
+}
+
+#tapButton .tap-svg {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+  transition: transform 4s cubic-bezier(0.33, 1, 0.68, 1); /* ease out */
+}
+
+/* Tap stats */
+#stats {
+  margin-top:20px;
+  text-align:center;
+}
+#stats span { display:block; margin:4px 0; font-weight:700; font-size:16px; }
+</style>
+</head>
+<body>
+
+<h1>Tap Master Spinner</h1>
+
+<!-- TAP Button -->
+<button id="tapButton" aria-label="Tap" title="Spin!">
+  <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/heat-spinner.svg?v=1762454435" 
+       alt="Tap" class="tap-svg">
+</button>
+
+<!-- Stats -->
+<div id="stats">
+  <span>Taps: <span id="tapCount">0</span></span>
+  <span>Earnings: ₦<span id="earnings">0</span></span>
+</div>
+
+<script>
+const tapButton = document.getElementById("tapButton");
+const spinner = tapButton.querySelector(".tap-svg");
+const tapCountEl = document.getElementById("tapCount");
+const earningsEl = document.getElementById("earnings");
+
+let totalTaps = 0;
+let totalEarnings = 0;
+
+tapButton.addEventListener("click", () => {
+  // Disable button while spinning
+  tapButton.disabled = true;
+
+  // 1. Random stop number 0-99
+  const stopNumber = Math.floor(Math.random() * 100);
+
+  // 2. Rotation calculation
+  const spins = 5; // full rotations
+  const degPerNumber = 360 / 100;
+  const finalDeg = spins * 360 + stopNumber * degPerNumber;
+
+  // 3. Rotate SVG
+  spinner.style.transform = `rotate(${finalDeg}deg)`;
+
+  // 4. After spin ends
+  setTimeout(() => {
+    // Example: earnings = stopNumber * 10
+    const earned = stopNumber * 10;
+    totalTaps++;
+    totalEarnings += earned;
+
+    tapCountEl.textContent = totalTaps;
+    earningsEl.textContent = totalEarnings.toLocaleString();
+
+    // Re-enable button
+    tapButton.disabled = false;
+  }, 4000); // matches transition duration
+});
+</script>
+
+</body>
+</html>
