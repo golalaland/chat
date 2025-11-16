@@ -795,25 +795,28 @@ async function endSessionRecord() {
 
 
 // ======================================================
-//   TAP HANDLER — NOW PERFECTLY LOCKED
+//   TAP HANDLER — LOCKED & OPTIMIZED
 // ======================================================
 tapButton?.addEventListener(tapEvent, async e => {
-
   e.preventDefault();
 
+  // Exit if game isn't running or tap is locked
   if (!running || tapLocked) return;
 
+  // Lock taps briefly to prevent accidental double-taps
   tapLocked = true;
   setTimeout(() => tapLocked = false, 50);
 
+  // Increment tap counters
   taps++;
-  currentUser && (currentUser.totalTaps = (currentUser.totalTaps || 0) + 1);
-
+  if (currentUser) currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
   progress++;
   cashCounter++;
+
+  // Show floating +1 animation
   showFloatingPlus(tapButton, "+1");
 
-  // CASH AWARD
+  // ===== CASH AWARD LOGIC =====
   if (cashCounter >= cashThreshold) {
     cashCounter = 0;
     cashThreshold = randomInt(1, 12);
@@ -826,7 +829,7 @@ tapButton?.addEventListener(tapEvent, async e => {
     }
   }
 
-  // BONUS LEVEL
+  // ===== BONUS LEVEL LOGIC =====
   if (progress >= tapsForNext) {
     progress = 0;
     bonusLevel++;
@@ -834,10 +837,15 @@ tapButton?.addEventListener(tapEvent, async e => {
     triggerConfetti();
   }
 
-  flashTapGlow();
-  try { tapSound.currentTime = 0; tapSound.play().catch(()=>{}); } catch {}
-  navigator.vibrate?.(12);
+  // ===== TAP FEEDBACK =====
+  flashTapGlow();                     // Visual feedback
+  try { 
+    tapSound.currentTime = 0; 
+    tapSound.play().catch(() => {}); // Sound feedback
+  } catch {}
+  navigator.vibrate?.(12);            // Subtle vibration on mobile
 
+  // ===== UI UPDATES =====
   updateUI();
   updateBonusBar();
 });
