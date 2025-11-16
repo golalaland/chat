@@ -746,6 +746,16 @@ function endSessionImmediate() {
 }
 
 
+const startBtn = document.getElementById('startBtn');
+const startPage = document.getElementById('startPage');
+
+startBtn.addEventListener('click', () => {
+  // hide start page (poster disappears)
+  startPage.style.display = 'none';
+  
+  // show game page
+  document.getElementById('gamePage').classList.remove('hidden');
+});
 
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
@@ -1120,31 +1130,6 @@ leaderboardBtn?.addEventListener("click", () => {
 closeLeaderboard?.addEventListener("click", () => {
   leaderboardModal.style.display = "none";
 });
-
-
-const startBtn = document.getElementById('startBtn');
-const startPage = document.getElementById('startPage');
-
-startBtn.addEventListener('click', () => {
-  // hide start page (poster disappears)
-  startPage.style.display = 'none';
-  
-  // show game page
-  document.getElementById('gamePage').classList.remove('hidden');
-});
-
-let musicStarted = false;
-
-function startGameMusic() {
-  if (!musicStarted) {
-    const audio = document.getElementById("gameMusic");
-    audio.volume = 0.45; // perfect level behind tapping
-    audio.play().catch(()=>{});
-    musicStarted = true;
-  }
-}
-document.addEventListener("click", startGameMusic);
-document.addEventListener("playModal", startGameMusic);
 </script>
 </body>
 </html>
