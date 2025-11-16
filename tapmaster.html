@@ -844,7 +844,7 @@ const closeLeaderboard = document.getElementById('closeLeaderboard');
 const leaderboardList = document.getElementById('leaderboardList');
 const leaderboardSlides = document.querySelectorAll(".leaderboard-slide");
 const leaderboardDescription = document.getElementById("leaderboardDescription");
-
+const periodTabs = document.querySelectorAll(".period-tab");
 // ---------- Helper: get leaderboard key ----------
 function getLeaderboardKey(period) {
   const now = new Date();
@@ -924,10 +924,6 @@ async function fetchLeaderboard(period = "daily", top = 10) {
     leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
   }
 }
-
-// ---------- DOM ----------
-const periodTabs = document.querySelectorAll(".lb-tab");
-
 
 // ---------- TAB SWITCHER ----------
 periodTabs.forEach(tab => {
