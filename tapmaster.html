@@ -746,17 +746,6 @@ function endSessionImmediate() {
 }
 
 
-const startBtn = document.getElementById('startBtn');
-const startPage = document.getElementById('startPage');
-
-startBtn.addEventListener('click', () => {
-  // hide start page (poster disappears)
-  startPage.style.display = 'none';
-  
-  // show game page
-  document.getElementById('gamePage').classList.remove('hidden');
-});
-
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
 // ======================================================
