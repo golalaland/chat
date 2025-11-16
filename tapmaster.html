@@ -201,14 +201,20 @@ body::before {
   font-size: 12px;
   opacity: 0.7;
 }
+/* Poster image fills start page */
 #posterImg {
-  position: fixed;     /* fixed so it stays in place */
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100%;         /* full width */
-  height: 100%;        /* full height */
-  object-fit: cover;   /* cover the screen, maintaining aspect ratio */
-  z-index: -1;         /* behind everything else */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1; /* keeps button on top */
+}
+
+/* Body background stays for gameplay */
+body {
+  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746') no-repeat center/cover;
 }
 </style>
 </head>
@@ -223,9 +229,18 @@ body::before {
   
 
 <!-- Start Page -->
-<div id="startPage" style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:18px;">
-  <button id="startBtn" style="padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">Play</button>
-  <img id="posterImg" src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422" alt="Poster" style="width:90%;max-width:420px;margin:12px auto;border-radius:12px;">
+<div id="startPage" style="width:100%;height:100vh;position:relative;display:flex;justify-content:center;align-items:center;">
+
+  <img id="posterImg" src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422" 
+       alt="Poster" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;">
+
+  <button id="startBtn" 
+          style="position:absolute;bottom:50px;left:50%;transform:translateX(-50%);
+                 padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);
+                 color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">
+    Play
+  </button>
+
 </div>
 
 <!-- Play Confirmation Modal -->
