@@ -231,6 +231,7 @@ body::before {
 .nav-btn.active .glow-effect {
   opacity:1 !important;
 }
+
 </style>
 </head>
 <body>
@@ -1332,6 +1333,24 @@ leaderboardBtn?.addEventListener("click", () => {
 
 closeLeaderboard?.addEventListener("click", () => {
   leaderboardModal.style.display = "none";
+});
+
+// Add interactivity to nav buttons (extend as needed)
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    
+    // Handle tab logic here
+    const tab = this.dataset.tab;
+    console.log('Switch to tab:', tab);
+    
+    // Example: Open leaderboard modal
+    if (tab === 'leaderboard') {
+      document.getElementById('leaderboardModal').style.display = 'flex';
+    }
+    // Add more handlers for shop, achievements, etc.
+  });
 });
 
 
