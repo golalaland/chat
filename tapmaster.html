@@ -456,13 +456,18 @@ endGameModal.innerHTML = `
     <p>Earnings: ₦<span id="endEarnings">0</span></p>
     <p>Bonus Level: <span id="endBonus">0</span></p>
     <p>Speed: x<span id="endSpeed">0</span></p>
-    <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
-      <button id="playAgain" style="padding:10px 20px; border:none; border-radius:8px; background:#0af; color:#fff; font-weight:bold; cursor:pointer;">Play Again</button>
-      <button id="closeEndGame" style="padding:10px 20px; border:none; border-radius:8px; background:#0f0; color:#000; font-weight:bold; cursor:pointer;">Close</button>
-    </div>
+    <button id="closeEndGame" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#0f0; color:#000; font-weight:bold; cursor:pointer;">Close</button>
   </div>
 `;
 document.body.appendChild(endGameModal);
+
+// ---------- ELEMENT ----------
+const closeEndGameBtn = document.getElementById("closeEndGame");
+
+// ---------- CLOSE BUTTON RELOAD ----------
+closeEndGameBtn.addEventListener('click', () => {
+  location.reload(); // simply reloads the page
+});
 
 // ---------- ELEMENTS ----------
 const endTapsEl = endGameModal.querySelector("#endTaps");
@@ -493,41 +498,8 @@ function endSessionImmediate() {
   endSpeedEl.textContent = speed.toFixed(2);
 
   // Show modal
-  endGameModal.style.display = "flex";
+  endGameModal.style.display = "flex"; // <<< THIS LINE makes the modal appear
 }
-
-// ---------- PLAY AGAIN ----------
-playAgainBtn.addEventListener('click', async () => {
-  const REQUIRED_STARS = 5; // adjust to your game
-
-  if (!currentUser) return alert("No user data!");
-  if (currentUser.stars >= REQUIRED_STARS) {
-    // Deduct stars
-    currentUser.stars -= REQUIRED_STARS;
-    if (typeof updateStarDisplay === "function") updateStarDisplay();
-
-    // Reset game state
-    taps = 0;
-    earnings = 0;
-    bonusLevel = 0;
-    progress = 0;
-    cashCounter = 0;
-    tapLocked = false;
-    running = true;
-    tapButton.disabled = false;
-
-    // Restart game
-    if (typeof startGame === "function") startGame();
-
-    // Hide modal
-    endGameModal.style.display = 'none';
-  } else {
-    alert("Not enough stars to play again!");
-  }
-});
-
-// ---------- CLOSE BUTTON ----------
-closeEndGameBtn.addEventListener('click', () => location.reload());
 
 // ---------- CONFIG ----------
 const STAR_COST = 10;
