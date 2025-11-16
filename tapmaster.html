@@ -1119,6 +1119,17 @@ leaderboardBtn?.addEventListener("click", () => {
 closeLeaderboard?.addEventListener("click", () => {
   leaderboardModal.style.display = "none";
 });
+
+const startBtn = document.getElementById('startBtn');
+const startPage = document.getElementById('startPage');
+const posterImg = document.getElementById('posterImg');
+
+startBtn.addEventListener('click', () => {
+  document.body.classList.add('game-started'); // wallpaper 2
+  startPage.style.display = 'none';           // hide start page
+  posterImg.style.display = 'none';           // hide poster
+  // show your game page here
+});
 </script>
 </body>
 </html>
