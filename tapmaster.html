@@ -456,22 +456,77 @@ endGameModal.innerHTML = `
     <p>Earnings: ₦<span id="endEarnings">0</span></p>
     <p>Bonus Level: <span id="endBonus">0</span></p>
     <p>Speed: x<span id="endSpeed">0</span></p>
-    <button id="closeEndGame" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#0f0; color:#000; font-weight:bold; cursor:pointer;">Close</button>
+    <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
+      <button id="playAgain" style="padding:10px 20px; border:none; border-radius:8px; background:#0af; color:#fff; font-weight:bold; cursor:pointer;">Play Again</button>
+      <button id="closeEndGame" style="padding:10px 20px; border:none; border-radius:8px; background:#0f0; color:#000; font-weight:bold; cursor:pointer;">Close</button>
+    </div>
   </div>
 `;
 document.body.appendChild(endGameModal);
 
-const endTapsEl = document.getElementById('endTaps');
-const endEarningsEl = document.getElementById('endEarnings');
-const endBonusEl = document.getElementById('endBonus');
-const endSpeedEl = document.getElementById('endSpeed');
-const closeEndGameBtn = document.getElementById('closeEndGame');
+// ---------- ELEMENTS ----------
+const endTapsEl = document.getElementById("endTaps");
+const endEarningsEl = document.getElementById("endEarnings");
+const endBonusEl = document.getElementById("endBonus");
+const endSpeedEl = document.getElementById("endSpeed");
+const playAgainBtn = document.getElementById("playAgain");
+const closeEndGameBtn = document.getElementById("closeEndGame");
 
+// ---------- END SESSION FUNCTION ----------
+function endSessionImmediate() {
+  running = false;
+  tapLocked = true;
+  tapButton.disabled = true;
+
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
+  }
+
+  // Fill modal
+  endTapsEl.textContent = taps;
+  endEarningsEl.textContent = formatNumber(earnings.toFixed(2));
+  endBonusEl.textContent = bonusLevel;
+
+  const elapsed = SESSION_DURATION - timer;
+  const speed = elapsed > 0 ? taps / elapsed : 0;
+  endSpeedEl.textContent = speed.toFixed(2);
+
+  // Show modal
+  endGameModal.style.display = "flex";
+}
+
+// ---------- PLAY AGAIN ----------
+playAgainBtn.addEventListener('click', async () => {
+  const REQUIRED_STARS = 10; // adjust to your game
+  if (currentUser.stars >= REQUIRED_STARS) {
+    // Deduct stars
+    currentUser.stars -= REQUIRED_STARS;
+    updateStarDisplay(); // your existing function to refresh UI
+
+    // Reset game state
+    taps = 0;
+    earnings = 0;
+    bonusLevel = 0;
+    progress = 0;
+    cashCounter = 0;
+    tapLocked = false;
+    running = true;
+    tapButton.disabled = false;
+
+    // Restart timer/interval
+    startGame(); // your function that starts the game session
+
+    // Hide modal
+    endGameModal.style.display = 'none';
+  } else {
+    alert("Not enough stars to play again!");
+  }
+});
+
+// ---------- CLOSE BUTTON ----------
 closeEndGameBtn.addEventListener('click', () => {
-  endGameModal.style.display = "none";
-  gamePage.style.display = "none";
-  startPage.style.display = "block";
-  if(posterImg) posterImg.style.display = "block";
+  location.reload();
 });
 
 // ---------- CONFIG ----------
