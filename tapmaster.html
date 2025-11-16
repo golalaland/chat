@@ -349,7 +349,7 @@ body::before {
     <div id="leaderboardImageSlider"
          style="position:relative;width:100%;height:180px;overflow:hidden;border-radius:8px;margin-bottom:10px;touch-action:pan-y;">
       <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:block;">
-      <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
+      <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
       <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
     </div>
 
@@ -941,15 +941,55 @@ function getWeek(date) {
 }
 
 
-/* -------------------------------------------
-   SIMPLE GLOBAL SLIDER (Matches Your HTML)
--------------------------------------------- */
-let slideIndex = 0;
-setInterval(() => {
-  leaderboardSlides.forEach(img => img.style.display = "none");
-  slideIndex = (slideIndex + 1) % leaderboardSlides.length;
-  leaderboardSlides[slideIndex].style.display = "block";
-}, 3000);
+/* ------------------------------
+   LEADERBOARD IMAGE SLIDER
+------------------------------- */
+const sliderContainer = document.getElementById("leaderboardImageSlider");
+const slides = sliderContainer.querySelectorAll(".leaderboard-slide");
+let currentSlide = 0;
+let slideInterval = null;
+
+// Function to show a specific slide
+function showSlide(index) {
+  slides.forEach((slide, i) => {
+    slide.style.display = i === index ? "block" : "none";
+  });
+  currentSlide = index;
+}
+
+// Auto-slide every 3 seconds
+function startSlider() {
+  slideInterval = setInterval(() => {
+    let nextSlide = (currentSlide + 1) % slides.length;
+    showSlide(nextSlide);
+  }, 3000);
+}
+
+// Optional: stop slider (on modal close or hover)
+function stopSlider() {
+  clearInterval(slideInterval);
+}
+
+// Swipe support for mobile
+let startX = 0;
+sliderContainer.addEventListener("touchstart", e => {
+  startX = e.touches[0].clientX;
+  stopSlider();
+});
+
+sliderContainer.addEventListener("touchend", e => {
+  const endX = e.changedTouches[0].clientX;
+  if (endX - startX > 50) showSlide((currentSlide - 1 + slides.length) % slides.length); // swipe right
+  if (startX - endX > 50) showSlide((currentSlide + 1) % slides.length); // swipe left
+  startSlider();
+});
+
+// Initialize
+showSlide(0);
+startSlider();
+
+// Stop slider when modal closes
+closeLeaderboard?.addEventListener("click", () => stopSlider());
 
 
 /* -------------------------------------------
