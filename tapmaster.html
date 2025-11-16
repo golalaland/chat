@@ -748,23 +748,21 @@ function startSession() {
 }
 
 
-
 // ======================================================
 //   INSTANT END — UI FREEZE, BLOCK TAPS
 // ======================================================
 function endSessionImmediate() {
-  // Stop game
+
   running = false;
   tapLocked = true;
   tapButton.disabled = true;
 
-  // Stop any running intervals
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
   }
 
-  // Fill end-game modal
+  // Fill modal
   endTapsEl.textContent = taps;
   endEarningsEl.textContent = formatNumber(earnings.toFixed(2));
   endBonusEl.textContent = bonusLevel;
@@ -773,21 +771,8 @@ function endSessionImmediate() {
   const speed = elapsed > 0 ? taps / elapsed : 0;
   endSpeedEl.textContent = speed.toFixed(2);
 
-  // Show modal
+  // Show modal immediately
   endGameModal.style.display = "flex";
-
-  // Reset game state for next session
-  // Wait for user to tap play/pay
-  taps = 0;
-  progress = 0;
-  cashCounter = 0;
-  bonusLevel = 0;
-  tapButton.disabled = false;
-  tapLocked = false;
-
-  // Reset any UI elements you need
-  updateUI();
-  updateBonusBar();
 }
 
 
