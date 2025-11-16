@@ -985,12 +985,24 @@ leaderboardList.innerHTML = topScores
   .map((u, i) => {
     const isCurrent = currentUser && u.uid === currentUser.uid;
 
-    // ---- Avatar selection (simple male/female placeholder) ----
+    // ---- Avatar selection (random if no gender) ----
     const maleAvatar = "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/avatar-male.png";
     const femaleAvatar = "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/avatar-female.png";
-    
-    // If your user object doesn't have gender, it defaults to male
-    const avatar = u.gender === "female" ? femaleAvatar : maleAvatar;
+
+    // Random assignment if gender not provided
+    const avatar = u.gender === "female"
+      ? femaleAvatar
+      : u.gender === "male"
+        ? maleAvatar
+        : Math.random() < 0.5 ? maleAvatar : femaleAvatar;
+
+    // ---- Convert username to uppercase initials ----
+    const name = u.chatId || "Anon";
+    const initials = name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase();
 
     // ---- Styles for ranks ----
     let style = "";
@@ -1001,14 +1013,11 @@ leaderboardList.innerHTML = topScores
 
     return `
       <li class="lb-row" style="${style}">
-        
         <img class="lb-avatar" src="${avatar}" alt="avatar">
-
         <div class="lb-info">
-          <span class="lb-name">${i + 1}. ${u.chatId}</span>
+          <span class="lb-name">${i + 1}. ${initials}</span>
           <span class="lb-score">${u.taps.toLocaleString()} taps</span>
         </div>
-
       </li>
     `;
   })
