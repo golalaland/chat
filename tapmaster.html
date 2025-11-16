@@ -465,12 +465,12 @@ endGameModal.innerHTML = `
 document.body.appendChild(endGameModal);
 
 // ---------- ELEMENTS ----------
-const endTapsEl = document.getElementById("endTaps");
-const endEarningsEl = document.getElementById("endEarnings");
-const endBonusEl = document.getElementById("endBonus");
-const endSpeedEl = document.getElementById("endSpeed");
-const playAgainBtn = document.getElementById("playAgain");
-const closeEndGameBtn = document.getElementById("closeEndGame");
+const endTapsEl = endGameModal.querySelector("#endTaps");
+const endEarningsEl = endGameModal.querySelector("#endEarnings");
+const endBonusEl = endGameModal.querySelector("#endBonus");
+const endSpeedEl = endGameModal.querySelector("#endSpeed");
+const playAgainBtn = endGameModal.querySelector("#playAgain");
+const closeEndGameBtn = endGameModal.querySelector("#closeEndGame");
 
 // ---------- END SESSION FUNCTION ----------
 function endSessionImmediate() {
@@ -498,11 +498,13 @@ function endSessionImmediate() {
 
 // ---------- PLAY AGAIN ----------
 playAgainBtn.addEventListener('click', async () => {
-  const REQUIRED_STARS = 10; // adjust to your game
+  const REQUIRED_STARS = 5; // adjust to your game
+
+  if (!currentUser) return alert("No user data!");
   if (currentUser.stars >= REQUIRED_STARS) {
     // Deduct stars
     currentUser.stars -= REQUIRED_STARS;
-    updateStarDisplay(); // your existing function to refresh UI
+    if (typeof updateStarDisplay === "function") updateStarDisplay();
 
     // Reset game state
     taps = 0;
@@ -514,8 +516,8 @@ playAgainBtn.addEventListener('click', async () => {
     running = true;
     tapButton.disabled = false;
 
-    // Restart timer/interval
-    startGame(); // your function that starts the game session
+    // Restart game
+    if (typeof startGame === "function") startGame();
 
     // Hide modal
     endGameModal.style.display = 'none';
@@ -525,9 +527,7 @@ playAgainBtn.addEventListener('click', async () => {
 });
 
 // ---------- CLOSE BUTTON ----------
-closeEndGameBtn.addEventListener('click', () => {
-  location.reload();
-});
+closeEndGameBtn.addEventListener('click', () => location.reload());
 
 // ---------- CONFIG ----------
 const STAR_COST = 10;
