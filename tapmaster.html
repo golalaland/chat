@@ -201,6 +201,15 @@ body::before {
   font-size: 12px;
   opacity: 0.7;
 }
+#posterImg {
+  position: fixed;    /* sticks to viewport */
+  top: 0;
+  left: 0;
+  width: 100vw;       /* full viewport width */
+  height: 100vh;      /* full viewport height */
+  object-fit: cover;  /* cover while keeping aspect ratio */
+  z-index: -1;        /* behind all other content */
+}
 </style>
 </head>
 <body>
