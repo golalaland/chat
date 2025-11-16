@@ -138,6 +138,39 @@ button, input { font-size:16px; } /* prevents iOS zoom on tap */
   color: #fff;
   font-weight: bold;
 }
+body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 18px 0 120px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+
+  /* NEW background image */
+  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746') no-repeat center center fixed;
+  background-size: cover;
+
+  /* blur effect */
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: -1; /* behind content */
+}
 .lb-row {
   display: flex;
   align-items: center;
@@ -168,54 +201,6 @@ button, input { font-size:16px; } /* prevents iOS zoom on tap */
   font-size: 12px;
   opacity: 0.7;
 }
-
-/* Poster image on start */
-#posterImg {
-  position: fixed; /* fill entire screen */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 1; /* behind play button */
-}
-
-/* Start page wrapper */
-#startPage {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* vertical centering */
-  align-items: center;     /* horizontal centering */
-  z-index: 2; /* above poster image */
-}
-
-/* Play button styling */
-#startBtn {
-  padding: 16px 28px;
-  border-radius: 12px;
-  background: linear-gradient(90deg,#00e676,#00b0ff);
-  color: #000;
-  font-weight: 800;
-  font-size: 18px;
-  border: none;
-  cursor: pointer;
-}
-
-/* Body background for game */
-body {
-  margin: 0;
-  font-family: 'Montserrat', sans-serif;
-  background: none; /* hide wallpaper 2 initially */
-}
-
-body.game-started {
-  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746') no-repeat center/cover;
-}
 </style>
 </head>
 <body>
@@ -229,18 +214,9 @@ body.game-started {
   
 
 <!-- Start Page -->
-<div id="startPage" style="width:100%;height:100vh;position:relative;display:flex;justify-content:center;align-items:center;">
-
-  <img id="posterImg" src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422" 
-       alt="Poster" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;">
-
-  <button id="startBtn" 
-          style="position:absolute;bottom:50px;left:50%;transform:translateX(-50%);
-                 padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);
-                 color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">
-    Play
-  </button>
-
+<div id="startPage" style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:18px;">
+  <button id="startBtn" style="padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">Play</button>
+  <img id="posterImg" src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422" alt="Poster" style="width:90%;max-width:420px;margin:12px auto;border-radius:12px;">
 </div>
 
 <!-- Play Confirmation Modal -->
@@ -470,66 +446,33 @@ const endGameModal = document.createElement('div');
 endGameModal.id = "endGameModal";
 endGameModal.style = `
   position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.95); color:#fff; display:none;
+  background:rgba(0,0,0,0.9); color:#fff; display:none;
   justify-content:center; align-items:center; z-index:9999; font-family:sans-serif;
 `;
-
 endGameModal.innerHTML = `
-  <div style="background:#1a1a1a; padding:30px; border-radius:20px; text-align:center; width:350px; 
-              box-shadow:0 0 25px #0ff;">
-    <h2 style="font-size:24px; color:#00e676;">🔥 Tap Master Complete! 🔥</h2>
-    <p id="customEndMessage" style="margin:15px 0; font-size:16px; line-height:1.4;"></p>
-    <p style="margin:10px 0; font-size:16px;">Your Bonus Level: <span id="endBonus">0</span></p>
-    <p style="margin:10px 0; font-size:16px;">Your Speed Multiplier: x<span id="endSpeed">0</span></p>
-    <button id="closeEndGame" 
-            style="margin-top:20px; padding:12px 25px; border:none; border-radius:12px; 
-                   background:linear-gradient(90deg,#00e676,#00b0ff); color:#000; 
-                   font-weight:bold; cursor:pointer; font-size:16px;">Tap Again!</button>
+  <div style="background:#111; padding:30px; border-radius:15px; text-align:center; width:300px;">
+    <h2>Game Over</h2>
+    <p>Taps: <span id="endTaps">0</span></p>
+    <p>Earnings: ₦<span id="endEarnings">0</span></p>
+    <p>Bonus Level: <span id="endBonus">0</span></p>
+    <p>Speed: x<span id="endSpeed">0</span></p>
+    <button id="closeEndGame" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#0f0; color:#000; font-weight:bold; cursor:pointer;">Close</button>
   </div>
 `;
 document.body.appendChild(endGameModal);
 
-// Function to get dynamic message based on taps
-function getEndMessage(username, taps, earnings) {
-  let tierMessage = '';
+const endTapsEl = document.getElementById('endTaps');
+const endEarningsEl = document.getElementById('endEarnings');
+const endBonusEl = document.getElementById('endBonus');
+const endSpeedEl = document.getElementById('endSpeed');
+const closeEndGameBtn = document.getElementById('closeEndGame');
 
-  if(taps >= 500) {
-    tierMessage = `💎 LEGENDARY! ${username}, you’re a true Tap Master! 💎<br>`;
-  } else if(taps >= 300) {
-    tierMessage = `🔥 INCREDIBLE! ${username}, your fingers are on fire! 🔥<br>`;
-  } else if(taps >= 150) {
-    tierMessage = `⚡ Nice work, ${username}! Keep the taps coming! ⚡<br>`;
-  } else if(taps >= 50) {
-    tierMessage = `👍 Not bad, ${username}! You’re getting the hang of it!<br>`;
-  } else {
-    tierMessage = `😉 Keep tapping, ${username}! You can crush it next round!<br>`;
-  }
-
-  return `${tierMessage}You smashed <strong>${taps}</strong> taps 💥<br>
-          Collected ₦<strong>${earnings}</strong> from the cash box! 💰<br>
-          Keep going to climb the leaderboard and claim your crown! 👑`;
-}
-
-// Function to show the modal
-function showEndGameModal(username, taps, earnings, bonus = 0, speed = 1) {
-  const endMessage = document.getElementById('customEndMessage');
-  endMessage.innerHTML = getEndMessage(username, taps, earnings);
-
-  document.getElementById('endTaps').textContent = taps;
-  document.getElementById('endEarnings').textContent = earnings;
-  document.getElementById('endBonus').textContent = bonus;
-  document.getElementById('endSpeed').textContent = speed;
-
-  endGameModal.style.display = 'flex';
-}
-
-// Close button
-document.getElementById('closeEndGame').onclick = () => {
-  endGameModal.style.display = 'none';
+closeEndGameBtn.addEventListener('click', () => {
+  endGameModal.style.display = "none";
   gamePage.style.display = "none";
   startPage.style.display = "block";
   if(posterImg) posterImg.style.display = "block";
-};
+});
 
 // ---------- CONFIG ----------
 const STAR_COST = 10;
@@ -765,19 +708,19 @@ function endSessionImmediate() {
     intervalId = null;
   }
 
+  // Fill modal
+  endTapsEl.textContent = taps;
+  endEarningsEl.textContent = formatNumber(earnings.toFixed(2));
+  endBonusEl.textContent = bonusLevel;
+
   const elapsed = SESSION_DURATION - timer;
   const speed = elapsed > 0 ? taps / elapsed : 0;
+  endSpeedEl.textContent = speed.toFixed(2);
 
-  // Show the new dynamic end game modal
-  // Replace 'Player1' with your actual username variable
-  showEndGameModal(
-    username || 'Player1',        // player's name
-    taps,                          // total taps
-    parseFloat(earnings.toFixed(2)), // earnings
-    bonusLevel,                    // bonus
-    speed.toFixed(2)               // speed multiplier
-  );
+  // Show modal immediately
+  endGameModal.style.display = "flex";
 }
+
 
 
 // ======================================================
@@ -1154,6 +1097,19 @@ closeLeaderboard?.addEventListener("click", () => {
   leaderboardModal.style.display = "none";
 });
 
+
+let musicStarted = true;
+
+function startGameMusic() {
+  if (!musicStarted) {
+    const audio = document.getElementById("gameMusic");
+    audio.volume = 0.45; // perfect level behind tapping
+    audio.play().catch(()=>{});
+    musicStarted = true;
+  }
+}
+document.addEventListener("click", startGameMusic);
+document.addEventListener("touchstart", startGameMusic);
 </script>
 </body>
 </html>
