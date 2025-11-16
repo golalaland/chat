@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Tap Master</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0e0e0e;
+  --glass-bg: rgba(255,255,255,0.04);
+  --accent1:#FF1493;
+  --accent2:#FF8C00;
+  --green1:#00e676;
+  --muted:#aaa;
+  --glass-border: rgba(255,255,255,0.08);
+}
+
+*{box-sizing:border-box}
+html,body {height:100%;margin:0;background:var(--bg);color:#fff;font-family:'Montserrat',sans-serif; -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 120px; touch-action:manipulation; -webkit-tap-highlight-color: transparent; overflow-x:hidden;}
+#appWrapper {width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;}
+
+/* header */
+#gameHeader{text-align:center;margin-top:6px;}
+#welcomeText{font-family:'Press Start 2P',cursive;font-size:11px;color:var(--accent1)}
+#scrambleText{font-family:'Press Start 2P',cursive;font-size:20px;color:var(--accent1);margin-top:4px}
+
+/* glass terminal (tap stats + timer etc) */
+.glass-terminal {
+  width: 90%;
+  max-width: 420px;
+  margin: 18px auto;
+  padding: 14px 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.terminal-header { text-align:center; color:var(--accent1); font-size:11px; letter-spacing:2px; margin-bottom:8px; font-weight:700; }
+.terminal-line { font-size:13px; line-height:1.6; letter-spacing:1px; color:#fff; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; }
+.terminal-line span { color:#00FF99; text-shadow:0 0 6px rgba(0,255,153,0.08); font-weight:700; }
+
+/* train bar (timer visual) */
+#trainBarContainer {
+  width:100%;
+  height:14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px;
+  overflow:hidden;
+  margin-top:8px;
+}
+#trainBar {
+  height:100%;
+  width:100%;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  transform-origin: left center;
+  transition: width 0.2s linear;
+}
+
+/* stats row inside terminal */
+.stats-row { display:flex; justify-content:space-between; gap:12px; margin-top:8px; align-items:center; }
+.stat { flex:1; background: rgba(255,255,255,0.02); padding:8px; border-radius:8px; text-align:center; }
+.stat .label { font-size:11px; color:var(--muted); }
+.stat .value { font-size:16px; font-weight:800; color:#fff; }
+
+/* bonus bar (progress toward next bonus level) */
+#bonusContainer { width:100%; height:10px; background:#111; border-radius:999px; overflow:hidden; margin-top:12px; box-shadow:0 6px 16px rgba(0,0,0,0.6) inset; }
+#bonusBar { height:100%; width:0%; background:linear-gradient(90deg,var(--green1),#00b0ff); transition:width .15s linear; }
+
+/* TAP button - small round, far from terminal */
+#tapButton {
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  background: radial-gradient(circle at 25% 25%, var(--green1), #00b0ff);
+  border: none;
+  margin-top:36px; /* far from terminal */
+  box-shadow: 0 8px 30px rgba(0,230,118,0.14);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+  color:#000;
+  font-size:18px;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* tap hover/active */
+#tapButton:active { transform: scale(.96); }
+
+/* tap count + earnings small status (below button) */
+#miniStats { margin-top:12px; color:#fff; font-weight:700; }
+
+/* leaderboard button */
+#leaderboardBtn {
+  margin-top:14px;
+  padding:10px 14px;
+  border-radius:10px;
+  background: linear-gradient(90deg,#FFD700,#FF8C00);
+  color:#111;
+  font-weight:800;
+  border:none;
+  cursor:pointer;
+  font-size:14px;
+}
+
+/* modal (normal fade-in centered) */
+.modal-backdrop {
+  position:fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999;
+}
+.modal {
+  width:92%; max-width:420px; background:#0f0f0f; border-radius:12px; padding:16px; border:1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+.modal h3{ margin:0 0 8px 0; color:var(--accent1); font-size:16px; }
+.modal .list { text-align:left; margin-top:12px; max-height:320px; overflow:auto; }
+.modal .list li { padding:8px 6px; border-bottom:1px dashed rgba(255,255,255,0.03); font-weight:700; }
+
+/* result panel (small) */
+#resultModalInner { display:none; margin-top:18px; }
+
+/* small helpers */
+.hidden { display:none!important; }
+button, input { font-size:16px; } /* prevents iOS zoom on tap */
+.active-tab {
+  background: linear-gradient(90deg,#FF1493,#FF8C00);
+  color: #fff;
+  font-weight: bold;
+}
+</style>
+</head>
+<body>
+<div id="appWrapper">
+
+  <!-- Header -->
+  <div id="gameHeader">
+    <div id="welcomeText">WELCOME TO</div>
+    <div id="scrambleText">TAP MASTER</div>
+  </div>
+  
+
+<!-- Start Page -->
+<div id="startPage" style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:18px;">
+  <button id="startBtn" style="padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">Play</button>
+  <img id="posterImg" src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" alt="Poster" style="width:90%;max-width:420px;margin:12px auto;border-radius:12px;">
+</div>
+
+<!-- Play Confirmation Modal -->
+<div id="playModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2000;justify-content:center;align-items:center;display:flex;">
+  <div style="background:#111;color:#fff;padding:20px;border-radius:12px;width:90%;max-width:320px;text-align:center;">
+    <h3 style="margin-bottom:12px;">Confirm Play</h3>
+    <p>Play Tap Master for <strong>10 ⭐</strong>?</p>
+    <div style="display:flex;justify-content:space-between;margin-top:18px;">
+      <button id="cancelPlay" style="flex:1;margin-right:6px;padding:10px 12px;border:none;border-radius:8px;background:#444;color:#fff;font-weight:700;cursor:pointer;">Cancel</button>
+      <button id="confirmPlay" style="flex:1;margin-left:6px;padding:10px 12px;border:none;border-radius:8px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:700;cursor:pointer;">Confirm</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Spinner (loading animation) -->
+  <div id="spinner" class="hidden" style="margin-top:18px;">
+    <div style="width:44px;height:44px;border-radius:50%;border:6px solid #222;border-top:6px solid #00e676; animation:spin 1s linear infinite;margin:0 auto"></div>
+    <div style="margin-top:10px;color:#aaa;font-size:13px">Loading Tap Arena…</div>
+  </div>
+  
+  
+
+  <!-- Game UI -->
+  <div id="gamePage" class="hidden" style="width:100%;display:flex;flex-direction:column;align-items:center;">
+
+    <!-- Glass terminal -->
+    <div id="tapTerminal" class="glass-terminal" aria-live="polite">
+      <div class="terminal-header">TAP TERMINAL</div>
+
+      <div class="terminal-line">
+        <div>⏱ Time Left</div>
+        <div><span id="timer">60</span>s</div>
+      </div>
+
+      <div class="terminal-line">
+        <div>✋🏽 Taps</div>
+        <div><span id="tapCount">0</span></div>
+      </div>
+
+      <div class="terminal-line">
+        <div>💵 Earnings</div>
+        <div>₦<span id="earnings">0.00</span></div>
+      </div>
+
+      <div id="trainBarContainer" style="margin-top:10px;">
+        <div id="trainBar" style="width:100%"></div>
+      </div>
+
+      <div class="stats-row" style="margin-top:10px">
+        <div class="stat">
+          <div class="label">TAP LVL</div>
+          <div class="value" id="bonusLevelVal">1</div>
+        </div>
+        <div class="stat">
+          <div class="label">SPEED</div>
+          <div class="value" id="speedVal">—</div>
+        </div>
+      </div>
+
+      <div id="bonusContainer" style="margin-top:12px;">
+        <div id="bonusBar"></div>
+      </div>
+    </div>
+
+    <!-- TAP button -->
+    <button id="tapButton" aria-label="Tap" title="Tap fast!">TAP</button>
+
+  
+    <!-- Result modal -->
+<div id="resultModal" class="modal-backdrop" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="padding:16px;border-radius:12px;max-width:380px;text-align:center;position:relative;">
+    <button id="closeResult" style="position:absolute;top:8px;right:8px;font-size:18px;border:none;background:none;cursor:pointer;">✖</button>
+    <div id="resultMessage" style="margin-top:10px;font-size:16px;font-weight:600;"></div>
+    <button id="playAgainBtn" style="margin-top:16px;padding:10px 16px;border-radius:8px;border:none;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;cursor:pointer;">Play Again</button>
+  </div>
+</div>
+
+  </div> <!-- end gamePage -->
+
+  <!-- Fixed bottom profile + leaderboard button -->
+  <div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:90%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:1000;">
+    <div class="profile-card" style="background:rgba(255,255,255,0.04);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);text-align:center;">
+      <div class="profile-name" id="profileName">GUEST 0000</div>
+      <div class="profile-info">STARS COLLECTED: <span id="starCount">50</span>⭐</div>
+      <div class="profile-info">CASH EARNED: <span id="cashCount">0</span></div>
+    </div>
+    <button id="leaderboardBtn" style="padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#FFD700,#FF8C00);color:#111;font-weight:800;border:none;cursor:pointer;font-size:14px;">View Leaderboard 🏆</button>
+  </div>
+  
+  
+  <!-- Leaderboard Modal -->
+<div id="leaderboardModal" class="modal-backdrop" role="dialog" aria-modal="true"
+     style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+            background:rgba(0,0,0,0.6);backdrop-filter:blur(3px);
+            justify-content:center;align-items:center;z-index:9999;">
+
+  <div class="modal"
+       style="width:92%;max-width:420px;max-height:90vh;overflow:hidden;
+              background:#111;border-radius:14px;padding:15px;
+              box-shadow:0 0 15px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
+
+    <!-- Tabs -->
+    <div id="leaderboardTabs" style="display:flex;gap:10px;margin-bottom:12px;">
+      <button class="lb-tab active" data-period="daily"
+        style="flex:1;padding:8px 0;border-radius:8px;border:none;
+               background:#ff1493;color:#fff;font-weight:700;cursor:pointer;">
+        Daily
+      </button>
+
+      <button class="lb-tab" data-period="weekly"
+        style="flex:1;padding:8px 0;border-radius:8px;border:none;
+               background:#222;color:#ccc;font-weight:700;cursor:pointer;">
+        Weekly
+      </button>
+
+      <button class="lb-tab" data-period="monthly"
+        style="flex:1;padding:8px 0;border-radius:8px;border:none;
+               background:#222;color:#ccc;font-weight:700;cursor:pointer;">
+        Monthly
+      </button>
+    </div>
+
+    <!-- DAILY TIMER -->
+    <div id="dailyTimer" style="text-align:center;font-size:14px;font-weight:600;color:#ff8c00;margin-bottom:10px;display:block;">
+      Reset in: <span id="dailyTimerValue">23:59:59</span>
+    </div>
+
+    <!-- Image Slider -->
+    <div id="leaderboardImageSlider"
+         style="position:relative;width:100%;height:180px;overflow:hidden;border-radius:8px;margin-bottom:10px;touch-action:pan-y;">
+      <img src="https://via.placeholder.com/400x180?text=Daily+Image+1" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:block;">
+      <img src="https://via.placeholder.com/400x180?text=Daily+Image+2" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
+      <img src="https://via.placeholder.com/400x180?text=Daily+Image+3" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;display:none;">
+    </div>
+
+    <!-- Description -->
+    <p id="leaderboardDescription"
+       style="font-size:14px;color:#ccc;line-height:1.4;margin-bottom:10px;">
+      Today's top tappers dominate the hourly board. Tap fast and stay ahead!
+    </p>
+
+    <!-- Scrollable List -->
+    <ol id="leaderboardList"
+        style="list-style:none;padding-left:0;margin:0;flex:1;overflow-y:auto;
+               border-top:1px solid #222;padding-top:10px;">
+    </ol>
+
+    <!-- Close Button -->
+    <div style="margin-top:12px;text-align:right;">
+      <button id="closeLeaderboard"
+        style="padding:8px 12px;border-radius:8px;border:none;
+               background:linear-gradient(90deg,#FF1493,#FF8C00);
+               color:#fff;font-weight:800;cursor:pointer;">
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Audio -->
+<audio id="tapSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+
+<audio id="gameMusic" loop preload="auto">
+  <source src="night_city_jazz.mp3" type="audio/mpeg">
+</audio>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  runTransaction, 
+  collection, 
+  addDoc, 
+  serverTimestamp,
+  getDocs,     // <-- needed for reading queries
+  query,       // <-- needed for queries
+  where        // <-- needed for filtering
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+
+
+// ---------- FIREBASE ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.appspot.com",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C",
+  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ---------- DOM ----------
+const startBtn = document.getElementById('startBtn');
+const playModal = document.getElementById('playModal');
+const cancelPlay = document.getElementById('cancelPlay');
+const confirmPlay = document.getElementById('confirmPlay');
+const spinner = document.getElementById('spinner');
+const startPage = document.getElementById('startPage');
+const gamePage = document.getElementById('gamePage');
+const tapButton = document.getElementById('tapButton');
+const tapSound = document.getElementById('tapSound');
+const timerEl = document.getElementById('timer');
+const tapCountEl = document.getElementById('tapCount');
+const earningsEl = document.getElementById('earnings');
+const bonusBar = document.getElementById('bonusBar');
+const trainBar = document.getElementById('trainBar');
+const bonusLevelVal = document.getElementById('bonusLevelVal');
+const speedVal = document.getElementById('speedVal');
+const miniTapCount = document.getElementById('miniTapCount');
+const miniEarnings = document.getElementById('miniEarnings');
+const posterImg = document.getElementById('posterImg');
+const starCountEl = document.getElementById('starCount');
+const cashCountEl = document.getElementById('cashCount');
+const profileNameEl = document.getElementById('profileName');
+
+// ---------- END GAME MODAL ----------
+const endGameModal = document.createElement('div');
+endGameModal.id = "endGameModal";
+endGameModal.style = `
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.9); color:#fff; display:none;
+  justify-content:center; align-items:center; z-index:9999; font-family:sans-serif;
+`;
+endGameModal.innerHTML = `
+  <div style="background:#111; padding:30px; border-radius:15px; text-align:center; width:300px;">
+    <h2>Game Over</h2>
+    <p>Taps: <span id="endTaps">0</span></p>
+    <p>Earnings: ₦<span id="endEarnings">0</span></p>
+    <p>Bonus Level: <span id="endBonus">0</span></p>
+    <p>Speed: x<span id="endSpeed">0</span></p>
+    <button id="closeEndGame" style="margin-top:15px; padding:10px 20px; border:none; border-radius:8px; background:#0f0; color:#000; font-weight:bold; cursor:pointer;">Close</button>
+  </div>
+`;
+document.body.appendChild(endGameModal);
+
+const endTapsEl = document.getElementById('endTaps');
+const endEarningsEl = document.getElementById('endEarnings');
+const endBonusEl = document.getElementById('endBonus');
+const endSpeedEl = document.getElementById('endSpeed');
+const closeEndGameBtn = document.getElementById('closeEndGame');
+
+closeEndGameBtn.addEventListener('click', () => {
+  endGameModal.style.display = "none";
+  gamePage.style.display = "none";
+  startPage.style.display = "block";
+  if(posterImg) posterImg.style.display = "block";
+});
+
+// ---------- CONFIG ----------
+const STAR_COST = 10;
+const DAILY_INITIAL_POT = 10000;
+const CASH_PER_AWARD = 1;
+const SESSION_DURATION = 60;
+
+// ---------- STATE ----------
+let currentUser = null;
+const tapEvent = ('ontouchstart' in window) ? 'touchstart' : 'click';
+
+// ---------- LOCAL POT ----------
+const KEY_POT = 'moneytrain_pot';
+const KEY_RESET_DAY = 'moneytrain_reset_day';
+function getStoredPot(){ return parseInt(localStorage.getItem(KEY_POT)) || null; }
+function setStoredPot(v){ localStorage.setItem(KEY_POT, Math.max(0, Math.floor(v))); }
+function getPotResetDay(){ return localStorage.getItem(KEY_RESET_DAY) || null; }
+function setPotResetDay(s){ localStorage.setItem(KEY_RESET_DAY, s); }
+
+function initializePot(){
+  const today = new Date().toISOString().slice(0,10);
+  if(!getStoredPot() || getPotResetDay() !== today){
+    setStoredPot(DAILY_INITIAL_POT);
+    setPotResetDay(today);
+  }
+}
+
+function randomInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function formatNumber(n){ return n.toLocaleString(); }
+
+// ---------- LOAD USER ----------
+async function loadCurrentUserForGame() {
+  try {
+    const vipRaw = localStorage.getItem("vipUser");
+    const hostRaw = localStorage.getItem("hostUser");
+    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+    if(!storedUser?.email){
+      currentUser=null;
+      profileNameEl && (profileNameEl.textContent="GUEST 0000");
+      starCountEl && (starCountEl.textContent="50");
+      cashCountEl && (cashCountEl.textContent="₦0");
+      return;
+    }
+    const uid = storedUser.email.replace(/\./g,",").toLowerCase();
+    const userRef = doc(db,"users",uid);
+    const snap = await getDoc(userRef);
+    if(!snap.exists()){
+      currentUser = { uid, email: storedUser.email, chatId: storedUser.fullName||storedUser.displayName||storedUser.email.split("@")[0], stars:0, cash:0, totalTaps:0 };
+      profileNameEl && (profileNameEl.textContent=currentUser.chatId);
+      starCountEl && (starCountEl.textContent="0");
+      cashCountEl && (cashCountEl.textContent='₦0');
+      return;
+    }
+    const data = snap.data(); if(data.uid) delete data.uid;
+    currentUser = { uid, ...data, stars:Number(data.stars||0), cash:Number(data.cash||0), totalTaps:Number(data.totalTaps||0) };
+    profileNameEl && (profileNameEl.textContent=currentUser.chatId);
+    starCountEl && (starCountEl.textContent=formatNumber(currentUser.stars));
+    cashCountEl && (cashCountEl.textContent='₦'+formatNumber(currentUser.cash));
+  } catch(err){ console.warn("loadCurrentUserForGame error",err); }
+}
+
+// ---------- DEDUCT STARS ----------
+async function tryDeductStarsForJoin(cost){
+  if(!currentUser?.uid) return {ok:false,message:"You are not logged in"};
+  const userRef = doc(db,"users",currentUser.uid);
+  try{
+    await runTransaction(db,async t=>{
+      const u = await t.get(userRef);
+      if(!u.exists()) throw new Error("User not found");
+      const currentStars = Number(u.data().stars||0);
+      if(currentStars<cost) throw new Error("Not enough stars");
+      t.update(userRef,{stars:currentStars-cost});
+      currentUser.stars = currentStars-cost;
+    });
+    starCountEl && (starCountEl.textContent=formatNumber(currentUser.stars));
+    return {ok:true};
+  } catch(e){ return {ok:false,message:e.message||"Could not deduct stars"}; }
+}
+
+// ---------- GIVE CASH ----------
+async function giveCashToUser(amount){
+  if(!currentUser?.uid) return {ok:false};
+  const userRef = doc(db,"users",currentUser.uid);
+  try{
+    await runTransaction(db,async t=>{
+      const u = await t.get(userRef);
+      if(!u.exists()) throw new Error("User not found");
+      const newCash = Number(u.data().cash||0) + Number(amount);
+      t.update(userRef,{cash:newCash});
+      currentUser.cash = newCash;
+    });
+    cashCountEl && (cashCountEl.textContent='₦'+formatNumber(currentUser.cash));
+    return {ok:true};
+  } catch(e){ console.error("giveCashToUser error", e); return {ok:false,message:e.message}; }
+}
+
+// ---------- FLOATING +1 ----------
+function showFloatingPlus(parent,text){
+  const span=document.createElement('span');
+  span.textContent=text;
+  const rect = parent.getBoundingClientRect();
+  const x = rect.left + Math.random() * rect.width * 0.6 + rect.width*0.2;
+  const y = rect.top + Math.random() * rect.height * 0.6;
+  Object.assign(span.style,{
+    position:'absolute', fontWeight:'bold', color:'#fff', fontSize:'20px',
+    pointerEvents:'none', userSelect:'none', zIndex:1000,
+    top: y+'px', left: x+'px', opacity:1, transition:'all 0.9s ease-out'
+  });
+  document.body.appendChild(span);
+  setTimeout(()=>{ span.style.top=(y-40)+'px'; span.style.opacity=0; },50);
+  setTimeout(()=>span.remove(),900);
+}
+
+// ---------- BONUS BAR ----------
+function updateBonusBar(){
+  if(!bonusBar) return;
+  const colors = [
+    `linear-gradient(90deg, #ff416c, #ff4b2b)`,
+    `linear-gradient(90deg, #00c6ff, #0072ff)`,
+    `linear-gradient(90deg, #f7971e, #ffd200)`,
+    `linear-gradient(90deg, #a1ffce, #faffd1)`,
+    `linear-gradient(90deg, #ff9a9e, #fad0c4)`,
+    `linear-gradient(90deg, #ffecd2, #fcb69f)`
+  ];
+  const idx = randomInt(0, colors.length-1);
+  bonusBar.style.background = colors[idx];
+  bonusBar.style.width = Math.min(100,(progress/tapsForNext)*100)+'%';
+}
+
+// ---------- CONFETTI ----------
+function triggerConfetti(){
+  for(let i=0;i<15;i++){
+    const dot=document.createElement('div');
+    Object.assign(dot.style,{
+      position:'absolute', width:'6px', height:'6px',
+      background:`hsl(${Math.random()*360},80%,60%)`,
+      borderRadius:'50%', top: tapButton.offsetTop+'px',
+      left: tapButton.offsetLeft + tapButton.offsetWidth/2+'px',
+      pointerEvents:'none', zIndex:9999, opacity:1
+    });
+    document.body.appendChild(dot);
+    const x=(Math.random()-0.5)*100; const y=-Math.random()*80;
+    dot.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${x}px,${y}px)`,opacity:0}],
+      {duration:600, easing:'ease-out'});
+    setTimeout(()=>dot.remove(),600);
+  }
+}
+
+// ======================================================
+//   SESSION ENGINE — CLEAN, BULLETPROOF, DROP-IN
+// ======================================================
+
+// GLOBAL STATE
+let taps = 0;
+let earnings = 0;
+let timer = 0;
+let bonusLevel = 1;
+let progress = 0;
+let tapsForNext = 100;
+let cashCounter = 0;
+let cashThreshold = 0;
+
+let running = false;
+let tapLocked = false;
+let intervalId = null;
+
+
+// ======================================================
+//   START SESSION
+// ======================================================
+function startSession() {
+
+  // Reset state
+  taps = 0;
+  earnings = 0;
+  timer = SESSION_DURATION;
+  bonusLevel = 1;
+  progress = 0;
+  tapsForNext = 100;
+  cashCounter = 0;
+  cashThreshold = randomInt(1, 12);
+
+  running = true;
+  tapLocked = false;
+  tapButton.disabled = false;
+
+  trainBar && (trainBar.style.width = "100%");
+  updateBonusBar();
+  updateUI();
+
+  // Clear old interval
+  if (intervalId) clearInterval(intervalId);
+
+  // NEW SAFE COUNTDOWN
+  intervalId = setInterval(() => {
+
+    if (!running) return;   
+
+    timer--;
+    if (timer < 0) timer = 0;
+
+    updateUI();
+    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
+
+    if (timer === 0) {
+
+      // 🚫 STOP EVERYTHING IMMEDIATELY
+      endSessionImmediate();
+
+      // 📝 SAVE THE SESSION ASYNC
+      endSessionRecord();
+
+    }
+
+  }, 1000);
+
+  updateUI();
+}
+
+
+
+// ======================================================
+//   INSTANT END — UI FREEZE, BLOCK TAPS
+// ======================================================
+function endSessionImmediate() {
+
+  running = false;
+  tapLocked = true;
+  tapButton.disabled = true;
+
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
+  }
+
+  // Fill modal
+  endTapsEl.textContent = taps;
+  endEarningsEl.textContent = formatNumber(earnings.toFixed(2));
+  endBonusEl.textContent = bonusLevel;
+
+  const elapsed = SESSION_DURATION - timer;
+  const speed = elapsed > 0 ? taps / elapsed : 0;
+  endSpeedEl.textContent = speed.toFixed(2);
+
+  // Show modal immediately
+  endGameModal.style.display = "flex";
+}
+
+
+
+// ======================================================
+//   FIRESTORE — ASYNC RECORDING
+// ======================================================
+async function endSessionRecord() {
+
+  if (!currentUser?.uid || taps <= 0) return;
+
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+
+    await runTransaction(db, async t => {
+
+      const docSnap = await t.get(userRef);
+      const now = new Date();
+
+      const dailyKey = now.toISOString().split("T")[0];
+      const weeklyKey = `${now.getFullYear()}-W${getWeek(now)}`;
+      const monthlyKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+
+      if (!docSnap.exists()) {
+
+        t.set(userRef, {
+          chatId: currentUser.chatId || currentUser.uid,
+          stars: currentUser.stars || 0,
+          cash: currentUser.cash || 0,
+          totalTaps: taps,
+          tapsDaily: { [dailyKey]: taps },
+          tapsWeekly: { [weeklyKey]: taps },
+          tapsMonthly: { [monthlyKey]: taps },
+          lastEarnings: earnings,
+          lastBonus: bonusLevel
+        });
+
+        return;
+      }
+
+      const data = docSnap.data();
+
+      t.update(userRef, {
+        totalTaps: (data.totalTaps || 0) + taps,
+        tapsDaily: { ...(data.tapsDaily || {}), [dailyKey]: ((data.tapsDaily?.[dailyKey] || 0) + taps) },
+        tapsWeekly: { ...(data.tapsWeekly || {}), [weeklyKey]: ((data.tapsWeekly?.[weeklyKey] || 0) + taps) },
+        tapsMonthly: { ...(data.tapsMonthly || {}), [monthlyKey]: ((data.tapsMonthly?.[monthlyKey] || 0) + taps) },
+        lastEarnings: earnings,
+        lastBonus: bonusLevel
+      });
+
+    });
+
+    await addDoc(collection(db, "tapSessions"), {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      chatId: currentUser.chatId || currentUser.uid,
+      taps,
+      earnings,
+      bonusLevel,
+      timestamp: serverTimestamp()
+    });
+
+    currentUser.totalTaps = (currentUser.totalTaps || 0) + taps;
+
+    // Refresh leaderboard
+    fetchLeaderboard("daily");
+
+  } catch (err) {
+    console.error("Error saving session:", err);
+  }
+}
+
+
+
+// ======================================================
+//   TAP HANDLER — NOW PERFECTLY LOCKED
+// ======================================================
+tapButton?.addEventListener(tapEvent, async e => {
+
+  e.preventDefault();
+
+  if (!running || tapLocked) return;
+
+  tapLocked = true;
+  setTimeout(() => tapLocked = false, 50);
+
+  taps++;
+  currentUser && (currentUser.totalTaps = (currentUser.totalTaps || 0) + 1);
+
+  progress++;
+  cashCounter++;
+  showFloatingPlus(tapButton, "+1");
+
+  // CASH AWARD
+  if (cashCounter >= cashThreshold) {
+    cashCounter = 0;
+    cashThreshold = randomInt(1, 12);
+
+    const pot = getStoredPot() ?? DAILY_INITIAL_POT;
+    if (pot > 0) {
+      earnings += CASH_PER_AWARD;
+      setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
+      await giveCashToUser(CASH_PER_AWARD);
+    }
+  }
+
+  // BONUS LEVEL
+  if (progress >= tapsForNext) {
+    progress = 0;
+    bonusLevel++;
+    tapsForNext = 100 + (bonusLevel - 1) * 50;
+    triggerConfetti();
+  }
+
+  flashTapGlow();
+  try { tapSound.currentTime = 0; tapSound.play().catch(()=>{}); } catch {}
+  navigator.vibrate?.(12);
+
+  updateUI();
+  updateBonusBar();
+});
+
+
+// ---------- UI & TAP GLOW ----------
+function updateUI(){
+  timerEl && (timerEl.textContent=String(timer));
+  tapCountEl && (tapCountEl.textContent=String(taps));
+  earningsEl && (earningsEl.textContent='₦'+formatNumber(earnings.toFixed(2)));
+  bonusLevelVal && (bonusLevelVal.textContent=String(bonusLevel));
+  const elapsed=SESSION_DURATION-timer;
+  const speed=elapsed>0?taps/elapsed:0;
+  speedVal && (speedVal.textContent=`x${speed.toFixed(2)}`);
+  miniTapCount && (miniTapCount.textContent=String(taps));
+  miniEarnings && (miniEarnings.textContent='₦'+formatNumber(earnings.toFixed(2)));
+  if(starCountEl && currentUser) starCountEl.textContent=formatNumber(currentUser.stars);
+  if(cashCountEl && currentUser) cashCountEl.textContent='₦'+formatNumber(currentUser.cash);
+}
+
+function flashTapGlow(){ 
+  tapButton?.classList.add('tap-glow','tap-pulse'); 
+  setTimeout(()=>{tapButton?.classList.remove('tap-glow','tap-pulse');},120); 
+}
+
+// ---------- CSS ----------
+const style=document.createElement('style'); 
+style.innerHTML=`
+  #tapButton.tap-glow { box-shadow:0 0 26px rgba(0,230,118,0.9),0 0 8px rgba(0,176,255,0.6); }
+  #tapButton.tap-pulse { transform: scale(1.05); transition: transform 0.12s ease; }
+`;
+document.head.appendChild(style);
+
+// ---------- INITIALIZE ----------
+initializePot();
+loadCurrentUserForGame();
+
+// ---------- START FLOW ----------
+startBtn?.addEventListener("click",()=>{ if(playModal) playModal.style.display="flex"; });
+cancelPlay?.addEventListener("click",()=>{ if(playModal) playModal.style.display="none"; });
+confirmPlay?.addEventListener("click",async ()=>{
+  let localStars=parseInt(starCountEl?.textContent.replace(/,/g,'')||"0",10);
+  if(currentUser?.uid){
+    const r=await tryDeductStarsForJoin(STAR_COST);
+    if(!r.ok){ alert(r.message||"Not enough stars"); return; }
+  } else {
+    if(localStars<STAR_COST){ alert("Not enough stars"); return; }
+    localStars-=STAR_COST; starCountEl.textContent=formatNumber(localStars);
+  }
+  if(playModal) playModal.style.display="none";
+  if(posterImg) posterImg.style.display="none";
+  if(startPage) startPage.style.display="none";
+  if(spinner) spinner.classList.remove("hidden");
+  setTimeout(()=>{
+    if(spinner) spinner.classList.add("hidden");
+    if(gamePage) gamePage.classList.remove("hidden");
+    startSession();
+  },700);
+});
+/* ------------------------------
+   LEADERBOARD SETUP (UPGRADED)
+------------------------------- */
+
+// ---------- DOM ----------
+const leaderboardBtn = document.getElementById('leaderboardBtn');
+const leaderboardModal = document.getElementById('leaderboardModal');
+const closeLeaderboard = document.getElementById('closeLeaderboard');
+const leaderboardList = document.getElementById('leaderboardList');
+const leaderboardSlides = document.querySelectorAll(".leaderboard-slide");
+const periodTabs = document.querySelectorAll(".period-tab");
+const leaderboardDescription = document.getElementById("leaderboardDescription");
+
+// ---------- Helper: get leaderboard key ----------
+function getLeaderboardKey(period) {
+  const now = new Date();
+  if (period === "daily") return now.toISOString().split("T")[0]; // YYYY-MM-DD
+  if (period === "weekly") return `${now.getFullYear()}-W${getWeek(now)}`; // YYYY-Wxx
+  if (period === "monthly") return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; // YYYY-MM
+  return null;
+}
+
+function getWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+}
+
+/* ----------------- IMAGE SLIDER ----------------- */
+let slideIndex = 0;
+setInterval(() => {
+  leaderboardSlides.forEach(slide => slide.style.display = "none");
+  slideIndex = (slideIndex + 1) % leaderboardSlides.length;
+  leaderboardSlides[slideIndex].style.display = "block";
+}, 3000);
+
+/* ----------------- FETCH LEADERBOARD ----------------- */
+async function fetchLeaderboard(period = "daily", top = 10) {
+  if (!leaderboardList) return;
+  leaderboardList.innerHTML = "<li>Loading...</li>";
+
+  const key = getLeaderboardKey(period);
+  const usersCol = collection(db, "users");
+
+  try {
+    const snap = await getDocs(usersCol);
+    const scores = [];
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      let tapsCount = 0;
+      if (period === "daily") tapsCount = data.tapsDaily?.[key] || 0;
+      if (period === "weekly") tapsCount = data.tapsWeekly?.[key] || 0;
+      if (period === "monthly") tapsCount = data.tapsMonthly?.[key] || 0;
+
+      if (tapsCount > 0) {
+        scores.push({
+          uid: docSnap.id,
+          chatId: data.chatId || docSnap.id.slice(0,6),
+          taps: tapsCount
+        });
+      }
+    });
+
+    scores.sort((a,b) => b.taps - a.taps);
+    const topScores = scores.slice(0, top);
+
+    if (topScores.length === 0) {
+      leaderboardList.innerHTML = "<li>No data yet</li>";
+      return;
+    }
+
+    leaderboardList.innerHTML = topScores.map((u,i)=>{
+      const isCurrent = currentUser && u.uid === currentUser.uid;
+      let style = "";
+      if (i === 0) style = "color:#FFD700;font-weight:700;";         // Gold for #1
+      else if (i === 1) style = "color:#C0C0C0;font-weight:700;";    // Silver for #2
+      else if (i === 2) style = "color:#CD7F32;font-weight:700;";    // Bronze for #3
+      else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
+
+      return `<li style="margin-bottom:6px;${style}">
+        ${i+1}. <strong>${u.chatId}</strong> — ${u.taps.toLocaleString()} taps
+      </li>`;
+    }).join("");
+
+  } catch(err){
+    console.error("Leaderboard error:", err);
+    leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
+  }
+}
+
+// ---------- DOM ----------
+const periodTabs = document.querySelectorAll(".lb-tab");
+
+// ---------- TAB SWITCHER ----------
+periodTabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    const period = tab.dataset.period;
+
+    // ----- 1. Highlight the active tab -----
+    periodTabs.forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    // ----- 2. Show only the slider for the selected period -----
+    const sliders = document.querySelectorAll("#leaderboardImageSlider img");
+    sliders.forEach((slide, i) => {
+      // Each image's src contains the period in its URL (Daily/Weekly/Monthly)
+      if (slide.src.toLowerCase().includes(period)) {
+        slide.style.display = i === 0 ? "block" : "none"; // show first image of that period
+      } else {
+        slide.style.display = "none";
+      }
+    });
+
+    // ----- 3. Fetch leaderboard for this period -----
+    fetchLeaderboard(period);
+
+    // ----- 4. Show/hide daily timer -----
+    dailyTimerContainer.style.display = period === "daily" ? "block" : "none";
+
+    // ----- 5. Start slider for this period -----
+    startSlider(period);
+  });
+});
+
+/* ----------------- OPEN/CLOSE MODAL ----------------- */
+leaderboardBtn?.addEventListener("click", () => {
+  leaderboardModal.style.display = "flex";
+  fetchLeaderboard("daily"); // default
+});
+
+closeLeaderboard?.addEventListener("click", () => {
+  leaderboardModal.style.display = "none";
+
+  // stop all sliders
+  Object.values(slideIntervals).forEach(i => clearInterval(i));
+});
+/* ----------------- IMAGE SLIDERS PER TAB ----------------- */
+let currentSlideIndices = { daily: 0, weekly: 0, monthly: 0 };
+let slideIntervals = {};
+
+function startSlider(period) {
+  const slider = document.querySelector(`.leaderboard-slide[data-period="${period}"]`);
+  if (!slider) return;
+  const slides = slider.querySelectorAll("img");
+
+  // clear any existing interval
+  if (slideIntervals[period]) clearInterval(slideIntervals[period]);
+
+  slides.forEach((s,i) => s.style.display = i===currentSlideIndices[period]? "block":"none");
+
+  slideIntervals[period] = setInterval(() => {
+    slides.forEach(s => s.style.display = "none");
+    currentSlideIndices[period] = (currentSlideIndices[period]+1) % slides.length;
+    slides[currentSlideIndices[period]].style.display = "block";
+  }, 3000);
+}
+
+/* ----------------- DAILY COUNTDOWN ----------------- */
+function startDailyCountdown() {
+  const countdownEl = document.getElementById("dailyTimerValue");
+
+  function updateCountdown() {
+    const now = new Date();
+    const nextReset = new Date();
+    nextReset.setHours(24,0,0,0); // midnight next day
+    const diff = Math.max(0, Math.floor((nextReset-now)/1000));
+
+    const h = String(Math.floor(diff/3600)).padStart(2,'0');
+    const m = String(Math.floor((diff%3600)/60)).padStart(2,'0');
+    const s = String(diff%60).padStart(2,'0');
+
+    countdownEl.textContent = `Daily resets in ${h}:${m}:${s}`;
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+}
+
+/* ----------------- INIT ----------------- */
+leaderboardBtn?.addEventListener("click", () => {
+  leaderboardModal.style.display = "flex";
+
+  // Start countdown
+  startDailyCountdown();
+
+  // Trigger default tab (Daily)
+  const defaultTab = document.querySelector(".period-tab[data-period='daily']");
+  if (defaultTab) defaultTab.click();
+
+  // Fetch default leaderboard
+  fetchLeaderboard("daily");
+});
+
+
+let musicStarted = false;
+
+function startGameMusic() {
+  if (!musicStarted) {
+    const audio = document.getElementById("gameMusic");
+    audio.volume = 0.45; // perfect level behind tapping
+    audio.play().catch(()=>{});
+    musicStarted = true;
+  }
+}
+document.addEventListener("click", startGameMusic);
+document.addEventListener("touchstart", startGameMusic);
+</script>
+</body>
+</html>
