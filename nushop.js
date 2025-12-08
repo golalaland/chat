@@ -12,16 +12,15 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ------------------ Firebase ------------------ */
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
-};
+ const firebaseConfig = {
+      apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+      authDomain: "dettyverse.firebaseapp.com",
+      projectId: "dettyverse",
+      storageBucket: "dettyverse.firebasestorage.app",
+      messagingSenderId: "1036459652488",
+      appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
+      measurementId: "G-NX2KWZW85V"
+    };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
