@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>XIXI STORE</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #000;
+      --card: #111;
+      --border: #222;
+      --text: #fff;
+      --muted: #aaa;
+      --accent: #ff006e;
+      --success: #00ff9d;
+      --danger: #ff3366;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; color:#fff; font-family:system-ui,-apple-system,sans-serif; min-height:100vh; }
+    .container { max-width:480px; margin:0 auto; padding:16px; }
+    header { text-align:center; padding:20px 0; border-bottom:1px solid var(--border); }
+    .brand { font-size:28px; font-weight:900; color:var(--accent); }
+    .user-info { display:flex; justify-content:space-between; padding:16px 0; font-size:14px; }
+    .balance { font-weight:700; }
+    .stars { color:#ffd700; }
+    .cash { color:#00ff9d; }
+
+    .tabs { display:flex; gap:8px; margin:20px 0; border-bottom:1px solid var(--border); }
+    .tab { flex:1; padding:12px; text-align:center; background:var(--card); cursor:pointer; transition:0.2s; }
+    .tab.active { background:var(--accent); color:#000; font-weight:700; }
+
+    .shop-items { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:16px; padding:20px 0; }
+    .product-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; cursor:pointer; transition:0.2s; }
+    .product-card:hover { transform:translateY(-4px); border-color:var(--accent); }
+    .product-img { width:100%; height:140px; object-fit:cover; background:#333; }
+    .product-info { padding:12px; text-align:center; }
+    .product-name { font-size:14px; font-weight:600; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .product-price { font-size:16px; font-weight:900; color:var(--accent); }
+    .sold-out { opacity:0.5; pointer-events:none; }
+    .sold-out::after { content:"SOLD OUT"; position:absolute; inset:0; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px; color:#ff3366; }
+
+    .orders-list { padding:16px 0; }
+    .order-item { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; }
+    .order-title { font-weight:700; margin-bottom:8px; }
+    .order-details { font-size:13px; color:var(--muted); }
+
+    .spinner { position:fixed; inset:0; background:rgba(0,0,0,0.9); display:none; align-items:center; justify-content:center; z-index:9999; }
+    .spinner.active { display:flex; }
+    .spinner::after { content:""; width:50px; height:50px; border:5px solid #333; border-top:5px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); display:none; align-items:center; justify-content:center; z-index:9999; }
+    .modal.active { display:flex; }
+    .modal-content { background:#111; border:1px solid var(--border); border-radius:16px; padding:24px; width:90%; max-width:360px; text-align:center; }
+    .modal-title { font-size:20px; margin-bottom:16px; }
+    .modal-text { margin-bottom:24px; color:var(--muted); }
+    .modal-buttons { display:flex; gap:12px; }
+    .btn { flex:1; padding:12px; border:none; border-radius:12px; font-weight:700; cursor:pointer; transition:0.2s; }
+    .btn-cancel { background:#333; color:#fff; }
+    .btn-confirm { background:var(--accent); color:#000; }
+
+    .reward-modal { position:fixed; top:20%; left:50%; transform:translateX(-50%); background:var(--success); color:#000; padding:16px 32px; border-radius:50px; font-weight:900; z-index:99999; opacity:0; transition:opacity 0.5s; pointer-events:none; }
+    .reward-modal.show { opacity:1; }
+
+    @media (max-width:480px) {
+      .shop-items { grid-template-columns:repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">XIXI STORE</div>
+    </header>
+
+    <div class="user-info">
+      <div><span id="username">Guest</span></div>
+      <div class="balance"><span id="stars-count">0</span> <span class="stars">Stars</span></div>
+      <div class="balance">₦<span id="cash-count">0</span></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="shop">Shop</div>
+      <div class="tab" data-tab="orders">My Orders</div>
+    </div>
+
+    <div id="shop-items" class="shop-items"></div>
+    <div id="orders-content" style="display:none;">
+      <div id="orders-list" class="orders-list"></div>
+    </div>
+  </div>
+
+  <!-- SPINNER -->
+  <div class="spinner" id="shopSpinner"></div>
+
+  <!-- CONFIRM MODAL -->
+  <div class="modal" id="confirmModal">
+    <div class="modal-content">
+      <div class="modal-title" id="confirmTitle">Confirm Purchase</div>
+      <div class="modal-text" id="confirmText"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-cancel" id="confirmNo">Cancel</button>
+        <button class="btn btn-confirm" id="confirmYes">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REWARD POPUP -->
+  <div class="reward-modal" id="rewardModal">
+    <div id="rewardTitle">Reward!</div>
+    <div id="rewardMessage"></div>
+  </div>
+
+  <!-- YOUR FULL JS BELOW -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction,
+      serverTimestamp, updateDoc, query, where, orderBy, limit
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+      authDomain: "dettyverse.firebaseapp.com",
+      projectId: "dettyverse",
+      storageBucket: "dettyverse.firebasestorage.app",
+      messagingSenderId: "1036459652488",
+      appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
+      measurementId: "G-NX2KWZW85V"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // DOM
+    const DOM = {
+      username: document.getElementById('username'),
+      stars: document.getElementById('stars-count'),
+      cash: document.getElementById('cash-count'),
+      shopItems: document.getElementById('shop-items'),
+      ordersContent: document.getElementById('orders-content'),
+      ordersList: document.getElementById('orders-list'),
+      confirmModal: document.getElementById('confirmModal'),
+      confirmTitle: document.getElementById('confirmTitle'),
+      confirmText: document.getElementById('confirmText'),
+      confirmYes: document.getElementById('confirmYes'),
+      confirmNo: document.getElementById('confirmNo'),
+      rewardModal: document.getElementById('rewardModal'),
+      rewardTitle: document.getElementById('rewardTitle'),
+      rewardMessage: document.getElementById('rewardMessage')
+    };
+
+    let currentUser = null;
+
+    // Spinner
+    const showSpinner = () => document.getElementById('shopSpinner')?.classList.add('active');
+    const hideSpinner = () => document.getElementById('shopSpinner')?.classList.remove('active');
+
+    // Format
+    const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) : '0';
+
+    // Modal
+    const showConfirm = (title, text, onYes) => {
+      DOM.confirmTitle.textContent = title;
+      DOM.confirmText.textContent = text;
+      DOM.confirmModal.classList.add('active');
+      DOM.confirmYes.onclick = () => { DOM.confirmModal.classList.remove('active'); onYes(); };
+      DOM.confirmNo.onclick = () => DOM.confirmModal.classList.remove('active');
+    };
+
+    const showReward = (title, message) => {
+      DOM.rewardTitle.textContent = title;
+      DOM.rewardMessage.textContent = message;
+      DOM.rewardModal.classList.add('show');
+      setTimeout(() => DOM.rewardModal.classList.remove('show'), 3000);
+    };
+
+    // Load User
+    const loadCurrentUser = async () => {
+      showSpinner();
+      const stored = localStorage.getItem('vipUser') || localStorage.getItem('hostUser');
+      if (!stored) { hideSpinner(); return; }
+
+      const user = JSON.parse(stored);
+      const uid = String(user.email).replace(/[.#$[\]]/g, ',');
+      const ref = doc(db, 'users', uid);
+      const snap = await getDoc(ref);
+
+      currentUser = snap.exists() ? { uid, ...snap.data() } : null;
+      if (currentUser) {
+        DOM.username.textContent = currentUser.chatId || user.email.split('@')[0];
+        DOM.stars.textContent = formatNumber(currentUser.stars);
+        DOM.cash.textContent = formatNumber(currentUser.cash);
+      }
+      await renderShop();
+      hideSpinner();
+    };
+
+    // Render Shop
+    const renderShop = async () => {
+      showSpinner();
+      DOM.shopItems.innerHTML = '';
+      const snap = await getDocs(collection(db, 'shopItems'));
+      snap.forEach(d => {
+        const p = d.data();
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        if (p.available <= 0) card.classList.add('sold-out');
+
+        card.innerHTML = `
+          <img src="${p.img || 'https://via.placeholder.com/300'}" class="product-img">
+          <div class="product-info">
+            <div class="product-name">${p.name}</div>
+            <div class="product-price">${p.cost} Stars</div>
+          </div>
+        `;
+
+        card.onclick = () => {
+          if (p.available <= 0) return;
+          if (!currentUser) return alert('Login required');
+          if (currentUser.stars < p.cost) return alert('Not enough stars');
+
+          showConfirm(`Buy ${p.name}?`, `${p.cost} Stars`, async () => {
+            await redeemItem(d.id, p);
+          });
+        };
+
+        DOM.shopItems.appendChild(card);
+      });
+      hideSpinner();
+    };
+
+    // Redeem
+    const redeemItem = async (id, product) => {
+      showSpinner();
+      try {
+        await runTransaction(db, async t => {
+          const userRef = doc(db, 'users', currentUser.uid);
+          const itemRef = doc(db, 'shopItems', id);
+          const [uSnap, iSnap] = await Promise.all([t.get(userRef), t.get(itemRef)]);
+          const u = uSnap.data();
+          const i = iSnap.data();
+
+          if (u.stars < i.cost) throw "Not enough stars";
+          if (i.available <= 0) throw "Sold out";
+
+          t.update(userRef, { stars: u.stars - i.cost });
+          t.update(itemRef, { available: i.available - 1 });
+        });
+
+        currentUser.stars -= product.cost;
+        DOM.stars.textContent = formatNumber(currentUser.stars);
+        showReward("Success!", `${product.name} redeemed!`);
+        renderShop();
+      } catch (e) {
+        alert(e || "Failed");
+      } finally {
+        hideSpinner();
+      }
+    };
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('shop-items').style.display = t.dataset.tab === 'shop' ? 'grid' : 'none';
+        document.getElementById('orders-content').style.display = t.dataset.tab === 'orders' ? 'block' : 'none';
+      };
+    });
+
+    // Init
+    loadCurrentUser();
+  </script>
+</body>
+</html>
